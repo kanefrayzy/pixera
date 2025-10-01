@@ -16,7 +16,7 @@
   <meta id="themeColor" name="theme-color" content="#0B0E14">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
-  
+
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="AI Gallery">
   <meta property="og:title" content="{% block og_title %}{% trans "AI Gallery — генерация и галерея" %}{% endblock %}">
@@ -25,29 +25,29 @@
   <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-default.jpg' %}{% endblock %}">
   <meta name="twitter:card" content="summary_large_image">
 
-  
+
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
   <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
   <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
   <link rel="manifest" href="{% static 'site.webmanifest' %}">
 
-  
+
   <link rel="dns-prefetch" href="//api.runware.ai">
   <link rel="preconnect" href="https://api.runware.ai" crossorigin>
 
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  
+
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <link rel="stylesheet" href="{% static 'css/components.css' %}">
   <link rel="stylesheet" href="{% static 'css/gallery.css' %}">
-  
+
   {% block extra_css %}{% endblock %}
 
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -93,7 +93,7 @@
     }
   </script>
 
-  
+
   <style type="text/tailwindcss">
     @layer base {
       :root {
@@ -159,7 +159,7 @@
     }
   </style>
 
-  
+
   <script>
     (function () {
       try {
@@ -173,7 +173,7 @@
     })();
   </script>
 
-  
+
   <script>
   (function () {
     const FP_COOKIE = "{{ FP_COOKIE_NAME|default:'aid_fp' }}";
@@ -317,7 +317,7 @@
 
   <a class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 btn btn-primary" href="#main">{% trans "Перейти к содержанию" %}</a>
 
-  
+
   <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10">
     <div class="absolute inset-0 bg-noise"></div>
     <div class="absolute -inset-x-32 -top-24 h-[28rem] bg-[radial-gradient(ellipse_at_top,_rgba(1,209,251,.25),_transparent_60%)]"></div>
@@ -331,26 +331,26 @@
   {% url 'account_signup' as account_signup_url %}
   {% url 'generate:new' as gen_url %}
 
-  
-  <header id="site-header" class="sticky top-0 z-50 border-b border-[var(--bord)] bg-[var(--bg)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg)]/60" role="banner">
+
+  <header id="site-header" class="sticky top-0 z-50 bg-[var(--bg)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg)]/60" role="banner">
     <div class="container flex h-16 items-center justify-between">
-      
-      <a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}" 
+
+      <a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}"
          rel="home" class="flex items-center gap-2" aria-label="{% trans 'На главную' %}">
         <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-darkbg font-extrabold drop-shadow-glow">AI</span>
         <span class="text-lg font-semibold">Gallery</span>
       </a>
 
-      
+
       <nav class="hidden md:flex items-center gap-7" role="navigation" aria-label="{% trans 'Главное меню' %}">
         <a class="nav-link" href="{% url 'gallery:index' %}">{% trans "Галерея" %}</a>
         <a class="nav-link" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
         <a class="nav-link" href="{% url 'generate:new' %}">{% trans "Генерация" %}</a>
       </nav>
 
-      
+
       <div class="hidden md:flex items-center gap-3">
-        
+
         <details class="relative" id="langSwitch">
           <summary class="btn btn-ghost cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
             🌐
@@ -379,7 +379,7 @@
           </div>
         </details>
 
-        
+
         <button id="themeToggle" class="btn btn-ghost" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
           <svg id="iconSun" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="3"></circle>
@@ -391,7 +391,7 @@
           <span class="sr-only">{% trans "Тема" %}</span>
         </button>
 
-        
+
         {% if request.user.is_authenticated %}
           <a href="{% url 'dashboard:index' %}" class="btn btn-ghost" id="cabinetBtn">{% trans "Кабинет" %}</a>
           {% if account_logout_url %}<a href="{{ account_logout_url }}" class="btn btn-ghost">{% trans "Выйти" %}</a>{% endif %}
@@ -403,14 +403,14 @@
         {% endif %}
       </div>
 
-  
+
   <div class="md:hidden flex items-center gap-2 ml-auto">
     {% if request.user.is_authenticated %}
       <button class="btn btn-ghost" type="button" data-open-dashboard="1">{% trans "Кабинет" %}</button>
     {% else %}
       <details class="relative" id="langSwitchMobile">
         <summary class="btn btn-ghost p-2" aria-controls="langMenuMobile" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">🌐</summary>
-        <div class="absolute right-0 top-full mt-2 card p-2 min-w-48 z-50" id="langMenuMobile" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+        <div class="absolute right-0 top-full mt-2 rounded-3xl border border-[var(--bord)] bg-[var(--card)] shadow-[0_8px_30px_rgba(0,0,0,0.18)] backdrop-blur-sm p-2 min-w-48 z-50" id="langMenuMobile" role="menu" aria-label="{% trans 'Выбрать язык' %}">
           <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
             <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
             <span class="text-sm">English</span>
@@ -449,17 +449,17 @@
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
-      </button>   
+      </button>
   </div>
     </div>
 
-    
+
     <div id="mobileMenu" class="md:hidden hidden border-t border-[var(--bord)] bg-[var(--bg)]/95 backdrop-blur-md">
       <div class="container py-3 flex flex-col gap-2">
         <a class="nav-link py-2" href="{% url 'gallery:index' %}">{% trans "Галерея" %}</a>
         <a class="nav-link py-2" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
         <a class="nav-link py-2" href="{% url 'generate:new' %}">{% trans "Генерация" %}</a>
-        
+
         {% if request.user.is_authenticated %}
           <a class="nav-link py-2" href="{% url 'dashboard:index' %}">{% trans "Личный кабинет" %}</a>
           {% if account_logout_url %}<a class="nav-link py-2" href="{{ account_logout_url }}">{% trans "Выйти" %}</a>{% endif %}
@@ -474,7 +474,7 @@
       </div>
 
     </div>
-    
+
   </header>
 
   {% include "includes/dashboard_drawer.html" %}
@@ -482,13 +482,13 @@
   {% block hero %}{% endblock %}
   {% block breadcrumbs %}{% endblock %}
 
-  
+
   <main id="main" class="container py-6" role="main">
     {% include "includes/messages.html" %}
     {% block content %}{% endblock %}
   </main>
 
-  
+
   <footer class="border-t border-[var(--bord)] bg-[var(--bg)]/80 backdrop-blur-sm">
     <div class="container py-10">
       <div class="grid grid-auto-fit gap-6">
@@ -530,14 +530,14 @@
 
   {% include "includes/age_gate.html" %}
 
-  
+
   <form id="setlang-fallback" class="sr-only" action="{% url 'set_language' %}" method="post" aria-hidden="true">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
     <input type="hidden" name="language" value="">
   </form>
 
-  
+
   <script>
     // Theme toggle
     const themeToggle = document.getElementById('themeToggle');
@@ -547,7 +547,7 @@
     const iconSunM = document.getElementById('iconSunM');
     const iconMoonM = document.getElementById('iconMoonM');
     const meta = document.getElementById('themeColor');
-    
+
     function setTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
       try { localStorage.setItem('theme', theme); } catch(_) {}
@@ -563,10 +563,10 @@
         iconMoonM.classList.toggle('hidden', theme !== 'dark');
       }
     }
-    
+
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     setTheme(current);
-    
+
     themeToggle?.addEventListener('click', () => {
       const now = document.documentElement.getAttribute('data-theme') || 'dark';
       setTheme(now === 'light' ? 'dark' : 'light');
@@ -579,7 +579,7 @@
     // Mobile menu
     const menuBtn = document.getElementById('menuBtn');
     const mobileMenu = document.getElementById('mobileMenu');
-    
+
     menuBtn?.addEventListener('click', () => {
       const open = mobileMenu.classList.toggle('hidden') === false;
       menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -617,7 +617,7 @@
         const m = document.cookie.match(new RegExp('(^|;)\\s*' + name + '=([^;]+)'));
         return m ? decodeURIComponent(m[2]) : '';
       }
-      
+
       const CSRF = getCSRFCookie('csrftoken');
 
       function currentLang() {
@@ -634,7 +634,7 @@
           btn.style.fontWeight = is ? '600' : '400';
         });
       }
-      
+
   markActive(currentLang());
 
       function normalizePath(path) {
@@ -731,12 +731,12 @@
       } catch(e) {}
     })();
   </script>
-  
-  
+
+
   <script src="{% static 'js/main.js' %}"></script>
   <script src="{% static 'js/interactions.js' %}"></script>
   <script src="{% static 'js/trending.js' %}"></script>
-  
+
   {% block extra_js %}{% endblock %}
 
   {% block scripts_extra %}{% endblock %}

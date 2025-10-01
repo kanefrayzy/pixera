@@ -24,23 +24,23 @@ class HomePageManager {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
                 const tabId = button.getAttribute('data-tab');
-                
+
                 // Remove active class from all buttons and panels
                 tabButtons.forEach(btn => {
                     btn.classList.remove('active');
                     btn.setAttribute('aria-selected', 'false');
                 });
-                
+
                 tabPanels.forEach(panel => {
                     panel.classList.add('hidden');
                     panel.classList.remove('active');
                     panel.setAttribute('aria-hidden', 'true');
                 });
-                
+
                 // Add active class to clicked button and corresponding panel
                 button.classList.add('active');
                 button.setAttribute('aria-selected', 'true');
-                
+
                 const activePanel = document.getElementById(tabId);
                 if (activePanel) {
                     activePanel.classList.remove('hidden');
@@ -68,14 +68,14 @@ class HomePageManager {
 
         const handleSubmit = () => {
             const prompt = promptInput.value?.trim();
-            
+
             if (prompt) {
                 // Validate prompt length
                 if (prompt.length < 3) {
                     this.showToast('Промпт слишком короткий. Добавьте больше деталей.', 'warning');
                     return;
                 }
-                
+
                 if (prompt.length > 500) {
                     this.showToast('Промпт слишком длинный. Сократите до 500 символов.', 'warning');
                     return;
@@ -83,7 +83,7 @@ class HomePageManager {
 
                 // Store prompt for analytics
                 this.trackPromptSubmission(prompt);
-                
+
                 // Create URL with prompt parameter
                 try {
                     const genUrl = document.querySelector('[data-generate-url]')?.dataset.generateUrl;
@@ -135,11 +135,11 @@ class HomePageManager {
             const counter = document.createElement('div');
             counter.className = 'text-xs text-muted mt-1';
             counter.id = 'prompt-counter';
-            
+
             const updateCounter = () => {
                 const length = promptInput.value.length;
                 counter.textContent = `${length}/500 символов`;
-                
+
                 if (length > 450) {
                     counter.classList.add('text-warning');
                 } else if (length > 500) {
@@ -174,9 +174,9 @@ class HomePageManager {
             summary.addEventListener('click', (e) => {
                 // Prevent default detail toggle for custom behavior
                 e.preventDefault();
-                
+
                 const isOpen = item.hasAttribute('open');
-                
+
                 // Close all other FAQ items (accordion behavior)
                 faqItems.forEach(otherItem => {
                     if (otherItem !== item && otherItem.hasAttribute('open')) {
@@ -223,7 +223,7 @@ class HomePageManager {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('animate-in');
-                    
+
                     // Stagger animation for grid items
                     if (entry.target.matches('.features-grid, .use-cases-grid, .how-it-works-grid')) {
                         this.staggerGridAnimation(entry.target);
@@ -258,7 +258,7 @@ class HomePageManager {
     // Stagger animations for grid items
     staggerGridAnimation(container) {
         const items = container.querySelectorAll('.card, .feature-card, .use-case-card, .step-card');
-        
+
         items.forEach((item, index) => {
             setTimeout(() => {
                 item.classList.add('animate-in');
@@ -269,20 +269,20 @@ class HomePageManager {
     // Parallax effect for hero floating elements
     initParallax() {
         const floatingElements = document.querySelectorAll('.floating-element-left, .floating-element-right');
-        
+
         if (!floatingElements.length) return;
 
         let ticking = false;
 
         const updateParallax = () => {
             const scrollY = window.pageYOffset;
-            
+
             floatingElements.forEach((element, index) => {
                 const speed = 0.5 + (index * 0.2);
                 const yPos = scrollY * speed;
                 element.style.transform = `translateY(${yPos}px)`;
             });
-            
+
             ticking = false;
         };
 
@@ -300,10 +300,10 @@ class HomePageManager {
     initAccessibility() {
         // Enhanced focus management
         this.initFocusManagement();
-        
+
         // Keyboard navigation improvements
         this.initKeyboardNavigation();
-        
+
         // Screen reader announcements
         this.initScreenReaderSupport();
     }
@@ -311,7 +311,7 @@ class HomePageManager {
     initFocusManagement() {
         // Trap focus in modals/overlays if any
         const focusableElements = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-        
+
         // Enhanced focus indicators
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
@@ -331,7 +331,7 @@ class HomePageManager {
         skipLink.className = 'skip-link';
         skipLink.textContent = 'Перейти к основному содержимому';
         skipLink.setAttribute('aria-label', 'Перейти к основному содержимому');
-        
+
         document.body.insertBefore(skipLink, document.body.firstChild);
 
         // Arrow key navigation for tabs
@@ -340,9 +340,9 @@ class HomePageManager {
             tabContainer.addEventListener('keydown', (e) => {
                 const tabs = Array.from(tabContainer.querySelectorAll('[role="tab"]'));
                 const currentIndex = tabs.indexOf(e.target);
-                
+
                 let nextIndex;
-                
+
                 switch (e.key) {
                     case 'ArrowLeft':
                         e.preventDefault();
@@ -586,7 +586,7 @@ const toastStyles = `
         left: 1rem;
         right: 1rem;
     }
-    
+
     .toast {
         margin-bottom: 0.25rem;
         padding: 0.5rem 0.75rem;

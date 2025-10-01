@@ -27,21 +27,21 @@
     <div class="grid items-center gap-12 lg:grid-cols-2">
       <div class="max-w-2xl">
         <div class="hero-badge">
-          <div class="hero-badge-dot"></div>
-          Новая платформа
+          <div class="hero-badge-dot bg-primary shadow dark:bg-white"></div>
+          <span class="text-black dark:text-white font-semibold">Новая платформа</span>
         </div>
-        
+
         <h1 class="hero-title">
-          Создавайте 
-          <span class="gradient-text">вдохновляющие</span> 
+          Создавайте
+          <span class="gradient-text">вдохновляющие</span>
           изображения
         </h1>
-        
+
         <p class="hero-description">
-          Мгновенная генерация, аккуратная лента и умные фильтры — всё в одном месте. 
+          Мгновенная генерация, аккуратная лента и умные фильтры — всё в одном месте.
           Профессиональные результаты за секунды.
         </p>
-        
+
         <div class="hero-buttons">
           <a class="btn btn-primary text-lg px-8 py-4" href="{% url 'generate:new' %}" data-generate-url="{% url 'generate:new' %}">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -56,7 +56,7 @@
             Открыть галерею
           </a>
         </div>
-        
+
         <div class="hero-features">
           <div class="hero-feature">
             <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
@@ -78,32 +78,32 @@
           </div>
         </div>
       </div>
-      
+
       <div class="hero-image-container">
         <div class="card p-4 glassframe">
-          <img class="hero-image" 
-               src="{% static 'img/bg.png' %}" 
+          <img class="hero-image"
+               src="{% static 'img/bg.png' %}"
                alt="Пример сгенерированного изображения"
                onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 600%22&gt;&lt;rect width=%22800%22 height=%22600%22 fill=%22%23e5e7eb%22/&gt;&lt;text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2224%22&gt;AI Generation Preview&lt;/text&gt;&lt;/svg&gt;';" />
-          
+
           <div class="hero-floating-controls">
             <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]">Realtime</button>
             <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]">Canvas</button>
             <button class="btn btn-primary text-xs px-3 py-2 bg-gradient-to-r from-primary to-blue-400 text-white rounded-xl shadow-md hover:opacity-90 transition">Upscale ×4</button>
           </div>
         </div>
-        
+
         <div class="floating-element-left">
           <div class="card bg-transparent p-3 rotate-[-6deg]">
-            <img class="h-28 w-40 rounded-xl object-cover" 
-                 src="{% static 'img/small-bg.png' %}" 
+            <img class="h-28 w-40 rounded-xl object-cover"
+                 src="{% static 'img/small-bg.png' %}"
                  alt="Стиль"
                  onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 240%22&gt;&lt;rect width=%22320%22 height=%22240%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';" />
           </div>
         </div>
-        
+
         <div class="floating-element-right">
-          <div class="card p-4 rotate-[3deg]">
+          <div class="card p-4 bg-transparent rotate-[3deg]">
             <div class="flex items-center gap-2 text-sm">
               <div class="w-2 h-2 bg-green-500 rounded-full"></div>
               <span class="font-medium">26 сек</span>
@@ -119,7 +119,6 @@
 {% block content %}
 
 <section class="py-4 border-b border-[var(--bord)]">
-  <div class="container">
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
       <div>
         <div class="text-2xl sm:text-3xl font-bold text-primary mb-2">25–30 сек</div>
@@ -138,12 +137,10 @@
         <div class="text-sm text-[var(--muted)]">безопасные фильтры</div>
       </div>
     </div>
-  </div>
 </section>
 
 
 <section class="features-section">
-  <div class="container">
     <div class="features-header">
       <h2 class="text-3xl sm:text-4xl font-bold mb-4">Почему именно мы</h2>
       <p class="text-xl text-[var(--muted)]">Скорость, стабильность, продуманный UX и SEO-готовность по умолчанию.</p>
@@ -202,11 +199,9 @@
         </div>
       </div>
     </div>
-  </div>
 </section>
 
 <section class="py-8 sm:py-12 lg:py-16 xl:py-20 bg-black/[.02] dark:bg-white/[.02] rounded-xl sm:rounded-2xl">
-  <div class="container">
     <div class="text-center max-w-3xl mx-auto mb-8 sm:mb-12 lg:mb-16">
       <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Демонстрация генерации</h2>
       <p class="text-base sm:text-lg lg:text-xl text-[var(--muted)]">Реалистичное освещение, чистое кадрирование и сочные цвета — прямо из коробки.</p>
@@ -215,7 +210,7 @@
     <div class="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
       <div class="order-2 lg:order-1">
         <div class="card p-4 sm:p-6">
-          
+
           <div class="flex border-b border-[var(--bord)] mb-4 sm:mb-6 overflow-x-auto" role="tablist">
             <button class="tab-btn active px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-primary text-primary whitespace-nowrap" data-tab="prompt" role="tab">
               Промпт
@@ -228,14 +223,14 @@
             </button>
           </div>
 
-          
+
           <div class="tab-content">
             <div class="tab-panel active" id="prompt" role="tabpanel">
               <div class="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-black/80 text-white font-mono text-xs sm:text-sm">
                 <pre class="whitespace-pre-wrap break-words">Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves</pre>
               </div>
             </div>
-            
+
             <div class="tab-panel hidden" id="settings" role="tabpanel">
               <div class="space-y-3">
                 <div class="flex justify-between">
@@ -256,11 +251,11 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="tab-panel hidden" id="result" role="tabpanel">
               <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-                <img src="{% static 'img/woman.webp' %}" 
-                     alt="Миниатюра результата" 
+                <img src="{% static 'img/woman.webp' %}"
+                     alt="Миниатюра результата"
                      class="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl object-cover"
                      onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22&gt;&lt;rect width=%2264%22 height=%2264%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';">
                 <div class="flex-1 w-full">
@@ -275,10 +270,10 @@
             </div>
           </div>
 
-          
+
           <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-[var(--bord)]">
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <input class="field flex-1 text-sm" 
+              <input class="field flex-1 text-sm"
                      placeholder="Опишите изображение: стиль, свет, объектив, детали"
                      id="quick-prompt">
               <button class="btn btn-primary text-sm py-2 sm:py-auto w-full sm:w-auto" id="try-prompt">
@@ -294,11 +289,11 @@
 
       <div class="order-1 lg:order-2">
         <div class="relative w-full max-w-sm mx-auto lg:max-w-none">
-          <img class="w-full rounded-2xl sm:rounded-3xl object-cover aspect-[4/5]" 
-               src="{% static 'img/woman.webp' %}" 
+          <img class="w-full rounded-2xl sm:rounded-3xl object-cover aspect-[4/5]"
+               src="{% static 'img/woman.webp' %}"
                alt="Пример сгенерированного изображения"
                onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 500%22&gt;&lt;rect width=%22400%22 height=%22500%22 fill=%22%23e5e7eb%22/&gt;&lt;text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2216%22&gt;AI Generation&lt;/text&gt;&lt;/svg&gt;';">
-          
+
           <div class="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
             <div class="card p-2 sm:p-3 backdrop-blur-sm bg-white/90 dark:bg-black/90">
               <div class="text-xs sm:text-sm font-medium mb-1">Ultra-realistic portrait of a gorgeous mulatta woman</div>
@@ -308,11 +303,9 @@
         </div>
       </div>
     </div>
-  </div>
 </section>
 
 <section class="how-it-works-section">
-  <div class="container">
     <div class="features-header">
       <h2 class="text-3xl sm:text-4xl font-bold mb-4">Как это работает</h2>
       <p class="text-xl text-[var(--muted)]">Три шага — но мы покажем их как единый поток.</p>
@@ -337,11 +330,9 @@
         <p class="text-[var(--muted)]">Изображение появится в вашей ленте и в «Моих обработках». Можно делиться и улучшать.</p>
       </div>
     </div>
-  </div>
 </section>
 
 <section class="use-cases-section">
-  <div class="container">
     <div class="features-header">
       <h2 class="text-3xl sm:text-4xl font-bold mb-4">Готовые сценарии</h2>
       <p class="text-xl text-[var(--muted)]">Подходит и для креативных задач, и для продуктовых команд.</p>
@@ -352,37 +343,35 @@
         <h3 class="use-case-title">Обложки и афиши</h3>
         <p class="use-case-description">Быстрые обложки для подкастов и статей, подборка цветов и шрифтов.</p>
       </div>
-      
+
       <div class="use-case-card card">
         <h3 class="use-case-title">Маркетинговые макеты</h3>
         <p class="use-case-description">Баннеры, hero-картинки, иллюстрации к лендингам с единым стилем.</p>
       </div>
-      
+
       <div class="use-case-card card">
         <h3 class="use-case-title">Концепт-арт</h3>
         <p class="use-case-description">Мир, персонажи и объекты для питчей и прототипов.</p>
       </div>
-      
+
       <div class="use-case-card card">
         <h3 class="use-case-title">Referencer</h3>
         <p class="use-case-description">Быстрые референсы света, поз и окружения для фото- и видеосъёмок.</p>
       </div>
-      
+
       <div class="use-case-card card">
         <h3 class="use-case-title">E-commerce</h3>
         <p class="use-case-description">Фоны, композиции и подсветка товаров в едином направлении.</p>
       </div>
-      
+
       <div class="use-case-card card">
         <h3 class="use-case-title">Соцсети</h3>
         <p class="use-case-description">Серии постов в единой палитре и сетке с высокой читаемостью.</p>
       </div>
     </div>
-  </div>
 </section>
 
 <section class="comparison-section">
-  <div class="container">
     <div class="features-header">
       <h2 class="text-3xl sm:text-4xl font-bold mb-4">Что отличает нас</h2>
       <p class="text-xl text-[var(--muted)]">Функции, которые реально экономят время.</p>
@@ -439,7 +428,6 @@
         </table>
       </div>
     </div>
-  </div>
 </section>
 
 <section class="">
@@ -517,10 +505,10 @@
     <div class="cta-card card">
       <h2 class="cta-title">Готовы начать?</h2>
       <p class="cta-description">
-        Создавайте, делитесь и находите лучшее — в пару кликов. 
+        Создавайте, делитесь и находите лучшее — в пару кликов.
         Присоединяйтесь к тысячам творцов уже сегодня.
       </p>
-      
+
       <div class="cta-buttons">
         <a class="btn btn-primary text-base sm:text-lg px-4 sm:px-8 py-2 sm:py-4" href="{% url 'generate:new' %}">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
@@ -25,14 +25,13 @@
         <h1 class="text-2xl sm:text-3xl font-bold">Сгенерировать изображение</h1>
         <p class="mt-2 text-[var(--muted)] text-sm">Создавайте уникальные изображения с помощью ИИ</p>
       </div>
-      
+
   <div class="flex flex-wrap items-center justify-center gap-4 gap-y-6 sm:justify-end">
         <!-- Balance Display -->
         {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
           {% if request.user.is_authenticated %}
-            <div class="text-center min-w-[120px]" aria-label="{% if request.user.is_staff %}Админ режим (бесконечно){% else %}Ваш баланс токенов{% endif %}">
-              <div class="text-xs text-[var(--muted)]">{% if request.user.is_staff %}Админ режим{% else %}Ваш баланс{% endif %}</div>
-              <div class="flex items-center gap-1">
+            <div class="min-w-[120px] flex flex-col justify-center">
+              <div class="flex items-center gap-2 justify-center">
                 <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
                   <span class="w-2 h-2 rounded-full bg-primary"></span>
                 </span>
@@ -43,17 +42,18 @@
                 {% endif %}
                 <span class="text-xs text-[var(--muted)]">TOK</span>
               </div>
+              <div class="text-xs text-[var(--muted)] mt-1 text-center">{% if request.user.is_staff %}Админ режим{% else %}Ваш баланс{% endif %}</div>
             </div>
           {% else %}
-            <div class="text-center min-w-[120px]" aria-label="Гостевой баланс">
-              <div class="text-xs text-[var(--muted)]">Гостевой режим</div>
-              <div class="flex items-center gap-1">
+            <div class="min-w-[120px] flex flex-col justify-center" aria-label="Гостевой баланс">
+              <div class="flex items-center gap-2 justify-center">
                 <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
                   <span class="w-2 h-2 rounded-full bg-primary"></span>
                 </span>
                 <strong id="guestBalance" class="text-lg font-semibold">{{ guest_tokens }}</strong>
                 <span class="text-xs text-[var(--muted)]">TOK</span>
               </div>
+              <div class="text-xs text-[var(--muted)] mt-1 text-center">Гостевой режим</div>
             </div>
           {% endif %}
         {% endwith %}
@@ -61,15 +61,14 @@
         <!-- Generations Left -->
         {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
           {% if request.user.is_authenticated %}
-            <div class="text-center min-w-[120px]"
+            <div class="min-w-[120px] flex flex-col justify-center"
                  title="Осталось обработок"
                  {% if request.user.is_staff %}
                    data-auth-left="999999"
                  {% elif cost %}
                    data-auth-left="{{ auth_gens_left|default:0 }}"
                  {% endif %}>
-              <div class="text-xs text-[var(--muted)]">Обработок</div>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-2 justify-center">
                 <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 9l4-6h10l4 6-9 12L3 9zm4.5-4l-2.5 4h4l2-4h-3.5zm5.5 0l-2 4h4l-2-4zm2 4h4l-2.5-4H15z"/>
                 </svg>
@@ -83,16 +82,17 @@
                   {% endif %}
                 </span>
               </div>
+              <div class="text-xs text-[var(--muted)] mt-1 text-center">Обработок</div>
             </div>
           {% else %}
-            <div class="text-center min-w-[120px]" title="Осталось обработок" data-guest-left="{{ guest_gens_left|default:0 }}">
-              <div class="text-xs text-[var(--muted)]">Обработок</div>
-              <div class="flex items-center gap-1">
+            <div class="min-w-[120px] flex flex-col justify-center" title="Осталось обработок" data-guest-left="{{ guest_gens_left|default:0 }}">
+              <div class="flex items-center gap-2 justify-center">
                 <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 9l4-6h10l4 6-9 12L3 9zm4.5-4l-2.5 4h4l2-4h-3.5zm5.5 0l-2 4h4l-2-4zm2 4h4l-2.5-4H15z"/>
                 </svg>
                 <span id="gensLeft" class="text-lg font-semibold">{{ guest_gens_left|default:0 }}</span>
               </div>
+              <div class="text-xs text-[var(--muted)] mt-1 text-center">Обработок</div>
             </div>
           {% endif %}
 
@@ -115,7 +115,7 @@
         <h2 class="text-lg font-semibold">Подсказки по категориям</h2>
         <p class="text-sm text-[var(--muted)]">Готовые промпты для быстрого старта</p>
       </div>
-      
+
       <!-- Category Pills (scrollable on mobile) -->
       <div class="overflow-x-auto no-scrollbar -mx-2 px-2" aria-label="Категории подсказок">
         <div class="flex items-center gap-2 min-w-max" role="tablist">
@@ -215,16 +215,16 @@
       <div>
         <label class="block text-sm font-medium mb-3" for="prompt">Описание изображения</label>
         <div class="relative">
-          <textarea 
-            id="prompt" 
-            name="prompt" 
+          <textarea
+            id="prompt"
+            name="prompt"
             class="field min-h-36 sm:min-h-32 resize-none"
             placeholder="Пример: cinematic portrait, soft studio light, 85mm, shallow DOF, orange accents"
-            required 
-            aria-required="true" 
-            maxlength="1500" 
+            required
+            aria-required="true"
+            maxlength="1500"
             itemprop="actionOption"></textarea>
-          
+
           <!-- Floating Tags -->
           <div class="absolute top-3 right-3 flex flex-wrap gap-1 pointer-events-none opacity-30" aria-hidden="true">
             <span class="badge text-xs">style</span>
@@ -232,7 +232,7 @@
             <span class="badge text-xs">lens</span>
           </div>
         </div>
-        
+
         <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[var(--muted)]">
           <p>Совет: укажите стиль, свет, объектив, материалы и настроение. Избегайте двойных отрицаний.</p>
           <p>Стоимость: <strong class="text-[var(--text)]">{% with c=price|default:TOKENS_PRICE_PER_GEN|default:10 %}{{ c }} TOK{% endwith %}</strong></p>
@@ -250,7 +250,7 @@
           </button>
           <span class="text-sm text-[var(--muted)]">Обычно ~1 минута</span>
         </div>
-        
+
         <!-- Quick Stats -->
   <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-[var(--muted)]">
           <span class="pill">10M+ генераций</span>
@@ -269,7 +269,7 @@
         <h2 id="showcaseTitle" class="text-lg font-semibold">Примеры результатов</h2>
         <p class="text-sm text-[var(--muted)]">Вдохновляйтесь работами других пользователей</p>
       </div>
-      
+
       {% if showcase_categories %}
         <div class="overflow-x-auto no-scrollbar -mx-2 px-2">
           <div class="flex items-center gap-2 min-w-max">
@@ -290,10 +290,10 @@
           <article class="group" data-cat="{{ item.category.slug|default:'misc' }}" itemscope itemtype="https://schema.org/ImageObject">
             <div class="card overflow-hidden">
               <a href="{{ item.image.url }}" target="_blank" rel="noopener" itemprop="contentUrl">
-                <img 
-                  loading="lazy" 
-                  src="{{ item.image.url }}" 
-                  alt="{{ item.title|default:'Пример изображения' }}" 
+                <img
+                  loading="lazy"
+                  src="{{ item.image.url }}"
+                  alt="{{ item.title|default:'Пример изображения' }}"
                   itemprop="image"
                   class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.03]">
               </a>
@@ -332,7 +332,7 @@
         <h3 class="font-semibold mb-2">Фотореализм без «мыла»</h3>
         <p class="text-sm text-[var(--muted)]">Подбор моделей и параметров под задачу: портреты, предметка, интерьер, арт-стили.</p>
       </div>
-      
+
       <div>
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -342,7 +342,7 @@
         <h3 class="font-semibold mb-2">Честная стоимость</h3>
         <p class="text-sm text-[var(--muted)]">Прозрачные токены: 1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK. Без скрытых платежей.</p>
       </div>
-      
+
       <div>
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -352,7 +352,7 @@
         <h3 class="font-semibold mb-2">Кеш и прямые ссылки</h3>
         <p class="text-sm text-[var(--muted)]">Файлы доступны по прямому URL. Если CDN уходит в 5xx — отдаём внешний URL.</p>
       </div>
-      
+
       <div>
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -362,7 +362,7 @@
         <h3 class="font-semibold mb-2">Гостевой бонус</h3>
         <p class="text-sm text-[var(--muted)]">Гости получают {{ GUEST_INITIAL_TOKENS|default:30 }} TOK. Остаток безопасно «доезжает» до аккаунта.</p>
       </div>
-      
+
       <div>
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -372,7 +372,7 @@
         <h3 class="font-semibold mb-2">Защита от NSFW</h3>
         <p class="text-sm text-[var(--muted)]">Фильтрация по настройке, чтобы проект был дружелюбным к публике.</p>
       </div>
-      
+
       <div>
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
