@@ -146,7 +146,7 @@
         @apply text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.05] tracking-tight;
       }
       .glassframe {
-        @apply ring-1 ring-black/5 dark:ring-white/10 bg-white/70 dark:bg-white/5;
+  @apply ring-1 ring-black/5 dark:ring-white/10 bg-white/30 dark:bg-white/5;
       }
     }
 
@@ -355,7 +355,7 @@
           <summary class="btn btn-ghost cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
             🌐
           </summary>
-          <div class="absolute right-0 top-full mt-2 card p-2 min-w-48 z-50" id="langMenu" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+          <div class="absolute right-0 top-full mt-2 rounded-3xl border border-[var(--bord)] bg-[var(--card)] shadow-[0_8px_30px_rgba(0,0,0,0.18)] backdrop-blur-sm p-2 min-w-48 z-50" id="langMenu" role="menu" aria-label="{% trans 'Выбрать язык' %}">
             <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
               <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
               <span class="text-sm">English</span>
