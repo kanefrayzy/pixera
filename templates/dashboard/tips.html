@@ -1,0 +1,363 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block meta_title %}Подсказки — AI Gallery{% endblock %}
+{% block meta_description %}Советы и приёмы для лучшей генерации изображений: свет, объектив, композиция, материалы, стили и готовые промпты.{% endblock %}
+{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{% url 'dashboard:tips' %}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tips.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/tips.js' %}"></script>
+{% endblock %}
+
+{% block hero %}
+<!-- Hero Section -->
+<section class="py-12 sm:py-16">
+  <div class="container">
+    <div class="text-center max-w-3xl mx-auto">
+      <h1 class="text-3xl sm:text-4xl font-bold mb-4">Подсказки для мастерства</h1>
+      <p class="text-xl text-[var(--muted)]">Короткие примеры и чеклисты для стабильных фотореалистичных результатов.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block breadcrumbs %}
+<!-- Breadcrumbs -->
+<nav class="container py-3 border-b border-[var(--bord)]" aria-label="Хлебные крошки">
+  <ol class="flex items-center gap-2 text-sm">
+    <li>
+      <a href="{% url 'pages:home' %}" class="text-[var(--muted)] hover:text-[var(--text)] transition">Главная</a>
+    </li>
+    <li class="text-[var(--muted)]">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </li>
+    <li>
+      <a href="{% url 'dashboard:index' %}" class="text-[var(--muted)] hover:text-[var(--text)] transition">Кабинет</a>
+    </li>
+    <li class="text-[var(--muted)]">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </li>
+    <li aria-current="page" class="font-medium">Подсказки</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div id="tips-root" class="container py-8 space-y-8">
+
+  <!-- Quick Checklist -->
+  <div class="card p-6 sm:p-8">
+    <div class="flex items-start gap-4 mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold mb-2">Быстрый чеклист промпта</h2>
+        <p class="text-[var(--muted)] text-sm">Основные элементы для качественного результата</p>
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-[var(--muted)] text-sm">Композиция</span>
+          <span class="font-mono text-sm bg-black/5 dark:bg-white/5 px-2 py-1 rounded">close-up / medium / wide</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-[var(--muted)] text-sm">Свет</span>
+          <span class="font-mono text-sm bg-black/5 dark:bg-white/5 px-2 py-1 rounded">soft studio / rim / volumetric</span>
+        </div>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-[var(--muted)] text-sm">Оптика</span>
+          <span class="font-mono text-sm bg-black/5 dark:bg-white/5 px-2 py-1 rounded">35mm / 85mm, f/1.8</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-[var(--muted)] text-sm">Материалы</span>
+          <span class="font-mono text-sm bg-black/5 dark:bg-white/5 px-2 py-1 rounded">matte metal, velvet, glass</span>
+        </div>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-[var(--muted)] text-sm">Цвет</span>
+          <span class="font-mono text-sm bg-black/5 dark:bg-white/5 px-2 py-1 rounded">warm tones, orange–teal</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-[var(--muted)] text-sm">Финиш</span>
+          <span class="font-mono text-sm bg-black/5 dark:bg-white/5 px-2 py-1 rounded">RAW, film grain, HDR</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ready Templates -->
+  <div class="card p-6 sm:p-8">
+    <div class="flex items-start gap-4 mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-green-500/15 flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold mb-2">Готовые шаблоны</h2>
+        <p class="text-[var(--muted)] text-sm">Проверенные промпты для разных задач</p>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Portrait Template -->
+      <details class="card overflow-hidden border border-[var(--bord)]" open>
+        <summary class="p-4 cursor-pointer font-semibold hover:bg-black/[.02] dark:hover:bg-white/[.02] transition flex items-center gap-3">
+          <svg class="w-5 h-5 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          Портрет (кинематографично)
+        </summary>
+        <div class="p-4 pt-0 border-t border-[var(--bord)]">
+          <div class="rounded-xl bg-black text-white p-4 font-mono text-sm overflow-auto mb-3">
+            <code id="t1">cinematic portrait of a young woman, soft studio light, gentle rim light,
+85mm lens, shallow depth of field, pastel backdrop, warm tones, clean composition,
+film grain, RAW, high detail</code>
+          </div>
+          <button class="btn btn-ghost text-sm copy-btn" data-target="#t1">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Скопировать промпт
+          </button>
+        </div>
+      </details>
+
+      <!-- Product Template -->
+      <details class="card overflow-hidden border border-[var(--bord)]">
+        <summary class="p-4 cursor-pointer font-semibold hover:bg-black/[.02] dark:hover:bg-white/[.02] transition flex items-center gap-3">
+          <svg class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          Предметка (e-commerce)
+        </summary>
+        <div class="p-4 pt-0 border-t border-[var(--bord)]">
+          <div class="rounded-xl bg-black text-white p-4 font-mono text-sm overflow-auto mb-3">
+            <code id="t2">product photo of modern sneakers on matte acrylic pedestal, soft diffused light,
+top-down angle, seamless background, subtle reflections, high contrast, crisp edges,
+studio setup, HDR</code>
+          </div>
+          <button class="btn btn-ghost text-sm copy-btn" data-target="#t2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Скопировать промпт
+          </button>
+        </div>
+      </details>
+
+      <!-- Interior Template -->
+      <details class="card overflow-hidden border border-[var(--bord)]">
+        <summary class="p-4 cursor-pointer font-semibold hover:bg-black/[.02] dark:hover:bg-white/[.02] transition flex items-center gap-3">
+          <svg class="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21l8-8-8-8"/>
+          </svg>
+          Интерьер (естественный свет)
+        </summary>
+        <div class="p-4 pt-0 border-t border-[var(--bord)]">
+          <div class="rounded-xl bg-black text-white p-4 font-mono text-sm overflow-auto mb-3">
+            <code id="t3">cozy living room, golden hour sunlight through large window, wooden textures,
+linen fabrics, indoor plants, balanced composition, 35mm lens, subtle film look</code>
+          </div>
+          <button class="btn btn-ghost text-sm copy-btn" data-target="#t3">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Скопировать промпт
+          </button>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- Grid Layout for remaining sections -->
+  <div class="grid lg:grid-cols-2 gap-8">
+    
+    <!-- Anti-patterns -->
+    <div class="card p-6">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold mb-2">Чего избегать</h2>
+          <p class="text-[var(--muted)] text-sm">Типичные ошибки в промптах</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div class="font-medium text-red-800 dark:text-red-200 mb-1">Двойные отрицания</div>
+          <div class="text-sm text-red-700 dark:text-red-300">
+            «not dark, without noise» → лучше: «bright, clean»
+          </div>
+        </div>
+        
+        <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div class="font-medium text-red-800 dark:text-red-200 mb-1">Смешение стилей</div>
+          <div class="text-sm text-red-700 dark:text-red-300">
+            «photorealistic watercolor oil painting». Выберите 1–2 подхода
+          </div>
+        </div>
+        
+        <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div class="font-medium text-red-800 dark:text-red-200 mb-1">Слишком общо</div>
+          <div class="text-sm text-red-700 dark:text-red-300">
+            «nice photo». Добавляйте свет, оптику, материалы и mood
+          </div>
+        </div>
+        
+        <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div class="font-medium text-red-800 dark:text-red-200 mb-1">Численный спам</div>
+          <div class="text-sm text-red-700 dark:text-red-300">
+            «ultra 4k 8k 12k» — лишний шум, не улучшает качество
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Tags -->
+    <div class="card p-6">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold mb-2">Быстрые теги</h2>
+          <p class="text-[var(--muted)] text-sm">Клик добавляет в конструктор ниже</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="soft studio light">
+          soft studio light
+        </button>
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="rim light">
+          rim light
+        </button>
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="film grain">
+          film grain
+        </button>
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="RAW photo">
+          RAW photo
+        </button>
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="high contrast">
+          high contrast
+        </button>
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="volumetric light">
+          volumetric light
+        </button>
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="35mm lens">
+          35mm lens
+        </button>
+        <button class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition tag-btn" data-tag="shallow depth of field">
+          shallow DOF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prompt Builder -->
+  <div class="card p-6 sm:p-8">
+    <div class="flex items-start gap-4 mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold mb-2">Мини-конструктор промпта</h2>
+        <p class="text-[var(--muted)] text-sm">Соберите свой промпт по элементам</p>
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-6">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2" for="b-subject">Сюжет</label>
+          <input id="b-subject" class="field" placeholder="portrait / product / interior">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2" for="b-light">Свет</label>
+          <input id="b-light" class="field" placeholder="soft studio light, rim light">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2" for="b-lens">Оптика</label>
+          <input id="b-lens" class="field" placeholder="85mm, f/1.8">
+        </div>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2" for="b-mat">Материалы</label>
+          <input id="b-mat" class="field" placeholder="matte metal, glass reflections">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2" for="b-mood">Цвет/настроение</label>
+          <input id="b-mood" class="field" placeholder="warm tones, high contrast">
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-3 pt-6">
+          <button id="b-make" class="btn btn-primary flex-1" type="button">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Собрать промпт
+          </button>
+          <a class="btn btn-ghost w-full sm:w-auto" href="{% url 'generate:new' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            Открыть генерацию
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="mt-6 pt-6 border-t border-[var(--bord)]">
+      <label class="block text-sm font-medium mb-2">Результат</label>
+      <div class="relative">
+        <div class="rounded-xl bg-black text-white p-4 font-mono text-sm min-h-20 overflow-auto">
+          <code id="b-out" aria-live="polite" class="block whitespace-pre-wrap">Заполните поля выше и нажмите "Собрать промпт"</code>
+        </div>
+        <button class="absolute top-3 right-3 btn btn-ghost text-white hover:bg-white/20 text-xs py-1 px-2 copy-btn" data-target="#b-out">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

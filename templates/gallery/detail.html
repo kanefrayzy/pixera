@@ -1,0 +1,670 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ photo.title|default:"AI изображение" }} — AI Gallery{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block extra_meta %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+  {% url 'gallery:photo_edit' photo.pk as edit_url %}
+  {% url 'gallery:photo_delete' photo.pk as delete_url %}
+
+
+  <div class="grid lg:grid-cols-3 gap-8">
+    
+    <!-- Main Image Section -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Header -->
+      <div class="flex flex-wrap items-center gap-3">
+        {% with first_tag=photo.categories.all|first %}
+          {% if first_tag %}
+            <a class="pill bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition" 
+               href="{% url 'gallery:index' %}?cat={{ first_tag.slug|urlencode }}">
+              #{{ first_tag.name }}
+            </a>
+          {% elif photo.category %}
+            <a class="pill bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition" 
+               href="{% url 'gallery:index' %}?cat={{ photo.category.slug|urlencode }}">
+              #{{ photo.category.name }}
+            </a>
+          {% else %}
+            <span class="pill opacity-70">Без категории</span>
+          {% endif %}
+        {% endwith %}
+        
+        <!-- Admin Controls -->
+        {% if request.user.is_staff %}
+          <div class="flex gap-2 ml-auto">
+            <a class="btn btn-ghost px-3 py-1.5 text-sm" 
+               href="{{ edit_url }}?next={{ request.get_full_path|urlencode }}">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Редактировать
+            </a>
+            <a class="btn btn-ghost px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" 
+               href="{{ delete_url }}?next={{ request.get_full_path|urlencode }}" 
+               title="Удалить" 
+               aria-label="Удалить">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+  <h1 class="text-2xl sm:text-3xl font-bold line-clamp-2 sm:line-clamp-none">{{ photo.title|default:"AI изображение" }}</h1>
+
+      <!-- Image Container -->
+      <div class="relative">
+        <div class="card overflow-hidden">
+          <a href="{{ photo.image.url }}" 
+             target="_blank" 
+             rel="noopener"
+             class="group block relative">
+            <div class="media-frame">
+              <img class="max-w-full max-h-[80vh] w-auto h-auto object-contain transition duration-300" 
+                   src="{{ photo.image.url }}" 
+                   alt="{{ photo.title|default:'AI изображение' }}" 
+                   loading="lazy">
+            </div>
+            
+            <!-- Overlay on hover -->
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+              <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 text-white text-sm font-medium">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                  Открыть в полном размере
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="card p-4">
+        <div class="flex flex-wrap items-center gap-4 justify-between">
+          <div class="flex flex-wrap items-center gap-4">
+            <!-- Like Button -->
+            <button class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if request.user.is_authenticated and liked %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                    data-url="{% url 'gallery:photo_like' photo.pk %}"
+                    data-count-target="photo-like-count"
+                    aria-pressed="{% if request.user.is_authenticated and liked %}true{% else %}false{% endif %}"
+                    title="Лайк"
+                    type="button">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and liked %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span id="photo-like-count" class="font-medium">{{ photo.likes_count|default:0 }}</span>
+            </button>
+
+            <!-- Comments Count -->
+            <div class="flex items-center gap-2 text-[var(--muted)]">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+              <span id="photo-comments-count" class="font-medium">{{ photo.comments_count|default:0 }}</span>
+            </div>
+
+            <!-- Views Count -->
+            <div class="flex items-center gap-2 text-[var(--muted)]">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              <span class="font-medium">{{ photo.view_count|default:0 }}</span>
+            </div>
+          </div>
+
+          <!-- Share Button -->
+          <button class="btn btn-ghost w-full sm:w-auto" onclick="navigator.share ? navigator.share({title: '{{ photo.title|escapejs }}', url: window.location.href}) : navigator.clipboard.writeText(window.location.href).then(() => alert('Ссылка скопирована!'))">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+            Поделиться
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+  <div class="space-y-6 lg:space-y-6 sm:space-y-4">
+      
+      <!-- Photo Info -->
+      {% if photo.description %}
+        <div class="card p-6">
+          <h3 class="font-semibold mb-3">Описание</h3>
+          <p class="text-[var(--muted)] leading-relaxed">{{ photo.description }}</p>
+        </div>
+      {% endif %}
+
+      <!-- Technical Details -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-4">Детали</h3>
+        <div class="space-y-3 text-sm">
+          {% if photo.created_at %}
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Создано:</span>
+              <time datetime="{{ photo.created_at|date:'c' }}" class="font-medium">
+                {{ photo.created_at|date:"d.m.Y" }}
+              </time>
+            </div>
+          {% endif %}
+          
+          <div class="flex justify-between">
+            <span class="text-[var(--muted)]">Формат:</span>
+            <span class="font-medium">JPEG</span>
+          </div>
+          
+          <div class="flex justify-between">
+            <span class="text-[var(--muted)]">Генератор:</span>
+            <span class="font-medium">AI Gallery</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Images -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-4">Похожие изображения</h3>
+        {% if related_photos %}
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+            {% for rp in related_photos|slice:":4" %}
+              {% url 'gallery:photo_detail' rp.pk as rurl %}
+              <a class="block group rounded-xl overflow-hidden border border-[var(--bord)]" href="{{ rurl }}" title="{{ rp.title|default:'Изображение' }}">
+                {% if rp.image %}
+                  <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.03]" 
+                       src="{{ rp.image.url }}" 
+                       alt="{{ rp.title|default:'Изображение' }}" 
+                       loading="lazy">
+                {% else %}
+                  <div class="w-full aspect-square bg-gray-100 dark:bg-gray-800"></div>
+                {% endif %}
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-[var(--muted)] text-sm">Нет похожих изображений</div>
+        {% endif %}
+        <a class="btn btn-ghost w-full mt-4" href="{% url 'gallery:index' %}">
+          Посмотреть все
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comments Section -->
+  <div class="card p-6 sm:p-8" id="comments">
+    <h2 class="text-xl font-semibold mb-6">
+      Комментарии 
+      <span class="text-[var(--muted)] font-normal">
+        ({{ photo.comments_count|default:0 }})
+      </span>
+    </h2>
+
+    <!-- Comment Form -->
+    {% if request.user.is_authenticated %}
+  <form method="post" 
+    action="{% url 'gallery:photo_comment' photo.pk %}" 
+    class="mb-8" 
+    id="photoCommentForm"
+    data-comment-form="root">
+        {% csrf_token %}
+  <div class="flex flex-col sm:flex-row gap-4">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+          </div>
+          <div class="flex-1">
+            <textarea name="text" 
+                      class="field min-h-28 sm:min-h-24 resize-none mb-3" 
+                      placeholder="Напишите комментарий..."
+                      maxlength="1000"
+                      required></textarea>
+            <button class="btn btn-primary w-full sm:w-auto" type="submit">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+              Отправить
+            </button>
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <div class="card p-4 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 mb-8">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+          </svg>
+          <div class="text-sm">
+            <span class="font-medium text-blue-800 dark:text-blue-200">Войдите, чтобы комментировать</span>
+            <p class="text-blue-700 dark:text-blue-300 mt-1">
+              <a href="{% url 'account_login' %}" class="underline hover:no-underline">Войти</a> или 
+              <a href="{% url 'account_signup' %}" class="underline hover:no-underline">создать аккаунт</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Comments List -->
+    <div class="space-y-6" id="commentList">
+      {% for c in comments %}
+        <article class="comment-item" id="c{{ c.pk }}">
+          <div class="flex gap-4">
+            <!-- Avatar -->
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+              {{ c.user.first_name|first|default:c.user.username|first|upper }}
+            </div>
+            
+            <div class="flex-1 min-w-0">
+              <!-- Comment Header -->
+              <div class="flex items-center gap-2 mb-2">
+                <span class="font-medium">{{ c.user.get_full_name|default:c.user.username }}</span>
+                <span class="text-xs text-[var(--muted)]">•</span>
+                <time datetime="{{ c.created_at|date:'c' }}" class="text-xs text-[var(--muted)]">
+                  {{ c.created_at|date:'d.m.Y H:i' }}
+                </time>
+              </div>
+
+              <!-- Comment Body -->
+              <div class="mb-3 leading-relaxed comment-text">{{ c.text }}</div>
+
+              <!-- Comment Actions -->
+              <div class="flex flex-wrap items-center gap-3">
+                <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment text-[var(--muted)] hover:text-red-500"
+                        data-url="{% url 'gallery:comment_like' c.pk %}"
+                        data-count-id="clc-{{ c.pk }}"
+                        type="button"
+                        aria-pressed="false"
+                        aria-label="Лайк комментарию">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  <span id="clc-{{ c.pk }}" class="text-sm">{{ c.likes.count }}</span>
+                </button>
+
+                {% if request.user.is_authenticated %}
+                  <button class="text-sm text-[var(--muted)] hover:text-[var(--text)] transition js-reply-toggle" 
+                          type="button" 
+                          data-target="reply-{{ c.pk }}"
+                          onclick="(function(btn){var id=btn.getAttribute('data-target');var f=document.getElementById(id);if(!f)return;var h=f.classList.contains('hidden');f.classList.toggle('hidden', !h);if(h){var ta=f.querySelector('textarea');if(ta){setTimeout(function(){ta.focus();},100);}}})(this)">
+                    Ответить
+                  </button>
+                {% endif %}
+              </div>
+
+              <!-- Reply Form -->
+              {% if request.user.is_authenticated %}
+        <form id="reply-{{ c.pk }}" 
+          class="mt-4 hidden" 
+          method="post" 
+          action="{% url 'gallery:comment_reply' c.pk %}"
+          data-comment-form="reply">
+                  {% csrf_token %}
+                  <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                      {{ request.user.first_name|first|default:request.user.username|first|upper }}
+                    </div>
+                    <div class="flex-1">
+                      <textarea name="text" 
+                                class="field min-h-24 sm:min-h-20 resize-none mb-2 text-sm" 
+                                placeholder="Ваш ответ..."
+                                maxlength="1000"
+                                required></textarea>
+                      <div class="flex flex-wrap gap-2">
+                        <button class="btn btn-primary text-sm py-1.5 w-full sm:w-auto" type="submit">Отправить</button>
+                        <button class="btn btn-ghost text-sm py-1.5 w-full sm:w-auto" type="button" onclick="this.closest('form').classList.add('hidden')">Отмена</button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              {% endif %}
+
+              <!-- Replies -->
+              {% if c.replies.all %}
+                <div class="mt-4 pl-3 sm:pl-4 border-l-2 border-[var(--bord)] space-y-4">
+                  {% for r in c.replies.all %}
+                    {% if r.is_visible %}
+                      <div class="flex gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                          {{ r.user.first_name|first|default:r.user.username|first|upper }}
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium text-sm">{{ r.user.get_full_name|default:r.user.username }}</span>
+                            <span class="text-xs text-[var(--muted)]">•</span>
+                            <time datetime="{{ r.created_at|date:'c' }}" class="text-xs text-[var(--muted)]">
+                              {{ r.created_at|date:'d.m.Y H:i' }}
+                            </time>
+                          </div>
+                          
+                          <div class="text-sm leading-relaxed mb-2 comment-text">{{ r.text }}</div>
+                          
+                          <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment text-[var(--muted)] hover:text-red-500"
+                                  data-url="{% url 'gallery:comment_like' r.pk %}"
+                                  data-count-id="clc-{{ r.pk }}"
+                                  type="button"
+                                  aria-pressed="false"
+                                  aria-label="Лайк ответу">
+                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                            <span id="clc-{{ r.pk }}" class="text-xs">{{ r.likes.count }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="text-center py-8">
+          <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+          </svg>
+          <h3 class="font-medium mb-2">Пока нет комментариев</h3>
+          <p class="text-[var(--muted)] mb-4">Станьте первым, кто оставит комментарий к этому изображению</p>
+          {% if request.user.is_authenticated %}
+            <button class="btn btn-primary" onclick="document.querySelector('textarea[name=text]')?.focus()">
+              Написать комментарий
+            </button>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+// Get image dimensions
+document.addEventListener('DOMContentLoaded', () => {
+  const img = document.querySelector('img[src="{{ photo.image.url }}"]');
+  const dimensionsEl = document.getElementById('imageDimensions');
+  
+  if (img && dimensionsEl) {
+    img.onload = () => {
+      dimensionsEl.textContent = `${img.naturalWidth}×${img.naturalHeight}`;
+    };
+  }
+});
+
+
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  // Like toggle functionality
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.like-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+      
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('like failed');
+
+      // Update button state
+      const heart = btn.querySelector('svg');
+      const isLiked = !!j.liked;
+      
+      btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+      
+      if (isLiked) {
+        btn.classList.add('text-red-500');
+        btn.classList.remove('text-[var(--muted)]');
+        heart.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-red-500');
+        btn.classList.add('text-[var(--muted)]');
+        heart.setAttribute('fill', 'none');
+      }
+
+      if (countEl && typeof j.count === 'number') {
+        countEl.textContent = j.count;
+      }
+    } catch (err) {
+      console.warn('Like failed:', err);
+    } finally {
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+
+// Comment like functionality
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.js-like-comment');
+  if (!btn) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  if (btn.disabled || btn.dataset.loading === '1') return;
+  btn.dataset.loading = '1';
+  btn.disabled = true;
+  
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+  
+  try {
+    const response = await fetch(btn.dataset.url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFCookie(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin'
+    });
+    
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data || data.ok !== true) {
+      throw new Error('Comment like failed');
+    }
+
+    // Update like count
+    const countId = btn.dataset.countId;
+    const countEl = countId && document.getElementById(countId);
+    if (countEl && typeof data.count === 'number') {
+      countEl.textContent = data.count;
+    }
+    
+    // Update button state
+    const heart = btn.querySelector('svg');
+    const isLiked = !!data.liked;
+    
+    btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+    
+    if (isLiked) {
+      btn.classList.add('text-red-500');
+      btn.classList.remove('text-[var(--muted)]');
+      heart.setAttribute('fill', 'currentColor');
+    } else {
+      btn.classList.remove('text-red-500');
+      btn.classList.add('text-[var(--muted)]');
+      heart.setAttribute('fill', 'none');
+    }
+    
+  } catch (err) {
+    console.warn('Comment like failed:', err);
+  } finally {
+    delete btn.dataset.loading;
+    btn.disabled = false;
+  }
+});
+
+// Reply toggle functionality
+document.addEventListener('click', (e) => {
+  const toggleBtn = e.target.closest('.js-reply-toggle');
+  if (!toggleBtn) return;
+  
+  const targetId = toggleBtn.getAttribute('data-target');
+  const form = document.getElementById(targetId);
+  
+  if (form) {
+    const isHidden = form.classList.contains('hidden');
+    form.classList.toggle('hidden', !isHidden);
+    
+    if (isHidden) {
+      // Focus on textarea when showing form
+      const textarea = form.querySelector('textarea');
+      if (textarea) {
+        setTimeout(() => textarea.focus(), 100);
+      }
+    }
+  }
+});
+
+// Auto-resize textareas
+document.addEventListener('input', (e) => {
+  if (e.target.tagName === 'TEXTAREA') {
+    e.target.style.height = 'auto';
+    e.target.style.height = e.target.scrollHeight + 'px';
+  }
+});
+
+// Share functionality fallback
+if (!navigator.share && navigator.clipboard) {
+  document.querySelector('[onclick*="navigator.share"]')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      // Show success message
+      const msg = document.createElement('div');
+      msg.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg z-50';
+      msg.textContent = 'Ссылка скопирована!';
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 3000);
+    });
+  });
+}
+</script>
+
+<style>
+/* Smooth transitions for like buttons */
+.js-like-photo,
+.js-like-comment {
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.js-like-photo:active,
+.js-like-comment:active {
+  transform: scale(0.95);
+}
+
+/* Auto-resize textareas */
+textarea {
+  resize: none;
+  overflow: hidden;
+}
+
+/* Comment avatars gradient variety */
+.comment-item:nth-child(1) .w-10.h-10 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.comment-item:nth-child(2) .w-10.h-10 {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.comment-item:nth-child(3) .w-10.h-10 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.comment-item:nth-child(4) .w-10.h-10 {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.comment-item:nth-child(5) .w-10.h-10 {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Center and contain main image within a consistent frame */
+.media-frame {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg, transparent);
+}
+@media (min-width: 768px) {
+  .media-frame { min-height: 40vh; }
+}
+@media (min-width: 1024px) {
+  .media-frame { min-height: 55vh; }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .grid.lg\\:grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .lg\\:col-span-2 {
+    order: 1;
+  }
+  
+  .btn {
+    min-height: 44px;
+  }
+  
+  .flex.items-center.gap-6 {
+    gap: 1rem;
+  }
+}
+
+/* Image hover effect */
+.group:hover img {
+  transform: scale(1.02);
+}
+
+/* Better focus states */
+textarea:focus,
+button:focus {
+  outline: 2px solid rgb(1 209 251);
+  outline-offset: 2px;
+}
+
+/* Better wrapping for long words/links in comments */
+.comment-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+</style>
+
+{% endblock %}

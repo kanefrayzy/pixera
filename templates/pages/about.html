@@ -1,0 +1,238 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}О нас — AI Gallery{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-12 py-12">
+
+  <!-- Hero Section -->
+  <div class="text-center space-y-4">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+      </svg>
+      О платформе
+    </div>
+    
+    <h1 class="text-4xl sm:text-5xl font-bold">О нас</h1>
+    <p class="text-xl text-[var(--muted)] max-w-2xl mx-auto">
+      Мы создаём инструменты для воплощения идей через искусственный интеллект
+    </p>
+  </div>
+
+  <!-- Main Content -->
+  <div class="card p-8 sm:p-12">
+    <div class="prose prose-lg max-w-none">
+      <p class="text-lg leading-relaxed">
+        AI Gallery — платформа для генерации и публикации ИИ-изображений. 
+        Мы уделяем внимание дизайну, скорости и безопасности, создавая инструменты, 
+        которые помогают творцам фокусироваться на идеях, а не на технических деталях.
+      </p>
+    </div>
+  </div>
+
+  <!-- What Makes Us Different -->
+  <div class="space-y-6">
+    <div class="text-center">
+      <h2 class="text-3xl font-bold mb-4">Чем мы отличаемся</h2>
+      <p class="text-[var(--muted)]">Принципы, которыми мы руководствуемся</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="card p-6 group hover:shadow-lg transition-shadow">
+        <div class="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center mb-4 group-hover:bg-blue-500/25 transition">
+          <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold mb-3">Скорость и простота</h3>
+        <p class="text-[var(--muted)] text-sm">
+          Минималистичный и быстрый интерфейс без лишних шагов. 
+          От идеи до результата — за секунды.
+        </p>
+      </div>
+
+      <div class="card p-6 group hover:shadow-lg transition-shadow">
+        <div class="w-12 h-12 rounded-2xl bg-green-500/15 flex items-center justify-center mb-4 group-hover:bg-green-500/25 transition">
+          <svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold mb-3">Стабильность</h3>
+        <p class="text-[var(--muted)] text-sm">
+          Стабильная очередь генераций и предсказуемые результаты. 
+          99.9% uptime и надежная обработка.
+        </p>
+      </div>
+
+      <div class="card p-6 group hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center mb-4 group-hover:bg-amber-500/25 transition">
+          <svg class="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold mb-3">Приватность и безопасность</h3>
+        <p class="text-[var(--muted)] text-sm">
+          Фокус на приватности и безопасной публичной ленте (SFW). 
+          Ваши данные под защитой.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mission -->
+  <div class="card p-8 sm:p-12 bg-gradient-to-br from-primary/5 via-blue-500/5 to-purple-500/5">
+    <div class="max-w-3xl mx-auto text-center space-y-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/15 mb-4">
+        <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      
+      <h2 class="text-3xl font-bold">Наша миссия</h2>
+      
+      <p class="text-lg text-[var(--muted)]">
+        Помогать авторам, дизайнерам и командам быстро воплощать идеи и делиться результатами, 
+        не отвлекаясь на технические детали. Мы верим, что технологии должны быть прозрачными 
+        и доступными каждому, кто хочет создавать.
+      </p>
+      
+      <div class="pt-4">
+        <a class="btn btn-primary" href="{% url 'generate:new' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Попробовать сейчас
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Values -->
+  <div class="space-y-6">
+    <div class="text-center">
+      <h2 class="text-3xl font-bold mb-4">Наши ценности</h2>
+      <p class="text-[var(--muted)]">Принципы, на которых мы строим продукт</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="card p-6">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Качество превыше количества</h3>
+            <p class="text-sm text-[var(--muted)]">
+              Мы фокусируемся на создании лучших инструментов, а не на добавлении максимума функций.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Сообщество в центре</h3>
+            <p class="text-sm text-[var(--muted)]">
+              Мы слушаем пользователей и развиваем платформу на основе их потребностей.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Прозрачность</h3>
+            <p class="text-sm text-[var(--muted)]">
+              Честность в коммуникации, ценообразовании и возможностях платформы.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Постоянное развитие</h3>
+            <p class="text-sm text-[var(--muted)]">
+              Мы постоянно улучшаем алгоритмы, производительность и пользовательский опыт.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team (optional placeholder) -->
+  <div class="card p-8 sm:p-12 text-center">
+    <h2 class="text-2xl font-bold mb-4">Команда мечты</h2>
+    <p class="text-[var(--muted)] mb-8 max-w-2xl mx-auto">
+      Наша команда состоит из увлеченных профессионалов в области машинного обучения, 
+      дизайна и разработки, которые работают над тем, чтобы сделать AI Gallery лучшей 
+      платформой для творчества.
+    </p>
+    
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <a class="btn btn-primary" href="{% url 'pages:contact' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Связаться с нами
+      </a>
+      <a class="btn btn-ghost" href="{% url 'gallery:index' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Посмотреть галерею
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="card p-6 text-center">
+      <div class="text-3xl font-bold text-primary mb-2">10M+</div>
+      <div class="text-sm text-[var(--muted)]">Сгенерировано изображений</div>
+    </div>
+    
+    <div class="card p-6 text-center">
+      <div class="text-3xl font-bold text-primary mb-2">50K+</div>
+      <div class="text-sm text-[var(--muted)]">Активных пользователей</div>
+    </div>
+    
+    <div class="card p-6 text-center">
+      <div class="text-3xl font-bold text-primary mb-2">99.9%</div>
+      <div class="text-sm text-[var(--muted)]">Время работы</div>
+    </div>
+    
+    <div class="card p-6 text-center">
+      <div class="text-3xl font-bold text-primary mb-2">26с</div>
+      <div class="text-sm text-[var(--muted)]">Среднее время генерации</div>
+    </div>
+  </div>
+
+</div>
+
+
+{% endblock %}

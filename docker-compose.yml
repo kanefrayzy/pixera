@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ai_gallery
+      MYSQL_USER: ai_user
+      MYSQL_PASSWORD: ai_password
+      MYSQL_ROOT_PASSWORD: rootpass
+    command: ["--default-authentication-plugin=mysql_native_password",
+              "--character-set-server=utf8mb4",
+              "--collation-server=utf8mb4_0900_ai_ci"]
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+volumes:
+  mysqldata:

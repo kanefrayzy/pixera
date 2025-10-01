@@ -1,0 +1,188 @@
+﻿{# FILE: templates/dashboard/tips_processing.html #}
+{% extends "dashboard/layout.html" %}
+{% block title %}Рекомендации по обработке — AI Gallery{% endblock %}
+
+{% block dash %}
+<section class="panel tips-proc" aria-labelledby="pageTitle">
+  <header class="head">
+    <div>
+      <h1 class="page-title" id="pageTitle">Рекомендации по обработке</h1>
+      <p class="muted">Короткие правила и готовые шаблоны для стабильных результатов.</p>
+    </div>
+    <nav class="head-actions" aria-label="Быстрые действия">
+      <a class="btn btn-ghost" href="{% url 'generate:new' %}">Открыть генерацию</a>
+      <a class="btn btn-ghost" href="{% url 'dashboard:tips' %}">Ещё подсказки</a>
+    </nav>
+  </header>
+
+  <!-- Чеклист -->
+  <section class="card" aria-labelledby="chkTitle">
+    <h2 class="h4" id="chkTitle">Быстрый чеклист</h2>
+    <ul class="kv">
+      <li><span>Композиция</span><b>close-up / medium / wide</b></li>
+      <li><span>Свет</span><b>soft studio / rim / volumetric</b></li>
+      <li><span>Оптика</span><b>35mm / 50mm / 85mm, f/1.8</b></li>
+      <li><span>Материалы</span><b>matte metal, glass, velvet</b></li>
+      <li><span>Цвет/настроение</span><b>warm tones, high contrast</b></li>
+      <li><span>Финиш</span><b>RAW, film grain, HDR</b></li>
+    </ul>
+  </section>
+
+  <!-- Do / Don't -->
+  <section class="grid-2">
+    <article class="card good" aria-labelledby="doTitle">
+      <h2 class="h5" id="doTitle">Делайте</h2>
+      <ul class="bul">
+        <li>Пишите конкретно: сюжет, свет, оптика, материалы, mood.</li>
+        <li>Добавляйте ограничения: ракурс, масштаб, окружение.</li>
+        <li>Используйте краткие теги и единый стиль названий.</li>
+        <li>Проверяйте результат и уточняйте промпт по шагам.</li>
+      </ul>
+    </article>
+    <article class="card bad" aria-labelledby="dontTitle">
+      <h2 class="h5" id="dontTitle">Избегайте</h2>
+      <ul class="bul">
+        <li>Двойных отрицаний: «not dark, without noise» → лучше «bright, clean».</li>
+        <li>Смешения множества стилей («photorealistic watercolor oil painting»).</li>
+        <li>Шума вроде «8k 12k ultra super hyper» — не даёт качества.</li>
+        <li>Слишком общих описаний без света/оптики/материалов.</li>
+      </ul>
+    </article>
+  </section>
+
+  <!-- Готовые промпты -->
+  <section class="card" aria-labelledby="tplTitle">
+    <h2 class="h4" id="tplTitle">Готовые шаблоны</h2>
+
+    <details class="tip" open>
+      <summary class="tip-q">Портрет (кинематографично)</summary>
+      <div class="tip-a">
+        <pre class="code"><code id="p1">cinematic portrait of a young woman, soft studio light, gentle rim light,
+85mm lens, shallow depth of field, pastel backdrop, warm tones, clean composition,
+RAW photo, film grain</code></pre>
+        <div class="row">
+          <button class="btn btn-soft btn-xs copy" data-target="#p1">Скопировать</button>
+          <a class="btn btn-ghost btn-xs" href="{% url 'generate:new' %}">Открыть в генерации</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="tip">
+      <summary class="tip-q">Предметная съёмка (e-commerce)</summary>
+      <div class="tip-a">
+        <pre class="code"><code id="p2">product photo of minimal sneakers on matte acrylic pedestal,
+soft diffused light, top-down angle, seamless background, subtle reflections,
+high contrast, crisp edges, studio setup</code></pre>
+        <div class="row">
+          <button class="btn btn-soft btn-xs copy" data-target="#p2">Скопировать</button>
+          <a class="btn btn-ghost btn-xs" href="{% url 'generate:new' %}">Открыть в генерации</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="tip">
+      <summary class="tip-q">Интерьер (естественный свет)</summary>
+      <div class="tip-a">
+        <pre class="code"><code id="p3">cozy living room, golden hour sunlight through large window, wooden textures,
+linen fabrics, indoor plants, balanced composition, 35mm lens, subtle film look</code></pre>
+        <div class="row">
+          <button class="btn btn-soft btn-xs copy" data-target="#p3">Скопировать</button>
+          <a class="btn btn-ghost btn-xs" href="{% url 'generate:new' %}">Открыть в генерации</a>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- Мини-конструктор -->
+  <section class="card" aria-labelledby="builderTitle">
+    <h2 class="h4" id="builderTitle">Мини-конструктор промпта</h2>
+    <div class="builder">
+      <div class="row">
+        <label class="label" for="b-subject">Сюжет</label>
+        <input id="b-subject" class="input" placeholder="portrait / product / interior">
+      </div>
+      <div class="row">
+        <label class="label" for="b-light">Свет</label>
+        <input id="b-light" class="input" placeholder="soft studio light, rim light">
+      </div>
+      <div class="row">
+        <label class="label" for="b-lens">Оптика</label>
+        <input id="b-lens" class="input" placeholder="85mm, f/1.8">
+      </div>
+      <div class="row">
+        <label class="label" for="b-mat">Материалы</label>
+        <input id="b-mat" class="input" placeholder="matte metal, glass reflections">
+      </div>
+      <div class="row">
+        <label class="label" for="b-mood">Цвет/настроение</label>
+        <input id="b-mood" class="input" placeholder="warm tones, high contrast">
+      </div>
+      <div class="row">
+        <button id="b-make" class="btn" type="button">Собрать промпт</button>
+        <a class="btn btn-ghost" href="{% url 'generate:new' %}">Использовать</a>
+      </div>
+      <div class="row">
+        <pre class="code" style="margin:0"><code id="b-out" aria-live="polite"></code></pre>
+        <button class="btn btn-soft btn-xs copy" data-target="#b-out">Скопировать</button>
+      </div>
+      <div class="tags">
+        <button class="chip tag" data-tag="soft studio light">soft studio light</button>
+        <button class="chip tag" data-tag="rim light">rim light</button>
+        <button class="chip tag" data-tag="film grain">film grain</button>
+        <button class="chip tag" data-tag="RAW photo">RAW photo</button>
+        <button class="chip tag" data-tag="high contrast">high contrast</button>
+        <button class="chip tag" data-tag="volumetric light">volumetric light</button>
+      </div>
+      <p class="muted small">Клик по тегу добавляет его в поле «Цвет/настроение».</p>
+    </div>
+  </section>
+</section>
+
+
+
+<script>
+(function(){
+  // Копирование
+  function copyFrom(sel){
+    const el = document.querySelector(sel);
+    if(!el) return;
+    const text = (el.textContent || el.value || '').trim();
+    if(!text) return;
+    navigator.clipboard?.writeText(text).then(()=>{}).catch(()=>{});
+  }
+  document.querySelectorAll('.copy[data-target]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      copyFrom(btn.dataset.target);
+      const prev = btn.textContent;
+      btn.textContent = 'Скопировано ✓';
+      setTimeout(()=> btn.textContent = prev, 1200);
+    });
+  });
+
+  // Мини-конструктор
+  const S = id => document.getElementById(id);
+  const out = S('b-out');
+  S('b-make')?.addEventListener('click', ()=>{
+    const parts = [
+      (S('b-subject')?.value||'').trim(),
+      (S('b-light')?.value||'').trim(),
+      (S('b-lens')?.value||'').trim(),
+      (S('b-mat')?.value||'').trim(),
+      (S('b-mood')?.value||'').trim()
+    ].filter(Boolean);
+    out.textContent = parts.join(', ');
+    out.parentElement.scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  // Теги -> mood
+  document.querySelectorAll('.tag[data-tag]').forEach(tag=>{
+    tag.addEventListener('click', ()=>{
+      const inp = S('b-mood'); if(!inp) return;
+      const v = tag.dataset.tag || '';
+      inp.value = inp.value ? (inp.value + ', ' + v) : v;
+      inp.focus();
+    });
+  });
+})();
+</script>
+{% endblock %}

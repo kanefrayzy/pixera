@@ -1,0 +1,72 @@
+﻿{# FILE: templates/dashboard/billing.html #}
+{% extends "base.html" %}
+
+{% block meta_title %}Пополнение — AI Gallery{% endblock %}
+{% block meta_description %}Пополните баланс токенов для генерации изображений.{% endblock %}
+{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{% url 'dashboard:billing' %}{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block hero %}
+<section class="hero">
+  <div class="container hero-inner">
+    <h1 class="hero-title">Пополнение</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Хлебные крошки">
+  <ol>
+    <li><a href="{% url 'pages:home' %}">Главная</a></li>
+    <li><a href="{% url 'dashboard:index' %}">Кабинет</a></li>
+    <li aria-current="page">Пополнение</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    {% include "includes/messages.html" %}
+
+    <div class="panel billing" role="region" aria-labelledby="billingTitle">
+      <header class="billing-head">
+        <h2 id="billingTitle" class="page-title">Баланс</h2>
+        <div class="balance-chip" aria-live="polite">
+          <span class="coin" aria-hidden="true"></span>
+          {% widthratio wallet.balance|default:0 10 1 as gens_left %}
+          <span>
+            Ваш баланс: <strong>{{ wallet.balance|default:0 }}</strong> TOK
+            <span class="muted"> (≈ {{ gens_left|default:0 }} обработок)</span>
+          </span>
+        </div>
+      </header>
+
+      {% if tariffs %}
+        <p class="muted info-row">Выберите сумму пополнения. 1 обработка = <strong>10 TOK</strong>.</p>
+        <div class="tariffs-wrap" role="list">
+          {% for t in tariffs %}
+            <a class="tariff-chip" role="listitem"
+               href="{% url 'dashboard:topup' t.amount %}"
+               aria-label="Пополнить на {{ t.label }}">
+              <span class="coin" aria-hidden="true"></span>
+              <span class="t-label">{{ t.label }}</span>
+              {% if t.tokens %}
+                {% widthratio t.tokens 10 1 as gens %}
+                <span class="t-sub muted">≈ {{ gens }} обработок</span>
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">Тарифы пока не настроены.</p>
+      {% endif %}
+
+      <div class="billing-actions">
+        <a class="btn" href="{% url 'generate:new' %}">К генерации</a>
+        <a class="btn btn-ghost" href="{% url 'dashboard:index' %}">В кабинет</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,207 @@
+﻿{% load i18n %}
+{% load static %}
+<div class="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm z-40 opacity-0 pointer-events-none transition-opacity duration-300" id="dbBackdrop" hidden></div>
+
+<aside
+  id="dashboardDrawer"
+  class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 transform translate-x-full transition-transform duration-300 ease-in-out"
+  hidden
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="dbDrawerTitle"
+  tabindex="-1"
+>
+  <div class="h-full bg-[var(--bg)] border-l border-[var(--bord)] shadow-2xl overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+    
+    <div class="flex items-center justify-between p-4 border-b border-[var(--bord)]">
+      <div class="flex items-center gap-2" id="dbDrawerTitle">
+        <div class="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+          <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12C14.21 12 16 10.21 16 8S14.21 4 12 4 8 5.79 8 8 9.79 12 12 12M12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"/>
+          </svg>
+        </div>
+        <span class="font-semibold">{% trans "Профиль" %}</span>
+      </div>
+      
+      <button 
+        class="w-8 h-8 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center transition" 
+        id="dbDrawerClose" 
+        type="button" 
+        aria-label="{% trans 'Закрыть' %}"
+      >
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="p-4 border-b border-[var(--bord)]">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+          {{ request.user.first_name|first|default:request.user.username|first|upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold truncate">
+            {{ request.user.get_full_name|default:request.user.username }}
+          </div>
+          <div class="text-sm text-[var(--muted)]">{{ request.user.email }}</div>
+        </div>
+      </div>
+
+      <div class="card p-4" aria-live="polite">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+            <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V9M19 9H14V4H15.83L19 7.17V9Z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm text-[var(--muted)]">{% trans "Мой баланс" %}</div>
+            {% if request.user.is_staff %}
+              <div class="font-bold">{% trans "Безлимит" %}</div>
+            {% else %}
+              <div class="font-bold">
+                {{ wallet.balance|default:0 }} <span class="text-sm text-[var(--muted)]">TOK</span>
+              </div>
+              <div class="text-xs text-[var(--muted)]">
+                ≈ {% widthratio wallet.balance|default:0 10 1 %} обработок
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if not request.user.is_staff %}
+          <a class="btn btn-primary w-full text-sm" href="{% url 'dashboard:tariffs' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            {% trans "Пополнить" %}
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="flex gap-2 mt-3 sm:hidden">
+        <details class="relative flex-1" id="langSwitchDrawer">
+          <summary class="btn btn-ghost text-sm w-full" aria-controls="langMenuDrawer" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">🌐</summary>
+          <div class="absolute left-0 bottom-full mb-2 rounded-3xl border border-[var(--bord)] bg-[var(--card)] shadow-[0_8px_30px_rgba(0,0,0,0.18)] backdrop-blur-sm p-2 min-w-48 z-50" id="langMenuDrawer" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
+              <span class="text-sm">English</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
+              <span class="text-sm">{% trans "Русский" %}</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
+              <span class="text-sm">Deutsch</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/es.svg' %}" alt="Español">
+              <span class="text-sm">Español</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/pt.svg' %}" alt="Português">
+              <span class="text-sm">Português</span>
+            </button>
+          </div>
+        </details>
+
+        <button id="themeToggleDrawer" class="btn btn-ghost text-sm flex-1" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
+          <svg id="iconSunD" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
+          </svg>
+          <svg id="iconMoonD" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <nav class="p-4 space-y-1" aria-label="{% trans 'Меню профиля' %}">
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'dashboard:my_jobs' %}">
+        <div class="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center group-hover:bg-blue-500/25 transition">
+          <svg class="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Мои обработки" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'dashboard:tips' %}">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/25 transition">
+          <svg class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Рекомендации" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'generate:new' %}">
+        <div class="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center group-hover:bg-green-500/25 transition">
+          <svg class="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Сгенерировать фото" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <div class="h-px bg-[var(--bord)] my-4"></div>
+
+      <div class="text-xs font-medium text-[var(--muted)] px-3 mb-2 uppercase tracking-wide">
+        {% trans "Настройки" %}
+      </div>
+
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'account_change_password' %}">
+        <div class="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center group-hover:bg-orange-500/25 transition">
+          <svg class="w-4 h-4 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Сменить пароль" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition group text-red-600 dark:text-red-400" href="{% url 'account_logout' %}">
+        <div class="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center group-hover:bg-red-500/25 transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Выйти из аккаунта" %}</span>
+        <svg class="w-4 h-4 ml-auto group-hover:text-red-500 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </nav>
+
+    <div class="p-4 mt-auto border-t border-[var(--bord)] sm:hidden">
+      <div class="flex items-center justify-between gap-3">
+        <a class="btn btn-ghost text-sm" href="{% url 'gallery:index' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          Галерея
+        </a>
+        <a class="btn btn-primary text-sm" href="{% url 'generate:new' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Создать
+        </a>
+      </div>
+    </div>
+  </div>
+</aside>

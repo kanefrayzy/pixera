@@ -1,0 +1,456 @@
+# FILE: locale/en/LC_MESSAGES/django.po
+# English translations for AI Gallery
+# -------------------------------------------------------------------
+msgid ""
+msgstr ""
+"Project-Id-Version: ai-gallery 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-20 00:00+0000\n"
+"PO-Revision-Date: 2025-09-20 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# ===== base.html =====
+msgid "AI Gallery — ИИ-галерея и генерация"
+msgstr "AI Gallery — AI gallery and generation"
+
+msgid "AI Gallery — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды."
+msgstr "AI Gallery — modern AI image gallery and generator. Dark/Light theme, fast search, tags and trends."
+
+msgid "AI Gallery — генерация и галерея"
+msgstr "AI Gallery — generation & gallery"
+
+msgid "Минималистичный UI, плавные градиенты и качественная генерация изображений ИИ."
+msgstr "Minimal UI, smooth gradients and high-quality AI image generation."
+
+msgid "На главную"
+msgstr "Go to home"
+
+msgid "Главное меню"
+msgstr "Main menu"
+
+msgid "Галерея"
+msgstr "Gallery"
+
+msgid "Тренды"
+msgstr "Trending"
+
+msgid "Генерация"
+msgstr "Generate"
+
+msgid "Выбрать язык"
+msgstr "Choose language"
+
+msgid "Переключить тему"
+msgstr "Toggle theme"
+
+msgid "Тёмная"
+msgstr "Dark"
+
+msgid "Светлая"
+msgstr "Light"
+
+msgid "Кабинет"
+msgstr "Dashboard"
+
+msgid "Выйти"
+msgstr "Log out"
+
+msgid "Войти"
+msgstr "Log in"
+
+msgid "Регистрация"
+msgstr "Sign up"
+
+msgid "Открыть меню"
+msgstr "Open menu"
+
+msgid "Меню"
+msgstr "Menu"
+
+msgid "Навигация"
+msgstr "Navigation"
+
+msgid "Главная"
+msgstr "Home"
+
+msgid "Личный кабинет"
+msgstr "Account"
+
+msgid "Разделы"
+msgstr "Sections"
+
+msgid "Компания"
+msgstr "Company"
+
+msgid "О нас"
+msgstr "About"
+
+msgid "Связаться с нами"
+msgstr "Contact us"
+
+msgid "Политика конфиденциальности"
+msgstr "Privacy policy"
+
+msgid "все права защищены"
+msgstr "all rights reserved"
+
+# ===== pages/home.html =====
+msgid "AI Gallery — генерация изображений, галерея и блог"
+msgstr "AI Gallery — image generation, gallery & blog"
+
+msgid "Онлайн-платформа для генерации ИИ-изображений: мгновенная генерация, аккуратная галерея, редактор промптов, фильтры, тренды и блог с гайдами. Оптимизировано под SEO, работает в тёмной и светлой темах."
+msgstr "Online platform for AI image generation: instant renders, clean gallery, prompt editor, filters, trends, and a guide-filled blog. SEO-ready, works in dark & light themes."
+
+msgid "AI Gallery — генерация и поиск вдохновляющих изображений"
+msgstr "AI Gallery — generate & find inspiring images"
+
+msgid "AI Gallery — генерация и поиск изображений"
+msgstr "AI Gallery — generate & search images"
+
+msgid "Генерируйте идеи и находите вдохновение. Красивый интерфейс, стабильная очередь, SEO из коробки."
+msgstr "Generate ideas and find inspiration. Clean UI, stable queue, SEO out of the box."
+
+msgid "Создавайте и находите вдохновляющие изображения"
+msgstr "Create and discover inspiring images"
+
+msgid "Мгновенная генерация, аккуратная лента и умные фильтры — всё в одном месте."
+msgstr "Instant generation, tidy feed and smart filters — all in one place."
+
+msgid "Действия на главной"
+msgstr "Home actions"
+
+msgid "Начать генерацию"
+msgstr "Start generating"
+
+msgid "Открыть галерею"
+msgstr "Open gallery"
+
+msgid "Доверие и показатели"
+msgstr "Trust & metrics"
+
+msgid "сек"
+msgstr "sec"
+
+msgid "среднее время генерации"
+msgstr "average generation time"
+
+msgid "время доступности"
+msgstr "uptime"
+
+msgid "OG, JSON-LD, карта сайта"
+msgstr "OG, JSON-LD, sitemap"
+
+msgid "безопасные фильтры"
+msgstr "safe filters"
+
+msgid "Почему именно мы"
+msgstr "Why choose us"
+
+msgid "Скорость, стабильность, продуманный UX и SEO-готовность по умолчанию."
+msgstr "Speed, stability, thoughtful UX and SEO readiness by default."
+
+msgid "Скорость"
+msgstr "Speed"
+
+msgid "Асинхронная очередь, кэширование статики и оптимизированные шаблоны дают предсказуемое время отклика."
+msgstr "Async queue, static caching and optimized templates deliver predictable latency."
+
+msgid "Демо скорости"
+msgstr "Speed demo"
+
+msgid "профилирование 26–30с"
+msgstr "profiling 26–30s"
+
+msgid "Чистый дизайн"
+msgstr "Clean design"
+
+msgid "Чёрно-белая база с оранжевыми акцентами, мягкие тени и адаптив от 320 px до 4K."
+msgstr "Black-white base with orange accents, soft shadows, responsive from 320px to 4K."
+
+msgid "пиксель-перфект"
+msgstr "pixel-perfect"
+
+msgid "SEO-подготовка"
+msgstr "SEO-ready"
+
+msgid "OG/Twitter метки, JSON-LD схемы, каноникал, валидная семантика и высокая скорость загрузки."
+msgstr "OG/Twitter tags, JSON-LD schemas, canonical, valid semantics and high loading speed."
+
+msgid "валидаторы ✓"
+msgstr "validators ✓"
+
+msgid "Безопасность"
+msgstr "Safety"
+
+msgid "SFW-фильтры, жалобы, приватность публикаций и бережное хранение медиа."
+msgstr "SFW filters, reports, post privacy and careful media storage."
+
+msgid "модерация"
+msgstr "moderation"
+
+msgid "Демонстрация генерации"
+msgstr "Generation demo"
+
+msgid "Реалистичное освещение, чистое кадрирование и сочные цвета — прямо из коробки."
+msgstr "Realistic lighting, clean framing and rich colors — out of the box."
+
+msgid "Пример сгенерированного изображения"
+msgstr "Example generated image"
+
+msgid "Золотой час, драматичное небо, объёмный свет"
+msgstr "Golden hour, dramatic sky, volumetric light"
+
+msgid "Широкоугольный кадр, мягкий градиентный фон, реалистичные детали"
+msgstr "Wide-angle frame, soft gradient background, realistic details"
+
+msgid "Режимы генерации"
+msgstr "Generation modes"
+
+msgid "Промпт"
+msgstr "Prompt"
+
+msgid "Параметры"
+msgstr "Settings"
+
+msgid "Результат"
+msgstr "Result"
+
+msgid "портрет женщины, естественный мягкий свет, 35мм, малая глубина резкости, пастельный фон, чистая композиция, лёгкий контровой свет"
+msgstr "portrait of a woman, natural soft light, 35mm, shallow depth of field, pastel backdrop, clean composition, subtle rim light"
+
+msgid "Шаги"
+msgstr "Steps"
+
+msgid "Соотношение"
+msgstr "Aspect"
+
+msgid "Seed"
+msgstr "Seed"
+
+msgid "Миниатюра результата"
+msgstr "Result thumbnail"
+
+msgid "Готово за 26 секунд"
+msgstr "Done in 26 seconds"
+
+msgid "Сохранено в галерее и доступно в «Моих обработках»"
+msgstr "Saved to gallery and available in “My edits”"
+
+msgid "Попробовать"
+msgstr "Try"
+
+msgid "Смотреть похожие"
+msgstr "See similar"
+
+msgid "Быстрый набросок промпта"
+msgstr "Quick prompt draft"
+
+msgid "Опишите изображение"
+msgstr "Describe the image"
+
+msgid "Опишите изображение: стиль, свет, объектив, детали"
+msgstr "Describe the image: style, light, lens, details"
+
+msgid "Сгенерировать набросок"
+msgstr "Generate draft"
+
+msgid "Как это работает"
+msgstr "How it works"
+
+msgid "Три шага — но мы покажем их как единый поток."
+msgstr "Three steps — presented as one seamless flow."
+
+msgid "Опишите кадр"
+msgstr "Describe the shot"
+
+msgid "Сцена, свет, оптика, настроение и ключевые детали — чем конкретнее, тем лучше."
+msgstr "Scene, light, optics, mood and key details — the more specific, the better."
+
+msgid "Мы обработаем"
+msgstr "We process"
+
+msgid "Задача попадёт в очередь. Оптимизированные модели обеспечат стабильный результат."
+msgstr "Your job goes to the queue. Optimized models ensure stable results."
+
+msgid "Получите результат"
+msgstr "Get the result"
+
+msgid "Изображение появится в вашей ленте и в «Моих обработках». Можно делиться и улучшать."
+msgstr "The image will appear in your feed and in “My edits”. You can share and iterate."
+
+msgid "Готовые сценарии"
+msgstr "Use cases"
+
+msgid "Подходит и для креативных задач, и для продуктовых команд."
+msgstr "Suitable for creative tasks and product teams alike."
+
+msgid "Обложки и афиши"
+msgstr "Covers & posters"
+
+msgid "Быстрые обложки для подкастов и статей, подборка цветов и шрифтов."
+msgstr "Quick covers for podcasts and articles, curated colors and fonts."
+
+msgid "Маркетинговые макеты"
+msgstr "Marketing mockups"
+
+msgid "Баннеры, hero-картинки, иллюстрации к лендингам с единым стилем."
+msgstr "Banners, hero images, landing illustrations in a consistent style."
+
+msgid "Концепт-арт"
+msgstr "Concept art"
+
+msgid "Мир, персонажи и объекты для питчей и прототипов."
+msgstr "Worlds, characters and props for pitches and prototypes."
+
+msgid "Референсы"
+msgstr "References"
+
+msgid "Быстрые референсы света, поз и окружения для фото- и видеосъёмок."
+msgstr "Quick references of lighting, poses and environments for photo/video shoots."
+
+msgid "E-commerce"
+msgstr "E-commerce"
+
+msgid "Фоны, композиции и подсветка товаров в едином направлении."
+msgstr "Backgrounds, compositions and product lighting in one direction."
+
+msgid "Соцсети"
+msgstr "Social media"
+
+msgid "Серии постов в единой палитре и сетке с высокой читаемостью."
+msgstr "Series of posts in a unified palette and grid with high readability."
+
+msgid "Что отличает нас"
+msgstr "What sets us apart"
+
+msgid "Функции, которые реально экономят время."
+msgstr "Features that truly save time."
+
+msgid "Возможность"
+msgstr "Capability"
+
+msgid "AI Gallery"
+msgstr "AI Gallery"
+
+msgid "Обычные сервисы"
+msgstr "Typical services"
+
+msgid "Генерация и галерея в одном интерфейсе"
+msgstr "Generation and gallery in one interface"
+
+msgid "Да"
+msgstr "Yes"
+
+msgid "Не всегда"
+msgstr "Not always"
+
+msgid "SEO-разметка и каноникал"
+msgstr "SEO markup and canonical"
+
+msgid "Редко"
+msgstr "Rarely"
+
+msgid "Умные фильтры и тренды"
+msgstr "Smart filters and trends"
+
+msgid "Ограниченно"
+msgstr "Limited"
+
+msgid "Тёмная/светлая темы"
+msgstr "Dark/Light themes"
+
+msgid "Иногда"
+msgstr "Sometimes"
+
+msgid "Отзывы"
+msgstr "Testimonials"
+
+msgid "Короткие впечатления от дизайнеров и авторов."
+msgstr "Short impressions from designers and creators."
+
+msgid "Впервые за долгое время генерация не мешает потоку работы — UI очень чистый."
+msgstr "For the first time in a while, generation doesn’t interrupt my flow — the UI is very clean."
+
+msgid "Даша, дизайнер"
+msgstr "Dasha, designer"
+
+msgid "Карточки блога как в кейсбуках: удобно читать и сразу применять советы."
+msgstr "Blog cards feel like casebooks: easy to read and apply tips right away."
+
+msgid "Макс, маркетолог"
+msgstr "Max, marketer"
+
+msgid "Хорошие параметры по умолчанию. Результаты получаются стабильно предсказуемыми."
+msgstr "Good defaults. The results are consistently predictable."
+
+msgid "Иван, иллюстратор"
+msgstr "Ivan, illustrator"
+
+msgid "Навигация по отзывам"
+msgstr "Testimonials navigation"
+
+msgid "Первый"
+msgstr "First"
+
+msgid "Второй"
+msgstr "Second"
+
+msgid "Третий"
+msgstr "Third"
+
+msgid "Свежие статьи из блога"
+msgstr "Latest blog posts"
+
+msgid "Обновления сервиса, инструкции и кейсы пользователей."
+msgstr "Product updates, how-tos and user case studies."
+
+msgid "Написать статью"
+msgstr "Write a post"
+
+msgid "Частые вопросы"
+msgstr "FAQ"
+
+msgid "Короткие ответы о генерации, темах и ограничениях."
+msgstr "Short answers about generation, themes and limitations."
+
+msgid "Сколько занимает генерация?"
+msgstr "How long does generation take?"
+
+msgid "В среднем 25–30 секунд при стандартной нагрузке. Задачи обрабатываются асинхронно."
+msgstr "On average 25–30 seconds under standard load. Jobs are processed asynchronously."
+
+msgid "Поддерживаются тёмная и светлая темы?"
+msgstr "Are dark and light themes supported?"
+
+msgid "Да, темы можно переключать в хедере. Выбор сохраняется на устройстве."
+msgstr "Yes, switch themes in the header. The choice is saved on your device."
+
+msgid "Есть ли ограничения по контенту?"
+msgstr "Are there content restrictions?"
+
+msgid "Мы используем SFW-фильтры и модерируем публичную ленту."
+msgstr "We use SFW filters and moderate the public feed."
+
+msgid "Можно ли улучшать готовую картинку?"
+msgstr "Can I improve a finished image?"
+
+msgid "Да, доступен повторный прогон с изменённым промптом и параметрами."
+msgstr "Yes, you can re-run with modified prompt and settings."
+
+msgid "Готовы начать?"
+msgstr "Ready to start?"
+
+msgid "Создавайте, делитесь и находите лучшее — в пару кликов."
+msgstr "Create, share and find the best — in a few clicks."
+
+msgid "Призывы к действию"
+msgstr "Calls to action"
+
+msgid "Создать изображение"
+msgstr "Create an image"

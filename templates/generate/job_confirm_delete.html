@@ -1,0 +1,271 @@
+{# FILE: templates/generate/job_confirm_delete.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Удалить генерацию — AI Gallery{% endblock %}
+{% block meta_description %}Подтверждение удаления сгенерированного изображения. Действие необратимо.{% endblock %}
+
+{% block hero %}
+<!-- Compact Hero -->
+<section class="py-12 sm:py-16">
+  <div class="container text-center">
+    <h1 class="text-3xl sm:text-4xl font-bold mb-3">Удаление генерации</h1>
+    <p class="text-[var(--muted)] text-lg">Подтвердите удаление сгенерированного изображения</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <!-- Warning Card -->
+  <div class="card p-6 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
+    <div class="flex items-start gap-3">
+      <svg class="w-6 h-6 text-orange-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 9V11M12 15H12.01M5.07 19L12 7L18.93 19H5.07Z"/>
+      </svg>
+      <div>
+        <h2 class="text-lg font-semibold text-orange-800 dark:text-orange-200 mb-1">
+          Внимание: необратимое действие
+        </h2>
+        <p class="text-sm text-orange-700 dark:text-orange-300">
+          Это изображение и вся связанная информация будут удалены без возможности восстановления.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generation Details -->
+  <div class="card p-6">
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+        <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-semibold mb-2">Генерация №{{ job.id }}</h2>
+    </div>
+
+    <!-- Generation Info -->
+    <div class="space-y-4 mb-6">
+      {% if job.prompt %}
+        <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+          <label class="block text-sm font-medium text-[var(--muted)] mb-1">Промпт:</label>
+          <p class="text-sm leading-relaxed" title="{{ job.prompt }}">
+            {{ job.prompt|truncatechars:200 }}
+          </p>
+        </div>
+      {% endif %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {% if job.created_at %}
+          <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <label class="block text-sm font-medium text-[var(--muted)] mb-1">Создано:</label>
+            <p class="text-sm font-medium">{{ job.created_at|date:"d.m.Y в H:i" }}</p>
+          </div>
+        {% endif %}
+
+        {% if job.status %}
+          <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <label class="block text-sm font-medium text-[var(--muted)] mb-1">Статус:</label>
+            <p class="text-sm font-medium">
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs 
+                           {% if job.status == 'done' %}bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400{% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+                {% if job.status == 'done' %}
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+                  </svg>
+                  Завершено
+                {% else %}
+                  {{ job.get_status_display|default:job.status }}
+                {% endif %}
+              </span>
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Image Preview -->
+    {% if job.result_image %}
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-[var(--muted)] mb-3">Изображение для удаления:</label>
+        <div class="relative rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 max-w-sm mx-auto">
+          <img class="w-full h-auto" 
+               src="{{ job.result_image.url }}" 
+               alt="Предпросмотр удаляемого изображения"
+               loading="lazy">
+          <div class="absolute inset-0 bg-red-500/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+            <div class="text-center text-white">
+              <svg class="w-12 h-12 mx-auto mb-2" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              <p class="text-sm font-medium">Будет удалено</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Confirmation Form -->
+    <form method="post" action="{% url 'generate:job_delete' job.pk %}" class="space-y-6">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next|default:'/' }}">
+
+      <!-- Confirmation Checkbox -->
+      <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" 
+                 id="confirm-delete" 
+                 class="w-4 h-4 text-red-600 rounded border-red-300 focus:ring-red-500 mt-1"
+                 required>
+          <div class="text-sm">
+            <span class="font-medium text-red-800 dark:text-red-200">
+              Я понимаю, что это действие необратимо
+            </span>
+            <p class="text-red-700 dark:text-red-300 mt-1">
+              Изображение и все данные генерации будут удалены навсегда
+            </p>
+          </div>
+        </label>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a class="btn btn-ghost w-full sm:w-auto order-2 sm:order-1" href="{{ next|default:'/' }}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Отмена
+        </a>
+        <button class="btn btn-danger w-full sm:w-auto order-1 sm:order-2" 
+                type="submit" 
+                id="delete-button"
+                disabled>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          Удалить навсегда
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Help Card -->
+  <div class="card p-4 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+      </svg>
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        <div class="font-medium mb-1">Альтернативы удалению</div>
+        <p>Если изображение вам больше не нужно, но вы не уверены в удалении, можете сохранить его локально или поделиться им в галерее перед удалением.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Enable delete button only when checkbox is checked
+document.addEventListener('DOMContentLoaded', () => {
+  const checkbox = document.getElementById('confirm-delete');
+  const deleteBtn = document.getElementById('delete-button');
+  
+  if (checkbox && deleteBtn) {
+    checkbox.addEventListener('change', () => {
+      deleteBtn.disabled = !checkbox.checked;
+      
+      if (checkbox.checked) {
+        deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    });
+    
+    // Initial state
+    deleteBtn.disabled = true;
+    deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+
+  // Form submission confirmation
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Удаление...
+      `;
+      
+      // Reset after timeout in case of errors
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }, 10000);
+    });
+  }
+});
+</script>
+
+<style>
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+  border: 1px solid #dc2626;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+input[type="checkbox"]:focus {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
+}
+
+.relative img + div {
+  transition: opacity 0.2s ease;
+}
+
+@media (max-width: 640px) {
+  .btn {
+    min-height: 48px;
+  }
+  
+}
+
+/* Accessibility improvements */
+.btn:focus,
+input[type="checkbox"]:focus {
+  outline: 2px solid rgb(var(--primary-rgb));
+  outline-offset: 2px;
+}
+
+/* Animation for warning */
+.border-orange-200 {
+  animation: pulse-orange 2s infinite;
+}
+
+@keyframes pulse-orange {
+  0%, 100% {
+    border-color: rgb(251 146 60 / 0.5);
+  }
+  50% {
+    border-color: rgb(251 146 60);
+  }
+}
+</style>
+
+{% endblock %}

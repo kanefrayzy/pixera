@@ -1,0 +1,84 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Выйти — AI Gallery{% endblock %}
+{% block meta_description %}Подтверждение выхода из аккаунта AI Gallery.{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center py-12">
+  <div class="max-w-md w-full mx-auto px-4">
+    <div class="card p-4 text-center">
+      
+      <!-- Icon -->
+      <div class="w-16 h-16 rounded-2xl bg-amber-500/15 flex items-center justify-center mx-auto mb-6">
+        <svg class="w-8 h-8 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+      </div>
+
+      <!-- Title -->
+      <h1 class="text-2xl font-bold mb-3">Выйти из аккаунта?</h1>
+      <p class="text-[var(--muted)] mb-8">
+        Вы действительно хотите завершить сессию? После выхода вы сможете войти в любое время.
+      </p>
+
+      <!-- Messages -->
+      {% include "includes/messages.html" %}
+
+      <!-- Form -->
+      <form method="post" action="{% url 'account_logout' %}" class="space-y-4">
+        {% csrf_token %}
+
+        {# Прокидываем next, если был получен из запроса/контекста allauth #}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button class="btn btn-primary flex-1" type="submit">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            Выйти
+          </button>
+          
+          {# Если задан next — ведём туда; иначе в кабинет как безопасный дефолт #}
+          {% if redirect_field_value %}
+            <a class="btn btn-ghost flex-1" href="{{ redirect_field_value }}">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Отмена
+            </a>
+          {% else %}
+            <a class="btn btn-ghost flex-1" href="{% url 'dashboard:index' %}">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Отмена
+            </a>
+          {% endif %}
+        </div>
+      </form>
+
+      <!-- Additional Info -->
+      <div class="mt-6 pt-6 border-t border-[var(--bord)]">
+        <div class="text-sm text-[var(--muted)]">
+          <p class="mb-2">Ваши данные и созданные изображения сохранятся</p>
+          <p>Войдите снова, чтобы продолжить работу</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="mt-6 text-center">
+      <a class="text-sm text-[var(--muted)] hover:text-[var(--text)] transition" href="{% url 'pages:home' %}">
+        ← Вернуться на главную
+      </a>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

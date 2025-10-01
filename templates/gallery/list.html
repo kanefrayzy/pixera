@@ -1,0 +1,36 @@
+﻿{% extends "base.html" %}
+{% block title %}Галерея — AI Gallery{% endblock %}
+{% block meta_description %}Свежие ИИ-изображения: сетка карточек, быстрый просмотр и теги.{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <h1 class="page-title">Галерея</h1>
+  <form action="" class="page-search" role="search" aria-label="Фильтр">
+    <input class="input" type="search" name="q" value="{{ request.GET.q }}" placeholder="Поиск..." minlength="2">
+    <input class="input" type="text" name="tag" value="{{ request.GET.tag }}" placeholder="Тег">
+    <button class="btn btn-ghost">Фильтр</button>
+  </form>
+</header>
+
+<section class="grid-cards">
+  {% for img in images %}
+  <article class="card">
+    <a class="card-media" href="{% url 'gallery:detail' img.pk %}">
+      <img src="{{ img.image.url }}" alt="{{ img.title }}" loading="lazy" decoding="async" fetchpriority="low">
+      <div class="card-gradient"></div>
+      <h2 class="card-title">{{ img.title }}</h2>
+    </a>
+    <div class="card-meta">
+      <time datetime="{{ img.created_at|date:'c' }}">{{ img.created_at|date:'d.m.Y' }}</time>
+      <span class="dot">•</span>
+      <span aria-label="Лайков">❤ {{ img.likes_count }}</span>
+    </div>
+  </article>
+  {% empty %}
+  <p class="muted">Пока нет изображений.</p>
+  {% endfor %}
+</section>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

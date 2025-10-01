@@ -1,0 +1,299 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Age Confirmation — AI Gallery{% endblock %}
+
+{% block content %}
+<!-- Age Gate Modal -->
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="ageTitle" aria-describedby="ageDesc">
+  <div class="card max-w-md w-full p-8 text-center">
+    
+    <!-- Icon -->
+    <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/15 flex items-center justify-center">
+      <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+    </div>
+
+    <!-- Content -->
+    <h1 id="ageTitle" class="text-2xl font-bold mb-4">
+      {% trans "Age Confirmation" %}
+    </h1>
+    
+    <p id="ageDesc" class="text-[var(--muted)] mb-8 leading-relaxed">
+      {% blocktrans %}
+      By continuing you confirm you are 18+ years old. Content remains SFW, but the site uses a general age gate per your policy.
+      {% endblocktrans %}
+    </p>
+
+    <!-- Compute next URL -->
+    {% firstof request.GET.next request.META.HTTP_REFERER "/" as next_url %}
+
+    <!-- Actions -->
+    <div class="space-y-3">
+      <button
+        id="agree"
+        class="btn btn-primary w-full text-lg py-3"
+        type="button"
+        data-next="{{ next_url }}"
+        aria-describedby="ageDesc">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+        </svg>
+        {% trans "I am 18+" %}
+      </button>
+      
+      <button
+        id="decline"
+        class="btn btn-ghost w-full text-sm py-2"
+        type="button">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        {% trans "I am under 18" %}
+      </button>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="mt-6 pt-6 border-t border-[var(--bord)]">
+      <div class="flex items-center justify-center gap-2 text-xs text-[var(--muted)]">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <span>{% trans "Safe and secure verification" %}</span>
+      </div>
+    </div>
+
+    <!-- No JavaScript Warning -->
+    <noscript>
+      <div class="mt-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+          </svg>
+          <div class="text-sm text-amber-800 dark:text-amber-200">
+            {% trans "JavaScript is required to continue. Please enable it and reload the page." %}
+          </div>
+        </div>
+      </div>
+    </noscript>
+  </div>
+</div>
+
+<!-- Under 18 Modal (Hidden) -->
+<div id="underAgeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden" role="dialog" aria-modal="true">
+  <div class="card max-w-md w-full p-8 text-center">
+    
+    <!-- Warning Icon -->
+    <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-red-500/15 flex items-center justify-center">
+      <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+
+    <!-- Content -->
+    <h2 class="text-xl font-bold mb-4 text-red-600 dark:text-red-400">
+      {% trans "Access Restricted" %}
+    </h2>
+    
+    <p class="text-[var(--muted)] mb-6">
+      {% trans "This site is only available to users 18 years and older. Please come back when you meet the age requirement." %}
+    </p>
+
+    <!-- Actions -->
+    <div class="space-y-3">
+      <button id="goBack" class="btn btn-ghost w-full" type="button">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        {% trans "Go Back" %}
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const agreeBtn = document.getElementById('agree');
+  const declineBtn = document.getElementById('decline');
+  const underAgeModal = document.getElementById('underAgeModal');
+  const goBackBtn = document.getElementById('goBack');
+  const mainModal = document.querySelector('[role="dialog"]:not(#underAgeModal)');
+
+  if (!agreeBtn) return;
+
+  // Age confirmation handler
+  agreeBtn.addEventListener('click', function(){
+    // Add loading state
+    agreeBtn.disabled = true;
+    agreeBtn.innerHTML = `
+      <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      {% trans "Verifying..." %}
+    `;
+
+    try {
+      // Set age gate cookie for 1 year
+      const expiry = new Date();
+      expiry.setFullYear(expiry.getFullYear() + 1);
+      
+      let cookie = "age_gate_ok=1; Path=/; SameSite=Lax; Expires=" + expiry.toUTCString();
+      if (location.protocol === "https:") {
+        cookie += "; Secure";
+      }
+      document.cookie = cookie;
+
+      // Redirect to next URL
+      const next = agreeBtn.getAttribute('data-next') || '/';
+      let target = '/';
+      
+      try {
+        const url = new URL(next, location.origin);
+        if (url.origin === location.origin) {
+          target = url.pathname + url.search + url.hash;
+        }
+      } catch(_) {
+        // Invalid URL, use default
+      }
+
+      // Small delay for better UX
+      setTimeout(() => {
+        location.replace(target);
+      }, 800);
+
+    } catch(error) {
+      console.error('Age verification error:', error);
+      // Fallback to homepage
+      setTimeout(() => {
+        location.replace('/');
+      }, 800);
+    }
+  });
+
+  // Under 18 handler
+  declineBtn?.addEventListener('click', function() {
+    mainModal.classList.add('hidden');
+    underAgeModal.classList.remove('hidden');
+  });
+
+  // Go back handler
+  goBackBtn?.addEventListener('click', function() {
+    underAgeModal.classList.add('hidden');
+    mainModal.classList.remove('hidden');
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (!underAgeModal.classList.contains('hidden')) {
+        goBackBtn.click();
+      }
+    } else if (e.key === 'Enter') {
+      if (document.activeElement === agreeBtn || document.activeElement === declineBtn) {
+        document.activeElement.click();
+      }
+    }
+  });
+
+  // Focus management
+  agreeBtn.focus();
+  
+  // Prevent background scrolling
+  document.body.style.overflow = 'hidden';
+  
+  // Cleanup function (if needed)
+  window.addEventListener('beforeunload', function() {
+    document.body.style.overflow = '';
+  });
+})();
+</script>
+
+<style>
+/* Ensure modal is always on top */
+[role="dialog"] {
+  z-index: 9999;
+}
+
+/* Prevent body scroll when modal is open */
+body {
+  overflow: hidden;
+}
+
+/* Smooth transitions for modals */
+[role="dialog"] {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+[role="dialog"].hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+/* Button loading state */
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  transform: none;
+}
+
+/* Spin animation for loading icon */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Better focus states for accessibility */
+button:focus {
+  outline: 2px solid rgb(1 209 251);
+  outline-offset: 2px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  [role="dialog"] .card {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .btn {
+    min-height: 48px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid currentColor;
+  }
+  
+  .btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  [role="dialog"],
+  .animate-spin,
+  .btn {
+    transition: none;
+    animation: none;
+  }
+}
+</style>
+
+{% endblock %}

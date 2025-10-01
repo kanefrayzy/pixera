@@ -1,0 +1,14 @@
+{# универсальная пагинация, сохраняет q/sort в ссылках #}
+{% if paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="Навигация по страницам">
+  {% if page_obj.has_previous %}
+    <a class="btn outline" href="{% url 'blog:index' %}{% if keep_query %}?{{ keep_query }}&page={{ page_obj.previous_page_number }}{% else %}?page={{ page_obj.previous_page_number }}{% endif %}">Назад</a>
+  {% endif %}
+
+  <span class="muted">Стр. {{ page_obj.number }} из {{ paginator.num_pages }}</span>
+
+  {% if page_obj.has_next %}
+    <a class="btn outline" href="{% url 'blog:index' %}{% if keep_query %}?{{ keep_query }}&page={{ page_obj.next_page_number }}{% else %}?page={{ page_obj.next_page_number }}{% endif %}">Вперёд</a>
+  {% endif %}
+</nav>
+{% endif %}

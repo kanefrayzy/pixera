@@ -1,0 +1,88 @@
+﻿{% load i18n %}
+
+{% if messages %}
+<div class="space-y-3 mb-6" role="region" aria-label="{% trans 'Уведомления' %}">
+  {% for message in messages %}
+    {% with tags=message.tags|default:'' %}
+      {# Определяем тип и стиль сообщения #}
+      {% if 'error' in tags or 'danger' in tags %}
+        {% with role='alert' livemode='assertive' level='error' icon_color='text-red-500' bg_color='bg-red-50 dark:bg-red-900/20' border_color='border-red-200 dark:border-red-800' icon_path='M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z' %}
+          <div class="card p-4 border-l-4 {{ border_color }} {{ bg_color }}"
+               role="{{ role }}"
+               aria-live="{{ livemode }}">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 {{ icon_color }} mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="{{ icon_path }}"/>
+              </svg>
+              <div class="flex-1">
+                <div class="text-sm">{{ message }}</div>
+                
+                {% if 'gen_failed' in tags %}
+                  <div class="mt-3">
+                    <a class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 dark:bg-black/70 hover:bg-white dark:hover:bg-black transition text-sm font-medium" 
+                       href="{% url 'pages:contact' %}" 
+                       aria-label="{% trans 'Связаться с поддержкой' %}">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      {% trans "Связаться с нами" %}
+                    </a>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endwith %}
+
+      {% elif 'warning' in tags %}
+        {% with role='alert' livemode='assertive' level='warning' icon_color='text-amber-600 dark:text-amber-400' bg_color='bg-amber-50 dark:bg-amber-900/20' border_color='border-amber-200 dark:border-amber-800' icon_path='M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z' %}
+          <div class="card p-4 border-l-4 {{ border_color }} {{ bg_color }}"
+               role="{{ role }}"
+               aria-live="{{ livemode }}">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 {{ icon_color }} mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="{{ icon_path }}"/>
+              </svg>
+              <div class="flex-1">
+                <div class="text-sm">{{ message }}</div>
+              </div>
+            </div>
+          </div>
+        {% endwith %}
+
+      {% elif 'success' in tags %}
+        {% with role='status' livemode='polite' level='success' icon_color='text-green-600 dark:text-green-400' bg_color='bg-green-50 dark:bg-green-900/20' border_color='border-green-200 dark:border-green-800' icon_path='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z' %}
+          <div class="card p-4 border-l-4 {{ border_color }} {{ bg_color }}"
+               role="{{ role }}"
+               aria-live="{{ livemode }}">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 {{ icon_color }} mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="{{ icon_path }}"/>
+              </svg>
+              <div class="flex-1">
+                <div class="text-sm">{{ message }}</div>
+              </div>
+            </div>
+          </div>
+        {% endwith %}
+
+      {% else %}
+        {% with role='status' livemode='polite' level='info' icon_color='text-blue-600 dark:text-blue-400' bg_color='bg-blue-50 dark:bg-blue-900/20' border_color='border-blue-200 dark:border-blue-800' icon_path='M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z' %}
+          <div class="card p-4 border-l-4 {{ border_color }} {{ bg_color }}"
+               role="{{ role }}"
+               aria-live="{{ livemode }}">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 {{ icon_color }} mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="{{ icon_path }}"/>
+              </svg>
+              <div class="flex-1">
+                <div class="text-sm">{{ message }}</div>
+              </div>
+            </div>
+          </div>
+        {% endwith %}
+      {% endif %}
+    {% endwith %}
+  {% endfor %}
+</div>
+{% endif %}

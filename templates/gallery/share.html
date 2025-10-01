@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Поделиться генерацией — AI Gallery{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold">Поделиться генерацией</h1>
+    <p class="text-[var(--muted)] mt-2">Опубликуйте свое изображение в галерее и поделитесь с сообществом</p>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-8">
+    
+    <!-- Preview Section -->
+    <div class="space-y-6">
+      <div class="card p-6">
+        <h2 class="text-lg font-semibold mb-4">Превью</h2>
+        
+        <div class="relative">
+          {% if thumb_url %}
+            <img class="w-full aspect-square object-cover rounded-2xl" 
+                 src="{{ thumb_url }}" 
+                 alt="Превью генерации">
+          {% else %}
+            <div class="w-full aspect-square rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <div class="text-center">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <div class="text-sm text-gray-500">Загрузка изображения...</div>
+              </div>
+            </div>
+          {% endif %}
+          
+          <!-- Overlay Info -->
+          <div class="absolute bottom-4 left-4 right-4">
+            <div class="card p-3 backdrop-blur-sm bg-white/90 dark:bg-black/90">
+              <div class="text-sm font-medium" id="previewTitle">Без названия</div>
+              <div class="text-xs text-[var(--muted)] mt-1" id="previewCaption">Добавьте описание...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Publishing Tips -->
+      <div class="card p-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+          </svg>
+          <div class="text-sm">
+            <div class="font-medium text-blue-800 dark:text-blue-200 mb-2">Советы для успешной публикации</div>
+            <ul class="text-blue-700 dark:text-blue-300 space-y-1">
+              <li>• Выберите привлекательный заголовок</li>
+              <li>• Добавьте описание с деталями промпта</li>
+              <li>• Укажите подходящие категории</li>
+              <li>• Опубликованные работы увеличивают ваш рейтинг</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="space-y-6">
+      <form method="post" class="space-y-6" novalidate>
+        {% csrf_token %}
+
+        <!-- Title Field -->
+        <div class="card p-6">
+          <label class="block text-sm font-medium mb-3" for="{{ form.title.id_for_label }}">
+            Заголовок <span class="text-red-500">*</span>
+          </label>
+          <input type="text" 
+                 id="{{ form.title.id_for_label }}"
+                 name="{{ form.title.name }}"
+                 value="{{ form.title.value|default:'' }}"
+                 class="field"
+                 placeholder="Например: Футуристический портрет в стиле киберпанк"
+                 maxlength="100"
+                 required>
+          {% if form.title.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.title.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Хороший заголовок привлекает внимание и описывает суть изображения
+          </div>
+        </div>
+
+        <!-- Caption Field -->
+        <div class="card p-6">
+          <label class="block text-sm font-medium mb-3" for="{{ form.caption.id_for_label }}">
+            Описание
+          </label>
+          <textarea id="{{ form.caption.id_for_label }}"
+                    name="{{ form.caption.name }}"
+                    class="field min-h-24 resize-none"
+                    placeholder="Расскажите о процессе создания, использованных техниках или вдохновении..."
+                    maxlength="500">{{ form.caption.value|default:'' }}</textarea>
+          {% if form.caption.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.caption.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Поделитесь деталями промпта, техники или истории создания
+          </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div class="card p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <label class="text-sm font-medium">
+              Категории 
+            </label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <input type="search" 
+                     id="chipsSearch" 
+                     class="field pl-10 w-full sm:w-64 text-sm" 
+                     placeholder="Поиск категории...">
+            </div>
+          </div>
+
+          <div class="space-y-3" id="chipsBox" role="group" aria-label="Категории">
+            {% with selected=form.categories.value %}
+              {% for c in form.categories.field.queryset %}
+                {% with c.pk|stringformat:"s" as cid %}
+                <label class="chip-check group flex items-center gap-3 p-3 rounded-xl border border-[var(--bord)] hover:bg-black/[.02] dark:hover:bg-white/[.02] transition cursor-pointer{% if selected and cid in selected %} active bg-primary/10 border-primary/30{% endif %}">
+                  <input type="checkbox" 
+                         name="{{ form.categories.name }}" 
+                         value="{{ c.pk }}"
+                         class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                         {% if selected and cid in selected %}checked{% endif %}>
+                  <div class="flex-1">
+                    <div class="chip-text font-medium">{{ c.name }}</div>
+                    {% if c.description %}
+                      <div class="text-xs text-[var(--muted)] mt-1">{{ c.description|truncatechars:60 }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-primary transition {% if selected and cid in selected %}bg-primary border-primary{% endif %}">
+                    {% if selected and cid in selected %}
+                      <svg class="w-3 h-3 text-white m-0.5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 6l-11 11-5-5 1.5-1.5 3.5 3.5 9.5-9.5z"/>
+                      </svg>
+                    {% endif %}
+                  </div>
+                </label>
+                {% endwith %}
+              {% endfor %}
+            {% endwith %}
+          </div>
+
+          {% if form.categories.errors %}
+            <div class="mt-3 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.categories.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-3 text-xs text-[var(--muted)]">
+            Выберите одну или несколько подходящих категорий
+          </div>
+        </div>
+
+        <!-- Non-field Errors -->
+        {% if form.non_field_errors %}
+          <div class="card p-4 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+              </svg>
+              <div class="text-sm text-red-700 dark:text-red-300">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button class="btn btn-primary flex-1" type="submit">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+            Опубликовать в галерее
+          </button>
+          <a class="btn btn-ghost flex-1 text-center" href="{% url 'dashboard:my_jobs' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Отмена
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Publishing Guidelines -->
+  <div class="card p-6">
+    <h3 class="font-semibold mb-4">Правила публикации</h3>
+    <div class="grid sm:grid-cols-2 gap-6 text-sm">
+      <div>
+        <h4 class="font-medium text-green-600 dark:text-green-400 mb-2">✓ Разрешается</h4>
+        <ul class="space-y-1 text-[var(--muted)]">
+          <li>• Оригинальные AI-генерации</li>
+          <li>• Творческие и художественные работы</li>
+          <li>• Изображения для обучения и вдохновения</li>
+          <li>• Концепт-арт и дизайн</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-medium text-red-600 dark:text-red-400 mb-2">✗ Запрещается</h4>
+        <ul class="space-y-1 text-[var(--muted)]">
+          <li>• NSFW контент</li>
+          <li>• Изображения реальных людей без согласия</li>
+          <li>• Нарушение авторских прав</li>
+          <li>• Спам и дублирование</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Form elements
+  const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+  const captionInput = document.getElementById('{{ form.caption.id_for_label }}');
+  const previewTitle = document.getElementById('previewTitle');
+  const previewCaption = document.getElementById('previewCaption');
+  const chipsBox = document.getElementById('chipsBox');
+  const searchInput = document.getElementById('chipsSearch');
+
+  // Live preview updates
+  function updatePreview() {
+    const title = titleInput?.value?.trim() || 'Без названия';
+    const caption = captionInput?.value?.trim() || 'Добавьте описание...';
+    
+    if (previewTitle) previewTitle.textContent = title;
+    if (previewCaption) previewCaption.textContent = caption;
+  }
+
+  // Listen for input changes
+  titleInput?.addEventListener('input', updatePreview);
+  captionInput?.addEventListener('input', updatePreview);
+
+  // Initialize preview
+  updatePreview();
+
+  // Category selection handling
+  chipsBox?.addEventListener('click', (e) => {
+    const label = e.target.closest('.chip-check');
+    if (!label) return;
+
+    const checkbox = label.querySelector('input[type="checkbox"]');
+    const checkIcon = label.querySelector('.w-5.h-5 > svg');
+    
+    if (!checkbox) return;
+
+    // Toggle checkbox
+    checkbox.checked = !checkbox.checked;
+    
+    // Update visual state
+    if (checkbox.checked) {
+      label.classList.add('active', 'bg-primary/10', 'border-primary/30');
+      if (checkIcon) {
+        checkIcon.parentElement.classList.add('bg-primary', 'border-primary');
+        checkIcon.classList.remove('hidden');
+      }
+    } else {
+      label.classList.remove('active', 'bg-primary/10', 'border-primary/30');
+      if (checkIcon) {
+        checkIcon.parentElement.classList.remove('bg-primary', 'border-primary');
+        checkIcon.classList.add('hidden');
+      }
+    }
+  });
+
+  // Handle checkbox change events (for accessibility)
+  chipsBox?.addEventListener('change', (e) => {
+    const checkbox = e.target.closest('input[type="checkbox"]');
+    if (!checkbox) return;
+
+    const label = checkbox.closest('.chip-check');
+    const checkIcon = label?.querySelector('.w-5.h-5 > svg');
+    
+    if (checkbox.checked) {
+      label?.classList.add('active', 'bg-primary/10', 'border-primary/30');
+      if (checkIcon) {
+        checkIcon.parentElement.classList.add('bg-primary', 'border-primary');
+        checkIcon.classList.remove('hidden');
+      }
+    } else {
+      label?.classList.remove('active', 'bg-primary/10', 'border-primary/30');
+      if (checkIcon) {
+        checkIcon.parentElement.classList.remove('bg-primary', 'border-primary');
+        checkIcon.classList.add('hidden');
+      }
+    }
+  });
+
+  // Category search functionality
+  searchInput?.addEventListener('input', () => {
+    const query = searchInput.value.toLowerCase().trim();
+    const categories = chipsBox?.querySelectorAll('.chip-check') || [];
+
+    categories.forEach(label => {
+      const text = label.querySelector('.chip-text')?.textContent?.toLowerCase() || '';
+      const description = label.querySelector('.text-xs')?.textContent?.toLowerCase() || '';
+      const matches = text.includes(query) || description.includes(query);
+      
+      label.style.display = matches ? '' : 'none';
+    });
+
+    // Show "no results" message if needed
+    const visibleCategories = Array.from(categories).filter(label => 
+      label.style.display !== 'none'
+    );
+    
+    let noResultsMsg = chipsBox?.querySelector('.no-results');
+    if (visibleCategories.length === 0 && query) {
+      if (!noResultsMsg) {
+        noResultsMsg = document.createElement('div');
+        noResultsMsg.className = 'no-results text-center py-8 text-[var(--muted)]';
+        noResultsMsg.innerHTML = `
+          <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <div class="text-sm">Категории не найдены</div>
+        `;
+        chipsBox?.appendChild(noResultsMsg);
+      }
+    } else if (noResultsMsg) {
+      noResultsMsg.remove();
+    }
+  });
+
+  // Form validation enhancement
+  const form = document.querySelector('form');
+  form?.addEventListener('submit', (e) => {
+    const title = titleInput?.value?.trim();
+    const selectedCategories = chipsBox?.querySelectorAll('input[type="checkbox"]:checked') || [];
+
+    if (!title) {
+      e.preventDefault();
+      titleInput?.focus();
+      titleInput?.classList.add('border-red-500');
+      setTimeout(() => titleInput?.classList.remove('border-red-500'), 3000);
+      return;
+    }
+
+    if (selectedCategories.length === 0) {
+      e.preventDefault();
+      searchInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+  });
+
+  // Auto-resize textarea
+  function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
+  captionInput?.addEventListener('input', () => autoResize(captionInput));
+  
+  // Initialize textarea height
+  if (captionInput && captionInput.value) {
+    autoResize(captionInput);
+  }
+})();
+</script>
+
+<style>
+/* Custom checkbox styling */
+.chip-check input[type="checkbox"] {
+  appearance: none;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+/* Smooth transitions for category selection */
+.chip-check {
+  transition: all 0.2s ease;
+}
+
+.chip-check:hover {
+  transform: translateY(-1px);
+}
+
+.chip-check.active {
+  transform: translateY(-1px);
+}
+
+/* Better focus states */
+.chip-check:focus-within {
+  outline: 2px solid rgb(1 209 251);
+  outline-offset: 2px;
+}
+
+/* Auto-resize textarea */
+textarea.field {
+  resize: none;
+  overflow: hidden;
+  min-height: 6rem;
+}
+
+/* Search input styling */
+#chipsSearch:focus {
+  border-color: rgb(1 209 251);
+  box-shadow: 0 0 0 2px rgba(1, 209, 251, 0.3);
+}
+
+/* Form validation styles */
+.field.border-red-500 {
+  border-color: rgb(239 68 68);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+/* Mobile improvements */
+@media (max-width: 640px) {
+  .grid.lg\\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .chip-check {
+    padding: 16px 12px;
+  }
+  
+  .btn {
+    min-height: 48px;
+  }
+}
+
+/* Loading animation for preview */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton-media {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+[data-theme="dark"] .skeleton-media {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200px 100%;
+}
+</style>
+
+{% endblock %}

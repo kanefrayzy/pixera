@@ -1,0 +1,51 @@
+﻿{# FILE: templates/includes/pagination.html #}
+{% load i18n %}
+
+{% if is_paginated %}
+<nav class="pagination" role="navigation" aria-label="{% trans 'Пагинация' %}">
+  {# Кнопка «В начало» #}
+  {% if page_obj.number > 2 %}
+    <a
+      class="page-btn"
+      href="?page=1{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag|urlencode }}{% endif %}"
+      aria-label="{% trans 'Первая страница' %}"
+    >« {% trans 'В начало' %}</a>
+  {% endif %}
+
+  {# Предыдущая страница #}
+  {% if page_obj.has_previous %}
+    <a
+      class="page-btn"
+      rel="prev"
+      href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag|urlencode }}{% endif %}"
+      aria-label="{% trans 'Предыдущая страница' %}"
+    >{% trans 'Назад' %}</a>
+  {% endif %}
+
+  {# Текущая / всего #}
+  <span class="page-indicator" aria-current="page">
+    {% blocktrans with cur=page_obj.number total=page_obj.paginator.num_pages %}
+      Страница {{ cur }} из {{ total }}
+    {% endblocktrans %}
+  </span>
+
+  {# Следующая страница #}
+  {% if page_obj.has_next %}
+    <a
+      class="page-btn"
+      rel="next"
+      href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag|urlencode }}{% endif %}"
+      aria-label="{% trans 'Следующая страница' %}"
+    >{% trans 'Вперёд' %}</a>
+  {% endif %}
+
+  {# В конец #}
+  {% if page_obj.paginator.num_pages|add:'-1' > page_obj.number %}
+    <a
+      class="page-btn"
+      href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag|urlencode }}{% endif %}"
+      aria-label="{% trans 'Последняя страница' %}"
+    >{% trans 'В конец' %} »</a>
+  {% endif %}
+</nav>
+{% endif %}

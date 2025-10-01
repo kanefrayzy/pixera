@@ -1,0 +1,49 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+__pycache__/
+*.pyc
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3.bak
+/staticfiles/
+/media/
+
+# Environment
+.env
+.env.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Celery
+celerybeat-schedule*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+package-lock.json
+
+# Temporary files
+*.bak
+*.tmp
+query
+local.polib.txt
+fix_jobs_route.py.bak
+
+# Sensitive data
+*.pem
+*.key
+*.cert

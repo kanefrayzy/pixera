@@ -1,0 +1,491 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Политика конфиденциальности — AI Gallery{% endblock %}
+
+{% block hero %}
+<!-- Compact Hero -->
+<section class="py-12 sm:py-16 border-b border-[var(--bord)]">
+  <div class="container text-center">
+    <h1 class="text-3xl sm:text-4xl font-bold mb-3">Политика конфиденциальности</h1>
+    <p class="text-[var(--muted)]">
+      Последнее обновление: {{ today|default:"Январь 2025" }}
+    </p>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="py-12 sm:py-16">
+  <div class="container">
+    <div class="grid lg:grid-cols-4 gap-12">
+      
+      <!-- Sidebar Navigation (sticky) -->
+      <aside class="lg:col-span-1">
+        <nav class="card p-6 sticky top-20" aria-label="Навигация по разделам">
+          <div class="font-semibold mb-4">Содержание</div>
+          <ul class="space-y-2 text-sm">
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#who">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Кто мы
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#data-we-collect">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Какие данные мы собираем
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#purposes">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Зачем мы используем данные
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#cookies">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Cookie и хранилище
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#sharing">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Передача третьим лицам
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#retention">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Сроки хранения
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#rights">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Ваши права
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#children">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Несовершеннолетние
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#intl">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Международная передача
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#changes">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Изменения политики
+              </a>
+            </li>
+            <li>
+              <a class="nav-anchor flex items-center gap-2 py-1 text-[var(--muted)] hover:text-[var(--text)] transition" href="#contact">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+                </svg>
+                Контакты
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <article class="lg:col-span-3 space-y-12">
+        
+        <!-- Introduction -->
+        <div class="card p-6 sm:p-8 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+          <div class="flex items-start gap-4">
+            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+            </svg>
+            <div>
+              <div class="font-semibold text-blue-800 dark:text-blue-200 mb-2">О конфиденциальности</div>
+              <p class="text-blue-700 dark:text-blue-300 text-sm">
+                Мы обрабатываем минимальный объём данных, необходимый для работы сервиса. 
+                Подробности политики и права пользователя описаны на этой странице.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Who We Are -->
+        <section id="who" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Кто мы</h2>
+          <div class="card p-6">
+            <p class="text-[var(--muted)] mb-4">
+              AI Gallery (далее — «Сервис»). Если у вас есть вопросы по этой политике, свяжитесь с нами через форму на странице «Контакты».
+            </p>
+            {% url 'pages:contact' as contact_url %}
+            {% if contact_url %}
+              <a class="btn btn-ghost inline-flex" href="{{ contact_url }}">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Связаться с нами
+              </a>
+            {% endif %}
+          </div>
+        </section>
+
+        <!-- Data We Collect -->
+        <section id="data-we-collect" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Какие данные мы собираем</h2>
+          <div class="card p-6">
+            <ul class="space-y-4">
+              <li class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12C14.21 12 16 10.21 16 8S14.21 4 12 4 8 5.79 8 8 9.79 12 12 12M12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"/>
+                </svg>
+                <div>
+                  <div class="font-medium mb-1">Учётные данные</div>
+                  <div class="text-sm text-[var(--muted)]">E-mail, имя пользователя, хэш пароля (через систему аутентификации).</div>
+                </div>
+              </li>
+              <li class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <div>
+                  <div class="font-medium mb-1">Файлы и контент</div>
+                  <div class="text-sm text-[var(--muted)]">Загруженные вами изображения/промпты и их метаданные для работы функций галереи/генерации.</div>
+                </div>
+              </li>
+              <li class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.7,5.2A8,8,0,0,0,13,2V9L8.6,5.1A8,8,0,0,0,4,12H11L9.4,17A8,8,0,0,0,12,20V13L16.3,17.6A8,8,0,0,0,20.7,5.2Z"/>
+                </svg>
+                <div>
+                  <div class="font-medium mb-1">Технические данные</div>
+                  <div class="text-sm text-[var(--muted)]">IP-адрес, сведения о браузере и устройстве, cookie/локальное хранилище для сессии, языка и темы.</div>
+                </div>
+              </li>
+              <li class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
+                </svg>
+                <div>
+                  <div class="font-medium mb-1">Платежные метаданные</div>
+                  <div class="text-sm text-[var(--muted)]">Только то, что необходимо платёжному провайдеру; мы не храним данные карты.</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Purposes -->
+        <section id="purposes" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Зачем мы используем данные</h2>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="card p-6">
+              <div class="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold mb-2">Оказание услуг</h3>
+              <p class="text-sm text-[var(--muted)]">Вход, сессия, генерация и отображение контента, личный кабинет.</p>
+            </div>
+            
+            <div class="card p-6">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-purple-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.63,15.55 5.68,16.91L16.91,5.68C15.55,4.63 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.37,8.45 18.32,7.09L7.09,18.32C8.45,19.37 10.15,20 12,20Z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold mb-2">Персонализация</h3>
+              <p class="text-sm text-[var(--muted)]">Язык интерфейса, тема, предпочтения.</p>
+            </div>
+            
+            <div class="card p-6">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold mb-2">Безопасность</h3>
+              <p class="text-sm text-[var(--muted)]">Предотвращение злоупотреблений и спама, ограничение частоты запросов.</p>
+            </div>
+            
+            <div class="card p-6">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold mb-2">Правовые основания</h3>
+              <p class="text-sm text-[var(--muted)]">Исполнение договора (оферты), законные интересы, ваше согласие.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Cookies -->
+        <section id="cookies" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Cookie и локальное хранилище</h2>
+          <div class="card p-6">
+            <p class="text-[var(--muted)]">
+              Мы используем cookie и LocalStorage для сессии, выбора языка и темы. 
+              Вы можете ограничить их в настройках браузера, однако часть функций работать не будет.
+            </p>
+          </div>
+        </section>
+
+        <!-- Sharing -->
+        <section id="sharing" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Передача третьим лицам</h2>
+          <div class="card p-6">
+            <p class="text-[var(--muted)]">
+              Мы не продаём ваши персональные данные. Передача возможна только техническим провайдерам 
+              (хостинг, электронная почта, платёжные операторы) и только в объёме, необходимом для работы 
+              сервиса, с соблюдением договорных обязательств и требований закона.
+            </p>
+          </div>
+        </section>
+
+        <!-- Retention -->
+        <section id="retention" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Сроки хранения</h2>
+          <div class="card p-6">
+            <p class="text-[var(--muted)]">
+              Мы храним данные столько, сколько это необходимо для целей, описанных выше, либо пока у нас 
+              есть законные основания. Вы можете запросить удаление аккаунта и данных в любой момент, за 
+              исключением случаев, когда их хранение требуется по закону.
+            </p>
+          </div>
+        </section>
+
+        <!-- Rights -->
+        <section id="rights" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Ваши права</h2>
+          <div class="card p-6 space-y-4">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <div class="text-[var(--muted)]">Право на доступ и получение копии данных.</div>
+            </div>
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <div class="text-[var(--muted)]">Право на исправление неточностей.</div>
+            </div>
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <div class="text-[var(--muted)]">Право на удаление («быть забытым») и ограничение обработки.</div>
+            </div>
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <div class="text-[var(--muted)]">Право возражать против обработки и переносимость данных (где применимо).</div>
+            </div>
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <div class="text-[var(--muted)]">Право отозвать согласие, если обработка основана на согласии.</div>
+            </div>
+            
+            <div class="pt-4 border-t border-[var(--bord)]">
+              <p class="text-sm text-[var(--muted)]">
+                Для реализации прав отправьте запрос через форму «Контакты». Мы можем попросить подтвердить вашу личность.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Children -->
+        <section id="children" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Несовершеннолетние</h2>
+          <div class="card p-6 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+              </svg>
+              <p class="text-amber-700 dark:text-amber-300">
+                Сервис предназначен для пользователей 18+. Мы не сознательно собираем данные лиц младше 18 лет. 
+                Если вы считаете, что несовершеннолетний предоставил нам данные, свяжитесь с нами — мы оперативно удалим информацию.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- International Transfer -->
+        <section id="intl" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Международная передача данных</h2>
+          <div class="card p-6">
+            <p class="text-[var(--muted)]">
+              Данные могут обрабатываться на серверах за пределами вашей страны. В таких случаях мы применяем 
+              соответствующие защитные меры (например, договорные обязательства с провайдерами).
+            </p>
+          </div>
+        </section>
+
+        <!-- Changes -->
+        <section id="changes" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Изменения политики</h2>
+          <div class="card p-6">
+            <p class="text-[var(--muted)]">
+              Мы можем обновлять эту политику. Новая редакция применяется с момента публикации на сайте. 
+              В случае существенных изменений мы уведомим пользователей доступным способом.
+            </p>
+          </div>
+        </section>
+
+        <!-- Contact -->
+        <section id="contact" class="scroll-mt-24">
+          <h2 class="text-2xl font-bold mb-4">Контакты</h2>
+          <div class="card p-6">
+            <p class="text-[var(--muted)] mb-4">
+              По вопросам конфиденциальности используйте страницу «Контакты».
+            </p>
+            {% url 'pages:contact' as contact_url %}
+            {% if contact_url %}
+              <a class="btn btn-primary inline-flex" href="{{ contact_url }}">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Связаться с нами
+              </a>
+            {% endif %}
+          </div>
+        </section>
+
+      </article>
+    </div>
+  </div>
+</div>
+
+<script>
+// Smooth scroll for anchor links
+document.addEventListener('DOMContentLoaded', () => {
+  const anchors = document.querySelectorAll('.nav-anchor');
+  
+  anchors.forEach(anchor => {
+    anchor.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = anchor.getAttribute('href').substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+        
+        // Update active state
+        anchors.forEach(a => {
+          a.classList.remove('text-primary', 'font-medium');
+          a.classList.add('text-[var(--muted)]');
+        });
+        anchor.classList.add('text-primary', 'font-medium');
+        anchor.classList.remove('text-[var(--muted)]');
+      }
+    });
+  });
+
+  // Highlight active section on scroll
+  const sections = document.querySelectorAll('section[id]');
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        anchors.forEach(a => {
+          const href = a.getAttribute('href');
+          if (href === `#${id}`) {
+            a.classList.add('text-primary', 'font-medium');
+            a.classList.remove('text-[var(--muted)]');
+          } else {
+            a.classList.remove('text-primary', 'font-medium');
+            a.classList.add('text-[var(--muted)]');
+          }
+        });
+      }
+    });
+  }, {
+    threshold: 0.5,
+    rootMargin: '-100px 0px -50% 0px'
+  });
+
+  sections.forEach(section => observer.observe(section));
+});
+</script>
+
+<style>
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Active nav link indicator */
+.nav-anchor {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.nav-anchor.text-primary::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 100%;
+  background-color: rgb(1 209 251);
+  border-radius: 2px;
+}
+
+/* Scroll margin for anchors */
+.scroll-mt-24 {
+  scroll-margin-top: 6rem;
+}
+
+/* Sticky sidebar improvements */
+@media (min-width: 1024px) {
+  aside nav {
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+  }
+}
+
+/* Mobile improvements */
+@media (max-width: 1023px) {
+  aside {
+    display: none;
+  }
+}
+</style>
+
+{% endblock %}

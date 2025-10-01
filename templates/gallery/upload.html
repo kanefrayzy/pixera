@@ -1,0 +1,16 @@
+﻿{% extends "base.html" %}
+{% block title %}Загрузка — AI Gallery{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block content %}
+<section class="section">
+  <h1 class="page-title">Загрузить изображение</h1>
+  <form method="post" enctype="multipart/form-data" class="panel form-stack">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn">Загрузить</button>
+  </form>
+</section>
+{% endblock %}
+
+

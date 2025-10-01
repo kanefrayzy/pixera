@@ -1,0 +1,76 @@
+/* Enhanced details styling */
+details summary {
+  transition: all 0.2s ease;
+}
+
+details[open] summary {
+  border-bottom: 1px solid var(--bord);
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Copy button improvements */
+.copy-btn {
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Tag button enhancements */
+.tag-btn {
+  transition: all 0.2s ease;
+}
+
+.tag-btn:hover {
+  transform: translateY(-1px);
+}
+
+.tag-btn:active {
+  transform: translateY(0);
+}
+
+/* Input field enhancements */
+.field {
+  transition: all 0.2s ease;
+}
+
+.field:focus {
+  transform: translateY(-1px);
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .grid.sm\:grid-cols-2 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .card {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Code block styling */
+code {
+  line-height: 1.6;
+}
+
+/* Builder output styling */
+#b-out {
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+}

@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block meta_title %}Удалить статью — {{ post.title }} | Блог AI Gallery{% endblock %}
+{% block meta_description %}Подтверждение удаления статьи блога. Действие необратимо.{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <!-- Breadcrumbs -->
+  <nav class="flex items-center gap-2 text-sm text-[var(--muted)]" aria-label="Хлебные крошки">
+    <a href="{% url 'pages:home' %}" class="hover:text-[var(--text)] transition">Главная</a>
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <a href="{% url 'blog:index' %}" class="hover:text-[var(--text)] transition">Блог</a>
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <a href="{{ post.get_absolute_url }}" class="hover:text-[var(--text)] transition">{{ post.title|truncatechars:30 }}</a>
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <span aria-current="page">Удаление</span>
+  </nav>
+
+  <!-- Warning Dialog -->
+  <div class="card p-8 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20" 
+       role="dialog" 
+       aria-modal="true" 
+       aria-labelledby="delTitle" 
+       aria-describedby="delDesc">
+    
+    <!-- Warning Header -->
+    <div class="flex items-start gap-4 mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-red-600 dark:text-red-400" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h1 class="text-2xl font-bold text-red-800 dark:text-red-200 mb-2" id="delTitle">
+          Удалить статью?
+        </h1>
+        <p class="text-red-700 dark:text-red-300" id="delDesc">
+          Вы собираетесь удалить статью <strong>«{{ post.title }}»</strong>. 
+          Это действие <strong>необратимо</strong> — статья и все связанные с ней файлы будут потеряны навсегда.
+        </p>
+      </div>
+    </div>
+
+    <!-- Article Preview -->
+    <div class="card p-4 mb-6 bg-white dark:bg-black/20">
+      {% if post.cover %}
+        <div class="flex gap-4">
+          <img src="{{ post.cover.url }}" 
+               alt="Обложка статьи «{{ post.title }}»" 
+               class="w-20 h-20 rounded-xl object-cover flex-shrink-0">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold mb-2 line-clamp-2">{{ post.title }}</h3>
+            {% if post.excerpt %}
+              <p class="text-sm text-[var(--muted)] line-clamp-2">{{ post.excerpt }}</p>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        <div class="flex items-center gap-4">
+          <div class="w-20 h-20 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+            <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold mb-2">{{ post.title }}</h3>
+            {% if post.excerpt %}
+              <p class="text-sm text-[var(--muted)] line-clamp-2">{{ post.excerpt }}</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Article Metadata -->
+    <div class="grid sm:grid-cols-2 gap-4 mb-6 p-4 rounded-xl bg-black/[.02] dark:bg-white/[.02]">
+      <div>
+        <div class="text-xs text-[var(--muted)] font-medium uppercase tracking-wide mb-1">Slug</div>
+        <code class="text-sm bg-black/10 dark:bg-white/10 px-2 py-1 rounded">{{ post.slug }}</code>
+      </div>
+      
+      {% if post.published_at %}
+        <div>
+          <div class="text-xs text-[var(--muted)] font-medium uppercase tracking-wide mb-1">Опубликовано</div>
+          <div class="text-sm">{{ post.published_at|date:"d.m.Y H:i" }}</div>
+        </div>
+      {% endif %}
+      
+      {% if post.updated_at %}
+        <div>
+          <div class="text-xs text-[var(--muted)] font-medium uppercase tracking-wide mb-1">Обновлено</div>
+          <div class="text-sm">{{ post.updated_at|date:"d.m.Y H:i" }}</div>
+        </div>
+      {% endif %}
+      
+      <div>
+        <div class="text-xs text-[var(--muted)] font-medium uppercase tracking-wide mb-1">Автор</div>
+        <div class="text-sm">вы</div>
+      </div>
+    </div>
+
+    <!-- Consequences Warning -->
+    <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-6">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+        </svg>
+        <div class="text-sm">
+          <div class="font-medium text-amber-800 dark:text-amber-200 mb-2">Что будет удалено:</div>
+          <ul class="text-amber-700 dark:text-amber-300 space-y-1">
+            <li>• Сама статья и её содержимое</li>
+            <li>• Обложка и все прикрепленные изображения</li>
+            <li>• SEO-метаданные и настройки публикации</li>
+            <li>• Все комментарии и лайки (если есть)</li>
+            <li>• Ссылки и упоминания в других местах станут недоступными</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Form -->
+    <form method="post" action="" novalidate class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Confirmation Checkbox -->
+      <label class="flex items-start gap-3 cursor-pointer group">
+        <input id="confirmChk" 
+               type="checkbox" 
+               class="w-5 h-5 text-red-600 rounded border-gray-300 focus:ring-red-500 mt-0.5">
+        <span class="text-sm group-hover:text-[var(--text)] transition">
+          Я понимаю, что статья <strong>«{{ post.title }}»</strong> и все связанные с ней файлы будут удалены безвозвратно. 
+          Восстановление будет невозможно.
+        </span>
+      </label>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-3 pt-4">
+        <button id="delBtn" 
+                class="btn bg-red-600 hover:bg-red-700 text-white px-6 py-3 flex-1 opacity-50 cursor-not-allowed" 
+                type="submit" 
+                disabled>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          Удалить статью навсегда
+        </button>
+        
+        <a class="btn btn-ghost px-6 py-3 flex-1 text-center" href="{{ post.get_absolute_url }}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Отмена
+        </a>
+      </div>
+    </form>
+
+    <!-- Alternative Actions -->
+    <div class="mt-6 pt-6 border-t border-red-200 dark:border-red-800">
+      <div class="text-sm text-red-700 dark:text-red-300 mb-3">
+        <strong>Альтернативы удалению:</strong>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="{{ post.get_absolute_url }}edit/" class="btn btn-ghost text-sm py-2">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          Редактировать
+        </a>
+        <button class="btn btn-ghost text-sm py-2" onclick="toggleDraft()" id="draftBtn">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          Снять с публикации
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const checkbox = document.getElementById('confirmChk');
+  const deleteBtn = document.getElementById('delBtn');
+  
+  if (checkbox && deleteBtn) {
+    checkbox.addEventListener('change', function() {
+      if (this.checked) {
+        deleteBtn.disabled = false;
+        deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        deleteBtn.classList.add('hover:bg-red-700');
+      } else {
+        deleteBtn.disabled = true;
+        deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        deleteBtn.classList.remove('hover:bg-red-700');
+      }
+    });
+  }
+
+  // Double confirmation on submit
+  const form = document.querySelector('form');
+  form?.addEventListener('submit', function(e) {
+    if (!confirm('Вы действительно хотите удалить эту статью? Это действие нельзя отменить.')) {
+      e.preventDefault();
+    }
+  });
+
+  // Alternative action handlers
+  window.toggleDraft = function() {
+    if (confirm('Снять статью с публикации вместо удаления?')) {
+      // Redirect to edit page or make AJAX call to unpublish
+      window.location.href = "{{ post.get_absolute_url }}edit/";
+    }
+  };
+})();
+</script>
+
+<style>
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Enhanced button states */
+.btn:disabled {
+  transform: none !important;
+}
+
+.btn:disabled:hover {
+  transform: none !important;
+}
+
+/* Smooth transitions */
+.btn, 
+.checkbox input,
+label {
+  transition: all 0.2s ease;
+}
+
+/* Focus states for accessibility */
+input[type="checkbox"]:focus {
+  outline: 2px solid rgb(239 68 68);
+  outline-offset: 2px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .grid.sm\\:grid-cols-2 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .flex.flex-col.sm\\:flex-row {
+    flex-direction: column;
+  }
+  
+  .btn {
+    min-height: 48px;
+  }
+}
+</style>
+
+{% endblock %}

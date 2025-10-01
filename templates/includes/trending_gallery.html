@@ -1,0 +1,38 @@
+{% load static %}
+
+<!-- Community Gallery Section -->
+<section id="community" class="container py-12 sm:py-16" data-trending-endpoint="{% url 'gallery:trending_snippet' %}">
+  <div class="flex items-end justify-between gap-4">
+    <div>
+      <h2 class="text-2xl sm:text-3xl font-bold">Работы сообщества</h2>
+      <p class="mt-2 text-[var(--muted)] text-sm">Лучшие творения участников нашего сообщества</p>
+    </div>
+    <div class="hidden sm:flex items-center gap-2 trend-toggle" role="tablist" aria-label="Фильтр галереи">
+      <button type="button" class="btn btn-ghost" role="tab" aria-selected="true" data-selected="true" data-trend-switch data-by="likes">Тренд</button>
+      <button type="button" class="btn btn-ghost" role="tab" aria-selected="false" data-trend-switch data-by="new">Новые</button>
+      <a class="btn btn-primary" href="{% url 'generate:new' %}">Создать свою</a>
+    </div>
+  </div>
+
+  <!-- Gallery Grid container -->
+  <div id="trending-grid" class="mt-6">
+    {% include "includes/trending_gallery_grid.html" with trending_photos=trending_photos %}
+  </div>
+
+    <!-- Mobile buttons -->
+    <div class="mt-6 flex sm:hidden items-center justify-center gap-2 trend-toggle">
+      <button type="button" class="btn btn-ghost text-sm" role="tab" aria-selected="true" data-selected="true" data-trend-switch data-by="likes">Тренд</button>
+      <button type="button" class="btn btn-ghost text-sm" role="tab" aria-selected="false" data-trend-switch data-by="new">Новые</button>
+      <a class="btn btn-primary text-sm" href="{% url 'generate:new' %}">Создать</a>
+    </div>
+
+    <!-- Show more link -->
+    <div class="mt-8 text-center">
+      <a class="btn btn-ghost" href="{% url 'gallery:index' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+        Смотреть всю галерею
+      </a>
+    </div>
+</section>

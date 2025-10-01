@@ -1,0 +1,249 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Связаться с нами — AI Gallery{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-12">
+
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-4xl font-bold mb-4">Связаться с нами</h1>
+    <p class="text-xl text-[var(--muted)] max-w-2xl mx-auto">
+      Мы всегда рады помочь. Выберите удобный способ связи или напишите нам напрямую.
+    </p>
+  </div>
+
+  <!-- Contact Methods -->
+  <div class="grid md:grid-cols-3 gap-6">
+    <!-- Email -->
+    <div class="card p-6 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Email</h3>
+      <p class="text-sm text-[var(--muted)] mb-4">Напишите нам на почту</p>
+      <a href="mailto:support@example.com" class="btn btn-primary w-full text-sm">
+        support@example.com
+      </a>
+    </div>
+
+    <!-- Support -->
+    <div class="card p-6 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">База знаний</h3>
+      <p class="text-sm text-[var(--muted)] mb-4">Ответы на частые вопросы</p>
+      <a href="#faq" class="btn btn-ghost w-full text-sm">
+        Смотреть FAQ
+      </a>
+    </div>
+
+    <!-- Community -->
+    <div class="card p-6 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Сообщество</h3>
+      <p class="text-sm text-[var(--muted)] mb-4">Обсуждения и идеи</p>
+      <button class="btn btn-ghost w-full text-sm" disabled>
+        Скоро
+      </button>
+    </div>
+  </div>
+
+  <!-- Contact Form Preview -->
+  <div class="card p-8">
+    <div class="flex items-start gap-4 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold mb-2">Форма обратной связи</h2>
+        <p class="text-[var(--muted)]">
+          Мы работаем над добавлением полноценной формы обратной связи. 
+          Пока вы можете связаться с нами по email выше.
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Preview -->
+    <div class="space-y-4 opacity-60 pointer-events-none">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Ваше имя</label>
+          <input type="text" class="field" placeholder="Иван Иванов" disabled>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Email</label>
+          <input type="email" class="field" placeholder="ivan@example.com" disabled>
+        </div>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium mb-2">Тема обращения</label>
+        <select class="field" disabled>
+          <option>Выберите тему...</option>
+          <option>Техническая поддержка</option>
+          <option>Вопрос о тарифах</option>
+          <option>Сотрудничество</option>
+          <option>Другое</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium mb-2">Сообщение</label>
+        <textarea class="field min-h-32 resize-none" placeholder="Опишите ваш вопрос или предложение..." disabled></textarea>
+      </div>
+      
+      <div class="flex items-start gap-2">
+        <input type="checkbox" class="w-4 h-4 mt-0.5 rounded" disabled>
+        <label class="text-sm text-[var(--muted)]">
+          Я согласен на обработку персональных данных
+        </label>
+      </div>
+      
+      <button class="btn btn-primary" disabled>
+        Отправить сообщение
+      </button>
+    </div>
+
+    <div class="mt-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+        </svg>
+        <div class="text-sm text-blue-700 dark:text-blue-300">
+          <strong>Скоро:</strong> Форма появится в одном из следующих обновлений. 
+          А пока — пишите на <a href="mailto:support@example.com" class="underline font-medium">support@example.com</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Section -->
+  <div id="faq" class="card p-8">
+    <h2 class="text-2xl font-bold mb-6">Часто задаваемые вопросы</h2>
+    
+    <div class="space-y-4">
+      <details class="group" open>
+        <summary class="flex items-center justify-between cursor-pointer p-4 rounded-xl hover:bg-black/[.02] dark:hover:bg-white/[.02] transition">
+          <span class="font-medium">Как быстро вы отвечаете на запросы?</span>
+          <svg class="w-5 h-5 transform group-open:rotate-180 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </summary>
+        <div class="px-4 pb-4 text-[var(--muted)]">
+          Обычно мы отвечаем в течение 24 часов в рабочие дни. 
+          В выходные ответ может занять до 48 часов.
+        </div>
+      </details>
+
+      <details class="group">
+        <summary class="flex items-center justify-between cursor-pointer p-4 rounded-xl hover:bg-black/[.02] dark:hover:bg-white/[.02] transition">
+          <span class="font-medium">Можно ли получить консультацию по промптам?</span>
+          <svg class="w-5 h-5 transform group-open:rotate-180 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </summary>
+        <div class="px-4 pb-4 text-[var(--muted)]">
+          Да, мы помогаем улучшить промпты для лучших результатов. 
+          Также у нас есть раздел с готовыми подсказками и руководства в блоге.
+        </div>
+      </details>
+
+      <details class="group">
+        <summary class="flex items-center justify-between cursor-pointer p-4 rounded-xl hover:bg-black/[.02] dark:hover:bg-white/[.02] transition">
+          <span class="font-medium">Как сообщить о проблеме с генерацией?</span>
+          <svg class="w-5 h-5 transform group-open:rotate-180 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </summary>
+        <div class="px-4 pb-4 text-[var(--muted)]">
+          Напишите нам на email с указанием ID обработки и описанием проблемы. 
+          Мы проверим логи и поможем разобраться.
+        </div>
+      </details>
+
+      <details class="group">
+        <summary class="flex items-center justify-between cursor-pointer p-4 rounded-xl hover:bg-black/[.02] dark:hover:bg-white/[.02] transition">
+          <span class="font-medium">Есть ли возможность сотрудничества для бизнеса?</span>
+          <svg class="w-5 h-5 transform group-open:rotate-180 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </summary>
+        <div class="px-4 pb-4 text-[var(--muted)]">
+          Да, мы предлагаем корпоративные тарифы и API для интеграции. 
+          Напишите на support@example.com с пометкой "Сотрудничество".
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- Additional Resources -->
+  <div class="grid sm:grid-cols-2 gap-6">
+    <div class="card p-6">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold mb-2">Документация</h3>
+          <p class="text-sm text-[var(--muted)] mb-3">
+            Подробные гайды по использованию платформы и API
+          </p>
+          <a href="{% url 'blog:index' %}" class="text-sm text-primary hover:underline">
+            Перейти к блогу →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-6">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold mb-2">Политика конфиденциальности</h3>
+          <p class="text-sm text-[var(--muted)] mb-3">
+            Как мы обрабатываем и защищаем ваши данные
+          </p>
+          <a href="{% url 'pages:privacy' %}" class="text-sm text-primary hover:underline">
+            Читать подробнее →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Response Time Info -->
+  <div class="card p-6 bg-gradient-to-br from-primary/5 via-blue-500/5 to-purple-500/5">
+    <div class="text-center">
+      <div class="flex items-center justify-center gap-2 mb-3">
+        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span class="font-semibold">Среднее время ответа: 24 часа</span>
+      </div>
+      <p class="text-sm text-[var(--muted)] max-w-2xl mx-auto">
+        Мы стараемся отвечать как можно быстрее. Для срочных вопросов укажите "Срочно" в теме письма.
+      </p>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

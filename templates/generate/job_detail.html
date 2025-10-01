@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Ваша обработка — AI Gallery{% endblock %}
+
+{# ── SEO / Social ── #}
+{% block head_extra %}
+  <link rel="canonical" href="{{ request.build_absolute_uri }}">
+  {% if image_url %}
+    {% with abs_img=request.scheme|add:"://"|add:request.get_host|add:image_url %}
+      <meta property="og:type" content="website">
+      <meta property="og:title" content="AI-генерация — результат">
+      <meta property="og:description" content="{{ job.prompt|default:'AI image'|truncatechars:180 }}">
+      <meta property="og:image" content="{{ abs_img }}">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="AI-генерация — результат">
+      <meta name="twitter:description" content="{{ job.prompt|default:'AI image'|truncatechars:180 }}">
+      <meta name="twitter:image" content="{{ abs_img }}">
+    {% endwith %}
+  {% endif %}
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ImageObject",
+    "name": "AI-generated image",
+    "description": "{{ job.prompt|default:'AI image'|truncatechars:180|escapejs }}",
+    "contentUrl": "{% if image_url %}{{ request.scheme }}://{{ request.get_host }}{{ image_url }}{% else %}{{ request.build_absolute_uri }}{% endif %}",
+    "dateCreated": "{{ job.created_at|date:'c' }}"
+  }
+  </script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8" itemscope itemtype="https://schema.org/CreativeWork">
+
+  {% include "includes/messages.html" %}
+
+  <!-- Header -->
+  <div class="card p-6 sm:p-8">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div class="flex-1 min-w-0">
+        <h1 class="text-2xl sm:text-3xl font-bold mb-3" itemprop="name">Ваша обработка</h1>
+        {% if job.prompt %}
+          <div class="p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]" itemprop="description">
+            <div class="text-sm text-[var(--muted)] mb-1">Промпт:</div>
+            <div class="break-words" title="{{ job.prompt }}">
+              {{ job.prompt|truncatechars:200 }}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 text-primary" id="statusBadge" aria-live="polite">
+          <div class="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+          <span class="text-sm font-medium">{{ job.status|default:"Обработка..." }}</span>
+        </div>
+        <a class="btn btn-ghost" href="{% url 'generate:new' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Сделать ещё
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="grid lg:grid-cols-3 gap-8">
+    
+    <!-- Image Section -->
+    <div class="lg:col-span-2">
+      <div class="card overflow-hidden">
+        <figure class="relative">
+          {% if image_url %}
+            <img id="resultImg"
+                 class="w-full aspect-square object-cover transition-all duration-500 blur-sm"
+                 src="{{ image_url }}"
+                 alt="Результат генерации"
+                 loading="eager" 
+                 decoding="async">
+          {% else %}
+            <img id="resultImg"
+                 class="w-full aspect-square object-cover transition-all duration-500 blur-sm"
+                 src="{% url 'generate:job_image' pk=job.pk slug=job.prompt|slugify %}"
+                 alt="Результат генерации"
+                 loading="eager" 
+                 decoding="async">
+          {% endif %}
+          
+          <!-- Loading Overlay -->
+          <div id="loadingOverlay" class="absolute inset-0 bg-black/20 flex items-center justify-center">
+            <div class="card p-6 text-center">
+              <div class="w-16 h-16 mx-auto mb-4 relative">
+                <div class="absolute inset-0 rounded-full border-4 border-[var(--bord)]"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" id="loadingSpinner"></div>
+              </div>
+              <div class="text-sm text-[var(--muted)]">Генерируем ваше изображение...</div>
+            </div>
+          </div>
+        </figure>
+        
+        <div class="p-4">
+          <div class="flex items-center justify-between text-sm text-[var(--muted)]">
+            {% if job.created_at %}
+              <span>Создано: {{ job.created_at|date:"d.m.Y, H:i" }}</span>
+            {% endif %}
+            <span id="dimensionsInfo"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Sidebar -->
+    <div class="space-y-6">
+      
+      <!-- Progress Ring -->
+      <div class="card p-6 text-center">
+        <div class="relative w-24 h-24 mx-auto mb-4">
+          <!-- Background circle -->
+          <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" stroke="var(--bord)" stroke-width="8" fill="none"/>
+            <circle id="progressCircle" cx="50" cy="50" r="40" stroke="rgb(1 209 251)" stroke-width="8" fill="none" 
+                    stroke-dasharray="251.2" stroke-dashoffset="251.2" 
+                    style="transition: stroke-dashoffset 0.3s ease"/>
+          </svg>
+          
+          <!-- Percentage text -->
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div>
+              <div class="text-2xl font-bold" id="pctNum">0</div>
+              <div class="text-xs text-[var(--muted)]">%</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="space-y-2">
+          <div class="text-sm text-[var(--muted)]">Прогресс: <span class="font-medium" id="pctText">0%</span></div>
+          <div class="text-sm text-[var(--muted)]">ETA: <span class="font-medium" id="etaText">~1:00</span></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-4">Действия</h3>
+        <div class="space-y-3">
+          <a id="openLink" 
+             class="btn btn-primary w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}" 
+             href="{{ image_url|default:'#' }}" 
+             {% if not image_url %}aria-disabled="true"{% endif %} 
+             target="_blank" 
+             rel="nofollow noopener">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            Открыть изображение
+          </a>
+          
+          <button id="downloadBtn" 
+                  class="btn btn-ghost w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}" 
+                  {% if not image_url %}disabled{% endif %}>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Скачать
+          </button>
+          
+          <a class="btn btn-ghost w-full" href="{% url 'generate:new' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Создать новое
+          </a>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="card p-6">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9l-5 4.87L18.18 21 12 17.77 5.82 21 7 13.87 2 9l6.91-.74L12 2z"/>
+          </svg>
+          <div>
+            <div class="font-medium text-sm mb-2">Совет для лучших результатов</div>
+            <div class="text-sm text-[var(--muted)]" id="tipLine">
+              Совет: добавляйте детали освещения — "soft studio light", "rim light".
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technical Info -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-4">Техническая информация</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-[var(--muted)]">Job ID:</span>
+            <span class="font-mono">{{ job.id }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-[var(--muted)]">Модель:</span>
+            <span>Stable Diffusion</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-[var(--muted)]">Размер:</span>
+            <span id="imageDimensions">1024×1024</span>
+          </div>
+          {% if job.created_at %}
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Создано:</span>
+              <span>{{ job.created_at|date:"H:i" }}</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const ESTIMATE_MS = {{ estimate_ms|default:60000 }};
+  const POLL_URL = "{{ poll_url }}";
+  const IMG_URL = "{{ image_url|default_if_none:'' }}";
+  const jobId = {{ job.id }};
+
+  const imgEl = document.getElementById('resultImg');
+  const openLnk = document.getElementById('openLink');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const badge = document.getElementById('statusBadge');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const progressCircle = document.getElementById('progressCircle');
+  
+  const pctNum = document.getElementById('pctNum');
+  const pctText = document.getElementById('pctText');
+  const etaEl = document.getElementById('etaText');
+  const tipEl = document.getElementById('tipLine');
+
+  const tips = [
+    "Совет: уточняйте освещение — \"soft studio light\", \"rim light\".",
+    "Совет: указывайте объектив — \"35mm / 85mm, f/1.8\".",
+    "Совет: добавляйте материалы — \"matte metal, velvet, glass reflections\".",
+    "Совет: настроение — \"warm tones, high contrast, orange–teal\".",
+    "Совет: детали композиции — \"close-up\", \"medium shot\", \"full body\".",
+    "Совет: стиль фотографии — \"RAW photo\", \"HDR\", \"film grain\", \"Portra 400\"."
+  ];
+
+  // Image load handling
+  imgEl.addEventListener('load', () => {
+    imgEl.classList.remove('blur-sm');
+    loadingOverlay.style.display = 'none';
+    
+    // Update dimensions info
+    const dimensions = `${imgEl.naturalWidth}×${imgEl.naturalHeight}`;
+    document.getElementById('imageDimensions').textContent = dimensions;
+    const dimensionsInfo = document.getElementById('dimensionsInfo');
+    if (dimensionsInfo) dimensionsInfo.textContent = dimensions;
+  });
+
+  // Download functionality
+  downloadBtn.addEventListener('click', async () => {
+    if (!IMG_URL && !openLnk.href.includes('http')) return;
+    
+    try {
+      const response = await fetch(openLnk.href);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ai-generation-${jobId}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.warn('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(openLnk.href, '_blank');
+    }
+  });
+
+  // Progress animation
+  let start = performance.now(), stop = false, raf;
+  
+  function setProgress(percentage) {
+    percentage = Math.max(0, Math.min(100, percentage));
+    const circumference = 2 * Math.PI * 40; // radius = 40
+    const offset = circumference - (percentage / 100) * circumference;
+    
+    pctNum.textContent = Math.round(percentage);
+    pctText.textContent = Math.round(percentage) + "%";
+    progressCircle.style.strokeDashoffset = offset;
+  }
+  
+  function setEta(ms) {
+    if (ms <= 0) { 
+      etaEl.textContent = "~0:00"; 
+      return; 
+    }
+    const s = Math.ceil(ms / 1000);
+    const minutes = Math.floor(s / 60);
+    const seconds = s % 60;
+    etaEl.textContent = `~${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+  
+  function updateStatus(status, isError = false) {
+    const statusDot = badge.querySelector('.w-2');
+    const statusText = badge.querySelector('span');
+    
+    if (isError) {
+      badge.className = 'flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400';
+      statusDot.className = 'w-2 h-2 bg-current rounded-full';
+      statusText.textContent = status;
+    } else if (status.toLowerCase().includes('готово') || status.toLowerCase().includes('done')) {
+      badge.className = 'flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400';
+      statusDot.className = 'w-2 h-2 bg-current rounded-full';
+      statusText.textContent = status;
+    } else {
+      statusText.textContent = status;
+    }
+  }
+
+  function tick() {
+    const now = performance.now();
+    const elapsed = now - start;
+    
+    // Smooth progress curve - slower at the end
+    let percentage = (elapsed / ESTIMATE_MS) * 100;
+    if (elapsed < ESTIMATE_MS) {
+      percentage = Math.min(percentage, 95);
+    } else {
+      // Slow progress after estimate
+      percentage = Math.min(98, 95 + (elapsed - ESTIMATE_MS) / 10000);
+    }
+    
+    if (!stop) { 
+      setProgress(percentage);
+      setEta(Math.max(0, ESTIMATE_MS - elapsed));
+      raf = requestAnimationFrame(tick);
+    }
+  }
+
+  // Tips rotator
+  let tipIdx = 0;
+  const tipTimer = setInterval(() => {
+    tipEl.textContent = tips[(tipIdx++) % tips.length];
+  }, 4000);
+
+  // Start progress animation
+  tick();
+
+  // Polling function
+  async function poll() {
+    let delay = 900;
+    
+    while (true) {
+      try {
+        const response = await fetch(POLL_URL, {
+          headers: { 'X-Requested-With': 'fetch' }
+        });
+        const data = await response.json();
+
+        // Update status
+        if (data.provider_status) {
+          const niceStatus = String(data.provider_status)
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+          updateStatus("Статус: " + niceStatus);
+        }
+
+        // Handle failure
+        if (data.failed) {
+          updateStatus("Ошибка генерации", true);
+          clearInterval(tipTimer);
+          cancelAnimationFrame(raf);
+          setProgress(0);
+          alert(data.error || "Произошла ошибка при генерации изображения");
+          return;
+        }
+
+        // Handle completion
+        if (data.done && data.image && data.image.url) {
+          stop = true;
+          cancelAnimationFrame(raf);
+          setProgress(100);
+          setEta(0);
+          updateStatus("Готово");
+          clearInterval(tipTimer);
+
+          // Update image and links
+          const cacheBuster = data.image.url + (data.image.url.includes("?") ? "&" : "?") + "t=" + Date.now();
+          imgEl.src = cacheBuster;
+          openLnk.href = data.image.url;
+          openLnk.classList.remove('opacity-50', 'pointer-events-none');
+          openLnk.removeAttribute('aria-disabled');
+          
+          downloadBtn.classList.remove('opacity-50', 'pointer-events-none');
+          downloadBtn.removeAttribute('disabled');
+          
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(2500, delay * 1.15);
+        
+      } catch (error) {
+        console.warn('Polling error:', error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(5000, delay * 1.2);
+      }
+    }
+  }
+
+  // Start polling if not already complete
+  if (!IMG_URL) {
+    poll();
+  } else {
+    // Already complete
+    setProgress(100);
+    setEta(0);
+    updateStatus("Готово");
+    stop = true;
+    cancelAnimationFrame(raf);
+    clearInterval(tipTimer);
+    
+    openLnk.classList.remove('opacity-50', 'pointer-events-none');
+    downloadBtn.classList.remove('opacity-50', 'pointer-events-none');
+    downloadBtn.removeAttribute('disabled');
+  }
+})();
+</script>
+
+<style>
+/* Smooth transitions for all interactive elements */
+.btn {
+  transition: all 0.2s ease;
+}
+
+.btn:disabled,
+.btn.opacity-50 {
+  transform: none !important;
+}
+
+/* Progress circle animation */
+#progressCircle {
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+/* Image blur effect */
+#resultImg {
+  transition: filter 0.5s ease;
+}
+
+/* Loading overlay */
+#loadingOverlay {
+  transition: opacity 0.3s ease;
+}
+
+/* Status badge animations */
+#statusBadge {
+  transition: all 0.3s ease;
+}
+
+/* Better mobile spacing */
+@media (max-width: 640px) {
+  .space-y-8 > * + * {
+    margin-top: 1.5rem;
+  }
+  
+  .grid.lg\\:grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .lg\\:col-span-2 {
+    order: 1;
+  }
+}
+
+/* Ensure proper aspect ratio on mobile */
+@media (max-width: 768px) {
+  #resultImg {
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,80 @@
+{# FILE: templates/includes/messages.html #}
+{% load i18n %}
+
+{% if messages %}
+<div class="flash-list" role="region" aria-label="{% trans 'Notifications' %}" style="margin-bottom:12px; display:grid; gap:8px">
+
+  {% for m in messages %}
+    {% with tag=m.tags|default:'info' %}
+      {# Выбираем роль и автозакрытие: ошибки не скрываем автоматически #}
+      {% if 'error' in tag %}{% with role='alert' autohide='false' %}{% endwith %}
+      {% elif 'warning' in tag %}{% with role='alert' autohide='true' %}{% endwith %}
+      {% else %}{% with role='status' autohide='true' %}{% endwith %}
+      {% endif %}
+
+      <div
+        id="msg{{ forloop.counter }}"
+        class="flash flash-{% if 'success' in tag %}success{% elif 'warning' in tag %}warning{% elif 'error' in tag %}error{% else %}info{% endif %}"
+        role="{{ role|default:'status' }}"
+        aria-live="{% if 'error' in tag or 'warning' in tag %}assertive{% else %}polite{% endif %}"
+        data-autohide="{{ autohide|default:'true' }}"
+        style="position:relative;padding:10px 40px 10px 12px;border:1px solid var(--border,#2b2b31);border-radius:12px;background:var(--bg-soft,rgba(255,255,255,.03));backdrop-filter:saturate(1.2);"
+      >
+        <span class="flash-icon" aria-hidden="true" style="margin-right:.5rem">
+          {% if 'success' in tag %}✅{% elif 'warning' in tag %}⚠️{% elif 'error' in tag %}⛔{% else %}ℹ️{% endif %}
+        </span>
+        <span class="flash-text">{{ m }}</span>
+
+        <button
+          type="button"
+          class="flash-close"
+          data-close
+          aria-label="{% trans 'Dismiss notification' %}"
+          title="{% trans 'Dismiss' %}"
+          style="position:absolute;top:6px;right:6px;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid var(--border,#2b2b31);background:var(--card,#11131a);border-radius:8px;cursor:pointer"
+        >✕</button>
+      </div>
+    {% endwith %}
+  {% endfor %}
+</div>
+
+<script>
+(function(){
+  const container = document.currentScript.previousElementSibling;
+  if (!container) return;
+
+  // Закрытие по кнопке
+  container.addEventListener('click', function(e){
+    const btn = e.target.closest('[data-close]');
+    if (!btn) return;
+    const card = btn.closest('.flash');
+    if (!card) return;
+    hide(card);
+  }, {passive:true});
+
+  // Автоскрытие (кроме ошибок)
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const AUTO_MS = prefersReduced ? 0 : 6000;
+
+  container.querySelectorAll('.flash').forEach(card => {
+    const autohide = (card.getAttribute('data-autohide') || 'true') === 'true';
+    if (!autohide) return;
+    const timer = setTimeout(() => hide(card), AUTO_MS);
+    // остановить таймер при наведении/фокусе
+    card.addEventListener('mouseenter', () => clearTimeout(timer));
+    card.addEventListener('focusin',   () => clearTimeout(timer));
+  });
+
+  function hide(el){
+    try{
+      el.style.transition = 'opacity .18s ease, transform .18s ease';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-4px)';
+      el.addEventListener('transitionend', () => el.remove(), { once:true });
+    }catch(_){
+      el.remove();
+    }
+  }
+})();
+</script>
+{% endif %}

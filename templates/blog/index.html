@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{# ───── SEO ───── #}
+{% block title %}{% if q %}«{{ q }}» — {% endif %}{% if active_tag %}#{{ active_tag.name }} — {% endif %}Блог AI Gallery{% endblock %}
+{% block meta_description %}Свежие статьи и руководства. Поиск по блогу, фильтрация по тегам и удобная пагинация.{% endblock %}
+{% block og_title %}Блог — статьи, новости и гайды{% endblock %}
+{% block extra_meta %}
+  <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{% url 'blog:index' %}{% if keep_query %}?{{ keep_query|safe }}{% endif %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold">Свежие статьи</h1>
+      <p class="text-[var(--muted)] mt-2">Обновления сервиса, инструкции и кейсы пользователей.</p>
+    </div>
+    {% if request.user.is_authenticated and request.user.is_staff %}
+      <a class="btn btn-primary" href="{% url 'blog:create' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Написать статью
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Search & Filters -->
+  <div class="card p-6">
+    <form method="get" action="{% url 'blog:index' %}" role="search" aria-label="Поиск по блогу">
+      <!-- Search Bar -->
+      <div class="flex gap-3 mb-6">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input id="blog-q"
+                 class="field pl-10"
+                 type="search"
+                 name="q"
+                 value="{{ q }}"
+                 placeholder="Поиск по статьям..."
+                 autocomplete="off">
+        </div>
+        {% if active_tag %}
+          <input type="hidden" name="tag" value="{{ active_tag.slug }}">
+        {% endif %}
+        <button class="btn btn-primary" type="submit">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Найти
+        </button>
+      </div>
+
+      <!-- Tag Filters -->
+      {% if tags %}
+        <div class="space-y-3">
+          <label class="text-sm font-medium">Фильтр по тегам:</label>
+          <div class="flex flex-wrap gap-2" role="list" aria-label="Фильтр по тегам">
+            <a class="pill {% if not active_tag %}bg-primary/15 text-primary border-primary/30{% endif %}" 
+               href="{% url 'blog:index' %}{% if q %}?q={{ q|urlencode }}{% endif %}"
+               role="listitem">
+              Все
+            </a>
+
+            {% for t in tags %}
+              <a class="pill {% if active_tag and active_tag.slug == t.slug %}bg-primary/15 text-primary border-primary/30{% endif %}" 
+                 href="{% url 'blog:index' %}?tag={{ t.slug }}{% if q %}&q={{ q|urlencode }}{% endif %}"
+                 role="listitem">
+                {{ t.name }}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </form>
+
+    <!-- Results Counter -->
+    <div class="mt-6 pt-6 border-t border-[var(--bord)]">
+      <p class="text-sm text-[var(--muted)]" aria-live="polite">
+        Найдено: <strong class="text-[var(--text)]">{{ result_count|default:0 }}</strong> статей
+        {% if active_tag %} по тегу <strong class="text-[var(--text)]">#{{ active_tag.name }}</strong>{% endif %}
+        {% if q %} по запросу «<strong class="text-[var(--text)]">{{ q }}</strong>»{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Articles Grid -->
+  {% if posts %}
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for p in posts %}
+        <article class="card overflow-hidden group hover:shadow-lg transition-shadow">
+          <!-- Cover Image -->
+          <a href="{{ p.get_absolute_url }}" class="block" aria-label="{{ p.title }}">
+            <div class="relative aspect-[16/10] overflow-hidden">
+              {% if p.cover %}
+                <img src="{{ p.cover.url }}" 
+                     alt="{{ p.title }}" 
+                     loading="lazy" 
+                     decoding="async"
+                     class="w-full h-full object-cover transition duration-300 group-hover:scale-105">
+              {% else %}
+                <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+                  <svg class="w-12 h-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                  </svg>
+                </div>
+              {% endif %}
+              
+              <!-- Date Badge -->
+              {% if p.published_at %}
+                <div class="absolute top-3 right-3">
+                  <time class="inline-flex items-center px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" 
+                        datetime="{{ p.published_at|date:'c' }}">
+                    {{ p.published_at|date:"d.m.Y" }}
+                  </time>
+                </div>
+              {% endif %}
+            </div>
+          </a>
+
+          <!-- Article Content -->
+          <div class="p-6">
+            <h2 class="text-lg font-semibold mb-3 line-clamp-2">
+              <a href="{{ p.get_absolute_url }}" class="hover:text-primary transition">
+                {{ p.title }}
+              </a>
+            </h2>
+
+            {% if p.excerpt %}
+              <p class="text-[var(--muted)] text-sm mb-4 line-clamp-3">{{ p.excerpt }}</p>
+            {% endif %}
+
+            <!-- Tags -->
+            {% if p.tags.exists %}
+              <div class="flex flex-wrap gap-1 mb-4">
+                {% for t in p.tags.all %}
+                  <a href="{% url 'blog:index' %}?tag={{ t.slug }}{% if q %}&q={{ q|urlencode }}{% endif %}" 
+                     class="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition">
+                    #{{ t.name }}
+                  </a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 pt-4 border-t border-[var(--bord)]">
+              <a class="btn btn-primary flex-1 text-sm py-2" href="{{ p.get_absolute_url }}">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                Читать
+              </a>
+              
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <a class="btn btn-ghost text-sm py-2 px-3" href="{% url 'blog:edit' p.slug %}" title="Изменить">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                </a>
+                <a class="btn btn-ghost text-sm py-2 px-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" href="{% url 'blog:delete' p.slug %}" title="Удалить">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Empty State -->
+    <div class="card p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+        <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      
+      <h3 class="text-xl font-semibold mb-3">Статьи не найдены</h3>
+      <p class="text-[var(--muted)] mb-6 max-w-md mx-auto">
+        {% if q or active_tag %}
+          Попробуйте изменить запрос или сбросить фильтры для поиска других статей.
+        {% else %}
+          Пока нет опубликованных статей. Будьте первым автором!
+        {% endif %}
+      </p>
+      
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        {% if q or active_tag %}
+          <a class="btn btn-primary" href="{% url 'blog:index' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Сбросить фильтры
+          </a>
+        {% endif %}
+        
+        {% if request.user.is_authenticated and request.user.is_staff %}
+          <a class="btn btn-ghost" href="{% url 'blog:create' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Написать статью
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Pagination -->
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <nav class="flex items-center justify-center" aria-label="Пагинация">
+      <div class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?page=1{% if keep_query %}&{{ keep_query|safe }}{% endif %}" aria-label="Первая">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+            </svg>
+            Первая
+          </a>
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.previous_page_number }}{% if keep_query %}&{{ keep_query|safe }}{% endif %}" aria-label="Назад">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Назад
+          </a>
+        {% endif %}
+
+        {% with total=page_obj.paginator.num_pages current=page_obj.number %}
+          {% for i in page_obj.paginator.page_range %}
+            {% if i == 1 or i == total or i >= current|add:"-2" and i <= current|add:"2" %}
+              {% if i == current %}
+                <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">{{ i }}</span>
+              {% else %}
+                <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ i }}{% if keep_query %}&{{ keep_query|safe }}{% endif %}">{{ i }}</a>
+              {% endif %}
+            {% elif i == 2 and current > 4 %}
+              <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+            {% elif i == total|add:"-1" and current < total|add:"-3" %}
+              <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+            {% endif %}
+          {% endfor %}
+        {% endwith %}
+
+        {% if page_obj.has_next %}
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.next_page_number }}{% if keep_query %}&{{ keep_query|safe }}{% endif %}" aria-label="Вперёд">
+            Вперёд
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.paginator.num_pages }}{% if keep_query %}&{{ keep_query|safe }}{% endif %}" aria-label="Последняя">
+            Последняя
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+            </svg>
+          </a>
+        {% endif %}
+      </div>
+    </nav>
+  {% endif %}
+
+</div>
+
+{% endblock %}

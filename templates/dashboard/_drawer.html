@@ -1,0 +1,122 @@
+﻿<button class="btn-ghost" id="drawerToggle" aria-expanded="false" aria-controls="drawer">☰ Меню</button>
+
+<div class="backdrop" id="drawerBackdrop" hidden></div>
+
+<aside id="drawer"
+       class="drawer"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="drawerTitle"
+       hidden
+       tabindex="-1">
+  <div class="drawer-header">
+    <div class="brand brand--footer" id="drawerTitle">
+      <span class="brand-mark" aria-hidden="true"></span>Профиль
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Закрыть" type="button">✕</button>
+  </div>
+
+  <nav class="drawer-nav">
+    <a class="drawer-link" href="{% url 'dashboard:my_jobs' %}">Мои обработки</a>
+    <a class="drawer-link" href="{% url 'dashboard:tips' %}">Рекомендации по обработке</a>
+    <a class="drawer-link" href="{% url 'generate:new' %}">Сгенерировать фото</a>
+
+    <div class="drawer-card panel">
+      <div class="token-row">
+        <span class="coin" aria-hidden="true"></span>
+        <div class="token-meta">
+          <div class="token-title">Мой баланс</div>
+          {% if request.user.is_authenticated and request.user.wallet %}
+            <div class="token-amount"><strong>{{ request.user.wallet.balance }}</strong> TOK</div>
+          {% else %}
+            <div class="token-amount"><strong>0</strong> TOK</div>
+          {% endif %}
+        </div>
+      </div>
+      <a class="btn" href="{% url 'dashboard:tariffs' %}">Пополнить</a>
+    </div>
+
+    <a class="drawer-link" href="{% url 'account_change_password' %}">Сменить пароль</a>
+    <a class="drawer-link" href="{% url 'account_logout' %}">Выйти</a>
+  </nav>
+</aside>
+
+
+<script>
+(function(){
+  const drawer   = document.getElementById('drawer');
+  const backdrop = document.getElementById('drawerBackdrop');
+  const toggle   = document.getElementById('drawerToggle');
+  const closeBtn = document.getElementById('drawerClose');
+  let lastActive = null;
+
+  if(!drawer || !toggle || !backdrop) return;
+
+  function lockScroll(lock){
+    document.documentElement.classList.toggle('no-scroll', !!lock);
+    document.body.classList.toggle('no-scroll', !!lock);
+  }
+
+  function focusables(root){
+    return Array.from(root.querySelectorAll(
+      'a[href],button:not([disabled]),textarea,input,select,[tabindex]:not([tabindex="-1"])'
+    )).filter(el => el.offsetParent !== null || el === document.activeElement);
+  }
+
+  function trap(e){
+    if(e.key !== 'Tab') return;
+    const items = focusables(drawer);
+    if(!items.length) return;
+    const first = items[0], last = items[items.length-1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }
+
+  function open(){
+    if(!drawer.hasAttribute('hidden')) return;
+    lastActive = document.activeElement;
+    drawer.removeAttribute('hidden');
+    backdrop.removeAttribute('hidden');
+    requestAnimationFrame(()=>{
+      drawer.classList.add('drawer--open');
+      backdrop.classList.add('backdrop--show');
+      toggle.setAttribute('aria-expanded','true');
+      lockScroll(true);
+      // фокус внутрь
+      const items = focusables(drawer);
+      (items[0] || drawer).focus();
+    });
+    document.addEventListener('keydown', onKey);
+    drawer.addEventListener('keydown', trap);
+  }
+
+  function close(){
+    if(drawer.hasAttribute('hidden')) return;
+    drawer.classList.remove('drawer--open');
+    backdrop.classList.remove('backdrop--show');
+    toggle.setAttribute('aria-expanded','false');
+    const onEnd = ()=>{
+      if(!drawer.classList.contains('drawer--open')) drawer.setAttribute('hidden','');
+      if(!backdrop.classList.contains('backdrop--show')) backdrop.setAttribute('hidden','');
+      lockScroll(false);
+      document.removeEventListener('keydown', onKey);
+      drawer.removeEventListener('keydown', trap);
+      if(lastActive && document.body.contains(lastActive)) lastActive.focus();
+    };
+    drawer.addEventListener('transitionend', onEnd, { once:true });
+    backdrop.addEventListener('transitionend', onEnd, { once:true });
+  }
+
+  function onKey(e){
+    if(e.key === 'Escape'){ e.preventDefault(); close(); }
+  }
+
+  toggle.addEventListener('click', ()=> drawer.hasAttribute('hidden') ? open() : close());
+  closeBtn?.addEventListener('click', close);
+  backdrop?.addEventListener('click', close);
+  // клик по пустому пространству внутри aside не закрывает; закрываем только по бэкдропу
+
+  // Экспорт, если понадобится вызвать из других мест
+  window.simpleDrawer = { open, close, toggle: ()=> drawer.hasAttribute('hidden') ? open() : close() };
+})();
+</script>

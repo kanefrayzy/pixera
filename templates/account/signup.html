@@ -1,0 +1,438 @@
+﻿{% extends "base.html" %}
+{% load i18n account socialaccount %}
+
+{% block title %}Регистрация — AI Gallery{% endblock %}
+{% block meta_description %}Создайте аккаунт с email/паролем или через Google. Быстрая регистрация для доступа к AI Gallery.{% endblock %}
+
+{% block hero %}
+<!-- Compact Hero -->
+<section class="py-12 sm:py-16">
+  <div class="container text-center">
+    <h1 class="text-3xl sm:text-4xl font-bold mb-3">Создайте аккаунт</h1>
+    <p class="text-[var(--muted)] text-lg">Присоединяйтесь к сообществу создателей удивительных изображений</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto space-y-6">
+
+  <!-- Messages -->
+  {% include "includes/messages.html" %}
+
+  <!-- Registration Form -->
+  <div class="card p-6 sm:p-8">
+    <div class="text-center mb-8">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/15 flex items-center justify-center">
+        <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M15 12C15 13.66 13.66 15 12 15S9 13.66 9 12 10.34 9 12 9 15 10.34 15 12M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2M21 9V7L19 5L17 7V9C16.4 9 16 9.4 16 10V16C16 16.6 16.4 17 17 17H19C19.6 17 20 16.6 20 16V10C20 9.4 19.6 9 19 9M7 9C6.4 9 6 9.4 6 10V16C6 16.6 6.4 17 7 17H9C9.6 17 10 16.6 10 16V10C10 9.4 9.6 9 9 9V7L7 5L5 7V9Z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-semibold">Регистрация</h2>
+      <p class="text-sm text-[var(--muted)] mt-1">Создайте новый аккаунт для начала работы</p>
+    </div>
+
+    <!-- Form Errors -->
+    {% if form.non_field_errors %}
+      <div class="mb-6 p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+          </svg>
+          <div class="text-sm text-red-700 dark:text-red-300">
+            {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="post"
+          action="{% url 'account_signup' %}"
+          novalidate
+          class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Hidden fields for redirect -->
+      {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+      {% elif request.GET.next %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ request.GET.next }}">
+      {% endif %}
+
+      <!-- Email Field -->
+      <div>
+        <label class="block text-sm font-medium mb-2" for="id_email">
+          Email
+        </label>
+        <input class="field {% if form.email.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}" 
+               type="email" 
+               name="email" 
+               id="id_email" 
+               value="{{ form.email.value|default_if_none:'' }}" 
+               placeholder="Введите ваш email"
+               autofocus 
+               required>
+        {% if form.email.errors %}
+          <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+            {% for error in form.email.errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Username Field -->
+      <div>
+        <label class="block text-sm font-medium mb-2" for="id_username">
+          Имя пользователя
+        </label>
+        <input class="field {% if form.username.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}" 
+               type="text" 
+               name="username" 
+               id="id_username" 
+               value="{{ form.username.value|default_if_none:'' }}" 
+               placeholder="Выберите имя пользователя"
+               required>
+        {% if form.username.errors %}
+          <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+            {% for error in form.username.errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Password Field -->
+      <div>
+        <label class="block text-sm font-medium mb-2" for="id_password1">
+          Пароль
+        </label>
+        <div class="relative">
+          <input class="field pr-12 {% if form.password1.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}" 
+                 type="password" 
+                 name="password1" 
+                 id="id_password1"
+                 placeholder="Создайте надёжный пароль"
+                 required>
+          <button type="button" 
+                  class="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] transition"
+                  onclick="togglePassword('id_password1')"
+                  aria-label="Показать/скрыть пароль">
+            <svg class="w-5 h-5" id="eye-open-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            <svg class="w-5 h-5 hidden" id="eye-closed-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+            </svg>
+          </button>
+        </div>
+        {% if form.password1.errors %}
+          <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+            {% for error in form.password1.errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Confirm Password Field -->
+      <div>
+        <label class="block text-sm font-medium mb-2" for="id_password2">
+          Повторите пароль
+        </label>
+        <div class="relative">
+          <input class="field pr-12 {% if form.password2.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}" 
+                 type="password" 
+                 name="password2" 
+                 id="id_password2"
+                 placeholder="Повторите пароль"
+                 required>
+          <button type="button" 
+                  class="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] transition"
+                  onclick="togglePassword('id_password2')"
+                  aria-label="Показать/скрыть пароль">
+            <svg class="w-5 h-5" id="eye-open-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            <svg class="w-5 h-5 hidden" id="eye-closed-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+            </svg>
+          </button>
+        </div>
+        {% if form.password2.errors %}
+          <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+            {% for error in form.password2.errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Terms Agreement -->
+      <div class="flex items-start gap-3">
+        <input type="checkbox" 
+               id="terms" 
+               class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary mt-1"
+               required>
+        <label for="terms" class="text-sm text-[var(--muted)] leading-relaxed cursor-pointer">
+          Я соглашаюсь с 
+          <a class="text-primary hover:text-primary/80 transition" href="{% url 'pages:privacy' %}">
+            политикой конфиденциальности
+          </a> 
+          и условиями использования сервиса
+        </label>
+      </div>
+
+      <!-- Submit Button -->
+      <button class="btn btn-primary w-full text-base py-3" type="submit">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+        </svg>
+        Создать аккаунт
+      </button>
+    </form>
+
+    <!-- Divider -->
+    <div class="relative my-8">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-[var(--bord)]"></div>
+      </div>
+      <div class="relative flex justify-center text-sm">
+        <span class="px-4 bg-[var(--card)] text-[var(--muted)]">или</span>
+      </div>
+    </div>
+
+    <!-- Social Registration -->
+    {% providers_media_js %}
+    <div class="space-y-3">
+      {% get_providers as socialaccount_providers %}
+      {% if socialaccount_providers and 'google' in socialaccount_providers|join:"," %}
+        {% if redirect_field_value %}
+          <a class="btn btn-ghost w-full text-base py-3" 
+             href="{% provider_login_url 'google' process='signup' next=redirect_field_value %}">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Регистрация через Google
+          </a>
+        {% elif request.GET.next %}
+          <a class="btn btn-ghost w-full text-base py-3" 
+             href="{% provider_login_url 'google' process='signup' next=request.GET.next %}">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Регистрация через Google
+          </a>
+        {% else %}
+          <a class="btn btn-ghost w-full text-base py-3" 
+             href="{% provider_login_url 'google' process='signup' %}">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Регистрация через Google
+          </a>
+        {% endif %}
+      {% else %}
+        <div class="text-center py-4">
+          <div class="text-sm text-[var(--muted)] mb-2">Регистрация через социальные сети</div>
+          <div class="text-xs text-[var(--muted)]">Пока не настроено</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Login Link -->
+  <div class="text-center">
+    <span class="text-[var(--muted)]">Уже есть аккаунт? </span>
+    {% if redirect_field_value %}
+      <a class="text-primary hover:text-primary/80 transition font-medium" 
+         href="{% url 'account_login' %}?{{ redirect_field_name }}={{ redirect_field_value|urlencode }}">
+        Войти
+      </a>
+    {% elif request.GET.next %}
+      <a class="text-primary hover:text-primary/80 transition font-medium" 
+         href="{% url 'account_login' %}?{{ redirect_field_name }}={{ request.GET.next|urlencode }}">
+        Войти
+      </a>
+    {% else %}
+      <a class="text-primary hover:text-primary/80 transition font-medium" 
+         href="{% url 'account_login' %}">
+        Войти
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Help Text -->
+  <div class="card p-4 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+      </svg>
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        <div class="font-medium mb-1">Создание аккаунта</div>
+        <p>Используйте надёжный пароль и действующий email. После регистрации мы отправим письмо для подтверждения адреса.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Password toggle functionality
+function togglePassword(inputId) {
+  const input = document.getElementById(inputId);
+  const suffix = inputId.includes('password1') ? '1' : '2';
+  const eyeOpen = document.getElementById(`eye-open-${suffix}`);
+  const eyeClosed = document.getElementById(`eye-closed-${suffix}`);
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    eyeOpen.classList.add('hidden');
+    eyeClosed.classList.remove('hidden');
+  } else {
+    input.type = 'password';
+    eyeOpen.classList.remove('hidden');
+    eyeClosed.classList.add('hidden');
+  }
+}
+
+// Form validation and enhancement
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form');
+  const inputs = form.querySelectorAll('input[required]');
+  const password1 = document.getElementById('id_password1');
+  const password2 = document.getElementById('id_password2');
+  
+  // Real-time validation
+  inputs.forEach(input => {
+    input.addEventListener('blur', () => {
+      validateField(input);
+    });
+    
+    input.addEventListener('input', () => {
+      // Clear error state when user starts typing
+      if (input.classList.contains('border-red-500')) {
+        input.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+      }
+      
+      // Real-time password matching
+      if (input === password2 && password1.value) {
+        validatePasswordMatch();
+      }
+    });
+  });
+  
+  // Password matching validation
+  function validatePasswordMatch() {
+    if (password1.value && password2.value) {
+      if (password1.value !== password2.value) {
+        password2.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+        
+        // Show/hide error message
+        let errorDiv = password2.parentNode.parentNode.querySelector('.password-match-error');
+        if (!errorDiv) {
+          errorDiv = document.createElement('div');
+          errorDiv.className = 'mt-2 text-sm text-red-600 dark:text-red-400 password-match-error';
+          errorDiv.textContent = 'Пароли не совпадают';
+          password2.parentNode.parentNode.appendChild(errorDiv);
+        }
+      } else {
+        password2.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+        const errorDiv = password2.parentNode.parentNode.querySelector('.password-match-error');
+        if (errorDiv) errorDiv.remove();
+      }
+    }
+  }
+  
+  function validateField(field) {
+    const isValid = field.checkValidity();
+    
+    if (!isValid) {
+      field.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+    } else {
+      field.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+    }
+  }
+  
+  // Username validation (basic)
+  const username = document.getElementById('id_username');
+  username.addEventListener('input', () => {
+    const value = username.value;
+    const isValid = /^[a-zA-Z0-9._-]+$/.test(value) && value.length >= 3;
+    
+    if (value && !isValid) {
+      username.classList.add('border-orange-500', 'focus:border-orange-500', 'focus:ring-orange-500/30');
+      
+      let warningDiv = username.parentNode.querySelector('.username-warning');
+      if (!warningDiv) {
+        warningDiv = document.createElement('div');
+        warningDiv.className = 'mt-2 text-sm text-orange-600 dark:text-orange-400 username-warning';
+        warningDiv.textContent = 'Используйте только буквы, цифры, точки, дефисы и подчёркивания (минимум 3 символа)';
+        username.parentNode.appendChild(warningDiv);
+      }
+    } else {
+      username.classList.remove('border-orange-500', 'focus:border-orange-500', 'focus:ring-orange-500/30');
+      const warningDiv = username.parentNode.querySelector('.username-warning');
+      if (warningDiv) warningDiv.remove();
+    }
+  });
+  
+  // Submit button loading state
+  form.addEventListener('submit', (e) => {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const termsCheckbox = document.getElementById('terms');
+    const originalText = submitBtn.innerHTML;
+    
+    // Check terms agreement
+    if (!termsCheckbox.checked) {
+      e.preventDefault();
+      termsCheckbox.focus();
+      termsCheckbox.classList.add('border-red-500');
+      return;
+    }
+    
+    // Validate all fields before submit
+    let isFormValid = true;
+    inputs.forEach(input => {
+      validateField(input);
+      if (!input.checkValidity()) {
+        isFormValid = false;
+      }
+    });
+    
+    // Check password match
+    if (password1.value !== password2.value) {
+      isFormValid = false;
+      validatePasswordMatch();
+    }
+    
+    if (isFormValid) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Создаём аккаунт...
+      `;
+      
+      // Reset button state after timeout (in case of errors)
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }, 15000);
+    }
+  });
+  
+  // Terms checkbox styling
+  const termsCheckbox = document.getElementById('terms');
+  termsCheckbox.addEventListener('change', () => {
+    if (termsCheckbox.checked) {
+      termsCheckbox.classList.remove('border-red-500');
+    }
+  });
+});
+</script>
+
+{% endblock %}

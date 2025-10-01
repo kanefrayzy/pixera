@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 2">
+  <rect width="1.2" height="2" fill="#006600"/>
+  <rect x="1.2" width="1.8" height="2" fill="#ff0000"/>
+  <!-- упрощённый герб в виде круга -->
+  <circle cx="1.1" cy="1" r=".32" fill="#ffcc00" stroke="#000" stroke-opacity=".15" stroke-width=".02"/>
+  <circle cx="1.1" cy="1" r=".2" fill="#fff"/>
+  <rect x="1.02" y=".86" width=".16" height=".28" fill="#003399"/>
+</svg>

@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Модерация — AI Gallery{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold">Модерация контента</h1>
+      <p class="text-[var(--muted)] mt-2">Проверка и управление публикациями сообщества</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      {% if pendings %}
+        <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V9M19 9H14V4H15.83L19 7.17V9Z"/>
+          </svg>
+          <span class="text-sm font-medium">{{ pendings|length }} на рассмотрении</span>
+        </div>
+      {% endif %}
+      
+      <a class="btn btn-ghost" href="{% url 'gallery:index' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        К галерее
+      </a>
+    </div>
+  </div>
+
+
+  <!-- Content -->
+  {% if pendings %}
+    <!-- Quick Actions -->
+    <div class="card p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="font-semibold mb-1">Быстрые действия</h2>
+          <p class="text-sm text-[var(--muted)]">Массовые операции для эффективной модерации</p>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+          <button class="btn btn-ghost text-sm" id="selectAll">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Выбрать все
+          </button>
+          <button class="btn btn-primary text-sm" id="approveSelected" disabled>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Одобрить выбранные
+          </button>
+          <button class="btn btn-ghost text-sm text-red-600 dark:text-red-400" id="rejectSelected" disabled>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Отклонить выбранные
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Items Grid -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for p in pendings %}
+        <article class="card overflow-hidden group moderation-item" data-id="{{ p.pk }}">
+          <!-- Selection Checkbox -->
+          <div class="absolute top-3 left-3 z-10">
+            <label class="flex items-center justify-center w-6 h-6 rounded-lg bg-black/50 text-white hover:bg-black/70 transition cursor-pointer">
+              <input type="checkbox" class="sr-only item-checkbox" value="{{ p.pk }}">
+              <svg class="w-4 h-4 hidden check-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <div class="w-4 h-4 border-2 border-white rounded unchecked-icon"></div>
+            </label>
+          </div>
+
+          <!-- Image -->
+          <div class="relative aspect-square">
+            {% if p.image %}
+              <img class="w-full h-full object-cover transition duration-300 group-hover:scale-[1.02]" 
+                   src="{{ p.image.url }}" 
+                   alt="{{ p.title|default:'Фото' }}" 
+                   loading="lazy">
+            {% else %}
+              <div class="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
+            {% endif %}
+
+            <!-- Status Badge -->
+            <div class="absolute top-3 right-3">
+              <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/90 text-white text-xs font-medium">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V9M19 9H14V4H15.83L19 7.17V9Z"/>
+                </svg>
+                На рассмотрении
+              </div>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="p-4">
+            <h3 class="font-semibold mb-2 line-clamp-2">{{ p.title|default:"Без названия" }}</h3>
+            
+            <!-- Metadata -->
+            <div class="space-y-2 mb-4">
+              <div class="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>Создано:</span>
+                <time datetime="{{ p.created_at|date:'c' }}">{{ p.created_at|date:"d.m.Y H:i" }}</time>
+              </div>
+              
+              {% if p.author %}
+                <div class="flex items-center justify-between text-xs text-[var(--muted)]">
+                  <span>Автор:</span>
+                  <span class="font-medium">{{ p.author.username }}</span>
+                </div>
+              {% endif %}
+              
+              {% if p.categories.all %}
+                <div class="flex flex-wrap gap-1 mt-2">
+                  {% for cat in p.categories.all %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                      {{ cat.name }}
+                    </span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2">
+              <form method="post" action="{% url 'gallery:moderation_approve' p.pk %}" class="flex-1">
+                {% csrf_token %}
+                <button class="btn btn-primary w-full text-sm py-2" type="submit">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Одобрить
+                </button>
+              </form>
+              
+              <form method="post" action="{% url 'gallery:moderation_reject' p.pk %}" class="flex-1">
+                {% csrf_token %}
+                <button class="btn btn-ghost w-full text-sm py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" type="submit">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  Отклонить
+                </button>
+              </form>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination if needed -->
+    <!-- Add pagination here if you have many items -->
+
+  {% else %}
+    <!-- Empty State -->
+    <div class="card p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+        <svg class="w-10 h-10 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      
+      <h2 class="text-xl font-semibold mb-3">Очередь пуста</h2>
+      <p class="text-[var(--muted)] mb-8 max-w-md mx-auto">
+        Отлично! Все публикации проверены. Новые материалы появятся здесь автоматически.
+      </p>
+      
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a class="btn btn-primary" href="{% url 'gallery:index' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          Посмотреть галерею
+        </a>
+        <a class="btn btn-ghost" href="{% url 'generate:new' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Создать контент
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Moderation Guidelines -->
+  <div class="card p-6">
+    <h3 class="font-semibold mb-4">Руководство по модерации</h3>
+    <div class="grid sm:grid-cols-2 gap-6 text-sm">
+      <div>
+        <h4 class="font-medium text-green-600 dark:text-green-400 mb-3">✓ Одобрять</h4>
+        <ul class="space-y-2 text-[var(--muted)]">
+          <li>• Качественные AI-генерации</li>
+          <li>• Оригинальный творческий контент</li>
+          <li>• Образовательные материалы</li>
+          <li>• Технические демонстрации</li>
+          <li>• Концепт-арт и дизайн</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-medium text-red-600 dark:text-red-400 mb-3">✗ Отклонять</h4>
+        <ul class="space-y-2 text-[var(--muted)]">
+          <li>• NSFW или неприемлемый контент</li>
+          <li>• Нарушение авторских прав</li>
+          <li>• Спам и дублирование</li>
+          <li>• Низкое качество изображений</li>
+          <li>• Оскорбительные материалы</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const selectAllBtn = document.getElementById('selectAll');
+  const approveSelectedBtn = document.getElementById('approveSelected');
+  const rejectSelectedBtn = document.getElementById('rejectSelected');
+  const checkboxes = document.querySelectorAll('.item-checkbox');
+  
+  // Handle individual checkbox changes
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const label = checkbox.parentElement;
+      const checkIcon = label.querySelector('.check-icon');
+      const uncheckedIcon = label.querySelector('.unchecked-icon');
+      
+      if (checkbox.checked) {
+        checkIcon.classList.remove('hidden');
+        uncheckedIcon.classList.add('hidden');
+        label.classList.add('bg-primary', 'border-primary');
+        label.classList.remove('bg-black/50');
+      } else {
+        checkIcon.classList.add('hidden');
+        uncheckedIcon.classList.remove('hidden');
+        label.classList.remove('bg-primary', 'border-primary');
+        label.classList.add('bg-black/50');
+      }
+      
+      updateBulkActionButtons();
+    });
+  });
+  
+  // Select all functionality
+  selectAllBtn?.addEventListener('click', () => {
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = !allChecked;
+      checkbox.dispatchEvent(new Event('change'));
+    });
+    
+    selectAllBtn.textContent = allChecked ? 'Выбрать все' : 'Снять выделение';
+  });
+  
+  // Update bulk action buttons state
+  function updateBulkActionButtons() {
+    const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const hasSelection = selectedCount > 0;
+    
+    approveSelectedBtn.disabled = !hasSelection;
+    rejectSelectedBtn.disabled = !hasSelection;
+    
+    if (hasSelection) {
+      approveSelectedBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      rejectSelectedBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+      approveSelectedBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      rejectSelectedBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
+    // Update button text with count
+    if (selectedCount > 0) {
+      approveSelectedBtn.innerHTML = `
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Одобрить (${selectedCount})
+      `;
+      rejectSelectedBtn.innerHTML = `
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Отклонить (${selectedCount})
+      `;
+    } else {
+      approveSelectedBtn.innerHTML = `
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Одобрить выбранные
+      `;
+      rejectSelectedBtn.innerHTML = `
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Отклонить выбранные
+      `;
+    }
+  }
+  
+  // Handle bulk approve
+  approveSelectedBtn?.addEventListener('click', async () => {
+    const selectedIds = Array.from(checkboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) return;
+    
+    if (!confirm(`Одобрить ${selectedIds.length} публикаций?`)) return;
+    
+    approveSelectedBtn.disabled = true;
+    approveSelectedBtn.textContent = 'Обработка...';
+    
+    // Process each item individually (you might want to implement a bulk endpoint)
+    for (const id of selectedIds) {
+      try {
+        const response = await fetch(`/gallery/moderation/${id}/approve/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        });
+        
+        if (response.ok) {
+          // Remove the item from the page
+          const item = document.querySelector(`.moderation-item[data-id="${id}"]`);
+          if (item) {
+            item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            item.style.opacity = '0';
+            item.style.transform = 'scale(0.9)';
+            setTimeout(() => item.remove(), 300);
+          }
+        }
+      } catch (error) {
+        console.error('Error approving item:', error);
+      }
+    }
+    
+    setTimeout(() => {
+      location.reload();
+    }, 1000);
+  });
+  
+  // Handle bulk reject
+  rejectSelectedBtn?.addEventListener('click', async () => {
+    const selectedIds = Array.from(checkboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) return;
+    
+    if (!confirm(`Отклонить ${selectedIds.length} публикаций? Это действие нельзя отменить.`)) return;
+    
+    rejectSelectedBtn.disabled = true;
+    rejectSelectedBtn.textContent = 'Обработка...';
+    
+    // Process each item individually
+    for (const id of selectedIds) {
+      try {
+        const response = await fetch(`/gallery/moderation/${id}/reject/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        });
+        
+        if (response.ok) {
+          // Remove the item from the page
+          const item = document.querySelector(`.moderation-item[data-id="${id}"]`);
+          if (item) {
+            item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            item.style.opacity = '0';
+            item.style.transform = 'scale(0.9)';
+            setTimeout(() => item.remove(), 300);
+          }
+        }
+      } catch (error) {
+        console.error('Error rejecting item:', error);
+      }
+    }
+    
+    setTimeout(() => {
+      location.reload();
+    }, 1000);
+  });
+  
+  // Initialize button states
+  updateBulkActionButtons();
+});
+</script>
+
+<style>
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth transitions for moderation items */
+.moderation-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.moderation-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .moderation-item:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Checkbox styling improvements */
+.item-checkbox:checked + .check-icon {
+  display: block;
+}
+
+.item-checkbox:not(:checked) + .check-icon {
+  display: none;
+}
+
+/* Better button states */
+.btn:disabled {
+  transform: none !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .grid.sm\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  
+  .btn {
+    min-height: 44px;
+  }
+  
+  .card .p-4 {
+    padding: 1rem;
+  }
+}
+
+/* Loading states */
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Animation for item removal */
+.moderation-item.removing {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+</style>
+
+{% endblock %}

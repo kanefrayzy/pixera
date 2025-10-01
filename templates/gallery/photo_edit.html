@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Редактировать публикацию — AI Gallery{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold">Редактировать публикацию</h1>
+      <p class="text-[var(--muted)] mt-2">Измените детали публикации в галерее</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <a class="btn btn-ghost" href="{{ next|default:'/' }}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Отмена
+      </a>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-8">
+    
+    <!-- Form Section -->
+    <div class="lg:col-span-2">
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Title Field -->
+        <div class="card p-6">
+          <label class="block text-sm font-medium mb-3" for="titleField">
+            Заголовок <span class="text-red-500">*</span>
+          </label>
+          <input type="text" 
+                 id="titleField"
+                 name="title" 
+                 value="{{ photo.title }}"
+                 class="field"
+                 placeholder="Введите заголовок публикации"
+                 maxlength="100"
+                 required>
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Хороший заголовок привлекает внимание и описывает суть изображения
+          </div>
+        </div>
+
+        <!-- Description Field -->
+        <div class="card p-6">
+          <label class="block text-sm font-medium mb-3" for="captionField">
+            Описание
+          </label>
+          <textarea id="captionField"
+                    name="caption"
+                    class="field min-h-24 resize-none"
+                    placeholder="Добавьте описание, детали процесса создания или вдохновение..."
+                    maxlength="500">{{ photo.caption }}</textarea>
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Расскажите о технике создания, промпте или истории изображения
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="card p-6">
+          <h3 class="text-lg font-semibold mb-4">Настройки публикации</h3>
+          
+          <div class="space-y-4">
+            <!-- Visibility Toggle -->
+            <label class="flex items-center gap-3 p-3 rounded-xl border border-[var(--bord)] hover:bg-black/[.02] dark:hover:bg-white/[.02] transition cursor-pointer">
+              <input type="checkbox" 
+                     name="is_active" 
+                     class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                     {% if photo.is_active %}checked{% endif %}>
+              <div>
+                <div class="font-medium">Показывать в галерее</div>
+                <div class="text-xs text-[var(--muted)]">Публикация будет видна всем пользователям</div>
+              </div>
+            </label>
+
+            <!-- Category ID Field -->
+            <div>
+              <label class="block text-sm font-medium mb-3" for="categoryField">
+                ID категории
+              </label>
+              <input type="number" 
+                     id="categoryField"
+                     name="category_id" 
+                     min="1"
+                     class="field"
+                     placeholder="Оставьте пустым для сохранения текущей категории">
+              <div class="mt-2 text-xs text-[var(--muted)]">
+                Укажите ID категории для изменения или оставьте пустым
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button class="btn btn-primary flex-1" type="submit">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Сохранить изменения
+          </button>
+          <a class="btn btn-ghost flex-1 text-center" href="{{ next|default:'/' }}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Отмена
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="lg:col-span-1">
+      <div class="sticky top-8 space-y-6">
+        
+        <!-- Image Preview -->
+        <div class="card overflow-hidden">
+          <div class="relative">
+            <img class="w-full aspect-square object-cover" 
+                 src="{{ photo.image.url }}" 
+                 alt="{{ photo.title }}"
+                 id="previewImage">
+            
+            <!-- Overlay with current status -->
+            <div class="absolute top-3 right-3">
+              {% if photo.is_active %}
+                <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/90 text-white text-xs font-medium">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                  </svg>
+                  Опубликовано
+                </div>
+              {% else %}
+                <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-500/90 text-white text-xs font-medium">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+                  </svg>
+                  Скрыто
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Live Preview Info -->
+          <div class="p-4">
+            <div class="font-semibold mb-2" id="previewTitle">{{ photo.title }}</div>
+            <div class="text-sm text-[var(--muted)] mb-3" id="previewCaption">
+              {% if photo.caption %}{{ photo.caption|truncatewords:20 }}{% else %}Нет описания{% endif %}
+            </div>
+            
+            <!-- Mock engagement stats -->
+            <div class="flex items-center gap-4 text-sm text-[var(--muted)]">
+              <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                <span>{{ photo.likes_count|default:0 }}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <span>{{ photo.view_count|default:0 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Publication Info -->
+        <div class="card p-6">
+          <h3 class="font-semibold mb-4">Информация о публикации</h3>
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">ID публикации:</span>
+              <span class="font-mono">{{ photo.id }}</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Просмотры:</span>
+              <span class="font-medium">{{ photo.view_count|default:0 }}</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Лайки:</span>
+              <span class="font-medium">{{ photo.likes_count|default:0 }}</span>
+            </div>
+            
+            {% if photo.category %}
+              <div class="flex justify-between">
+                <span class="text-[var(--muted)]">Категория:</span>
+                <span class="font-medium">{{ photo.category.name }}</span>
+              </div>
+            {% endif %}
+            
+            {% if photo.created_at %}
+              <div class="flex justify-between">
+                <span class="text-[var(--muted)]">Создано:</span>
+                <span class="font-medium">{{ photo.created_at|date:"d.m.Y" }}</span>
+              </div>
+            {% endif %}
+            
+            <div class="pt-3 border-t border-[var(--bord)]">
+              <div class="flex justify-between items-center">
+                <span class="text-[var(--muted)]">Статус:</span>
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium {% if photo.is_active %}bg-green-500/10 text-green-600 dark:text-green-400{% else %}bg-gray-500/10 text-gray-600 dark:text-gray-400{% endif %}">
+                  <div class="w-2 h-2 bg-current rounded-full"></div>
+                  {% if photo.is_active %}Опубликовано{% else %}Скрыто{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card p-6">
+          <h3 class="font-semibold mb-4">Быстрые действия</h3>
+          
+          <div class="space-y-3">
+            <a class="btn btn-ghost w-full text-sm" 
+               href="{{ photo.image.url }}" 
+               target="_blank" 
+               rel="noopener">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              Открыть изображение
+            </a>
+            
+            {% if photo.is_active %}
+              <a class="btn btn-ghost w-full text-sm" 
+                 href="{% url 'gallery:photo_detail' photo.id %}">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                Посмотреть в галерее
+              </a>
+            {% endif %}
+            
+            <button class="btn btn-ghost w-full text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                    onclick="if(confirm('Удалить эту публикацию?')) window.location.href='{% url 'gallery:photo_delete' photo.id %}'">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Удалить публикацию
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Live preview updates
+  const titleInput = document.getElementById('titleField');
+  const captionInput = document.getElementById('captionField');
+  const previewTitle = document.getElementById('previewTitle');
+  const previewCaption = document.getElementById('previewCaption');
+
+  function updatePreview() {
+    const title = titleInput?.value?.trim() || '{{ photo.title }}';
+    const caption = captionInput?.value?.trim() || 'Нет описания';
+    
+    if (previewTitle) previewTitle.textContent = title;
+    if (previewCaption) {
+      // Truncate long captions
+      const truncated = caption.length > 100 ? caption.slice(0, 100) + '...' : caption;
+      previewCaption.textContent = truncated;
+    }
+  }
+
+  // Listen for input changes
+  titleInput?.addEventListener('input', updatePreview);
+  captionInput?.addEventListener('input', updatePreview);
+
+  // Auto-resize textarea
+  function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
+  captionInput?.addEventListener('input', () => autoResize(captionInput));
+  
+  // Initialize textarea height
+  if (captionInput && captionInput.value) {
+    autoResize(captionInput);
+  }
+
+  // Form validation
+  const form = document.querySelector('form');
+  form?.addEventListener('submit', (e) => {
+    const title = titleInput?.value?.trim();
+    
+    if (!title) {
+      e.preventDefault();
+      titleInput?.focus();
+      titleInput?.classList.add('border-red-500');
+      setTimeout(() => titleInput?.classList.remove('border-red-500'), 3000);
+      return;
+    }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + S to save
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      form?.querySelector('button[type="submit"]')?.click();
+    }
+    
+    // Escape to cancel
+    if (e.key === 'Escape') {
+      const cancelLink = document.querySelector('a[href*="next"]') || document.querySelector('a.btn-ghost');
+      if (cancelLink) {
+        window.location.href = cancelLink.href;
+      }
+    }
+  });
+});
+</script>
+
+<style>
+/* Auto-resize textarea */
+textarea.field {
+  resize: none;
+  overflow: hidden;
+  min-height: 6rem;
+}
+
+/* Form validation styles */
+.field.border-red-500 {
+  border-color: rgb(239 68 68);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+/* Smooth transitions */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Sticky positioning for sidebar */
+.sticky {
+  position: sticky;
+  top: 2rem;
+}
+
+/* Better hover states for interactive elements */
+.btn, .card, input, textarea {
+  transition: all 0.2s ease;
+}
+
+/* Mobile optimizations */
+@media (max-width: 1024px) {
+  .sticky {
+    position: static;
+  }
+  
+  .grid.lg\\:grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .lg\\:col-span-2 {
+    order: 1;
+  }
+  
+  .lg\\:col-span-1 {
+    order: 2;
+  }
+}
+
+/* Touch targets for mobile */
+@media (max-width: 640px) {
+  .btn {
+    min-height: 48px;
+  }
+  
+  .field {
+    min-height: 48px;
+  }
+  
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Focus improvements */
+.field:focus {
+  border-color: rgb(1 209 251);
+  box-shadow: 0 0 0 2px rgba(1, 209, 251, 0.3);
+}
+
+/* Checkbox styling improvements */
+input[type="checkbox"]:checked {
+  background-color: rgb(1 209 251);
+  border-color: rgb(1 209 251);
+}
+</style>
+
+{% endblock %}

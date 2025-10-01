@@ -1,0 +1,42 @@
+﻿{% extends "base.html" %}
+
+{% block hero %}{% endblock %}
+
+{% block content %}
+<section class="min-h-screen" role="region" aria-label="Личный кабинет">
+  
+  <!-- Dashboard Header -->
+  <header class="sticky top-16 z-40 bg-[var(--bg)]/80 backdrop-blur-md" role="banner" aria-label="Шапка кабинета">
+
+
+    <div class="container py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold">
+            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+          </div>
+          <div>
+            <div class="font-medium">Здравствуйте, {{ request.user.get_username }}</div>
+            <div class="text-sm text-[var(--muted)]">Добро пожаловать в ваш кабинет</div>
+          </div>
+        </div>
+
+        <nav class="flex items-center gap-3" aria-label="Действия">
+          <a class="btn btn-primary" href="{% url 'generate:new' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Сгенерировать
+          </a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Content -->
+  <main class="container py-6" role="main">
+    {% block dash %}{% endblock %}
+  </main>
+</section>
+
+{% endblock %}

@@ -1,0 +1,106 @@
+/* Community trending gallery specific styles */
+
+/* Image card */
+.imgcard {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.group:hover .imgcard {
+  transform: scale(1.02);
+}
+
+/* Card hover effects */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.group:hover .card {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .group:hover .card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Buttons micro-interactions */
+.btn {
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Active tab state for trend buttons */
+.trend-toggle [data-selected="true"],
+.btn-active {
+  background: rgb(var(--primary-rgb));
+  color: white;
+  border: 1px solid rgb(var(--primary-rgb));
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .grid.grid-cols-2 {
+    gap: 0.75rem;
+  }
+  
+  .pill {
+    font-size: 0.6875rem;
+    padding: 3px 6px;
+  }
+}
+
+/* Responsive typography tweak for heading when needed */
+@media (min-width: 640px) {
+  .text-2xl.sm\:text-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+
+/* Performance hints */
+.imgcard,
+.card,
+.btn {
+  will-change: transform;
+}
+
+/* Skeleton loader */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (min-width: 640px) { .skeleton-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px){ .skeleton-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.skeleton-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--bord);
+  background: var(--card);
+}
+.skeleton-img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    rgba(0,0,0,0.06) 25%,
+    rgba(0,0,0,0.12) 37%,
+    rgba(0,0,0,0.06) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+.skeleton-meta { height: 36px; padding: 8px; }
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}

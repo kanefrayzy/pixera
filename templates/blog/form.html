@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block meta_title %}{% if mode == "create" %}Новая статья{% else %}Редактирование — {{ post.title }}{% endif %} | Блог AI Gallery{% endblock %}
+{% block meta_description %}Форма публикации статей блога AI Gallery. Доступ только для персонала.{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold">
+      {% if mode == "create" %}Новая статья{% else %}Редактирование статьи{% endif %}
+    </h1>
+    <p class="text-[var(--muted)] mt-2">
+      {% if mode == "create" %}Создайте новую статью для блога{% else %}Внесите изменения в существующую статью{% endif %}
+    </p>
+  </div>
+
+  <!-- Global Errors -->
+  {% if form.non_field_errors %}
+    <div class="card p-4 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+        </svg>
+        <div class="text-sm text-red-700 dark:text-red-300">
+          {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" novalidate class="space-y-8">
+    {% csrf_token %}
+
+    <!-- Basic Information -->
+    <div class="card p-6 sm:p-8">
+      <h2 class="text-xl font-semibold mb-6">Основная информация</h2>
+      
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Title -->
+        <div class="lg:col-span-2">
+          <label class="block text-sm font-medium mb-3" for="{{ form.title.id_for_label }}">
+            Заголовок <span class="text-red-500">*</span>
+          </label>
+          <input type="text" 
+                 id="{{ form.title.id_for_label }}"
+                 name="{{ form.title.name }}"
+                 value="{{ form.title.value|default:'' }}"
+                 class="field"
+                 placeholder="Введите привлекательный заголовок статьи"
+                 maxlength="200"
+                 required>
+          {% if form.title.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.title.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Cover Image -->
+        <div>
+          <label class="block text-sm font-medium mb-3" for="{{ form.cover.id_for_label }}">
+            Обложка
+          </label>
+          <input type="file" 
+                 id="{{ form.cover.id_for_label }}"
+                 name="{{ form.cover.name }}"
+                 class="field"
+                 accept="image/*">
+          {% if form.cover.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.cover.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          
+          {% if mode == "edit" and post.cover %}
+            <div class="mt-4">
+              <div class="text-sm text-[var(--muted)] mb-2">Текущая обложка:</div>
+              <img src="{{ post.cover.url }}" 
+                   alt="Текущая обложка" 
+                   class="w-full max-w-xs rounded-2xl border border-[var(--bord)]">
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Tags -->
+        <div>
+          <label class="block text-sm font-medium mb-3" for="{{ form.tags_csv.id_for_label }}">
+            Теги
+          </label>
+          <input type="text" 
+                 id="{{ form.tags_csv.id_for_label }}"
+                 name="{{ form.tags_csv.name }}"
+                 value="{{ form.tags_csv.value|default:'' }}"
+                 class="field"
+                 placeholder="например: нейросеть, руководство, генерация">
+          
+          {% if all_tags %}
+            <datalist id="all-tags">
+              {% for name in all_tags %}
+                <option value="{{ name }}"></option>
+              {% endfor %}
+            </datalist>
+          {% endif %}
+          
+          {% if form.tags_csv.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.tags_csv.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Разделяйте теги запятыми. Используются для поиска и группировки статей.
+          </div>
+        </div>
+      </div>
+
+      <!-- Excerpt -->
+      <div class="mt-6">
+        <label class="block text-sm font-medium mb-3" for="{{ form.excerpt.id_for_label }}">
+          Краткое описание
+        </label>
+        <textarea id="{{ form.excerpt.id_for_label }}"
+                  name="{{ form.excerpt.name }}"
+                  class="field min-h-24 resize-none"
+                  placeholder="2-3 предложения, которые кратко описывают содержание статьи..."
+                  maxlength="300">{{ form.excerpt.value|default:'' }}</textarea>
+        {% if form.excerpt.errors %}
+          <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+            {% for error in form.excerpt.errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+        <div class="mt-2 text-xs text-[var(--muted)]">
+          Используется в карточках статей и социальных сетях
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="card p-6 sm:p-8">
+      <h2 class="text-xl font-semibold mb-6">Содержание</h2>
+      
+      <div>
+        <label class="block text-sm font-medium mb-3" for="{{ form.body.id_for_label }}">
+          Текст статьи <span class="text-red-500">*</span>
+        </label>
+        <textarea id="{{ form.body.id_for_label }}"
+                  name="{{ form.body.name }}"
+                  class="field min-h-96 resize-y font-mono text-sm"
+                  placeholder="Введите текст статьи. Поддерживается HTML-разметка..."
+                  required>{{ form.body.value|default:'' }}</textarea>
+        {% if form.body.errors %}
+          <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+            {% for error in form.body.errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+        <div class="mt-2 text-xs text-[var(--muted)]">
+          Можно использовать HTML-теги для форматирования: &lt;p&gt;, &lt;h2&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;blockquote&gt;
+        </div>
+      </div>
+    </div>
+
+    <!-- SEO Settings -->
+    <div class="card p-6 sm:p-8">
+      <div class="flex items-start gap-3 mb-6">
+        <svg class="w-6 h-6 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9-9c0 5.523-4.477 10-10 10s-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10z"/>
+        </svg>
+        <div>
+          <h2 class="text-xl font-semibold">SEO настройки</h2>
+          <p class="text-[var(--muted)] text-sm mt-1">Оптимизация для поисковых систем и социальных сетей</p>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Meta Title -->
+        <div>
+          <label class="block text-sm font-medium mb-3" for="{{ form.meta_title.id_for_label }}">
+            Meta Title
+          </label>
+          <input type="text" 
+                 id="{{ form.meta_title.id_for_label }}"
+                 name="{{ form.meta_title.name }}"
+                 value="{{ form.meta_title.value|default:'' }}"
+                 class="field"
+                 placeholder="SEO заголовок для поисковиков"
+                 maxlength="60">
+          {% if form.meta_title.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.meta_title.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Рекомендуется до 60 символов
+          </div>
+        </div>
+
+        <!-- Meta Description -->
+        <div>
+          <label class="block text-sm font-medium mb-3" for="{{ form.meta_description.id_for_label }}">
+            Meta Description
+          </label>
+          <textarea id="{{ form.meta_description.id_for_label }}"
+                    name="{{ form.meta_description.name }}"
+                    class="field min-h-20 resize-none"
+                    placeholder="Краткое описание для поисковых систем"
+                    maxlength="160">{{ form.meta_description.value|default:'' }}</textarea>
+          {% if form.meta_description.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.meta_description.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            <span id="md-counter">0</span> / 160 символов · рекомендуется 150-160
+          </div>
+        </div>
+
+        <!-- OG Title -->
+        <div>
+          <label class="block text-sm font-medium mb-3" for="{{ form.og_title.id_for_label }}">
+            Open Graph Title
+          </label>
+          <input type="text" 
+                 id="{{ form.og_title.id_for_label }}"
+                 name="{{ form.og_title.name }}"
+                 value="{{ form.og_title.value|default:'' }}"
+                 class="field"
+                 placeholder="Заголовок для социальных сетей"
+                 maxlength="60">
+          {% if form.og_title.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.og_title.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- OG Description -->
+        <div>
+          <label class="block text-sm font-medium mb-3" for="{{ form.og_description.id_for_label }}">
+            Open Graph Description
+          </label>
+          <textarea id="{{ form.og_description.id_for_label }}"
+                    name="{{ form.og_description.name }}"
+                    class="field min-h-20 resize-none"
+                    placeholder="Описание для социальных сетей"
+                    maxlength="160">{{ form.og_description.value|default:'' }}</textarea>
+          {% if form.og_description.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.og_description.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- OG Image -->
+        <div class="lg:col-span-2">
+          <label class="block text-sm font-medium mb-3" for="{{ form.og_image.id_for_label }}">
+            Open Graph Image
+          </label>
+          <input type="file" 
+                 id="{{ form.og_image.id_for_label }}"
+                 name="{{ form.og_image.name }}"
+                 class="field"
+                 accept="image/*">
+          {% if form.og_image.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.og_image.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Если не указать — будет использована обложка статьи. Рекомендуемый размер: 1200×630px
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Publishing Settings -->
+    <div class="card p-6 sm:p-8">
+      <h2 class="text-xl font-semibold mb-6">Настройки публикации</h2>
+      
+      <div class="grid lg:grid-cols-2 gap-6 items-start">
+        <!-- Published Status -->
+        <div>
+          <label class="flex items-center gap-3 p-4 rounded-2xl border border-[var(--bord)] hover:bg-black/[.02] dark:hover:bg-white/[.02] transition cursor-pointer">
+            <input type="checkbox" 
+                   id="{{ form.is_published.id_for_label }}"
+                   name="{{ form.is_published.name }}"
+                   {% if form.is_published.value %}checked{% endif %}
+                   class="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary">
+            <div>
+              <div class="font-medium">Опубликовать статью</div>
+              <div class="text-sm text-[var(--muted)]">Статья будет видна всем посетителям</div>
+            </div>
+          </label>
+          {% if form.is_published.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.is_published.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Publication Date -->
+        <div>
+          <label class="block text-sm font-medium mb-3" for="{{ form.published_at.id_for_label }}">
+            Дата публикации
+          </label>
+          <input type="datetime-local" 
+                 id="{{ form.published_at.id_for_label }}"
+                 name="{{ form.published_at.name }}"
+                 value="{{ form.published_at.value|default:'' }}"
+                 class="field">
+          {% if form.published_at.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.published_at.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Можно запланировать публикацию на будущее
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="flex flex-col sm:flex-row gap-4">
+      <button class="btn btn-primary flex-1" type="submit">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+        </svg>
+        {% if mode == "create" %}Создать статью{% else %}Сохранить изменения{% endif %}
+      </button>
+      
+      {% if mode == "edit" and post %}
+        <a class="btn btn-ghost flex-1 text-center" href="{{ post.get_absolute_url }}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Отмена
+        </a>
+        <a class="btn btn-ghost text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" href="{% url 'blog:delete' post.slug %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          Удалить
+        </a>
+      {% else %}
+        <a class="btn btn-ghost flex-1 text-center" href="{% url 'blog:index' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Отмена
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  // Character counter for meta description
+  const metaDescField = document.getElementById('{{ form.meta_description.id_for_label|escapejs }}');
+  const counter = document.getElementById('md-counter');
+  
+  function updateCounter() {
+    if (!metaDescField || !counter) return;
+    const length = (metaDescField.value || '').length;
+    counter.textContent = length;
+    
+    // Color coding
+    if (length > 160) {
+      counter.className = 'text-red-500 font-medium';
+    } else if (length > 150) {
+      counter.className = 'text-amber-500 font-medium';
+    } else {
+      counter.className = 'text-green-500 font-medium';
+    }
+  }
+  
+  if (metaDescField) {
+    metaDescField.addEventListener('input', updateCounter);
+    updateCounter();
+  }
+
+  // Auto-fill OG fields from meta fields
+  const metaTitle = document.getElementById('{{ form.meta_title.id_for_label|escapejs }}');
+  const metaDesc = document.getElementById('{{ form.meta_description.id_for_label|escapejs }}');
+  const ogTitle = document.getElementById('{{ form.og_title.id_for_label|escapejs }}');
+  const ogDesc = document.getElementById('{{ form.og_description.id_for_label|escapejs }}');
+
+  function autoFillOG(sourceField, targetField) {
+    if (!sourceField || !targetField) return;
+    
+    sourceField.addEventListener('blur', () => {
+      if (!targetField.value.trim() && sourceField.value.trim()) {
+        targetField.value = sourceField.value;
+      }
+    });
+  }
+
+  autoFillOG(metaTitle, ogTitle);
+  autoFillOG(metaDesc, ogDesc);
+
+  // Setup datalist for tags
+  {% if all_tags %}
+    const tagsField = document.getElementById('{{ form.tags_csv.id_for_label|escapejs }}');
+    if (tagsField && !tagsField.getAttribute('list')) {
+      tagsField.setAttribute('list', 'all-tags');
+    }
+  {% endif %}
+
+  // Auto-resize textareas
+  function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
+  // Apply to specific textareas
+  const textareas = [
+    document.getElementById('{{ form.excerpt.id_for_label|escapejs }}'),
+    document.getElementById('{{ form.meta_description.id_for_label|escapejs }}'),
+    document.getElementById('{{ form.og_description.id_for_label|escapejs }}')
+  ];
+
+  textareas.forEach(textarea => {
+    if (textarea) {
+      textarea.addEventListener('input', () => autoResize(textarea));
+      // Initial resize
+      if (textarea.value) {
+        autoResize(textarea);
+      }
+    }
+  });
+
+  // Form validation enhancement
+  const form = document.querySelector('form');
+  const titleField = document.getElementById('{{ form.title.id_for_label|escapejs }}');
+  const bodyField = document.getElementById('{{ form.body.id_for_label|escapejs }}');
+
+  form?.addEventListener('submit', (e) => {
+    let hasErrors = false;
+
+    // Check required fields
+    if (!titleField?.value?.trim()) {
+      hasErrors = true;
+      titleField?.classList.add('border-red-500');
+      titleField?.focus();
+    } else {
+      titleField?.classList.remove('border-red-500');
+    }
+
+    if (!bodyField?.value?.trim()) {
+      hasErrors = true;
+      bodyField?.classList.add('border-red-500');
+      if (!titleField?.value?.trim()) {
+        bodyField?.focus();
+      }
+    } else {
+      bodyField?.classList.remove('border-red-500');
+    }
+
+    if (hasErrors) {
+      e.preventDefault();
+    }
+  });
+
+  // Remove error styling on input
+  [titleField, bodyField].forEach(field => {
+    field?.addEventListener('input', () => {
+      field.classList.remove('border-red-500');
+    });
+  });
+
+  // Preview functionality (basic)
+  const previewBtn = document.getElementById('preview-btn');
+  if (previewBtn) {
+    previewBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Could implement a preview modal here
+      alert('Функция предварительного просмотра в разработке');
+    });
+  }
+})();
+</script>
+
+<style>
+/* Form enhancements */
+.field:focus {
+  border-color: rgb(1 209 251);
+  box-shadow: 0 0 0 3px rgba(1, 209, 251, 0.1);
+}
+
+.field.border-red-500 {
+  border-color: rgb(239 68 68);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Auto-resize textareas */
+textarea.field {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+/* File input styling */
+input[type="file"].field {
+  padding: 0.75rem;
+}
+
+input[type="file"].field::-webkit-file-upload-button {
+  background: rgb(1 209 251);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  margin-right: 1rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+input[type="file"].field::-webkit-file-upload-button:hover {
+  background: rgb(1 209 251 / 0.9);
+}
+
+/* Checkbox styling */
+input[type="checkbox"]:checked {
+  background-color: rgb(1 209 251);
+  border-color: rgb(1 209 251);
+}
+
+/* DateTime input styling */
+input[type="datetime-local"].field {
+  color-scheme: light;
+}
+
+[data-theme="dark"] input[type="datetime-local"].field {
+  color-scheme: dark;
+}
+
+/* Better mobile spacing */
+@media (max-width: 640px) {
+  .space-y-8 > * + * {
+    margin-top: 1.5rem;
+  }
+  
+  .card {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+/* Progress indicator for meta description */
+#md-counter {
+  transition: color 0.2s ease;
+}
+</style>
+
+{% endblock %}

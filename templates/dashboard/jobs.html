@@ -1,0 +1,87 @@
+﻿{# FILE: templates/dashboard/my_jobs.html #}
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Мои обработки — AI Gallery{% endblock %}
+
+{% block hero %}
+<section class="hero">
+  <div class="container hero-inner">
+    <h1 class="hero-title">Мои обработки</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="container">
+  <div class="panel" aria-labelledby="jobsTitle">
+    <header class="page-head">
+      <h2 id="jobsTitle" class="page-title">История задач</h2>
+      <p class="muted">Ваши сгенерированные изображения и статус обработки.</p>
+    </header>
+
+    {% if jobs %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mj-grid" role="list">
+        {% for j in jobs %}
+          <article class="card mj-card min-w-0" role="listitem" itemscope itemtype="https://schema.org/CreativeWork">
+            <meta itemprop="dateCreated" content="{{ j.created_at|date:'c' }}"/>
+
+            {% if j.result_image %}
+              <a class="card-media" href="{% url 'generate:job_detail_no_slug' pk=j.id %}" aria-label="Открыть задачу #{{ j.id }}">
+                <img
+                  src="{{ j.result_image.url }}"
+                  alt="Результат #{{ j.id }}"
+                  loading="lazy"
+                  decoding="async"
+                  itemprop="image">
+                <div class="card-gradient"></div>
+                <h3 class="card-title"><span itemprop="name">Задача #{{ j.id }}</span></h3>
+              </a>
+            {% else %}
+              <a class="card-media" href="{% url 'generate:job_detail_no_slug' pk=j.id %}" aria-label="Открыть задачу #{{ j.id }}">
+                {# Покажем живой плейсхолдер эндпоинта, чтобы картинка появится сразу после готовности #}
+                <img
+                  src="{% url 'generate:job_image' pk=j.id slug=j.prompt|default_if_none:''|slugify %}"
+                  alt="Задача #{{ j.id }} — {{ j.status }}"
+                  loading="lazy"
+                  decoding="async">
+                <div class="card-gradient"></div>
+                <h3 class="card-title">Задача #{{ j.id }}</h3>
+              </a>
+            {% endif %}
+
+            <div class="card-meta mj-meta min-w-0">
+              <span class="muted">{{ j.created_at|date:"d.m.Y H:i" }}</span>
+              <span class="badge mj-badge mj-{{ j.status|default:'queued'|lower }}">
+                {% if j.status == 'done' %}Готово{% elif j.status == 'failed' %}Ошибка{% elif j.status == 'processing' %}В обработке{% else %}В очереди{% endif %}
+              </span>
+            </div>
+
+            <div class="mj-actions">
+              <a class="btn btn-soft btn-sm" href="{% url 'generate:job_detail_no_slug' pk=j.id %}">Открыть</a>
+
+              {% if j.result_image %}
+                <a class="btn btn-ghost btn-sm" href="{{ j.result_image.url }}" target="_blank" rel="noopener">Файл</a>
+              {% endif %}
+
+              <form method="post" action="{% url 'generate:job_delete' j.pk %}" class="inline" onsubmit="return confirm('Удалить обработку #{{ j.id }}? Это действие необратимо.');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="btn btn-danger btn-sm" type="submit">Удалить</button>
+              </form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      {# Пагинация (использует ваш include) #}
+      {% include "includes/pagination.html" %}
+    {% else %}
+      <div class="empty">
+        <img class="empty-ill" src="{% static 'img/placeholder.png' %}" alt="" aria-hidden="true">
+        <p class="muted">Здесь появятся ваши сгенерированные изображения и история задач.</p>
+        <a class="btn" href="{% url 'generate:new' %}">Сгенерировать изображение</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

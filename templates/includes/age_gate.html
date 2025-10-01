@@ -1,0 +1,286 @@
+﻿{% load i18n %}
+
+{% if not request.age_ok %}
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" 
+     id="ageGate" 
+     role="dialog" 
+     aria-modal="true" 
+     aria-labelledby="ageTitle" 
+     aria-describedby="ageDesc">
+  
+  <div class="card p-8 max-w-md w-full max-h-max text-center transform scale-95 opacity-0 transition-all duration-300" 
+       id="ageGateBox"
+       role="document" 
+       tabindex="-1">
+    
+    <!-- Icon -->
+    <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-amber-500/15 flex items-center justify-center">
+      <svg class="w-8 h-8 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+    
+    <!-- Content -->
+    <h2 id="ageTitle" class="text-2xl font-bold mb-4">{% trans "Вам есть 18 лет?" %}</h2>
+    <p id="ageDesc" class="text-[var(--muted)] mb-8 leading-relaxed">
+      {% trans "Доступ к сайту разрешён только пользователям старше 18 лет. Подтвердите возраст для продолжения работы." %}
+    </p>
+    
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <button class="btn btn-primary flex-1" id="ageYes" type="button">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        {% trans "Да, мне 18+" %}
+      </button>
+      <button class="btn btn-ghost flex-1" id="ageNo" type="button">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        {% trans "Нет" %}
+      </button>
+    </div>
+    
+    <!-- Footer Info -->
+    <div class="mt-6 pt-6 border-t border-[var(--bord)]">
+      <p class="text-xs text-[var(--muted)]">
+        {% trans "Мы обязаны проверять возраст согласно политике безопасности" %}
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const overlay = document.getElementById('ageGate');
+  const box = document.getElementById('ageGateBox');
+  const yesBtn = document.getElementById('ageYes');
+  const noBtn = document.getElementById('ageNo');
+
+  if (!overlay || !box) return;
+
+  // Prevent body scroll
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+
+  // Animate in
+  requestAnimationFrame(() => {
+    box.style.transform = 'scale(1)';
+    box.style.opacity = '1';
+    box.focus();
+  });
+
+  // Focus trap
+  function trapFocus(e) {
+    if (e.key !== 'Tab') return;
+    
+    const focusables = box.querySelectorAll('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!focusables.length) return;
+    
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+  
+  box.addEventListener('keydown', trapFocus);
+
+  // CSRF token helper
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^|;)\\s*' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+  }
+
+  function setAgeCookie() {
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    
+    let cookie = `age_gate_ok=1; Path=/; SameSite=Lax; Expires=${expires.toUTCString()}`;
+    if (location.protocol === 'https:') {
+      cookie += '; Secure';
+    }
+    document.cookie = cookie;
+  }
+
+  function closeGate() {
+    // Animate out
+    box.style.transform = 'scale(0.95)';
+    box.style.opacity = '0';
+    overlay.style.opacity = '0';
+    
+    setTimeout(() => {
+      overlay.remove();
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }, 300);
+  }
+
+  // Handle age confirmation
+  yesBtn?.addEventListener('click', async () => {
+    // Disable button to prevent double-clicks
+    yesBtn.disabled = true;
+    yesBtn.innerHTML = `
+      <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      {% trans "Подтверждаю..." %}
+    `;
+
+    try {
+      // Try to send to backend first
+      const response = await fetch("{% url 'pages:age_accept' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body: 'ok=1',
+        credentials: 'same-origin'
+      });
+
+      if (!response.ok) {
+        throw new Error('Backend request failed');
+      }
+    } catch (error) {
+      console.warn('Backend age confirmation failed, falling back to cookie:', error);
+      // Fallback: set cookie directly
+      setAgeCookie();
+    }
+
+    // Small delay for better UX
+    setTimeout(closeGate, 500);
+  });
+
+  // Handle age rejection
+  noBtn?.addEventListener('click', () => {
+    // Animate button
+    noBtn.disabled = true;
+    noBtn.innerHTML = `
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      {% trans "Перенаправление..." %}
+    `;
+
+    // Redirect after short delay
+    setTimeout(() => {
+      window.location.href = 'https://www.google.com/';
+    }, 1000);
+  });
+
+  // Prevent ESC key (policy requirement)
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+    }
+  });
+
+  // Prevent clicking outside to close
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      e.preventDefault();
+      // Optional: add a subtle shake animation to indicate it can't be closed
+      box.style.animation = 'shake 0.5s ease-in-out';
+      setTimeout(() => {
+        box.style.animation = '';
+      }, 500);
+    }
+  });
+})();
+</script>
+
+<style>
+/* Ensure the modal appears above everything */
+#ageGate {
+  z-index: 9999;
+}
+
+/* Smooth transitions */
+#ageGateBox {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+#ageGate {
+  transition: opacity 0.3s ease;
+}
+
+/* Shake animation for when user tries to click outside */
+@keyframes shake {
+  0%, 100% { transform: translateX(0) scale(1); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px) scale(1); }
+  20%, 40%, 60%, 80% { transform: translateX(4px) scale(1); }
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Button disabled states */
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Ensure proper text contrast */
+#ageGate .text-\[var\(--muted\)\] {
+  color: rgb(156 163 175);
+}
+
+[data-theme="dark"] #ageGate .text-\[var\(--muted\)\] {
+  color: rgb(156 163 175);
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  #ageGateBox {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .btn {
+    min-height: 48px; /* Better touch targets */
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  #ageGate {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+  
+  #ageGateBox {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  #ageGateBox {
+    transition: opacity 0.2s ease;
+    transform: scale(1) !important;
+  }
+  
+  .animate-spin {
+    animation: none;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+  }
+}
+</style>
+{% endif %}

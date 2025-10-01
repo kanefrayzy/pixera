@@ -1,0 +1,133 @@
+﻿{# FILE: templates/dashboard/wallet_topup.html #}
+{% extends "dashboard/layout.html" %}
+{% block title %}Мой баланс — AI Gallery{% endblock %}
+
+{% block dash %}
+<section class="panel form-stack" style="max-width:640px;margin-inline:auto">
+  <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px">Мой баланс</h1>
+      <div class="muted">Текущий баланс: <strong>{{ wallet.balance|default:0 }}&nbsp;₽</strong></div>
+    </div>
+    <nav aria-label="Дополнительно" class="muted" style="font-size:.95rem;">
+      <a href="{% url 'dashboard:my_jobs' %}" class="link">Мои обработки</a>
+      ·
+      <a href="{% url 'dashboard:tips' %}" class="link">Рекомендации</a>
+    </nav>
+  </header>
+
+  {% include "includes/messages.html" %}
+
+  <form method="post" action="{% url 'dashboard:topup' %}" class="stack" novalidate id="topupForm" autocomplete="on">
+    {% csrf_token %}
+
+    <label class="label" for="amount">Сумма пополнения (₽)</label>
+    <div class="input-row" style="display:flex;gap:8px;align-items:center">
+      <input
+        id="amount"
+        class="input"
+        inputmode="decimal"
+        type="number"
+        step="0.01"
+        min="50"
+        max="100000"
+        name="amount"
+        placeholder="100.00"
+        required
+        aria-describedby="amountHelp amountErr"
+        style="flex:1"
+      >
+      <button class="btn" type="submit" id="payBtn">Пополнить</button>
+    </div>
+
+    <div id="amountHelp" class="muted" style="margin-top:4px">
+      Минимум 50&nbsp;₽, максимум 100&nbsp;000&nbsp;₽. Комиссии зависят от платёжного провайдера.
+    </div>
+    <div id="amountErr" class="flash flash-error" style="display:none;margin-top:6px"></div>
+
+    <fieldset class="preset" style="margin-top:12px;border:0;padding:0">
+      <legend class="label" style="margin-bottom:6px">Быстрый выбор</legend>
+      <div class="chips" role="group" aria-label="Быстрые суммы" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="chip" data-sum="100">100 ₽</button>
+        <button type="button" class="chip" data-sum="300">300 ₽</button>
+        <button type="button" class="chip" data-sum="500">500 ₽</button>
+        <button type="button" class="chip" data-sum="1000">1 000 ₽</button>
+        <button type="button" class="chip" data-sum="2000">2 000 ₽</button>
+      </div>
+    </fieldset>
+
+    <details class="muted" style="margin-top:10px">
+      <summary class="q">Как быстро зачисляются средства?</summary>
+      <div class="a">Обычно моментально. В редких случаях — до 5 минут.</div>
+    </details>
+  </form>
+</section>
+
+<style>
+  .chip{border:1px solid var(--border);background:var(--bg-soft);padding:.45rem .8rem;border-radius:999px;cursor:pointer}
+  .chip:hover{filter:brightness(1.05)}
+  .flash-error{color:#b00020;border:1px solid color-mix(in srgb,#b00020 60%, transparent);background:color-mix(in srgb,#b00020 8%, transparent);padding:8px 10px;border-radius:10px}
+</style>
+
+<script>
+(function(){
+  const form = document.getElementById('topupForm');
+  const input = document.getElementById('amount');
+  const err = document.getElementById('amountErr');
+  const btn = document.getElementById('payBtn');
+
+  // Быстрые суммы
+  document.querySelectorAll('.chip[data-sum]').forEach(ch => {
+    ch.addEventListener('click', ()=>{
+      input.value = (ch.dataset.sum || '').replace(/\s/g,'');
+      input.dispatchEvent(new Event('input', {bubbles:true}));
+      input.focus();
+    });
+  });
+
+  function showError(msg){
+    if (!err) return;
+    err.textContent = msg || '';
+    err.style.display = msg ? 'block' : 'none';
+  }
+
+  function validate(){
+    const raw = (input.value || '').replace(',', '.');
+    const value = Number(raw);
+    const min = Number(input.getAttribute('min') || 50);
+    const max = Number(input.getAttribute('max') || 100000);
+
+    if (!raw || isNaN(value)){
+      showError('Введите сумму в формате 100.00');
+      return false;
+    }
+    if (value < min){
+      showError(`Минимальная сумма — ${min.toLocaleString('ru-RU')} ₽`);
+      return false;
+    }
+    if (value > max){
+      showError(`Максимальная сумма — ${max.toLocaleString('ru-RU')} ₽`);
+      return false;
+    }
+    // 2 знака после запятой максимум
+    if (!/^\d+(\.\d{1,2})?$/.test(raw)){
+      showError('Не более двух знаков после запятой');
+      return false;
+    }
+    showError('');
+    return true;
+  }
+
+  input.addEventListener('input', validate);
+  form.addEventListener('submit', (e)=>{
+    if (!validate()){
+      e.preventDefault();
+      input.focus();
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Перенаправляю…';
+  }, {passive:false});
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,165 @@
+﻿{# FILE: templates/generate/track.html #}
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Ожидание результата — AI Gallery" %}{% endblock %}
+{% block meta_title %}{% trans "Ожидание результата — AI Gallery" %}{% endblock %}
+{% block meta_description %}{% trans "Мы начали обработку вашего запроса. Обычно это занимает около одной минуты. Дождитесь окончания — изображение появится ниже автоматически." %}{% endblock %}
+
+{% block content %}
+<section class="container section" aria-labelledby="jobTitle">
+  <div class="panel track" role="status" aria-live="polite">
+    <div class="track-head">
+      <h1 id="jobTitle" class="page-title">
+        {% blocktrans with id=job.id %}Ваше задание №{{ id }}{% endblocktrans %}
+      </h1>
+      <div class="muted">
+        {% trans "Статус" %}: <span id="statusText">{{ job.status }}</span>
+      </div>
+    </div>
+
+    <div class="track-body">
+      <div class="result" aria-live="polite" aria-atomic="true">
+        {% if image_url %}
+          <div class="result-card">
+            <img src="{{ image_url }}" alt="{% trans 'Сгенерированное изображение' %}">
+          </div>
+        {% else %}
+          <!-- Скелетон до готовности -->
+          <div class="result-card skeleton" aria-hidden="true">
+            <div class="skeleton-media"></div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="progress-box" aria-describedby="etaText">
+        <div class="progress-ring" role="img" aria-label="{% trans 'Прогресс обработки' %}">
+          <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+            <circle class="ring-bg" cx="60" cy="60" r="54"></circle>
+            <circle class="ring-fg" id="ring" cx="60" cy="60" r="54" stroke-dasharray="339.292" stroke-dashoffset="339.292"></circle>
+          </svg>
+          <div class="progress-num" aria-live="polite"><span id="pct">0</span>%</div>
+        </div>
+
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="bar"></span>
+        </div>
+
+        <div class="muted" id="etaText">
+          {% trans "Ожидание ~1 минута. Мы подготавливаем стиль, ресурсы и подсказки…" %}
+        </div>
+
+        <ul class="muted tip-rotator" id="tipRotator" aria-live="polite">
+          <li>{% trans "Совет: используйте конкретику — «soft studio light, 85mm, orange accent»." %}</li>
+          <li>{% trans "Совет: добавляйте материалы — «matte metal, glass reflections, shallow DOF»." %}</li>
+          <li>{% trans "Совет: избегайте двойных отрицаний — промпт будет понятнее." %}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="track-actions" role="group" aria-label="{% trans 'Действия' %}">
+      <a class="btn-ghost" href="{% url 'generate:new' %}">{% trans "Сгенерировать ещё" %}</a>
+      <a class="btn" href="{% url 'dashboard:my_jobs' %}">{% trans "Мои обработки" %}</a>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  const pollUrl    = "{{ poll_url }}";
+  const ring       = document.getElementById('ring');
+  const pctEl      = document.getElementById('pct');
+  const bar        = document.getElementById('bar');
+  const statusText = document.getElementById('statusText');
+  const tipRotator = document.getElementById('tipRotator');
+  const etaText    = document.getElementById('etaText');
+  const progressBar= document.querySelector('.progress-bar');
+
+  if (!ring || !pctEl || !bar || !statusText) return;
+
+  const CIRC = 2 * Math.PI * 54; // 339.292
+  const START = Date.now();
+  const EST = Number({{ estimate_ms|default:60000 }}) || 60000; // ~1 мин
+  const CAP_BEFORE_DONE = 0.90; // до 90% едем по времени
+
+  function setProgress(p){
+    p = Math.max(0, Math.min(1, p));
+    const off = CIRC * (1 - p);
+    ring.style.strokeDashoffset = off.toFixed(2);
+    const val = Math.round(p*100);
+    pctEl.textContent = val;
+    bar.style.width = val + '%';
+    progressBar?.setAttribute('aria-valuenow', String(val));
+  }
+
+  function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
+
+  // Ротация советов
+  let tips = Array.from(tipRotator?.querySelectorAll('li') || []);
+  let tipIdx = 0;
+  function rotateTip(){
+    tips.forEach((li,i)=> li.style.display = i === tipIdx ? 'list-item' : 'none');
+    tipIdx = (tipIdx + 1) % (tips.length || 1);
+  }
+  if (tips.length) {
+    rotateTip();
+    var tipTimer = setInterval(rotateTip, 4500);
+  }
+
+  // Анимация прогресса
+  function tick(){
+    const dt = Date.now() - START;
+    const t = Math.min(dt/EST, 1);
+    if (statusText.dataset.done !== '1'){
+      setProgress(easeOut(t) * CAP_BEFORE_DONE);
+      requestAnimationFrame(tick);
+    }
+  }
+  requestAnimationFrame(tick);
+
+  function applyStatus(data){
+    if (!data) return;
+    if (typeof data.status === 'string') statusText.textContent = data.status;
+
+    if (data.status === 'done' && data.image && (data.image.url || data.image.src || data.url)) {
+      statusText.dataset.done = '1';
+      setProgress(1);
+      etaText.textContent = "{{ _('Готово! 🎉') if False else 'Готово! 🎉' }}"; // строка не проходит через JS-теги
+      const url = data.image.url || data.image.src || data.url;
+      const result = document.querySelector('.result');
+      if (result) {
+        result.innerHTML = `
+          <div class="result-card">
+            <img src="${url}" alt="${(data.image.alt || '').replace(/"/g, '&quot;') || 'Generated image'}">
+          </div>`;
+      }
+      if (pollTimer){ clearInterval(pollTimer); }
+      if (tipTimer){ clearInterval(tipTimer); }
+    } else if (data.status === 'failed' || data.error) {
+      statusText.dataset.done = '1';
+      etaText.textContent = "{{ _('Ошибка генерации. Попробуйте ещё раз или измените промпт.') if False else 'Ошибка генерации. Попробуйте ещё раз или измените промпт.' }}";
+      setProgress(1);
+      if (pollTimer){ clearInterval(pollTimer); }
+      if (tipTimer){ clearInterval(tipTimer); }
+    }
+  }
+
+  async function poll(){
+    if (!pollUrl) return;
+    try{
+      const r = await fetch(pollUrl, {cache:'no-store', headers: {'Accept': 'application/json'}});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const json = await r.json();
+      applyStatus(json);
+    }catch(e){
+      // тихо повторим в следующий раз
+    }
+  }
+
+  // сразу опрос + каждые 2s
+  poll();
+  var pollTimer = setInterval(poll, 2000);
+})();
+</script>
+{% endblock %}

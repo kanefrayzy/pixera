@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Новая категория — AI Gallery{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block content %}
+<div class="container section">
+  <h1 class="h3">Добавить категорию</h1>
+
+  {% if messages %}
+    <ul class="messages">{% for m in messages %}<li class="message">{{ m }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  <form method="post" class="panel" style="max-width:560px" novalidate>
+    {% csrf_token %}
+    <div class="form-stack">
+      <label>Название
+        <input class="input" type="text" name="name" maxlength="80" required placeholder="например: Пейзажи">
+      </label>
+      <label>Слаг
+        <input class="input" type="text" name="slug" maxlength="80" placeholder="pejzazhi (если пусто — сформируется из названия)">
+      </label>
+      <label>Порядок
+        <input class="input" type="number" name="order" step="1" value="{{ order_default|default:0 }}">
+      </label>
+      <label style="display:flex;gap:8px;align-items:center;">
+        <input type="checkbox" name="is_active" checked> Активна
+      </label>
+
+      <div class="gen-actions">
+        <button class="btn" type="submit">Создать</button>
+        <a class="btn btn-ghost" href="{% url 'gallery:index' %}">Отмена</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

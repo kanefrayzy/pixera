@@ -1,0 +1,744 @@
+{% load static i18n %}
+<!doctype html>
+{% get_current_language as CUR_LANG %}
+<html lang="{{ CUR_LANG|default:'ru' }}" class="scroll-smooth" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="format-detection" content="telephone=no,email=no,address=no">
+  <meta name="color-scheme" content="dark light">
+
+  <title>{% block meta_title %}{% block title %}{% trans "AI Gallery — ИИ-галерея и генерация" %}{% endblock %}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{% trans "AI Gallery — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды." %}{% endblock %}">
+  <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
+  <meta name="robots" content="{% block robots %}index,follow,max-image-preview:large{% endblock %}">
+  <meta id="themeColor" name="theme-color" content="#0B0E14">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="AI Gallery">
+  <meta property="og:title" content="{% block og_title %}{% trans "AI Gallery — генерация и галерея" %}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{% trans "Минималистичный UI, плавные градиенты и качественная генерация изображений ИИ." %}{% endblock %}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-default.jpg' %}{% endblock %}">
+  <meta name="twitter:card" content="summary_large_image">
+
+  
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="manifest" href="{% static 'site.webmanifest' %}">
+
+  
+  <link rel="dns-prefetch" href="//api.runware.ai">
+  <link rel="preconnect" href="https://api.runware.ai" crossorigin>
+
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'css/gallery.css' %}">
+  
+  {% block extra_css %}{% endblock %}
+
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        container: {
+          center: true,
+          padding: { DEFAULT: "0.75rem" },
+          screens: {
+            sm: "640px",
+            md: "768px",
+            lg: "1024px",
+            xl: "1120px",
+            "2xl": "1280px"
+          }
+        },
+        extend: {
+          screens: {
+            xs: '320px'
+          },
+          colors: {
+            primary: '#01D1FB',
+            accent: '#01D1FB',
+            darkbg: '#0B0E14',
+            lightbg: '#F7F8FA',
+            ink: '#0F172A'
+          },
+          boxShadow: {
+            soft: "0 8px 30px rgba(0,0,0,.18)",
+            ring: "0 0 0 2px rgba(1,209,251,.4)"
+          },
+          dropShadow: {
+            glow: "0 10px 25px rgba(1,209,251,.5)"
+          },
+          backdropBlur: {
+            xs: "2px"
+          }
+        },
+        fontFamily: {
+          sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "Apple Color Emoji", "Segoe UI Emoji"]
+        }
+      },
+      darkMode: ["class", '[data-theme="dark"]']
+    }
+  </script>
+
+  
+  <style type="text/tailwindcss">
+    @layer base {
+      :root {
+        --bg: theme(colors.lightbg);
+        --text: theme(colors.ink);
+        --card: #ffffff;
+        --bord: #e5e7eb;
+        --muted: #475569;
+      }
+      [data-theme="dark"] {
+        --bg: theme(colors.darkbg);
+        --text: rgb(255 255 255 / .9);
+        --card: rgb(255 255 255 / .04);
+        --bord: rgb(255 255 255 / .10);
+        --muted: rgb(255 255 255 / .65);
+      }
+      body {
+        @apply bg-[var(--bg)] text-[var(--text)] font-sans antialiased selection:bg-primary/30 selection:text-[var(--bg)];
+        height: 100%;
+      }
+      html { height: 100%; }
+    }
+
+    @layer components {
+      .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:scale-[.98];
+      }
+      .btn-primary {
+        @apply bg-primary text-darkbg hover:bg-primary/90 shadow-soft;
+      }
+      .btn-ghost {
+        @apply bg-white/0 text-[var(--text)] hover:bg-black/[.04] dark:hover:bg-white/10 border border-[var(--bord)];
+      }
+      .badge {
+        @apply inline-flex items-center rounded-full border border-[var(--bord)] bg-black/[.03] dark:bg-white/5 px-2.5 py-1 text-xs font-medium;
+      }
+      .card {
+        @apply rounded-3xl border border-[var(--bord)] bg-[var(--card)] backdrop-blur-xs shadow-soft;
+      }
+      .field {
+        @apply w-full rounded-xl border border-[var(--bord)] bg-white/70 dark:bg-white/5 px-3.5 py-2.5 outline-none placeholder:text-slate-400 focus:border-primary/60 focus:ring-2 focus:ring-primary/30;
+      }
+      .pill {
+        @apply rounded-full bg-black/[.04] dark:bg-white/5 px-3 py-1 text-xs border border-[var(--bord)];
+      }
+      .nav-link {
+        @apply text-sm font-medium hover:text-black dark:hover:text-white text-ink/80 dark:text-white/70 transition;
+      }
+      .heading-xl {
+        @apply text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.05] tracking-tight;
+      }
+      .glassframe {
+        @apply ring-1 ring-black/5 dark:ring-white/10 bg-white/70 dark:bg-white/5;
+      }
+    }
+
+    @layer utilities {
+      .grid-auto-fit { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+      .mask-fade { -webkit-mask: linear-gradient(to bottom, black 70%, transparent); mask: linear-gradient(to bottom, black 70%, transparent); }
+      .bg-noise {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+      }
+    }
+  </style>
+
+  
+  <script>
+    (function () {
+      try {
+        const saved = localStorage.getItem('theme');
+        const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = saved || "{{ DEFAULT_THEME|default:'dark' }}" || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+        const meta = document.getElementById('themeColor');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0B0E14' : '#F7F8FA');
+      } catch(e) {}
+    })();
+  </script>
+
+  
+  <script>
+  (function () {
+    const FP_COOKIE = "{{ FP_COOKIE_NAME|default:'aid_fp' }}";
+    const FP_HEADER = "{{ FP_HEADER_NAME|default:'X-Device-Fingerprint' }}";
+    const FP_PARAM  = "{{ FP_PARAM_NAME|default:'fp' }}";
+    const GID_COOKIE = "gid";
+    const FIVE_YEARS = 60*60*24*365*5;
+
+    function getCookie(name){
+      const m = document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()[\]\\/+^])/g,'\\$1')+'=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+    function setCookie(name, val, maxAgeSec){
+      try{
+        const secure = location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = name + '=' + encodeURIComponent(val)
+          + '; Path=/; SameSite=Lax; Max-Age=' + (maxAgeSec||FIVE_YEARS) + secure;
+      }catch(e){}
+    }
+    function randId(){
+      try{
+        const a = new Uint8Array(16); crypto.getRandomValues(a);
+        return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
+      }catch(_){
+        return (Date.now().toString(16) + Math.random().toString(16).slice(2)).slice(0,32);
+      }
+    }
+    async function sha256(s){
+      try{
+        const buf = new TextEncoder().encode(s);
+        const h = await crypto.subtle.digest('SHA-256', buf);
+        return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      }catch(_){
+        let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h) ^ s.charCodeAt(i); }
+        return ('00000000'+(h>>>0).toString(16)).slice(-8);
+      }
+    }
+    function canvasFp(){
+      try{
+        const c=document.createElement('canvas'); c.width=240; c.height=80;
+        const x=c.getContext('2d'); x.textBaseline='top'; x.font='16px Arial';
+        x.fillStyle='#f60'; x.fillText(navigator.userAgent, 4, 4);
+        x.strokeStyle='#09f'; x.strokeRect(10, 10, 180, 30);
+        x.fillStyle='#222'; x.globalAlpha=0.7; x.fillRect(20,20,110,20);
+        return c.toDataURL();
+      }catch(e){ return 'nocanvas'; }
+    }
+    function webglInfo(){
+      try{
+        const c=document.createElement('canvas');
+        const gl=c.getContext('webgl')||c.getContext('experimental-webgl');
+        if(!gl) return 'nowebgl';
+        const dbg=gl.getExtension('WEBGL_debug_renderer_info');
+        const ven=dbg?gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL):'';
+        const ren=dbg?gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL):'';
+        return ven+'|'+ren;
+      }catch(e){ return 'wgerr'; }
+    }
+    async function computeFP(){
+      const data = [
+        navigator.userAgent||'',
+        navigator.platform||'',
+        (navigator.languages||[]).join(','),
+        Intl.DateTimeFormat().resolvedOptions().timeZone||'',
+        screen && (screen.width+'x'+screen.height+'x'+screen.colorDepth),
+        screen && (screen.availWidth+'x'+screen.availHeight),
+        String(navigator.hardwareConcurrency||''),
+        String(navigator.deviceMemory||''),
+        'touch:' + ('ontouchstart' in window),
+        'ls:' + ('localStorage' in window),
+        'ss:' + ('sessionStorage' in window),
+        (performance && performance.memory && performance.memory.jsHeapSizeLimit) || '',
+        (navigator.plugins && Array.from(navigator.plugins).map(p=>p.name).join(',')) || '',
+        canvasFp(),
+        webglInfo()
+      ].join('||');
+      return await sha256(data);
+    }
+
+    (async function boot(){
+      try{
+        let gid = getCookie(GID_COOKIE);
+        if(!gid){ gid = randId(); setCookie(GID_COOKIE, gid, FIVE_YEARS); }
+
+        let fp = getCookie(FP_COOKIE) || (function(){ try{return localStorage.getItem(FP_COOKIE)||'';}catch(_){return '';} })();
+        if(!fp){
+          fp = await computeFP();
+          setCookie(FP_COOKIE, fp, FIVE_YEARS);
+          try{ localStorage.setItem(FP_COOKIE, fp); }catch(_){}
+          try{ sessionStorage.setItem(FP_COOKIE, fp); }catch(_){}
+        }
+
+        window.__AIGID = gid; window.__AIFP = fp;
+        const origFetch = window.fetch;
+        if (origFetch) {
+          window.fetch = function(input, init){
+            init = init || {};
+            let headers = init.headers || {};
+            try{
+              if (headers instanceof Headers) {
+                headers.set(FP_HEADER, fp);
+              } else if (Array.isArray(headers)) {
+                headers.push([FP_HEADER, fp]);
+              } else {
+                headers[FP_HEADER] = fp;
+              }
+            }catch(_){}
+            init.headers = headers;
+            return origFetch.call(this, input, init);
+          };
+        }
+        if (window.XMLHttpRequest) {
+          const open = XMLHttpRequest.prototype.open;
+          const send = XMLHttpRequest.prototype.send;
+          XMLHttpRequest.prototype.open = function(){ this.___fp_ready = true; return open.apply(this, arguments); };
+          XMLHttpRequest.prototype.send = function(){
+            try{ this.setRequestHeader(FP_HEADER, fp); }catch(_){}
+            return send.apply(this, arguments);
+          };
+        }
+
+        document.addEventListener('submit', function(e){
+          const form = e.target && e.target.closest && e.target.closest('form');
+          if(!form) return;
+          if((form.getAttribute('method')||'GET').toUpperCase()!=='POST') return;
+          if(form.querySelector('input[name="'+FP_PARAM+'"]')) return;
+          try{
+            const inp=document.createElement('input');
+            inp.type='hidden'; inp.name=FP_PARAM; inp.value=fp;
+            form.appendChild(inp);
+          }catch(_){}
+        });
+      }catch(e) {}
+    })();
+  })();
+  </script>
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+  <a class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 btn btn-primary" href="#main">{% trans "Перейти к содержанию" %}</a>
+
+  
+  <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10">
+    <div class="absolute inset-0 bg-noise"></div>
+    <div class="absolute -inset-x-32 -top-24 h-[28rem] bg-[radial-gradient(ellipse_at_top,_rgba(1,209,251,.25),_transparent_60%)]"></div>
+    <div class="absolute -inset-x-40 top-[28rem] h-[26rem] bg-[radial-gradient(ellipse_at_bottom,_rgba(236,72,153,.16),_transparent_65%)]"></div>
+  </div>
+
+  {% url 'pages:home' as home_href1 %}
+  {% url 'home' as home_href2 %}
+  {% url 'account_login' as account_login_url %}
+  {% url 'account_logout' as account_logout_url %}
+  {% url 'account_signup' as account_signup_url %}
+  {% url 'generate:new' as gen_url %}
+
+  
+  <header id="site-header" class="sticky top-0 z-50 border-b border-[var(--bord)] bg-[var(--bg)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg)]/60" role="banner">
+    <div class="container flex h-16 items-center justify-between">
+      
+      <a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}" 
+         rel="home" class="flex items-center gap-2" aria-label="{% trans 'На главную' %}">
+        <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-darkbg font-extrabold drop-shadow-glow">AI</span>
+        <span class="text-lg font-semibold">Gallery</span>
+      </a>
+
+      
+      <nav class="hidden md:flex items-center gap-7" role="navigation" aria-label="{% trans 'Главное меню' %}">
+        <a class="nav-link" href="{% url 'gallery:index' %}">{% trans "Галерея" %}</a>
+        <a class="nav-link" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
+        <a class="nav-link" href="{% url 'generate:new' %}">{% trans "Генерация" %}</a>
+      </nav>
+
+      
+      <div class="hidden md:flex items-center gap-3">
+        
+        <details class="relative" id="langSwitch">
+          <summary class="btn btn-ghost cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
+            🌐
+          </summary>
+          <div class="absolute right-0 top-full mt-2 card p-2 min-w-48 z-50" id="langMenu" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
+              <span class="text-sm">English</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
+              <span class="text-sm">{% trans "Русский" %}</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
+              <span class="text-sm">Deutsch</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/es.svg' %}" alt="Español">
+              <span class="text-sm">Español</span>
+            </button>
+            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
+              <img class="w-4 h-4 rounded" src="{% static 'img/flags/pt.svg' %}" alt="Português">
+              <span class="text-sm">Português</span>
+            </button>
+          </div>
+        </details>
+
+        
+        <button id="themeToggle" class="btn btn-ghost" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
+          <svg id="iconSun" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
+          </svg>
+          <svg id="iconMoon" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"></path>
+          </svg>
+          <span class="sr-only">{% trans "Тема" %}</span>
+        </button>
+
+        
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'dashboard:index' %}" class="btn btn-ghost" id="cabinetBtn">{% trans "Кабинет" %}</a>
+          {% if account_logout_url %}<a href="{{ account_logout_url }}" class="btn btn-ghost">{% trans "Выйти" %}</a>{% endif %}
+        {% else %}
+          {% with genq=gen_url|add:'?drawer=1' %}
+            {% if account_login_url %}<a href="{{ account_login_url }}?next={{ genq|urlencode }}" class="btn btn-ghost" rel="nofollow">{% trans "Войти" %}</a>{% endif %}
+            {% if account_signup_url %}<a href="{{ account_signup_url }}?next={{ genq|urlencode }}" class="btn btn-primary" rel="nofollow">{% trans "Начать бесплатно" %}</a>{% endif %}
+          {% endwith %}
+        {% endif %}
+      </div>
+
+  
+  <div class="md:hidden flex items-center gap-2 ml-auto">
+    {% if request.user.is_authenticated %}
+      <button class="btn btn-ghost" type="button" data-open-dashboard="1">{% trans "Кабинет" %}</button>
+    {% else %}
+      <details class="relative" id="langSwitchMobile">
+        <summary class="btn btn-ghost p-2" aria-controls="langMenuMobile" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">🌐</summary>
+        <div class="absolute right-0 top-full mt-2 card p-2 min-w-48 z-50" id="langMenuMobile" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+          <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
+            <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
+            <span class="text-sm">English</span>
+          </button>
+          <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
+            <img class="w-4 h-4 rounded" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
+            <span class="text-sm">{% trans "Русский" %}</span>
+          </button>
+          <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
+            <img class="w-4 h-4 rounded" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
+            <span class="text-sm">Deutsch</span>
+          </button>
+          <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
+            <img class="w-4 h-4 rounded" src="{% static 'img/flags/es.svg' %}" alt="Español">
+            <span class="text-sm">Español</span>
+          </button>
+          <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
+            <img class="w-4 h-4 rounded" src="{% static 'img/flags/pt.svg' %}" alt="Português">
+            <span class="text-sm">Português</span>
+          </button>
+        </div>
+      </details>
+      <button id="themeToggleMobile" class="btn btn-ghost p-2" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
+        <svg id="iconSunM" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
+        </svg>
+        <svg id="iconMoonM" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"></path>
+        </svg>
+        <span class="sr-only">{% trans "Тема" %}</span>
+      </button>
+
+    {% endif %}
+      <button id="menuBtn" class="btn btn-ghost p-2" aria-controls="mobileMenu" aria-expanded="false" aria-label="{% trans 'Открыть меню' %}">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>   
+  </div>
+    </div>
+
+    
+    <div id="mobileMenu" class="md:hidden hidden border-t border-[var(--bord)] bg-[var(--bg)]/95 backdrop-blur-md">
+      <div class="container py-3 flex flex-col gap-2">
+        <a class="nav-link py-2" href="{% url 'gallery:index' %}">{% trans "Галерея" %}</a>
+        <a class="nav-link py-2" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
+        <a class="nav-link py-2" href="{% url 'generate:new' %}">{% trans "Генерация" %}</a>
+        
+        {% if request.user.is_authenticated %}
+          <a class="nav-link py-2" href="{% url 'dashboard:index' %}">{% trans "Личный кабинет" %}</a>
+          {% if account_logout_url %}<a class="nav-link py-2" href="{{ account_logout_url }}">{% trans "Выйти" %}</a>{% endif %}
+        {% else %}
+          {% with genq=gen_url|add:'?drawer=1' %}
+            <div class="mt-2 flex items-center gap-2">
+              {% if account_login_url %}<a class="btn btn-ghost w-full" href="{{ account_login_url }}?next={{ genq|urlencode }}">{% trans "Войти" %}</a>{% endif %}
+              {% if account_signup_url %}<a class="btn btn-primary w-full" href="{{ account_signup_url }}?next={{ genq|urlencode }}">{% trans "Регистрация" %}</a>{% endif %}
+            </div>
+          {% endwith %}
+        {% endif %}
+      </div>
+
+    </div>
+    
+  </header>
+
+  {% include "includes/dashboard_drawer.html" %}
+
+  {% block hero %}{% endblock %}
+  {% block breadcrumbs %}{% endblock %}
+
+  
+  <main id="main" class="container py-6" role="main">
+    {% include "includes/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+
+  
+  <footer class="border-t border-[var(--bord)] bg-[var(--bg)]/80 backdrop-blur-sm">
+    <div class="container py-10">
+      <div class="grid grid-auto-fit gap-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-darkbg font-extrabold">AI</span>
+            <span class="text-lg font-semibold">Gallery</span>
+          </div>
+          <p class="mt-3 text-sm text-[var(--muted)]">{% trans "Галерея и генерация ИИ-изображений. Адаптив до 320 px, тёмная/светлая тема." %}</p>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold">{% trans "Разделы" %}</h4>
+          <ul class="mt-3 space-y-2 text-sm text-[var(--muted)]">
+            <li><a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}" class="hover:text-[var(--text)] transition">{% trans "Главная" %}</a></li>
+            <li><a href="{% url 'gallery:index' %}" class="hover:text-[var(--text)] transition">{% trans "Галерея" %}</a></li>
+            <li><a href="{% url 'gallery:trending' %}" class="hover:text-[var(--text)] transition">{% trans "Тренды" %}</a></li>
+            <li><a href="{% url 'generate:new' %}" class="hover:text-[var(--text)] transition">{% trans "Генерация" %}</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold">{% trans "Компания" %}</h4>
+          <ul class="mt-3 space-y-2 text-sm text-[var(--muted)]">
+            <li><a href="{% url 'pages:about' %}" class="hover:text-[var(--text)] transition">{% trans "О нас" %}</a></li>
+            <li><a href="{% url 'pages:contact' %}" class="hover:text-[var(--text)] transition">{% trans "Связаться с нами" %}</a></li>
+            <li><a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">{% trans "Политика конфиденциальности" %}</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--bord)] pt-6 text-xs text-[var(--muted)]">
+        <span>© {% now "Y" %} AI Gallery — {% trans "все права защищены" %}.</span>
+        <div class="flex items-center gap-4">
+          <a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">Terms</a>
+          <a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">Privacy</a>
+          <a href="{% url 'pages:contact' %}" class="hover:text-[var(--text)] transition">Security</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  {% include "includes/age_gate.html" %}
+
+  
+  <form id="setlang-fallback" class="sr-only" action="{% url 'set_language' %}" method="post" aria-hidden="true">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="language" value="">
+  </form>
+
+  
+  <script>
+    // Theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleM = document.getElementById('themeToggleMobile');
+    const iconSun = document.getElementById('iconSun');
+    const iconMoon = document.getElementById('iconMoon');
+    const iconSunM = document.getElementById('iconSunM');
+    const iconMoonM = document.getElementById('iconMoonM');
+    const meta = document.getElementById('themeColor');
+    
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem('theme', theme); } catch(_) {}
+      themeToggle?.setAttribute('aria-pressed', String(theme === 'dark'));
+      themeToggleM?.setAttribute('aria-pressed', String(theme === 'dark'));
+      if (meta) meta.setAttribute('content', theme === 'dark' ? '#0B0E14' : '#F7F8FA');
+      if (iconSun && iconMoon) {
+        iconSun.classList.toggle('hidden', theme !== 'light');
+        iconMoon.classList.toggle('hidden', theme !== 'dark');
+      }
+      if (iconSunM && iconMoonM) {
+        iconSunM.classList.toggle('hidden', theme !== 'light');
+        iconMoonM.classList.toggle('hidden', theme !== 'dark');
+      }
+    }
+    
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    setTheme(current);
+    
+    themeToggle?.addEventListener('click', () => {
+      const now = document.documentElement.getAttribute('data-theme') || 'dark';
+      setTheme(now === 'light' ? 'dark' : 'light');
+    });
+    themeToggleM?.addEventListener('click', () => {
+      const now = document.documentElement.getAttribute('data-theme') || 'dark';
+      setTheme(now === 'light' ? 'dark' : 'light');
+    });
+
+    // Mobile menu
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    
+    menuBtn?.addEventListener('click', () => {
+      const open = mobileMenu.classList.toggle('hidden') === false;
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    // Header shadow on scroll
+    const header = document.getElementById('site-header');
+    const shadowClass = 'shadow-[0_4px_20px_rgba(0,0,0,.25)]';
+    const onScroll = () => {
+      if (window.scrollY > 6) header.classList.add(shadowClass);
+      else header.classList.remove(shadowClass);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Language switcher
+    const SUP = ['en', 'es', 'pt', 'de', 'ru'];
+    const DEFAULT = 'ru';
+    const PREFIX_DEFAULT = false;
+
+    function initLangSwitcher(sw, menu) {
+      if (!sw || !menu) return;
+      sw.addEventListener('toggle', () => {
+        const sum = sw.querySelector('summary');
+        if (sum) sum.setAttribute('aria-expanded', sw.hasAttribute('open') ? 'true' : 'false');
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sw.hasAttribute('open')) sw.removeAttribute('open');
+      });
+      document.addEventListener('pointerdown', (e) => {
+        if (!sw.contains(e.target)) sw.removeAttribute('open');
+      });
+
+      function getCSRFCookie(name) {
+        const m = document.cookie.match(new RegExp('(^|;)\\s*' + name + '=([^;]+)'));
+        return m ? decodeURIComponent(m[2]) : '';
+      }
+      
+      const CSRF = getCSRFCookie('csrftoken');
+
+      function currentLang() {
+        const m = location.pathname.match(/^\/(en|es|pt|de|ru)(?:\/|$)/);
+        if (m) return m[1];
+        const attr = (document.documentElement.getAttribute('lang') || '').toLowerCase();
+        return SUP.includes(attr) ? attr : DEFAULT;
+      }
+
+      function markActive(lang) {
+        menu.querySelectorAll('button[data-lang]').forEach(btn => {
+          const is = (btn.getAttribute('data-lang') || '').toLowerCase() === lang;
+          btn.setAttribute('aria-checked', String(is));
+          btn.style.fontWeight = is ? '600' : '400';
+        });
+      }
+      
+  markActive(currentLang());
+
+      function normalizePath(path) {
+        path = path.replace(/^\/(en|es|pt|de|ru)(?=\/|$)/, '');
+        if (!path.startsWith('/')) path = '/' + path;
+        return path || '/';
+      }
+
+      function buildNextHref(lang) {
+        let path = normalizePath(location.pathname);
+        if (PREFIX_DEFAULT || lang !== DEFAULT) {
+          path = '/' + lang + (path.startsWith('/') ? '' : '/') + path;
+        }
+        const url = new URL(location.href);
+        url.pathname = path;
+        url.searchParams.delete('lang');
+        return url.toString();
+      }
+
+      async function setLang(lang) {
+        if (!SUP.includes(lang)) return;
+        markActive(lang);
+        sw.removeAttribute('open');
+
+        const nextHref = buildNextHref(lang);
+
+        try {
+          const body = new URLSearchParams();
+          body.set('language', lang);
+          body.set('next', nextHref);
+          await fetch('/i18n/setlang/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            credentials: 'same-origin',
+            body: body.toString()
+          });
+        } catch (_) {}
+
+        location.assign(nextHref);
+      }
+
+      menu.addEventListener('click', (e) => {
+        const item = e.target.closest('button[data-lang]');
+        if (!item) return;
+        e.preventDefault();
+        setLang((item.getAttribute('data-lang') || '').toLowerCase());
+      });
+    }
+
+    initLangSwitcher(document.getElementById('langSwitch'), document.getElementById('langMenu'));
+    initLangSwitcher(document.getElementById('langSwitchMobile'), document.getElementById('langMenuMobile'));
+    initLangSwitcher(document.getElementById('langSwitchDrawer'), document.getElementById('langMenuDrawer'));
+
+    // Drawer theme toggle mirrors global setter
+    const themeToggleD = document.getElementById('themeToggleDrawer');
+    const iconSunD = document.getElementById('iconSunD');
+    const iconMoonD = document.getElementById('iconMoonD');
+    function syncThemeIcons(theme){
+      if (iconSun && iconMoon) { iconSun.classList.toggle('hidden', theme !== 'light'); iconMoon.classList.toggle('hidden', theme !== 'dark'); }
+      if (iconSunM && iconMoonM) { iconSunM.classList.toggle('hidden', theme !== 'light'); iconMoonM.classList.toggle('hidden', theme !== 'dark'); }
+      if (iconSunD && iconMoonD) { iconSunD.classList.toggle('hidden', theme !== 'light'); iconMoonD.classList.toggle('hidden', theme !== 'dark'); }
+    }
+    // Observe theme changes and sync icons on init
+    syncThemeIcons(document.documentElement.getAttribute('data-theme') || 'dark');
+    themeToggleD?.addEventListener('click', () => {
+      const now = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = (now === 'light' ? 'dark' : 'light');
+      // Reuse global setter
+      if (typeof setTheme === 'function') setTheme(next); else document.documentElement.setAttribute('data-theme', next);
+      syncThemeIcons(next);
+    });
+
+    // Dashboard drawer integration
+    document.getElementById('cabinetBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.dashboardDrawer?.open && window.dashboardDrawer?.close) {
+        const drawerEl = document.getElementById('dashboardDrawer');
+        const opened = drawerEl && !drawerEl.hasAttribute('hidden');
+        opened ? window.dashboardDrawer.close() : window.dashboardDrawer.open();
+      } else {
+        window.location.href = "{% url 'dashboard:index' %}";
+      }
+    });
+
+    // Auto-open dashboard drawer if ?drawer=1
+    (function () {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('drawer') === '1') {
+          window.dashboardDrawer?.open?.();
+          url.searchParams.delete('drawer');
+          history.replaceState(null, '', url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash);
+        }
+      } catch(e) {}
+    })();
+  </script>
+  
+  
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/interactions.js' %}"></script>
+  <script src="{% static 'js/trending.js' %}"></script>
+  
+  {% block extra_js %}{% endblock %}
+
+  {% block scripts_extra %}{% endblock %}
+</body>
+</html>

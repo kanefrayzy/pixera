@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Пополнение — AI Gallery{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+  <!-- Hero Section -->
+  <div class="text-center space-y-4">
+    <h1 class="heading-xl">Выберите свой план</h1>
+    <p class="text-xl text-[var(--muted)] max-w-2xl mx-auto">
+      Прозрачные тарифы без скрытых комиссий. Начните бесплатно или выберите план под ваши задачи.
+    </p>
+  </div>
+
+  <!-- Current Balance Card -->
+  <div class="card p-6 text-center">
+    {% if wallet %}
+      {% widthratio wallet.balance 10 1 as gens_left_auth %}
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center">
+          <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V9M19 9H14V4H15.83L19 7.17V9Z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-sm text-[var(--muted)]">Текущий баланс</div>
+          <div class="text-2xl font-bold">{{ wallet.balance|default:0 }} <span class="text-lg text-[var(--muted)]">TOK</span></div>
+          <div class="text-sm text-[var(--muted)]">≈ {{ gens_left_auth|default:0 }} обработок</div>
+        </div>
+      </div>
+    {% else %}
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center">
+          <svg class="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V9M19 9H14V4H15.83L19 7.17V9Z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-sm text-[var(--muted)]">Гостевой режим</div>
+          <div class="text-2xl font-bold">30 <span class="text-lg text-[var(--muted)]">TOK</span></div>
+          <div class="text-sm text-[var(--muted)]">≈ 3 обработки при первом визите</div>
+        </div>
+      </div>
+    {% endif %}
+    
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+      </svg>
+      1 обработка = 10 TOK
+    </div>
+  </div>
+
+  <!-- Pricing Plans -->
+  {% if plans %}
+  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3" role="list" itemscope itemtype="https://schema.org/OfferCatalog">
+    {% for p in plans %}
+      {% widthratio p.tokens 10 1 as gens_for_pack %}
+      <article class="relative group" role="listitem" itemscope itemtype="https://schema.org/Offer">
+        <meta itemprop="priceCurrency" content="USD">
+        
+        {% if p.unlimited %}
+          <!-- Popular badge -->
+          <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+            <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-darkbg text-xs font-semibold">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+              </svg>
+              Популярный
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="card p-6 h-full flex flex-col {% if p.unlimited %}ring-2 ring-primary/40{% endif %}">
+          <!-- Header -->
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/15 flex items-center justify-center">
+              {% if p.unlimited %}
+                <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+              {% else %}
+                <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V9M19 9H14V4H15.83L19 7.17V9Z"/>
+                </svg>
+              {% endif %}
+            </div>
+            
+            <h3 class="text-xl font-bold mb-2" itemprop="name">
+              {% if p.unlimited %}
+                Безлимит
+              {% else %}
+                {{ p.tokens }} TOK
+              {% endif %}
+            </h3>
+            
+            <div class="flex items-baseline justify-center gap-1" itemprop="priceSpecification" itemscope itemtype="https://schema.org/PriceSpecification">
+              <span class="text-3xl font-extrabold" itemprop="price">${{ p.price_usd }}</span>
+              <span class="text-[var(--muted)]">USD</span>
+            </div>
+            
+            {% if not p.unlimited %}
+              <div class="mt-2 text-sm text-[var(--muted)]">
+                ≈ {{ gens_for_pack }} обработок
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Features -->
+          <ul class="space-y-3 mb-6 flex-1">
+            {% if p.unlimited %}
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>Неограниченно генераций</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>Приоритетная очередь</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>Поддержка 24/7</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>API доступ</span>
+              </li>
+            {% else %}
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span><strong>{{ p.tokens }}</strong> токенов</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>≈ <strong>{{ gens_for_pack }}</strong> обработок</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>Мгновенное зачисление</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>Без срока действия</span>
+              </li>
+            {% endif %}
+          </ul>
+
+          <!-- CTA Button -->
+          <a class="{% if p.unlimited %}btn btn-primary{% else %}btn btn-ghost{% endif %} w-full" 
+             href="{% url 'dashboard:purchase_start' p.id %}" 
+             itemprop="url">
+            {% if p.unlimited %}Оформить план{% else %}Купить токены{% endif %}
+          </a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="card p-8 text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+        <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold mb-2">Тарифы временно недоступны</h3>
+      <p class="text-[var(--muted)] mb-6">Попробуйте обновить страницу чуть позже или вернитесь к генерации.</p>
+      <a class="btn btn-primary" href="{% url 'generate:new' %}">Вернуться к генерации</a>
+    </div>
+  {% endif %}
+
+  <!-- Value Proposition -->
+  <div class="card p-6 sm:p-8">
+    <h2 class="text-xl font-bold text-center mb-8">Почему выбирают наши тарифы</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-green-500/15 flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 1L9 9L1 9L7 14L5 22L12 18L19 22L17 14L23 9L15 9L12 1Z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Мгновенное зачисление</h3>
+        <p class="text-sm text-[var(--muted)]">Токены поступают на баланс сразу после оплаты</p>
+      </div>
+      
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-blue-500/15 flex items-center justify-center">
+          <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 12L11 14L15 10M21 12C21 16.97 16.97 21 12 21C7.03 21 3 16.97 3 12C3 7.03 7.03 3 12 3C16.97 3 21 7.03 21 12Z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Без срока действия</h3>
+        <p class="text-sm text-[var(--muted)]">Токены не сгорают и не имеют ограничений по времени</p>
+      </div>
+      
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-purple-500/15 flex items-center justify-center">
+          <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 8V13L16 15.5L17 14L13.5 12.25V8H12M12 3C7.03 3 3 7.03 3 12S7.03 21 12 21 21 16.97 21 12 16.97 3 12 3M18 12C18 15.31 15.31 18 12 18S6 15.31 6 12 8.69 6 12 6 18 8.69 18 12Z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Быстрая генерация</h3>
+        <p class="text-sm text-[var(--muted)]">Обычно результат готов за 30-90 секунд</p>
+      </div>
+      
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-amber-500/15 flex items-center justify-center">
+          <svg class="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 9H7V7H17M17 13H7V11H17M14 17H7V15H14M12 3C13.1 3 14 3.9 14 5V6H10V5C10 3.9 10.9 3 12 3M6 7H4C2.9 7 2 7.9 2 9V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7H18"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Прозрачность</h3>
+        <p class="text-sm text-[var(--muted)]">Никаких скрытых комиссий или дополнительных платежей</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Section -->
+  <div class="card p-6 sm:p-8" itemscope itemtype="https://schema.org/FAQPage">
+    <h2 class="text-xl font-bold mb-6">Часто задаваемые вопросы</h2>
+    <div class="space-y-6">
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 class="font-semibold mb-2" itemprop="name">Сколько стоит одна обработка?</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p class="text-[var(--muted)]" itemprop="text">
+            Одна обработка стоит <strong>10 TOK</strong>. Баланс и доступные обработки отображаются вверху страницы и обновляются сразу после пополнения.
+          </p>
+        </div>
+      </div>
+      
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 class="font-semibold mb-2" itemprop="name">Что если я гость?</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p class="text-[var(--muted)]" itemprop="text">
+            Гости получают <strong>30 TOK</strong> (обычно 3 обработки). Остаток привязывается к отпечатку браузера и cookie, переносится в ваш аккаунт после регистрации — ничего не теряется.
+          </p>
+        </div>
+      </div>
+      
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 class="font-semibold mb-2" itemprop="name">Как считается количество обработок в тарифах?</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p class="text-[var(--muted)]" itemprop="text">
+            Просто делим токены на 10: 100 TOK ≈ 10 обработок, 500 TOK ≈ 50 обработок, и т.д. Для «Безлимита» — знак бесконечности.
+          </p>
+        </div>
+      </div>
+      
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 class="font-semibold mb-2" itemprop="name">Можно ли получить возврат?</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p class="text-[var(--muted)]" itemprop="text">
+            Если генерация списала баланс и упала по нашей вине — делаем возврат токенов автоматически. Для других случаев обратитесь в поддержку.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo Note -->
+  <div class="card p-4 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+      </svg>
+      <div class="text-sm">
+        <div class="font-medium text-amber-800 dark:text-amber-200 mb-1">Демо-режим</div>
+        <p class="text-amber-700 dark:text-amber-300">
+          Оплата пока не подключена. После авторизации откроется страница «Оплата (заглушка)» — токены зачисляются сразу для демонстрации.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to Generation -->
+  <div class="text-center">
+    <a class="btn btn-ghost" href="{% url 'generate:new' %}">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Вернуться к генерации
+    </a>
+  </div>
+
+</div>
+
+<!-- JSON-LD Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "OfferCatalog",
+  "name": "Тарифы — AI Gallery",
+  "description": "Прозрачные тарифы для генерации изображений с помощью ИИ",
+  "url": "{{ request.build_absolute_uri }}",
+  "itemListElement": [
+    {% for p in plans %}
+    {
+      "@type": "Offer",
+      "name": "{% if p.unlimited %}Безлимит{% else %}{{ p.tokens }} TOK{% endif %}",
+      "description": "{% if p.unlimited %}Неограниченное количество генераций с приоритетной поддержкой{% else %}{{ p.tokens }} токенов для генерации изображений{% endif %}",
+      "price": "{{ p.price_usd }}",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock",
+      "url": "{% url 'dashboard:purchase_start' p.id %}",
+      "seller": {
+        "@type": "Organization",
+        "name": "AI Gallery"
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Сколько стоит одна обработка?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Одна обработка стоит 10 TOK. Баланс и доступные обработки отображаются вверху страницы и обновляются сразу после пополнения."
+      }
+    },
+    {
+      "@type": "Question", 
+      "name": "Что если я гость?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Гости получают 30 TOK (обычно 3 обработки). Остаток привязывается к отпечатку браузера и переносится в аккаунт после регистрации."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Как считается количество обработок в тарифах?", 
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Просто делим токены на 10: 100 TOK ≈ 10 обработок, 500 TOK ≈ 50 обработок, и т.д."
+      }
+    }
+  ]
+}
+</script>
+
+{% endblock %}

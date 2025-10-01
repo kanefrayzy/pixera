@@ -1,0 +1,416 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Генерация изображений — AI Gallery{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/generate.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="gen-root" class="max-w-4xl mx-auto space-y-8"
+     data-api-submit-url="{% url 'generate:api_submit' %}"
+     data-api-status-tpl="{% url 'generate:api_status' job_id=12345 %}"
+     data-job-detail-tpl="{% url 'generate:job_detail_no_slug' pk=12345 %}"
+     data-topup-url="{{ tariffs_url }}"
+     data-is-staff="{{ request.user.is_staff|yesno:'true,false' }}"
+     data-is-auth="{{ request.user.is_authenticated|yesno:'true,false' }}"
+     data-raw-cost="{{ price|default:TOKENS_PRICE_PER_GEN|default:10 }}">
+
+  <!-- Header Section -->
+  <div class="card p-6 sm:p-8" itemscope itemtype="https://schema.org/WebPage">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold">Сгенерировать изображение</h1>
+        <p class="mt-2 text-[var(--muted)] text-sm">Создавайте уникальные изображения с помощью ИИ</p>
+      </div>
+      
+  <div class="flex flex-wrap items-center justify-center gap-4 gap-y-6 sm:justify-end">
+        <!-- Balance Display -->
+        {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
+          {% if request.user.is_authenticated %}
+            <div class="text-center min-w-[120px]" aria-label="{% if request.user.is_staff %}Админ режим (бесконечно){% else %}Ваш баланс токенов{% endif %}">
+              <div class="text-xs text-[var(--muted)]">{% if request.user.is_staff %}Админ режим{% else %}Ваш баланс{% endif %}</div>
+              <div class="flex items-center gap-1">
+                <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span class="w-2 h-2 rounded-full bg-primary"></span>
+                </span>
+                {% if request.user.is_staff %}
+                  <strong id="balance" data-infinite="1" class="text-lg font-semibold">∞</strong>
+                {% else %}
+                  <strong id="balance" class="text-lg font-semibold" itemprop="interactionStatistic">{{ wallet.balance|default:0 }}</strong>
+                {% endif %}
+                <span class="text-xs text-[var(--muted)]">TOK</span>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-center min-w-[120px]" aria-label="Гостевой баланс">
+              <div class="text-xs text-[var(--muted)]">Гостевой режим</div>
+              <div class="flex items-center gap-1">
+                <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span class="w-2 h-2 rounded-full bg-primary"></span>
+                </span>
+                <strong id="guestBalance" class="text-lg font-semibold">{{ guest_tokens }}</strong>
+                <span class="text-xs text-[var(--muted)]">TOK</span>
+              </div>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Generations Left -->
+        {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
+          {% if request.user.is_authenticated %}
+            <div class="text-center min-w-[120px]"
+                 title="Осталось обработок"
+                 {% if request.user.is_staff %}
+                   data-auth-left="999999"
+                 {% elif cost %}
+                   data-auth-left="{{ auth_gens_left|default:0 }}"
+                 {% endif %}>
+              <div class="text-xs text-[var(--muted)]">Обработок</div>
+              <div class="flex items-center gap-1">
+                <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 9l4-6h10l4 6-9 12L3 9zm4.5-4l-2.5 4h4l2-4h-3.5zm5.5 0l-2 4h4l-2-4zm2 4h4l-2.5-4H15z"/>
+                </svg>
+                <span id="gensLeft" class="text-lg font-semibold">
+                  {% if request.user.is_staff %}
+                    ∞
+                  {% elif cost %}
+                    {{ auth_gens_left|default:0 }}
+                  {% else %}
+                    ∞
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-center min-w-[120px]" title="Осталось обработок" data-guest-left="{{ guest_gens_left|default:0 }}">
+              <div class="text-xs text-[var(--muted)]">Обработок</div>
+              <div class="flex items-center gap-1">
+                <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 9l4-6h10l4 6-9 12L3 9zm4.5-4l-2.5 4h4l2-4h-3.5zm5.5 0l-2 4h4l-2-4zm2 4h4l-2.5-4H15z"/>
+                </svg>
+                <span id="gensLeft" class="text-lg font-semibold">{{ guest_gens_left|default:0 }}</span>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if not request.user.is_staff and cost %}
+            <a class="btn btn-primary w-full sm:w-auto" id="topUpLink" href="{{ tariffs_url }}" rel="nofollow">Пополнить</a>
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+
+    <meta itemprop="name" content="Генерация изображений — AI Gallery">
+    <meta itemprop="description" content="Онлайн-генератор изображений на ИИ: фотореализм, художественные стили и подсказки. Стоимость — токены, 1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK.">
+  </div>
+
+  <!-- Suggestions Section -->
+  {% if suggestion_categories %}
+  <div class="card p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-lg font-semibold">Подсказки по категориям</h2>
+        <p class="text-sm text-[var(--muted)]">Готовые промпты для быстрого старта</p>
+      </div>
+      
+      <!-- Category Pills (scrollable on mobile) -->
+      <div class="overflow-x-auto no-scrollbar -mx-2 px-2" aria-label="Категории подсказок">
+        <div class="flex items-center gap-2 min-w-max" role="tablist">
+          <button class="pill bg-primary/15 text-primary border-primary/30 js-cat-btn" role="tab" aria-selected="true" data-cat="all">Все</button>
+          {% for cat in suggestion_categories %}
+            {% if cat.is_active %}
+              <span class="flex items-center gap-1">
+                <button class="pill js-cat-btn" role="tab" aria-selected="false" data-cat="{{ cat.slug }}" data-id="{{ cat.id }}" data-name="{{ cat.name }}" data-slug="{{ cat.slug }}">
+                  {{ cat.name }}
+                </button>
+                {% if request.user.is_staff %}
+                  <button class="w-6 h-6 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 flex items-center justify-center text-xs js-cat-edit" title="Изменить категорию" data-id="{{ cat.id }}" data-name="{{ cat.name|escape }}" data-slug="{{ cat.slug|escape }}">✎</button>
+                  <button class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs js-cat-del" title="Удалить категорию" data-id="{{ cat.id }}">✕</button>
+                {% endif %}
+              </span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if request.user.is_staff %}
+      <div class="flex flex-wrap gap-3 mb-6 p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
+        <input id="catName" class="field w-full sm:flex-1 min-w-48" type="text" placeholder="Название категории" maxlength="60">
+        <input id="catSlug" class="field w-full sm:flex-1 min-w-36" type="text" placeholder="slug (авто)" maxlength="60">
+        <label class="flex items-center gap-2 text-sm">
+          <input id="catActive" type="checkbox" checked class="w-4 h-4 text-primary rounded">
+          <span>Активна</span>
+        </label>
+  <button id="catAdd" class="btn btn-primary w-full sm:w-auto" type="button">+ Категория</button>
+      </div>
+    {% endif %}
+
+    <!-- Suggestions Display -->
+    <div class="js-suggest-target" id="sgTarget"></div>
+
+    <!-- Hidden Templates -->
+    <div class="tags js-suggest-wrap" data-cat="all" hidden>
+      {% for s in suggestions %}
+        <span class="sg-item" data-sid="{{ s.id }}">
+          <button type="button" class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition js-suggest" data-text="{{ s.text|escape }}">{{ s.title }}</button>
+          {% if request.user.is_staff %}
+            <button type="button" class="w-6 h-6 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 flex items-center justify-center text-xs js-sg-edit" title="Изменить" data-id="{{ s.id }}" data-title="{{ s.title|escape }}" data-text="{{ s.text|escape }}">✎</button>
+            <button type="button" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs js-sg-del" title="Удалить" data-id="{{ s.id }}">✕</button>
+          {% endif %}
+        </span>
+      {% empty %}
+        <span class="text-[var(--muted)] text-sm">Подсказки пока не добавлены.</span>
+      {% endfor %}
+    </div>
+
+    {% for cat in suggestion_categories %}
+      {% if cat.is_active %}
+        <div class="tags js-suggest-wrap" data-cat="{{ cat.slug }}" hidden>
+          {% for s in cat.suggestions.all %}
+            {% if s.is_active %}
+              <span class="sg-item" data-sid="{{ s.id }}">
+                <button type="button" class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition js-suggest" data-text="{{ s.text|escape }}">{{ s.title }}</button>
+                {% if request.user.is_staff %}
+                  <button type="button" class="w-6 h-6 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 flex items-center justify-center text-xs js-sg-edit" title="Изменить" data-id="{{ s.id }}" data-title="{{ s.title|escape }}" data-text="{{ s.text|escape }}">✎</button>
+                  <button type="button" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs js-sg-del" title="Удалить" data-id="{{ s.id }}">✕</button>
+                {% endif %}
+              </span>
+            {% endif %}
+          {% empty %}
+            <span class="text-[var(--muted)] text-sm">В этой категории пока нет подсказок.</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {% if request.user.is_staff %}
+      <div class="flex flex-wrap gap-3 mt-6 p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
+        <select id="sgCat" class="field w-full sm:w-auto min-w-36" title="Категория">
+          <option value="">Без категории</option>
+          {% for cat in suggestion_categories %}
+            {% if cat.is_active %}
+              <option value="{{ cat.slug }}">{{ cat.name }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <input id="sgTitle" class="field w-full sm:flex-1 min-w-48" type="text" placeholder="Заголовок" maxlength="80">
+        <input id="sgText" class="field w-full sm:flex-1 min-w-64" type="text" placeholder="Текст подсказки" maxlength="400">
+        <button id="sgAdd" type="button" class="btn btn-primary w-full sm:w-auto">+ Добавить подсказку</button>
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Generation Form -->
+  <form method="post" class="card p-6 sm:p-8" novalidate itemprop="potentialAction" itemscope itemtype="https://schema.org/CreateAction">
+    {% csrf_token %}
+    <meta itemprop="name" content="Создать изображение по текстовому описанию">
+
+    <div class="space-y-6">
+      <!-- Prompt Input -->
+      <div>
+        <label class="block text-sm font-medium mb-3" for="prompt">Описание изображения</label>
+        <div class="relative">
+          <textarea 
+            id="prompt" 
+            name="prompt" 
+            class="field min-h-36 sm:min-h-32 resize-none"
+            placeholder="Пример: cinematic portrait, soft studio light, 85mm, shallow DOF, orange accents"
+            required 
+            aria-required="true" 
+            maxlength="1500" 
+            itemprop="actionOption"></textarea>
+          
+          <!-- Floating Tags -->
+          <div class="absolute top-3 right-3 flex flex-wrap gap-1 pointer-events-none opacity-30" aria-hidden="true">
+            <span class="badge text-xs">style</span>
+            <span class="badge text-xs">lighting</span>
+            <span class="badge text-xs">lens</span>
+          </div>
+        </div>
+        
+        <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[var(--muted)]">
+          <p>Совет: укажите стиль, свет, объектив, материалы и настроение. Избегайте двойных отрицаний.</p>
+          <p>Стоимость: <strong class="text-[var(--text)]">{% with c=price|default:TOKENS_PRICE_PER_GEN|default:10 %}{{ c }} TOK{% endwith %}</strong></p>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center flex-wrap justify-center gap-3 w-full sm:w-auto">
+          <button class="btn btn-primary text-base px-8 py-3 w-full sm:w-auto" id="genBtn" type="submit">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Сгенерировать
+          </button>
+          <span class="text-sm text-[var(--muted)]">Обычно ~1 минута</span>
+        </div>
+        
+        <!-- Quick Stats -->
+  <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-[var(--muted)]">
+          <span class="pill">10M+ генераций</span>
+          <span class="pill">Фотореализм</span>
+          <span class="pill">×4 Upscale</span>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Showcase Section -->
+  {% if showcase_images %}
+  <div class="card p-6" aria-labelledby="showcaseTitle">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h2 id="showcaseTitle" class="text-lg font-semibold">Примеры результатов</h2>
+        <p class="text-sm text-[var(--muted)]">Вдохновляйтесь работами других пользователей</p>
+      </div>
+      
+      {% if showcase_categories %}
+        <div class="overflow-x-auto no-scrollbar -mx-2 px-2">
+          <div class="flex items-center gap-2 min-w-max">
+            <button class="pill bg-primary/15 text-primary border-primary/30 js-sh-cat" data-cat="all">Все</button>
+            {% for sc in showcase_categories %}
+              {% if sc.is_active %}
+                <button class="pill js-sh-cat" data-cat="{{ sc.slug }}">{{ sc.name }}</button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {% for item in showcase_images %}
+        {% if item.is_active %}
+          <article class="group" data-cat="{{ item.category.slug|default:'misc' }}" itemscope itemtype="https://schema.org/ImageObject">
+            <div class="card overflow-hidden">
+              <a href="{{ item.image.url }}" target="_blank" rel="noopener" itemprop="contentUrl">
+                <img 
+                  loading="lazy" 
+                  src="{{ item.image.url }}" 
+                  alt="{{ item.title|default:'Пример изображения' }}" 
+                  itemprop="image"
+                  class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.03]">
+              </a>
+              <div class="p-3">
+                <div class="flex items-center justify-between text-xs mb-2">
+                  <span class="pill">{{ item.category.name|default:'Misc' }}</span>
+                  <span class="text-[var(--muted)]">♡ {{ item.likes_count|default:0 }}</span>
+                </div>
+                <div class="font-medium text-sm" itemprop="name">{{ item.title }}</div>
+                {% if item.prompt %}
+                  <button type="button" class="btn btn-ghost mt-2 w-full text-xs py-1.5 js-insert-prompt" data-prompt="{{ item.prompt|escape }}">
+                    Вставить промпт
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+        {% endif %}
+      {% empty %}
+        <p class="text-[var(--muted)] col-span-full text-center py-8">Пока нет примеров.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Why Choose Us -->
+  <div class="card p-6 sm:p-8">
+    <h2 class="text-lg font-semibold mb-6">Почему именно мы</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div>
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L4 21l1.5-6L2 10l6-.75L12 3l2 6.25 6 .75-3.5 5 1.5 6z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Фотореализм без «мыла»</h3>
+        <p class="text-sm text-[var(--muted)]">Подбор моделей и параметров под задачу: портреты, предметка, интерьер, арт-стили.</p>
+      </div>
+      
+      <div>
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Честная стоимость</h3>
+        <p class="text-sm text-[var(--muted)]">Прозрачные токены: 1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK. Без скрытых платежей.</p>
+      </div>
+      
+      <div>
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Кеш и прямые ссылки</h3>
+        <p class="text-sm text-[var(--muted)]">Файлы доступны по прямому URL. Если CDN уходит в 5xx — отдаём внешний URL.</p>
+      </div>
+      
+      <div>
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Гостевой бонус</h3>
+        <p class="text-sm text-[var(--muted)]">Гости получают {{ GUEST_INITIAL_TOKENS|default:30 }} TOK. Остаток безопасно «доезжает» до аккаунта.</p>
+      </div>
+      
+      <div>
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Защита от NSFW</h3>
+        <p class="text-sm text-[var(--muted)]">Фильтрация по настройке, чтобы проект был дружелюбным к публике.</p>
+      </div>
+      
+      <div>
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold mb-2">Стабильная очередь</h3>
+        <p class="text-sm text-[var(--muted)]">Асинхронный провайдер + резервный поллинг, чтобы заказы не «зависали».</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Generation Loader -->
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden" id="glx" aria-hidden="true">
+  <div class="card p-8 max-w-md w-full mx-4 text-center" role="dialog" aria-labelledby="glxTitle" aria-live="polite">
+    <!-- Animated Ring -->
+    <div class="relative w-16 h-16 mx-auto mb-6">
+      <div class="absolute inset-0 rounded-full border-4 border-[var(--bord)]"></div>
+      <div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" id="glxArc"></div>
+      <div class="absolute top-0 left-1/2 w-2 h-2 bg-primary rounded-full transform -translate-x-1/2 -translate-y-1"></div>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-2" id="glxTitle">Генерируем магию…</h2>
+    <div class="text-[var(--muted)] mb-4" id="glxPhase">Подготовка</div>
+
+    <!-- Progress Bar -->
+    <div class="relative w-full h-2 bg-[var(--bord)] rounded-full mb-3 overflow-hidden">
+      <div class="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-300" id="glxBar" style="width:0%"></div>
+    </div>
+    <div class="text-sm font-medium" id="glxPct">0%</div>
+
+    <button class="btn btn-ghost mt-6" id="glxMin" type="button">Свернуть</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/generate.js' %}"></script>
+{% endblock %}

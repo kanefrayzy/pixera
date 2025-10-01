@@ -1,0 +1,7 @@
+/* Generate page specific styles */
+.tags { display: flex; flex-wrap: wrap; gap: .5rem; }
+.sg-item { display: flex; align-items: center; gap: .25rem; }
+
+/* Hide horizontal scrollbar in pill rows */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
