@@ -1,4 +1,3 @@
-// Trending switcher (likes/new) for community gallery
 (function(){
   const container = document.getElementById('trending-grid');
   const section = document.getElementById('community');

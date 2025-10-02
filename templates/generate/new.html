@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<div id="gen-root" class="max-w-4xl mx-auto space-y-8"
+<div id="gen-root" class="max-w-4xl mx-auto space-y-8 mt-4"
      data-api-submit-url="{% url 'generate:api_submit' %}"
      data-api-status-tpl="{% url 'generate:api_status' job_id=12345 %}"
      data-job-detail-tpl="{% url 'generate:job_detail_no_slug' pk=12345 %}"

@@ -33,7 +33,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8" itemscope itemtype="https://schema.org/CreativeWork">
+<div class="max-w-5xl mx-auto space-y-8" itemscope itemtype="https://schema.org/CreativeWork"
+     data-estimate-ms="{{ estimate_ms|default:60000 }}"
+     data-poll-url="{{ poll_url }}"
+     data-image-url="{{ image_url|default_if_none:'' }}"
+     data-job-id="{{ job.id }}">
 
   {% include "includes/messages.html" %}
 
@@ -69,7 +73,7 @@
 
   <!-- Main Content -->
   <div class="grid lg:grid-cols-3 gap-8">
-    
+
     <!-- Image Section -->
     <div class="lg:col-span-2">
       <div class="card overflow-hidden">
@@ -79,17 +83,17 @@
                  class="w-full aspect-square object-cover transition-all duration-500 blur-sm"
                  src="{{ image_url }}"
                  alt="Результат генерации"
-                 loading="eager" 
+                 loading="eager"
                  decoding="async">
           {% else %}
             <img id="resultImg"
                  class="w-full aspect-square object-cover transition-all duration-500 blur-sm"
                  src="{% url 'generate:job_image' pk=job.pk slug=job.prompt|slugify %}"
                  alt="Результат генерации"
-                 loading="eager" 
+                 loading="eager"
                  decoding="async">
           {% endif %}
-          
+
           <!-- Loading Overlay -->
           <div id="loadingOverlay" class="absolute inset-0 bg-black/20 flex items-center justify-center">
             <div class="card p-6 text-center">
@@ -101,7 +105,7 @@
             </div>
           </div>
         </figure>
-        
+
         <div class="p-4">
           <div class="flex items-center justify-between text-sm text-[var(--muted)]">
             {% if job.created_at %}
@@ -115,58 +119,32 @@
 
     <!-- Progress Sidebar -->
     <div class="space-y-6">
-      
-      <!-- Progress Ring -->
-      <div class="card p-6 text-center">
-        <div class="relative w-24 h-24 mx-auto mb-4">
-          <!-- Background circle -->
-          <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" stroke="var(--bord)" stroke-width="8" fill="none"/>
-            <circle id="progressCircle" cx="50" cy="50" r="40" stroke="rgb(1 209 251)" stroke-width="8" fill="none" 
-                    stroke-dasharray="251.2" stroke-dashoffset="251.2" 
-                    style="transition: stroke-dashoffset 0.3s ease"/>
-          </svg>
-          
-          <!-- Percentage text -->
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div>
-              <div class="text-2xl font-bold" id="pctNum">0</div>
-              <div class="text-xs text-[var(--muted)]">%</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="space-y-2">
-          <div class="text-sm text-[var(--muted)]">Прогресс: <span class="font-medium" id="pctText">0%</span></div>
-          <div class="text-sm text-[var(--muted)]">ETA: <span class="font-medium" id="etaText">~1:00</span></div>
-        </div>
-      </div>
 
       <!-- Actions -->
       <div class="card p-6">
         <h3 class="font-semibold mb-4">Действия</h3>
         <div class="space-y-3">
-          <a id="openLink" 
-             class="btn btn-primary w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}" 
-             href="{{ image_url|default:'#' }}" 
-             {% if not image_url %}aria-disabled="true"{% endif %} 
-             target="_blank" 
+          <a id="openLink"
+             class="btn btn-primary w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}"
+             href="{{ image_url|default:'#' }}"
+             {% if not image_url %}aria-disabled="true"{% endif %}
+             target="_blank"
              rel="nofollow noopener">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
             </svg>
             Открыть изображение
           </a>
-          
-          <button id="downloadBtn" 
-                  class="btn btn-ghost w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}" 
+
+          <button id="downloadBtn"
+                  class="btn btn-ghost w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}"
                   {% if not image_url %}disabled{% endif %}>
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
             </svg>
             Скачать
           </button>
-          
+
           <a class="btn btn-ghost w-full" href="{% url 'generate:new' %}">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -221,10 +199,12 @@
 
 <script>
 (function(){
-  const ESTIMATE_MS = {{ estimate_ms|default:60000 }};
-  const POLL_URL = "{{ poll_url }}";
-  const IMG_URL = "{{ image_url|default_if_none:'' }}";
-  const jobId = {{ job.id }};
+  // Получаем данные из data-атрибутов
+  const container = document.querySelector('.max-w-5xl');
+  const ESTIMATE_MS = parseInt(container.dataset.estimateMs) || 60000;
+  const POLL_URL = container.dataset.pollUrl;
+  const IMG_URL = container.dataset.imageUrl;
+  const jobId = parseInt(container.dataset.jobId);
 
   const imgEl = document.getElementById('resultImg');
   const openLnk = document.getElementById('openLink');
@@ -232,7 +212,7 @@
   const badge = document.getElementById('statusBadge');
   const loadingOverlay = document.getElementById('loadingOverlay');
   const progressCircle = document.getElementById('progressCircle');
-  
+
   const pctNum = document.getElementById('pctNum');
   const pctText = document.getElementById('pctText');
   const etaEl = document.getElementById('etaText');
@@ -251,7 +231,7 @@
   imgEl.addEventListener('load', () => {
     imgEl.classList.remove('blur-sm');
     loadingOverlay.style.display = 'none';
-    
+
     // Update dimensions info
     const dimensions = `${imgEl.naturalWidth}×${imgEl.naturalHeight}`;
     document.getElementById('imageDimensions').textContent = dimensions;
@@ -262,7 +242,7 @@
   // Download functionality
   downloadBtn.addEventListener('click', async () => {
     if (!IMG_URL && !openLnk.href.includes('http')) return;
-    
+
     try {
       const response = await fetch(openLnk.href);
       const blob = await response.blob();
@@ -283,32 +263,32 @@
 
   // Progress animation
   let start = performance.now(), stop = false, raf;
-  
+
   function setProgress(percentage) {
     percentage = Math.max(0, Math.min(100, percentage));
     const circumference = 2 * Math.PI * 40; // radius = 40
     const offset = circumference - (percentage / 100) * circumference;
-    
+
     pctNum.textContent = Math.round(percentage);
     pctText.textContent = Math.round(percentage) + "%";
     progressCircle.style.strokeDashoffset = offset;
   }
-  
+
   function setEta(ms) {
-    if (ms <= 0) { 
-      etaEl.textContent = "~0:00"; 
-      return; 
+    if (ms <= 0) {
+      etaEl.textContent = "~0:00";
+      return;
     }
     const s = Math.ceil(ms / 1000);
     const minutes = Math.floor(s / 60);
     const seconds = s % 60;
     etaEl.textContent = `~${minutes}:${seconds.toString().padStart(2, "0")}`;
   }
-  
+
   function updateStatus(status, isError = false) {
     const statusDot = badge.querySelector('.w-2');
     const statusText = badge.querySelector('span');
-    
+
     if (isError) {
       badge.className = 'flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400';
       statusDot.className = 'w-2 h-2 bg-current rounded-full';
@@ -325,7 +305,7 @@
   function tick() {
     const now = performance.now();
     const elapsed = now - start;
-    
+
     // Smooth progress curve - slower at the end
     let percentage = (elapsed / ESTIMATE_MS) * 100;
     if (elapsed < ESTIMATE_MS) {
@@ -334,8 +314,8 @@
       // Slow progress after estimate
       percentage = Math.min(98, 95 + (elapsed - ESTIMATE_MS) / 10000);
     }
-    
-    if (!stop) { 
+
+    if (!stop) {
       setProgress(percentage);
       setEta(Math.max(0, ESTIMATE_MS - elapsed));
       raf = requestAnimationFrame(tick);
@@ -354,7 +334,7 @@
   // Polling function
   async function poll() {
     let delay = 900;
-    
+
     while (true) {
       try {
         const response = await fetch(POLL_URL, {
@@ -395,16 +375,16 @@
           openLnk.href = data.image.url;
           openLnk.classList.remove('opacity-50', 'pointer-events-none');
           openLnk.removeAttribute('aria-disabled');
-          
+
           downloadBtn.classList.remove('opacity-50', 'pointer-events-none');
           downloadBtn.removeAttribute('disabled');
-          
+
           return;
         }
 
         await new Promise(resolve => setTimeout(resolve, delay));
         delay = Math.min(2500, delay * 1.15);
-        
+
       } catch (error) {
         console.warn('Polling error:', error);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -424,7 +404,7 @@
     stop = true;
     cancelAnimationFrame(raf);
     clearInterval(tipTimer);
-    
+
     openLnk.classList.remove('opacity-50', 'pointer-events-none');
     downloadBtn.classList.remove('opacity-50', 'pointer-events-none');
     downloadBtn.removeAttribute('disabled');
@@ -432,59 +412,6 @@
 })();
 </script>
 
-<style>
-/* Smooth transitions for all interactive elements */
-.btn {
-  transition: all 0.2s ease;
-}
 
-.btn:disabled,
-.btn.opacity-50 {
-  transform: none !important;
-}
-
-/* Progress circle animation */
-#progressCircle {
-  transition: stroke-dashoffset 0.3s ease;
-}
-
-/* Image blur effect */
-#resultImg {
-  transition: filter 0.5s ease;
-}
-
-/* Loading overlay */
-#loadingOverlay {
-  transition: opacity 0.3s ease;
-}
-
-/* Status badge animations */
-#statusBadge {
-  transition: all 0.3s ease;
-}
-
-/* Better mobile spacing */
-@media (max-width: 640px) {
-  .space-y-8 > * + * {
-    margin-top: 1.5rem;
-  }
-  
-  .grid.lg\\:grid-cols-3 {
-    grid-template-columns: 1fr;
-  }
-  
-  .lg\\:col-span-2 {
-    order: 1;
-  }
-}
-
-/* Ensure proper aspect ratio on mobile */
-@media (max-width: 768px) {
-  #resultImg {
-    aspect-ratio: 1;
-    object-fit: cover;
-  }
-}
-</style>
 
 {% endblock %}

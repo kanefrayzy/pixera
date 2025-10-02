@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load i18n account socialaccount %}
 
 {% block title %}Вход в аккаунт — AI Gallery{% endblock %}
@@ -6,7 +6,7 @@
 
 {% block hero %}
 <!-- Compact Hero -->
-<section class="py-12 sm:py-16">
+<section class="py-12 sm:py-16 mt-8">
   <div class="container text-center">
     <h1 class="text-3xl sm:text-4xl font-bold mb-3">Добро пожаловать</h1>
     <p class="text-[var(--muted)] text-lg">Войдите, чтобы продолжить создавать удивительные изображения</p>
@@ -78,13 +78,13 @@
         <label class="block text-sm font-medium mb-2" for="id_login">
           Email или имя пользователя
         </label>
-        <input class="field {% if form.login.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}" 
-               type="text" 
-               name="login" 
-               id="id_login" 
-               value="{{ form.login.value|default_if_none:'' }}" 
+        <input class="field {% if form.login.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}"
+               type="text"
+               name="login"
+               id="id_login"
+               value="{{ form.login.value|default_if_none:'' }}"
                placeholder="Введите email или имя пользователя"
-               autofocus 
+               autofocus
                required>
         {% if form.login.errors %}
           <div class="mt-2 text-sm text-red-600 dark:text-red-400">
@@ -99,13 +99,13 @@
           Пароль
         </label>
         <div class="relative">
-          <input class="field pr-12 {% if form.password.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}" 
-                 type="password" 
-                 name="password" 
+          <input class="field pr-12 {% if form.password.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}"
+                 type="password"
+                 name="password"
                  id="id_password"
                  placeholder="Введите пароль"
                  required>
-          <button type="button" 
+          <button type="button"
                   class="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] transition"
                   onclick="togglePassword('id_password')"
                   aria-label="Показать/скрыть пароль">
@@ -128,15 +128,15 @@
       <!-- Remember Me -->
       <div class="flex items-center justify-between">
         <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" 
-                 name="remember" 
-                 value="on" 
+          <input type="checkbox"
+                 name="remember"
+                 value="on"
                  class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
                  {% if form.remember.value %}checked{% endif %}>
           <span>Запомнить меня</span>
         </label>
-        
-        <a class="text-sm text-primary hover:text-primary/80 transition" 
+
+        <a class="text-sm text-primary hover:text-primary/80 transition"
            href="{% url 'account_reset_password' %}">
           Забыли пароль?
         </a>
@@ -167,7 +167,7 @@
       {% get_providers as socialaccount_providers %}
       {% if socialaccount_providers and 'google' in socialaccount_providers|join:"," %}
         {% if redirect_field_value %}
-          <a class="btn btn-ghost w-full text-base py-3" 
+          <a class="btn btn-ghost w-full text-base py-3"
              href="{% provider_login_url 'google' process='login' next=redirect_field_value %}">
             <svg class="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -178,7 +178,7 @@
             Войти через Google
           </a>
         {% elif request.GET.next %}
-          <a class="btn btn-ghost w-full text-base py-3" 
+          <a class="btn btn-ghost w-full text-base py-3"
              href="{% provider_login_url 'google' process='login' next=request.GET.next %}">
             <svg class="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -189,7 +189,7 @@
             Войти через Google
           </a>
         {% else %}
-          <a class="btn btn-ghost w-full text-base py-3" 
+          <a class="btn btn-ghost w-full text-base py-3"
              href="{% provider_login_url 'google' process='login' %}">
             <svg class="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -213,17 +213,17 @@
   <div class="text-center">
     <span class="text-[var(--muted)]">Нет аккаунта? </span>
     {% if redirect_field_value %}
-      <a class="text-primary hover:text-primary/80 transition font-medium" 
+      <a class="text-primary hover:text-primary/80 transition font-medium"
          href="{% url 'account_signup' %}?{{ redirect_field_name }}={{ redirect_field_value|urlencode }}">
         Зарегистрируйтесь
       </a>
     {% elif request.GET.next %}
-      <a class="text-primary hover:text-primary/80 transition font-medium" 
+      <a class="text-primary hover:text-primary/80 transition font-medium"
          href="{% url 'account_signup' %}?{{ redirect_field_name }}={{ request.GET.next|urlencode }}">
         Зарегистрируйтесь
       </a>
     {% else %}
-      <a class="text-primary hover:text-primary/80 transition font-medium" 
+      <a class="text-primary hover:text-primary/80 transition font-medium"
          href="{% url 'account_signup' %}">
         Зарегистрируйтесь
       </a>
@@ -250,7 +250,7 @@ function togglePassword(inputId) {
   const input = document.getElementById(inputId);
   const eyeOpen = document.getElementById('eye-open');
   const eyeClosed = document.getElementById('eye-closed');
-  
+
   if (input.type === 'password') {
     input.type = 'text';
     eyeOpen.classList.add('hidden');
@@ -266,13 +266,13 @@ function togglePassword(inputId) {
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('form');
   const inputs = form.querySelectorAll('input[required]');
-  
+
   // Real-time validation
   inputs.forEach(input => {
     input.addEventListener('blur', () => {
       validateField(input);
     });
-    
+
     input.addEventListener('input', () => {
       // Clear error state when user starts typing
       if (input.classList.contains('border-red-500')) {
@@ -280,22 +280,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-  
+
   function validateField(field) {
     const isValid = field.checkValidity();
-    
+
     if (!isValid) {
       field.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
     } else {
       field.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
     }
   }
-  
+
   // Submit button loading state
   form.addEventListener('submit', (e) => {
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    
+
     // Validate all fields before submit
     let isFormValid = true;
     inputs.forEach(input => {
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isFormValid = false;
       }
     });
-    
+
     if (isFormValid) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = `
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </svg>
         Вход...
       `;
-      
+
       // Reset button state after timeout (in case of errors)
       setTimeout(() => {
         submitBtn.disabled = false;

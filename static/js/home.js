@@ -773,27 +773,50 @@ class GenerationSlider {
 
     addTouchSupport() {
         let startX = 0;
+        let startY = 0;
         let endX = 0;
+        let isDragging = false;
 
         this.slider.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            isDragging = false;
         }, { passive: true });
 
         this.slider.addEventListener('touchmove', (e) => {
-            e.preventDefault();
+            if (!isDragging) {
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = Math.abs(currentX - startX);
+                const diffY = Math.abs(currentY - startY);
+
+                // Определяем направление свайпа
+                if (diffX > diffY && diffX > 10) {
+                    // Горизонтальный свайп - предотвращаем скролл
+                    isDragging = true;
+                    e.preventDefault();
+                }
+                // Если вертикальный свайп - разрешаем нативный скролл
+            } else if (isDragging) {
+                // Продолжаем предотвращать скролл только если уже начат горизонтальный свайп
+                e.preventDefault();
+            }
         }, { passive: false });
 
         this.slider.addEventListener('touchend', (e) => {
-            endX = e.changedTouches[0].clientX;
-            const diffX = startX - endX;
+            if (isDragging) {
+                endX = e.changedTouches[0].clientX;
+                const diffX = startX - endX;
 
-            if (Math.abs(diffX) > 50) { // Minimum swipe distance
-                if (diffX > 0) {
-                    this.nextSlide();
-                } else {
-                    this.previousSlide();
+                if (Math.abs(diffX) > 50) { // Minimum swipe distance
+                    if (diffX > 0) {
+                        this.nextSlide();
+                    } else {
+                        this.previousSlide();
+                    }
                 }
             }
+            isDragging = false;
         }, { passive: true });
     }
 

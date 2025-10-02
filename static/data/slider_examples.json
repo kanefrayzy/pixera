@@ -28,6 +28,20 @@
     }
   },
   {
+    "id": 4,
+    "title": "A portrait of a woman, natural soft lighting",
+    "prompt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic.",
+    "image": "/media/slider_examples/ai-generation-40_xgcvdQd.jpg",
+    "description": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic",
+    "alt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic, 580x730.",
+    "settings": {
+      "steps": 28,
+      "cfg": 6.5,
+      "ratio": "3:2",
+      "seed": "auto"
+    }
+  },
+  {
     "id": 1,
     "title": "Киберпанк город",
     "prompt": "Futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, rain droplets, towering holographic billboards, flying cars in distance, cinematic composition, 8k ultra detailed, blade runner aesthetic",

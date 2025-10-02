@@ -637,10 +637,7 @@
     z-index: 40;
     transform: translateY(-100%);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: linear-gradient(135deg,
-      rgba(1, 209, 251, 0.15) 0%,
-      rgba(var(--bg-rgb), 0.9) 25%,
-      rgba(var(--bg-rgb), 0.95) 100%);
+    background: linear-gradient(133deg, rgba(1, 209, 251, 0.562) 0%, rgb(var(--bg-rgb)) 0%, rgb(var(--bg-rgb)) 100%);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     box-shadow:
@@ -687,19 +684,6 @@
     height: 70%;
   }
 
-  /* Mobile menu buttons */
-  #mobileMenu .btn {
-    background: linear-gradient(135deg, rgba(1, 209, 251, 0.8), rgba(1, 209, 251, 0.6));
-    border: 1px solid rgba(1, 209, 251, 0.4);
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-  }
-
-  #mobileMenu .btn:hover {
-    background: linear-gradient(135deg, rgba(1, 209, 251, 0.9), rgba(1, 209, 251, 0.7));
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(1, 209, 251, 0.3);
-  }
 
   /* Menu button icon animation */
   #menuBtn {
