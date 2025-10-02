@@ -1,6 +1,3 @@
-// FILE: static/js/my_jobs.js
-// Purpose: interactions specific to gallery/my_jobs page without breaking global header behaviors
-
 (function(){
   // Hover overlay (desktop only)
   function enhanceCardHovers(){
@@ -30,8 +27,6 @@
     });
   }
 
-  // Avoid global stopPropagation that breaks header/menu/theme
-  // We only stop bubbling for specific overlay control clicks inside a .group
   function isolateOverlayClicks(){
     document.addEventListener('click', (e) => {
       const ctrl = e.target.closest('.group .absolute [href], .group .absolute button');

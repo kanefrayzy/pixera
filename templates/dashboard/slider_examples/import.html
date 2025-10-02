@@ -1,0 +1,77 @@
+{% extends "dashboard/layout.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block dash %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-download"></i> {{ title }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Информация:</strong> Эта операция загрузит данные из JSON файла в базу данных.
+                        Существующие записи будут обновлены, новые — добавлены.
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Путь к JSON файлу:</h6>
+                        <code>{{ json_path }}</code>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Что произойдет при импорте:</h6>
+                        <ul>
+                            <li>Данные из JSON файла будут загружены в базу данных</li>
+                            <li>Записи с существующими ID будут обновлены</li>
+                            <li>Новые записи будут созданы</li>
+                            <li>Изображения могут потребовать ручной загрузки</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Внимание!</strong> Убедитесь, что JSON файл имеет корректную структуру
+                        и находится по указанному пути.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="form-check mb-3">
+                            {{ form.confirm }}
+                            <label class="form-check-label" for="{{ form.confirm.id_for_label }}">
+                                {{ form.confirm.label }}
+                            </label>
+                            {% if form.confirm.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.confirm.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted d-block">
+                                {{ form.confirm.help_text }}
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dashboard:slider:list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-download"></i> Начать импорт
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

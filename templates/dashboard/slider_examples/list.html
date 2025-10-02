@@ -1,0 +1,395 @@
+{% extends "dashboard/layout.html" %}
+{% load static %}
+
+{% block title %}Управление примерами слайдера{% endblock %}
+
+{% block dash %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold">Управление примерами слайдера</h1>
+      <p class="text-[var(--muted)] mt-2">Настройте примеры для демонстрации на главной странице</p>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <a href="{% url 'dashboard:slider:create' %}" class="btn btn-primary">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Добавить пример
+      </a>
+      <!-- <a href="{% url 'dashboard:slider:import' %}" class="btn btn-ghost">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        Импорт JSON
+      </a>
+      <a href="{% url 'dashboard:slider:export' %}" class="btn btn-ghost">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Экспорт JSON
+      </a> -->
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-6">
+    <form method="get" class="grid sm:grid-cols-3 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-2">{{ filter_form.title.label }}</label>
+        {{ filter_form.title }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-2">{{ filter_form.is_active.label }}</label>
+        {{ filter_form.is_active }}
+      </div>
+
+      <div class="flex items-end gap-2">
+        <button type="submit" class="btn btn-primary flex-1">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Фильтр
+        </button>
+        <a href="{% url 'dashboard:slider:list' %}" class="btn btn-ghost">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Stats -->
+  <div class="flex items-center justify-between">
+    <div class="text-sm text-[var(--muted)]">
+      Найдено примеров: <strong class="text-[var(--text)]">{{ total_count }}</strong>
+    </div>
+
+    <div class="text-xs text-[var(--muted)]">
+      <svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Перетаскивайте карточки для изменения порядка
+    </div>
+  </div>
+
+  <!-- Examples Grid -->
+  <div id="examples-container" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for example in page_obj %}
+    <div class="group" data-example-id="{{ example.pk }}" data-order="{{ example.order }}">
+      <div class="card overflow-hidden h-full flex flex-col">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 border-b border-[var(--bord)]">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="drag-handle cursor-grab active:cursor-grabbing text-[var(--muted)] hover:text-[var(--text)] transition">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+              </svg>
+            </div>
+            <strong class="truncate">{{ example.title }}</strong>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <a href="{% url 'dashboard:slider:preview' example.pk %}"
+               class="w-8 h-8 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 flex items-center justify-center transition"
+               title="Предпросмотр">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </a>
+            <a href="{% url 'dashboard:slider:edit' example.pk %}"
+               class="w-8 h-8 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 flex items-center justify-center transition"
+               title="Редактировать">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </a>
+            <a href="{% url 'dashboard:slider:delete' example.pk %}"
+               class="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 flex items-center justify-center transition"
+               title="Удалить">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Image -->
+        {% if example.image %}
+          <div class="relative overflow-hidden">
+            <img src="{{ example.image.url }}"
+                 class="w-full h-48 object-cover transition duration-300 group-hover:scale-105"
+                 alt="{{ example.alt }}"
+                 loading="lazy">
+
+            <!-- Status Badge -->
+            <div class="absolute top-3 right-3">
+              <div class="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium {% if example.is_active %}bg-green-500/90 text-white{% else %}bg-gray-500/90 text-white{% endif %}">
+                <div class="w-1.5 h-1.5 bg-current rounded-full"></div>
+                {% if example.is_active %}Активен{% else %}Неактивен{% endif %}
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="w-full h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <svg class="w-12 h-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+        {% endif %}
+
+        <!-- Content -->
+        <div class="p-4 flex-1 flex flex-col">
+          <p class="text-sm text-[var(--muted)] mb-4">{{ example.description|truncatechars:80 }}</p>
+
+          <!-- Metadata -->
+          <div class="grid grid-cols-2 gap-3 text-xs mb-4">
+            <div>
+              <span class="text-[var(--muted)]">ID:</span>
+              <span class="font-mono">{{ example.json_id }}</span>
+            </div>
+            <div>
+              <span class="text-[var(--muted)]">Порядок:</span>
+              <span class="font-medium">{{ example.order }}</span>
+            </div>
+            <div>
+              <span class="text-[var(--muted)]">Шаги:</span>
+              <span class="font-medium">{{ example.steps }}</span>
+            </div>
+            <div>
+              <span class="text-[var(--muted)]">CFG:</span>
+              <span class="font-medium">{{ example.cfg }}</span>
+            </div>
+            <div>
+              <span class="text-[var(--muted)]">Размер:</span>
+              <span class="font-medium">{{ example.ratio }}</span>
+            </div>
+            <div>
+              <span class="text-[var(--muted)]">Seed:</span>
+              <span class="font-mono text-xs">{{ example.seed|truncatechars:8 }}</span>
+            </div>
+          </div>
+
+          <!-- Prompt -->
+          <div class="mb-4 p-3 rounded-xl bg-black/[.02] dark:bg-white/[.02] flex-1">
+            <div class="text-xs text-[var(--muted)] mb-1 font-medium">Промпт:</div>
+            <div class="text-xs text-[var(--text)] line-clamp-3">{{ example.prompt }}</div>
+          </div>
+
+          <!-- Footer Actions -->
+          <button type="button"
+                  class="btn {% if example.is_active %}btn-ghost{% else %}btn-primary{% endif %} w-full text-sm toggle-active-btn"
+                  data-example-id="{{ example.pk }}"
+                  data-is-active="{{ example.is_active|yesno:'true,false' }}">
+            {% if example.is_active %}
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Деактивировать
+            {% else %}
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Активировать
+            {% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <!-- Empty State -->
+    <div class="col-span-full">
+      <div class="card p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">Примеры не найдены</h3>
+        <p class="text-[var(--muted)] mb-6 max-w-md mx-auto">
+          Создайте первый пример или импортируйте данные из JSON файла
+        </p>
+        <a href="{% url 'dashboard:slider:create' %}" class="btn btn-primary">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Создать пример
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="Навигация по страницам" class="flex items-center justify-center">
+    <div class="flex items-center gap-1">
+      {% if page_obj.has_previous %}
+        <a class="btn btn-ghost px-3 py-2 text-sm"
+           href="?page=1{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.ratio %}&ratio={{ request.GET.ratio }}{% endif %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+          </svg>
+          Первая
+        </a>
+        <a class="btn btn-ghost px-3 py-2 text-sm"
+           href="?page={{ page_obj.previous_page_number }}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.ratio %}&ratio={{ request.GET.ratio }}{% endif %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Назад
+        </a>
+      {% endif %}
+
+      <span class="btn btn-primary px-3 py-2 text-sm">
+        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a class="btn btn-ghost px-3 py-2 text-sm"
+           href="?page={{ page_obj.next_page_number }}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.ratio %}&ratio={{ request.GET.ratio }}{% endif %}">
+          Вперёд
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a class="btn btn-ghost px-3 py-2 text-sm"
+           href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.ratio %}&ratio={{ request.GET.ratio }}{% endif %}">
+          Последняя
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+          </svg>
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+  {% endif %}
+
+</div>
+
+<!-- Alert Container -->
+<div id="alert-container" class="fixed top-4 right-4 z-50 space-y-3" style="max-width: 400px;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Drag & Drop Sorting
+  const container = document.getElementById('examples-container');
+  if (container) {
+    new Sortable(container, {
+      handle: '.drag-handle',
+      animation: 150,
+      ghostClass: 'opacity-40',
+      onEnd: function(evt) {
+        const orders = [];
+        container.querySelectorAll('[data-example-id]').forEach((item, index) => {
+          orders.push({
+            id: parseInt(item.dataset.exampleId),
+            order: index
+          });
+        });
+
+        // Save order via AJAX
+        fetch('{% url "dashboard:slider:reorder" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({ orders: orders })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showAlert('success', data.message || 'Порядок успешно сохранён');
+          } else {
+            showAlert('error', data.message || 'Ошибка при сохранении порядка');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showAlert('error', 'Ошибка при сохранении порядка');
+        });
+      }
+    });
+  }
+
+  // Toggle Active Status
+  document.querySelectorAll('.toggle-active-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      const exampleId = this.dataset.exampleId;
+      const isActive = this.dataset.isActive === 'true';
+
+      fetch(`{% url "dashboard:slider:toggle_active" 0 %}`.replace('0', exampleId), {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showAlert('success', 'Статус успешно изменён');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showAlert('error', 'Ошибка при изменении статуса');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Ошибка при изменении статуса');
+      });
+    });
+  });
+});
+
+function showAlert(type, message) {
+  const alertContainer = document.getElementById('alert-container');
+  const alertId = 'alert-' + Date.now();
+
+  const iconSvg = type === 'success'
+    ? '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+    : '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/></svg>';
+
+  const bgClass = type === 'success'
+    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
+    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200';
+
+  const alertHtml = `
+    <div id="${alertId}" class="card p-4 border ${bgClass} animate-slide-in">
+      <div class="flex items-start gap-3">
+        <div class="mt-0.5">${iconSvg}</div>
+        <div class="flex-1 text-sm">${message}</div>
+        <button onclick="closeAlert('${alertId}')" class="text-current hover:opacity-70 transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `;
+
+  alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => closeAlert(alertId), 5000);
+}
+
+function closeAlert(alertId) {
+  const alert = document.getElementById(alertId);
+  if (alert) {
+    alert.style.opacity = '0';
+    alert.style.transform = 'translateX(100%)';
+    setTimeout(() => alert.remove(), 300);
+  }
+}
+</script>
+
+{% endblock %}

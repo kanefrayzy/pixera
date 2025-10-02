@@ -82,7 +82,7 @@
 
   <!-- Article -->
   <article class="space-y-8" itemscope itemtype="https://schema.org/Article">
-    
+
     <!-- Header -->
     <header class="space-y-6">
       <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
@@ -90,7 +90,7 @@
           <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight" itemprop="headline">
             {{ post.title }}
           </h1>
-          
+
           <!-- Meta Information -->
           <div class="flex flex-wrap items-center gap-4 text-sm text-[var(--muted)]">
             {% if post.published_at %}
@@ -103,7 +103,7 @@
                 </time>
               </div>
             {% endif %}
-            
+
             {% if post.updated_at and post.updated_at > post.published_at %}
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -114,7 +114,7 @@
                 </time>
               </div>
             {% endif %}
-            
+
             {% if post.author_name %}
               <div class="flex items-center gap-2" itemprop="author" itemscope itemtype="https://schema.org/Person">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -123,7 +123,7 @@
                 <span itemprop="name">{{ post.author_name }}</span>
               </div>
             {% endif %}
-            
+
             {% if post.read_minutes %}
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -159,8 +159,8 @@
     {% if post.cover %}
       <figure class="relative" itemprop="image" itemscope itemtype="https://schema.org/ImageObject">
         <div class="relative overflow-hidden rounded-3xl bg-gray-100 dark:bg-gray-800">
-          <img src="{{ post.cover.url }}" 
-               alt="{{ post.title }}" 
+          <img src="{{ post.cover.url }}"
+               alt="{{ post.title }}"
                class="w-full aspect-[16/9] object-cover"
                onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 450%22&gt;&lt;rect width=%22800%22 height=%22450%22 fill=%22%23e5e7eb%22/&gt;&lt;text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2224%22&gt;Cover Image&lt;/text&gt;&lt;/svg&gt;';">
         </div>
@@ -191,24 +191,20 @@
     {% endif %}
 
     <!-- Tags -->
-    {% if post.tags.all %}
-      {% with tags=post.tags.all %}
-        {% if tags %}
-          <div class="pt-6 border-t border-[var(--bord)]">
-            <div class="flex flex-wrap gap-2">
-              {% for t in tags %}
-                <a class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition" 
-                   href="{% url 'blog:index' %}?tag={{ t.slug }}">
-                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                  </svg>
-                  {{ t.name }}
-                </a>
-              {% endfor %}
-            </div>
-          </div>
-        {% endif %}
-      {% endwith %}
+    {% if post.tags.exists %}
+      <div class="pt-6 border-t border-[var(--bord)]">
+        <div class="flex flex-wrap gap-2">
+          {% for t in post.tags.all %}
+            <a class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition"
+               href="{% url 'blog:index' %}?tag={{ t.slug }}" aria-label="Тег {{ t.name }}">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+              </svg>
+              {{ t.name }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
     {% endif %}
   </article>
 
@@ -231,7 +227,7 @@
             </a>
           {% endif %}
         </div>
-        
+
         <div class="flex-1">
           {% if next_post %}
             <a class="group block card p-6 hover:shadow-lg transition-shadow text-right" href="{{ next_post.get_absolute_url }}">
@@ -413,28 +409,28 @@
   .prose {
     font-size: 1rem;
   }
-  
+
   .prose h1 {
     font-size: 1.875rem;
   }
-  
+
   .prose h2 {
     font-size: 1.5rem;
   }
-  
+
   .prose h3 {
     font-size: 1.25rem;
   }
-  
+
   .prose pre {
     padding: 1rem;
     font-size: 0.8rem;
   }
-  
+
   .prose table {
     font-size: 0.875rem;
   }
-  
+
   .prose th,
   .prose td {
     padding: 0.5rem;
@@ -458,12 +454,12 @@ html {
   .prose {
     color: black;
   }
-  
+
   .prose a {
     color: black;
     text-decoration: underline;
   }
-  
+
   .prose blockquote {
     border-left-color: black;
   }

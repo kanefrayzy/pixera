@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Страница не найдена — AI Gallery{% endblock %}
+{% block meta_description %}Запрашиваемая страница не найдена. Вернитесь на главную или воспользуйтесь поиском.{% endblock %}
+{% block robots %}noindex,follow{% endblock %}
+{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{% endblock %}
+
+{% block hero %}{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4">
+  <div class="max-w-2xl w-full text-center">
+    <div class="mb-8 relative">
+      <div class="w-32 h-32 mx-auto relative">
+        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 animate-pulse"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-6xl font-bold text-primary opacity-80">404</span>
+        </div>
+
+        <div class="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary/30 animate-bounce" style="animation-delay: 0.1s;"></div>
+        <div class="absolute -bottom-2 -left-2 w-6 h-6 rounded-full bg-purple-500/30 animate-bounce" style="animation-delay: 0.3s;"></div>
+        <div class="absolute top-1/2 -right-4 w-4 h-4 rounded-full bg-blue-500/30 animate-bounce" style="animation-delay: 0.5s;"></div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-4xl sm:text-5xl font-bold mb-4">
+          Страница не найдена
+        </h1>
+        <p class="text-xl text-[var(--muted)] max-w-lg mx-auto">
+          К сожалению, запрашиваемая страница не существует или была перемещена
+        </p>
+      </div>
+
+      <div class="card p-6 max-w-md mx-auto">
+        <h2 class="font-semibold mb-4 text-left">Возможно, вы искали:</h2>
+        <ul class="space-y-3 text-left">
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'pages:home' %}">
+              Главную страницу
+            </a>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'gallery:index' %}">
+              Галерею изображений
+            </a>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'generate:new' %}">
+              Генератор изображений
+            </a>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'gallery:trending' %}">
+              Трендовые работы
+            </a>
+          </li>
+        </ul>
+      </div>
+
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+        <a class="btn btn-primary w-full sm:w-auto" href="{% url 'pages:home' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          На главную
+        </a>
+
+        <button class="btn btn-ghost w-full sm:w-auto" onclick="history.back()">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Назад
+        </button>
+      </div>
+
+      <div class="pt-8 border-t border-[var(--bord)] mt-8">
+        <p class="text-sm text-[var(--muted)]">
+          Если проблема повторяется,
+          <a class="text-primary hover:underline" href="{% url 'pages:contact' %}">
+            сообщите нам
+          </a>
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+{% endblock %}

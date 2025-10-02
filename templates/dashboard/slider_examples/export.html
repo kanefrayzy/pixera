@@ -1,0 +1,103 @@
+{% extends "dashboard/layout.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block dash %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-upload"></i> {{ title }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Информация:</strong> Эта операция экспортирует активные примеры из базы данных в JSON файл.
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Статистика:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h4 class="card-title text-success">{{ active_count }}</h4>
+                                        <p class="card-text">Активных примеров</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Файл назначения:</h6>
+                                        <code>{{ json_path }}</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Что произойдет при экспорте:</h6>
+                        <ul>
+                            <li>Будут экспортированы только активные примеры (is_active=True)</li>
+                            <li>Примеры будут отсортированы по полю "order" и "json_id"</li>
+                            <li>Существующий JSON файл будет перезаписан</li>
+                            <li>Автоматически будет создана резервная копия (.bak)</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Внимание!</strong> Текущий JSON файл будет полностью перезаписан.
+                        Убедитесь, что у вас есть резервная копия важных данных.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="form-check mb-3">
+                            {{ form.confirm }}
+                            <label class="form-check-label" for="{{ form.confirm.id_for_label }}">
+                                {{ form.confirm.label }}
+                            </label>
+                            {% if form.confirm.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.confirm.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted d-block">
+                                {{ form.confirm.help_text }}
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            {{ form.create_backup }}
+                            <label class="form-check-label" for="{{ form.create_backup.id_for_label }}">
+                                {{ form.create_backup.label }}
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                {{ form.create_backup.help_text }}
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dashboard:slider:list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-upload"></i> Начать экспорт
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

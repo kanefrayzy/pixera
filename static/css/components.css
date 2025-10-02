@@ -269,7 +269,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1.25rem;
   }
-  
+
   .form-grid-3 {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -606,11 +606,117 @@
   .tab-nav {
     display: none !important;
   }
-  
+
   .form-input,
   .form-textarea,
   .form-select {
     border: 1px solid #ccc;
     background: white;
+  }
+}
+
+/* Mobile Navigation Styles */
+@media (max-width: 767px) {
+  #site-header {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+  }
+
+  body {
+    transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #mobileMenu {
+    position: fixed;
+    top: 4rem;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    transform: translateY(-100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg,
+      rgba(1, 209, 251, 0.15) 0%,
+      rgba(var(--bg-rgb), 0.9) 25%,
+      rgba(var(--bg-rgb), 0.95) 100%);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    box-shadow:
+      0 20px 40px rgba(0,0,0,0.15),
+      0 0 0 1px rgba(1, 209, 251, 0.1),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  #mobileMenu:not(.hidden) {
+    transform: translateY(0);
+  }
+
+  #mobileMenu .nav-link {
+    position: relative;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 4px 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #mobileMenu .nav-link:hover {
+    background: rgba(1, 209, 251, 0.1);
+    border-color: rgba(1, 209, 251, 0.3);
+    transform: translateX(8px);
+    box-shadow: 0 4px 15px rgba(1, 209, 251, 0.2);
+  }
+
+  #mobileMenu .nav-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: linear-gradient(to bottom, #01D1FB, #EC4899);
+    border-radius: 0 2px 2px 0;
+    transition: height 0.3s ease;
+  }
+
+  #mobileMenu .nav-link:hover::before {
+    height: 70%;
+  }
+
+  /* Mobile menu buttons */
+  #mobileMenu .btn {
+    background: linear-gradient(135deg, rgba(1, 209, 251, 0.8), rgba(1, 209, 251, 0.6));
+    border: 1px solid rgba(1, 209, 251, 0.4);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  #mobileMenu .btn:hover {
+    background: linear-gradient(135deg, rgba(1, 209, 251, 0.9), rgba(1, 209, 251, 0.7));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(1, 209, 251, 0.3);
+  }
+
+  /* Menu button icon animation */
+  #menuBtn {
+    transition: all 0.3s ease;
+  }
+
+  #menuBtn[aria-expanded="true"] .menu-icon-open {
+    opacity: 0;
+    transform: scale(0.75) rotate(180deg);
+  }
+
+  #menuBtn[aria-expanded="true"] .menu-icon-close {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+
+  .menu-icon-open, .menu-icon-close {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }

@@ -477,7 +477,8 @@ class HomePageManager {
 
 // Initialize home page functionality when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new HomePageManager();
+    window.homeManager = new HomePageManager();
+    window.generationSlider = new GenerationSlider();
 });
 
 // CSS for toast notifications (if not already in CSS)
@@ -603,7 +604,402 @@ if (!document.getElementById('home-toast-styles')) {
     document.head.appendChild(styleElement);
 }
 
+// Generation Slider Class
+class GenerationSlider {
+    constructor() {
+        this.currentSlide = 0;
+        this.slides = [];
+        this.sliderData = [];
+        this.generationTimes = [26, 18, 32]; // Different generation times for each slide
+
+        this.init();
+    }
+
+    init() {
+        // Добавляем небольшую задержку для полной загрузки DOM
+        setTimeout(() => {
+            this.loadSliderData();
+            this.setupElements();
+            this.bindEvents();
+
+            // Слушаем событие загрузки данных слайдера
+            document.addEventListener('sliderDataLoaded', (event) => {
+                if (event.detail && event.detail.data) {
+                    console.log('Received sliderDataLoaded event:', event.detail.data);
+                    this.sliderData = event.detail.data;
+                    this.updateSlide(0);
+                }
+            });
+
+            this.updateSlide(0);
+            this.startAutoplay();
+        }, 100);
+    }
+
+    loadSliderData() {
+        // Проверяем, загружены ли данные через generation_slider.html
+        if (window.sliderExamples && window.sliderExamples.length > 0) {
+            console.log('Using slider data from window.sliderExamples:', window.sliderExamples);
+            this.sliderData = window.sliderExamples;
+            return;
+        }
+
+        // Пытаемся найти данные в script теге
+        const dataScript = document.getElementById('sliderData');
+        if (dataScript) {
+            try {
+                this.sliderData = JSON.parse(dataScript.textContent);
+                console.log('Using slider data from script tag:', this.sliderData);
+                return;
+            } catch (e) {
+                console.warn('Failed to parse slider data, using fallback');
+            }
+        }
+
+        // Пытаемся загрузить данные напрямую из JSON файла
+        console.log('Loading slider data from JSON file...');
+        this.loadSliderDataFromJSON();
+    }
+
+    async loadSliderDataFromJSON() {
+        try {
+            console.log('Loading slider data from JSON...');
+            const response = await fetch('/static/data/slider_examples.json');
+            if (!response.ok) throw new Error('Failed to load slider data');
+
+            this.sliderData = await response.json();
+            console.log('Slider data loaded:', this.sliderData);
+
+            // Обновляем слайдер после загрузки данных
+            if (this.sliderData.length > 0) {
+                this.updateSlide(0);
+            }
+        } catch (error) {
+            console.warn('Failed to load slider data from JSON, using fallback:', error);
+            this.sliderData = this.getFallbackData();
+        }
+    }
+
+    getFallbackData() {
+        return [
+            {
+                id: 0,
+                title: "Реалистичный портрет",
+                prompt: "Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves",
+                image: "/static/img/woman.webp",
+                description: "Профессиональное освещение и детализация",
+                settings: { steps: 28, cfg: 6.5, ratio: "3:2", seed: "auto" }
+            },
+            {
+                id: 1,
+                title: "Киберпанк город",
+                prompt: "Futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, rain droplets, towering holographic billboards, flying cars in distance, cinematic composition, 8k ultra detailed, blade runner aesthetic",
+                image: "/static/img/bg.png",
+                description: "Неоновые огни и футуристическая атмосфера",
+                settings: { steps: 35, cfg: 7.0, ratio: "16:9", seed: "42851" }
+            },
+            {
+                id: 2,
+                title: "Магический мир",
+                prompt: "Magical fantasy landscape with floating islands connected by golden bridges, ethereal atmosphere with mystical light beams, ancient ruins covered in glowing moss, dragons soaring in purple sky, concept art style, highly detailed",
+                image: "/static/img/small-bg.png",
+                description: "Летающие острова и мистический свет",
+                settings: { steps: 30, cfg: 8.0, ratio: "4:3", seed: "12345" }
+            }
+        ];
+    }
+
+    setupElements() {
+        this.slider = document.getElementById('generationSlider');
+        this.slides = document.querySelectorAll('.slide');
+        this.indicators = document.querySelectorAll('.indicator');
+        this.prevBtn = document.getElementById('prevSlide');
+        this.nextBtn = document.getElementById('nextSlide');
+
+        // Text elements
+        this.promptText = document.getElementById('promptText');
+        this.resultImage = document.getElementById('resultImage');
+        this.generationTimeElement = document.getElementById('generationTime');
+
+        // Логируем найденные элементы
+        console.log('Setup elements:');
+        console.log('- resultImage:', this.resultImage);
+        console.log('- promptText:', this.promptText);
+        console.log('- slider:', this.slider);
+
+        // Settings elements
+        this.settingsSteps = document.getElementById('settingsSteps');
+        this.settingsCfg = document.getElementById('settingsCfg');
+        this.settingsRatio = document.getElementById('settingsRatio');
+        this.settingsSeed = document.getElementById('settingsSeed');
+
+        // Copy button
+        this.copyBtn = document.getElementById('copyPromptBtn');
+
+        if (!this.slider || !this.slides.length) return;
+    }
+
+    bindEvents() {
+        if (!this.prevBtn || !this.nextBtn) return;
+
+        this.prevBtn.addEventListener('click', () => this.previousSlide());
+        this.nextBtn.addEventListener('click', () => this.nextSlide());
+
+        // Copy prompt functionality
+        if (this.copyBtn) {
+            this.copyBtn.addEventListener('click', () => this.copyPrompt());
+        }
+
+        // Indicator clicks
+        this.indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => this.goToSlide(index));
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (this.slider && this.isInViewport(this.slider)) {
+                if (e.key === 'ArrowLeft') this.previousSlide();
+                if (e.key === 'ArrowRight') this.nextSlide();
+            }
+        });
+
+        // Touch/swipe support
+        this.addTouchSupport();
+
+        // Pause autoplay on hover
+        this.slider.addEventListener('mouseenter', () => this.pauseAutoplay());
+        this.slider.addEventListener('mouseleave', () => this.startAutoplay());
+    }
+
+    addTouchSupport() {
+        let startX = 0;
+        let endX = 0;
+
+        this.slider.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+
+        this.slider.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        this.slider.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            const diffX = startX - endX;
+
+            if (Math.abs(diffX) > 50) { // Minimum swipe distance
+                if (diffX > 0) {
+                    this.nextSlide();
+                } else {
+                    this.previousSlide();
+                }
+            }
+        }, { passive: true });
+    }
+
+    async copyPrompt() {
+        if (!this.promptText || !this.copyBtn) return;
+
+        const promptText = this.promptText.textContent.trim();
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(promptText);
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = promptText;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                textArea.remove();
+            }
+
+            // Show copy success feedback
+            this.showCopySuccess();
+
+        } catch (err) {
+            console.error('Failed to copy prompt:', err);
+            this.showCopyError();
+        }
+    }
+
+    showCopySuccess() {
+        // Button visual feedback
+        this.copyBtn.classList.add('copied');
+
+        // Show toast notification
+        this.showToast('Промпт скопирован!', 'success');
+
+        // Reset button state
+        setTimeout(() => {
+            this.copyBtn.classList.remove('copied');
+        }, 1000);
+    }
+
+    showCopyError() {
+        this.showToast('Ошибка копирования', 'error');
+    }
+
+    showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `copy-toast ${type}`;
+        toast.textContent = message;
+
+        document.body.appendChild(toast);
+
+        // Trigger animation
+        setTimeout(() => toast.classList.add('show'), 100);
+
+        // Remove toast
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 2000);
+    }
+
+    nextSlide() {
+        this.currentSlide = (this.currentSlide + 1) % this.slides.length;
+        this.updateSlide(this.currentSlide);
+    }
+
+    previousSlide() {
+        this.currentSlide = this.currentSlide === 0 ? this.slides.length - 1 : this.currentSlide - 1;
+        this.updateSlide(this.currentSlide);
+    }
+
+    goToSlide(index) {
+        this.currentSlide = index;
+        this.updateSlide(this.currentSlide);
+    }
+
+    updateSlide(index) {
+        // Проверяем, что данные загружены
+        if (!this.sliderData || this.sliderData.length === 0) {
+            console.log('Slider data not loaded yet');
+            return;
+        }
+
+        const slideData = this.sliderData[index];
+        if (!slideData) {
+            console.warn('Slide data not found for index:', index);
+            return;
+        }
+
+        // Update slides
+        this.slides.forEach((slide, i) => {
+            slide.classList.toggle('active', i === index);
+        });
+
+        // Update indicators
+        this.indicators.forEach((indicator, i) => {
+            indicator.classList.toggle('active', i === index);
+        });
+
+        // Update prompt text
+        if (this.promptText) {
+            this.promptText.textContent = slideData.prompt;
+        }
+
+        // Update result image
+        if (this.resultImage) {
+            this.resultImage.src = slideData.image;
+            this.resultImage.alt = `Результат: ${slideData.title}`;
+            console.log('Updated result image to:', slideData.image);
+        }
+
+        // Update generation time
+        if (this.generationTimeElement) {
+            this.generationTimeElement.textContent = this.generationTimes[index] || '26';
+        }
+
+        // Update settings
+        if (slideData.settings) {
+            if (this.settingsSteps) this.settingsSteps.textContent = slideData.settings.steps;
+            if (this.settingsCfg) this.settingsCfg.textContent = slideData.settings.cfg;
+            if (this.settingsRatio) this.settingsRatio.textContent = slideData.settings.ratio;
+            if (this.settingsSeed) this.settingsSeed.textContent = slideData.settings.seed;
+        }
+
+        // Announce to screen readers
+        this.announceSlideChange(index);
+
+        // Restart autoplay timer
+        this.startAutoplay();
+    }
+
+    announceSlideChange(index) {
+        const slideData = this.sliderData[index];
+        const announcement = `Слайд ${index + 1} из ${this.slides.length}: ${slideData?.title || ''}`;
+
+        const ariaLive = document.createElement('div');
+        ariaLive.setAttribute('aria-live', 'polite');
+        ariaLive.setAttribute('aria-atomic', 'true');
+        ariaLive.className = 'sr-only';
+        ariaLive.textContent = announcement;
+
+        document.body.appendChild(ariaLive);
+        setTimeout(() => document.body.removeChild(ariaLive), 1000);
+    }
+
+    startAutoplay() {
+        this.stopAutoplay();
+        this.autoplayInterval = setInterval(() => {
+            this.nextSlide();
+        }, 6000); // 6 seconds for better UX
+    }
+
+    pauseAutoplay() {
+        this.stopAutoplay();
+    }
+
+    stopAutoplay() {
+        if (this.autoplayInterval) {
+            clearInterval(this.autoplayInterval);
+            this.autoplayInterval = null;
+        }
+    }
+
+    isInViewport(element) {
+        const rect = element.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+
+    // Диагностическая функция для отладки
+    debugSlider() {
+        console.log('=== SLIDER DEBUG INFO ===');
+        console.log('Slider data:', this.sliderData);
+        console.log('Current slide:', this.currentSlide);
+        console.log('Result image element:', this.resultImage);
+        console.log('Window.sliderExamples:', window.sliderExamples);
+
+        if (this.sliderData && this.sliderData.length > 0) {
+            console.log('Current slide data:', this.sliderData[this.currentSlide]);
+        }
+
+        console.log('=========================');
+    }
+}
+
+// Функция для глобального доступа к диагностике
+window.debugSlider = function() {
+    if (window.homeManager && window.homeManager.generationSlider) {
+        window.homeManager.generationSlider.debugSlider();
+    } else {
+        console.log('Slider not initialized yet');
+    }
+};
+
 // Export for potential external use
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = HomePageManager;
+    module.exports = { HomePageManager, GenerationSlider };
 }

@@ -9,7 +9,7 @@
 
 {% block hero %}
 <!-- Hero Section -->
-<section class="relative py-12 sm:py-16">
+<section class="relative py-12 sm:py-16 mt-8">
   <div class="container">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
@@ -61,13 +61,13 @@
 {% block content %}
 <div class="">
   {% include "includes/messages.html" %}
-  
+
   <!-- Dashboard Grid -->
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    
+
   <div class="lg:col-span-8 space-y-6 min-w-0">
-      
+
       <!-- Balance Card -->
       <section class="card p-6 sm:p-8" aria-labelledby="balanceTitle">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -75,7 +75,7 @@
             <h2 class="text-xl font-bold mb-2" id="balanceTitle">Ваш баланс</h2>
             <p class="text-[var(--muted)]">Текущее количество токенов для генерации</p>
           </div>
-          
+
           <!-- Balance Display -->
           <div class="flex items-center gap-4">
             <div class="text-center">
@@ -94,7 +94,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Balance Actions -->
         <div class="flex flex-wrap gap-3">
           <a class="btn btn-primary" href="{% url 'dashboard:billing' %}">
@@ -110,7 +110,7 @@
             Начать генерацию
           </a>
         </div>
-        
+
         <!-- Balance Info -->
         <div class="mt-6 p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
           <div class="flex items-start gap-3">
@@ -120,7 +120,7 @@
             <div class="text-sm">
               <div class="font-medium mb-1">Как работают токены</div>
               <p class="text-[var(--muted)]">
-                1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK. 
+                1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK.
                 Гостевой остаток автоматически переносится в ваш аккаунт при входе.
               </p>
             </div>
@@ -178,7 +178,7 @@
 
     <!-- Sidebar -->
   <aside class="lg:col-span-4 space-y-6 min-w-0">
-      
+
       <!-- Quick Actions -->
       <section class="card p-6" aria-labelledby="quickTitle">
         <h2 class="text-lg font-semibold mb-4" id="quickTitle">Быстрые действия</h2>
@@ -191,7 +191,7 @@
             </div>
             <span class="font-medium">Мои обработки</span>
           </a>
-          
+
           <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'gallery:index' %}">
             <div class="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center group-hover:bg-purple-500/25 transition">
               <svg class="w-4 h-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -200,7 +200,7 @@
             </div>
             <span class="font-medium">Галерея</span>
           </a>
-          
+
           <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'generate:new' %}">
             <div class="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center group-hover:bg-green-500/25 transition">
               <svg class="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -209,7 +209,7 @@
             </div>
             <span class="font-medium">Новая генерация</span>
           </a>
-          
+
           <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'dashboard:tips' %}">
             <div class="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/25 transition">
               <svg class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -233,7 +233,7 @@
             </div>
             <span class="font-medium">Сменить пароль</span>
           </a>
-          
+
           <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group text-red-600 dark:text-red-400" href="{% url 'account_logout' %}">
             <div class="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center group-hover:bg-red-500/25 transition">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -280,7 +280,7 @@
               Добавляйте детали освещения в промпт: "soft rim light", "golden hour" для более реалистичных результатов.
             </p>
           </div>
-          
+
           <div class="text-center">
             <a class="btn btn-ghost text-sm w-full" href="{% url 'dashboard:tips' %}">
               Больше советов

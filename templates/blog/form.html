@@ -39,14 +39,14 @@
     <!-- Basic Information -->
     <div class="card p-6 sm:p-8">
       <h2 class="text-xl font-semibold mb-6">Основная информация</h2>
-      
+
       <div class="grid lg:grid-cols-2 gap-6">
         <!-- Title -->
         <div class="lg:col-span-2">
           <label class="block text-sm font-medium mb-3" for="{{ form.title.id_for_label }}">
             Заголовок <span class="text-red-500">*</span>
           </label>
-          <input type="text" 
+          <input type="text"
                  id="{{ form.title.id_for_label }}"
                  name="{{ form.title.name }}"
                  value="{{ form.title.value|default:'' }}"
@@ -66,7 +66,7 @@
           <label class="block text-sm font-medium mb-3" for="{{ form.cover.id_for_label }}">
             Обложка
           </label>
-          <input type="file" 
+          <input type="file"
                  id="{{ form.cover.id_for_label }}"
                  name="{{ form.cover.name }}"
                  class="field"
@@ -76,12 +76,12 @@
               {% for error in form.cover.errors %}{{ error }}{% endfor %}
             </div>
           {% endif %}
-          
+
           {% if mode == "edit" and post.cover %}
             <div class="mt-4">
               <div class="text-sm text-[var(--muted)] mb-2">Текущая обложка:</div>
-              <img src="{{ post.cover.url }}" 
-                   alt="Текущая обложка" 
+              <img src="{{ post.cover.url }}"
+                   alt="Текущая обложка"
                    class="w-full max-w-xs rounded-2xl border border-[var(--bord)]">
             </div>
           {% endif %}
@@ -92,13 +92,13 @@
           <label class="block text-sm font-medium mb-3" for="{{ form.tags_csv.id_for_label }}">
             Теги
           </label>
-          <input type="text" 
+          <input type="text"
                  id="{{ form.tags_csv.id_for_label }}"
                  name="{{ form.tags_csv.name }}"
                  value="{{ form.tags_csv.value|default:'' }}"
                  class="field"
                  placeholder="например: нейросеть, руководство, генерация">
-          
+
           {% if all_tags %}
             <datalist id="all-tags">
               {% for name in all_tags %}
@@ -106,7 +106,7 @@
               {% endfor %}
             </datalist>
           {% endif %}
-          
+
           {% if form.tags_csv.errors %}
             <div class="mt-2 text-sm text-red-600 dark:text-red-400">
               {% for error in form.tags_csv.errors %}{{ error }}{% endfor %}
@@ -142,7 +142,7 @@
     <!-- Content -->
     <div class="card p-6 sm:p-8">
       <h2 class="text-xl font-semibold mb-6">Содержание</h2>
-      
+
       <div>
         <label class="block text-sm font-medium mb-3" for="{{ form.body.id_for_label }}">
           Текст статьи <span class="text-red-500">*</span>
@@ -181,7 +181,7 @@
           <label class="block text-sm font-medium mb-3" for="{{ form.meta_title.id_for_label }}">
             Meta Title
           </label>
-          <input type="text" 
+          <input type="text"
                  id="{{ form.meta_title.id_for_label }}"
                  name="{{ form.meta_title.name }}"
                  value="{{ form.meta_title.value|default:'' }}"
@@ -223,7 +223,7 @@
           <label class="block text-sm font-medium mb-3" for="{{ form.og_title.id_for_label }}">
             Open Graph Title
           </label>
-          <input type="text" 
+          <input type="text"
                  id="{{ form.og_title.id_for_label }}"
                  name="{{ form.og_title.name }}"
                  value="{{ form.og_title.value|default:'' }}"
@@ -259,7 +259,7 @@
           <label class="block text-sm font-medium mb-3" for="{{ form.og_image.id_for_label }}">
             Open Graph Image
           </label>
-          <input type="file" 
+          <input type="file"
                  id="{{ form.og_image.id_for_label }}"
                  name="{{ form.og_image.name }}"
                  class="field"
@@ -279,12 +279,12 @@
     <!-- Publishing Settings -->
     <div class="card p-6 sm:p-8">
       <h2 class="text-xl font-semibold mb-6">Настройки публикации</h2>
-      
+
       <div class="grid lg:grid-cols-2 gap-6 items-start">
         <!-- Published Status -->
         <div>
           <label class="flex items-center gap-3 p-4 rounded-2xl border border-[var(--bord)] hover:bg-black/[.02] dark:hover:bg-white/[.02] transition cursor-pointer">
-            <input type="checkbox" 
+            <input type="checkbox"
                    id="{{ form.is_published.id_for_label }}"
                    name="{{ form.is_published.name }}"
                    {% if form.is_published.value %}checked{% endif %}
@@ -306,7 +306,7 @@
           <label class="block text-sm font-medium mb-3" for="{{ form.published_at.id_for_label }}">
             Дата публикации
           </label>
-          <input type="datetime-local" 
+          <input type="datetime-local"
                  id="{{ form.published_at.id_for_label }}"
                  name="{{ form.published_at.name }}"
                  value="{{ form.published_at.value|default:'' }}"
@@ -331,7 +331,7 @@
         </svg>
         {% if mode == "create" %}Создать статью{% else %}Сохранить изменения{% endif %}
       </button>
-      
+
       {% if mode == "edit" and post %}
         <a class="btn btn-ghost flex-1 text-center" href="{{ post.get_absolute_url }}">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -362,12 +362,12 @@
   // Character counter for meta description
   const metaDescField = document.getElementById('{{ form.meta_description.id_for_label|escapejs }}');
   const counter = document.getElementById('md-counter');
-  
+
   function updateCounter() {
     if (!metaDescField || !counter) return;
     const length = (metaDescField.value || '').length;
     counter.textContent = length;
-    
+
     // Color coding
     if (length > 160) {
       counter.className = 'text-red-500 font-medium';
@@ -377,7 +377,7 @@
       counter.className = 'text-green-500 font-medium';
     }
   }
-  
+
   if (metaDescField) {
     metaDescField.addEventListener('input', updateCounter);
     updateCounter();
@@ -391,7 +391,7 @@
 
   function autoFillOG(sourceField, targetField) {
     if (!sourceField || !targetField) return;
-    
+
     sourceField.addEventListener('blur', () => {
       if (!targetField.value.trim() && sourceField.value.trim()) {
         targetField.value = sourceField.value;
@@ -543,7 +543,7 @@ input[type="datetime-local"].field {
   .space-y-8 > * + * {
     margin-top: 1.5rem;
   }
-  
+
   .card {
     margin-left: -1rem;
     margin-right: -1rem;

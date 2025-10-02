@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold">{{ title }}</h1>
+      <p class="text-[var(--muted)] mt-2">Настройте пример для демонстрации в слайдере</p>
+    </div>
+
+    <a href="{% url 'dashboard:slider:list' %}" class="btn btn-ghost">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Назад к списку
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-8" novalidate>
+    {% csrf_token %}
+
+    <!-- Основная информация -->
+    <div class="card p-6 sm:p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold">Основная информация</h2>
+          <p class="text-sm text-[var(--muted)]">Заголовок, промпт и описание примера</p>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Title -->
+          <div>
+            <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium mb-2">
+              {{ form.title.label }} <span class="text-red-500">*</span>
+            </label>
+            <input type="text"
+                   id="{{ form.title.id_for_label }}"
+                   name="{{ form.title.name }}"
+                   value="{{ form.title.value|default:'' }}"
+                   class="field {% if form.title.errors %}border-red-500{% endif %}"
+                   placeholder="Например: Футуристический портрет"
+                   maxlength="200"
+                   required>
+            {% if form.title.errors %}
+              <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+                {% for error in form.title.errors %}{{ error }}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Prompt -->
+          <div>
+            <label for="{{ form.prompt.id_for_label }}" class="block text-sm font-medium mb-2">
+              {{ form.prompt.label }} <span class="text-red-500">*</span>
+            </label>
+            <textarea id="{{ form.prompt.id_for_label }}"
+                      name="{{ form.prompt.name }}"
+                      class="field min-h-32 resize-none {% if form.prompt.errors %}border-red-500{% endif %}"
+                      placeholder="Опишите изображение детально: стиль, освещение, композицию..."
+                      maxlength="1000"
+                      required>{{ form.prompt.value|default:'' }}</textarea>
+            <div class="mt-2 flex items-center justify-between text-xs text-[var(--muted)]">
+              <span>Чем детальнее промпт, тем лучше результат</span>
+              <span><span id="prompt-length">0</span> / 1000 символов</span>
+            </div>
+            {% if form.prompt.errors %}
+              <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+                {% for error in form.prompt.errors %}{{ error }}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium mb-2">
+              {{ form.description.label }} <span class="text-red-500">*</span>
+            </label>
+            <textarea id="{{ form.description.id_for_label }}"
+                      name="{{ form.description.name }}"
+                      class="field min-h-24 resize-none {% if form.description.errors %}border-red-500{% endif %}"
+                      placeholder="Краткое описание для пользователей..."
+                      maxlength="500"
+                      required>{{ form.description.value|default:'' }}</textarea>
+            {% if form.description.errors %}
+              <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+                {% for error in form.description.errors %}{{ error }}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Alt Text -->
+          <div>
+            <label for="{{ form.alt.id_for_label }}" class="block text-sm font-medium mb-2">
+              {{ form.alt.label }} <span class="text-red-500">*</span>
+            </label>
+            <input type="text"
+                   id="{{ form.alt.id_for_label }}"
+                   name="{{ form.alt.name }}"
+                   value="{{ form.alt.value|default:'' }}"
+                   class="field {% if form.alt.errors %}border-red-500{% endif %}"
+                   placeholder="Текст для screen readers и SEO"
+                   maxlength="200"
+                   required>
+            <div class="mt-2 text-xs text-[var(--muted)]">
+              Описание изображения для доступности и поисковых систем
+            </div>
+            {% if form.alt.errors %}
+              <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+                {% for error in form.alt.errors %}{{ error }}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="space-y-4">
+          <div>
+            <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium mb-2">
+              {{ form.image.label }}
+            </label>
+
+            <div class="relative">
+              <input type="file"
+                     id="{{ form.image.id_for_label }}"
+                     name="{{ form.image.name }}"
+                     class="hidden"
+                     accept="image/*">
+
+              <label for="{{ form.image.id_for_label }}"
+                     class="block w-full px-4 py-3 border-2 border-dashed border-[var(--bord)] rounded-2xl hover:border-primary/50 transition cursor-pointer text-center">
+                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <span class="text-sm text-[var(--muted)]">Нажмите для выбора файла</span>
+              </label>
+            </div>
+
+            {% if form.image.errors %}
+              <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+                {% for error in form.image.errors %}{{ error }}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Image Preview -->
+          <div class="space-y-3">
+            {% if example.image %}
+              <div>
+                <div class="text-sm font-medium mb-2">Текущее изображение</div>
+                <img src="{{ example.image.url }}"
+                     class="w-full aspect-square object-cover rounded-2xl border border-[var(--bord)]"
+                     alt="Текущее изображение"
+                     id="current-image">
+              </div>
+            {% endif %}
+
+            <div id="preview-container" class="hidden">
+              <div class="text-sm font-medium mb-2">Новое изображение</div>
+              <img id="image-preview"
+                   class="w-full aspect-square object-cover rounded-2xl border-2 border-primary"
+                   alt="Предпросмотр">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Настройки генерации -->
+    <div class="card p-6 sm:p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
+          <svg class="w-5 h-5 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold">Настройки генерации</h2>
+          <p class="text-sm text-[var(--muted)]">Параметры для создания изображения</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Steps -->
+        <div>
+          <label for="{{ form.steps.id_for_label }}" class="block text-sm font-medium mb-2">
+            {{ form.steps.label }}
+          </label>
+          <input type="number"
+                 id="{{ form.steps.id_for_label }}"
+                 name="{{ form.steps.name }}"
+                 value="{{ form.steps.value|default:'' }}"
+                 class="field {% if form.steps.errors %}border-red-500{% endif %}"
+                 min="1"
+                 max="100"
+                 placeholder="28">
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            1-100 шагов (рекомендуется 20-50)
+          </div>
+          {% if form.steps.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.steps.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- CFG -->
+        <div>
+          <label for="{{ form.cfg.id_for_label }}" class="block text-sm font-medium mb-2">
+            {{ form.cfg.label }}
+          </label>
+          <input type="number"
+                 id="{{ form.cfg.id_for_label }}"
+                 name="{{ form.cfg.name }}"
+                 value="{{ form.cfg.value|default:'' }}"
+                 class="field {% if form.cfg.errors %}border-red-500{% endif %}"
+                 min="1"
+                 max="20"
+                 step="0.1"
+                 placeholder="6.5">
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            1.0-20.0 (обычно 5-8)
+          </div>
+          {% if form.cfg.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.cfg.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Ratio -->
+        <div>
+          <label for="{{ form.ratio.id_for_label }}" class="block text-sm font-medium mb-2">
+            {{ form.ratio.label }}
+          </label>
+          <select id="{{ form.ratio.id_for_label }}"
+                  name="{{ form.ratio.name }}"
+                  class="field {% if form.ratio.errors %}border-red-500{% endif %}">
+            <option value="">Выберите соотношение</option>
+            <option value="1:1" {% if form.ratio.value == "1:1" %}selected{% endif %}>1:1 (квадрат)</option>
+            <option value="3:2" {% if form.ratio.value == "3:2" %}selected{% endif %}>3:2 (альбом)</option>
+            <option value="2:3" {% if form.ratio.value == "2:3" %}selected{% endif %}>2:3 (портрет)</option>
+            <option value="4:3" {% if form.ratio.value == "4:3" %}selected{% endif %}>4:3</option>
+            <option value="16:9" {% if form.ratio.value == "16:9" %}selected{% endif %}>16:9 (широкий)</option>
+          </select>
+          {% if form.ratio.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.ratio.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Seed -->
+        <div>
+          <label for="{{ form.seed.id_for_label }}" class="block text-sm font-medium mb-2">
+            {{ form.seed.label }}
+          </label>
+          <div class="flex gap-2">
+            <input type="text"
+                   id="{{ form.seed.id_for_label }}"
+                   name="{{ form.seed.name }}"
+                   value="{{ form.seed.value|default:'' }}"
+                   class="field flex-1 {% if form.seed.errors %}border-red-500{% endif %}"
+                   placeholder="auto">
+            <button type="button"
+                    id="random-seed-btn"
+                    class="btn btn-ghost px-3"
+                    title="Случайный seed">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Число или "auto" для случайного
+          </div>
+          {% if form.seed.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.seed.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Дополнительные настройки -->
+    <div class="card p-6 sm:p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+          <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold">Дополнительные настройки</h2>
+          <p class="text-sm text-[var(--muted)]">Порядок отображения и статус</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <!-- Order -->
+        <div>
+          <label for="{{ form.order.id_for_label }}" class="block text-sm font-medium mb-2">
+            {{ form.order.label }}
+          </label>
+          <input type="number"
+                 id="{{ form.order.id_for_label }}"
+                 name="{{ form.order.name }}"
+                 value="{{ form.order.value|default:0 }}"
+                 class="field {% if form.order.errors %}border-red-500{% endif %}"
+                 min="0"
+                 placeholder="0">
+          <div class="mt-2 text-xs text-[var(--muted)]">
+            Порядок отображения в слайдере (меньше = раньше)
+          </div>
+          {% if form.order.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.order.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Is Active -->
+        <div>
+          <label class="block text-sm font-medium mb-2">Статус</label>
+          <label class="flex items-center gap-3 p-4 rounded-xl border border-[var(--bord)] hover:bg-black/[.02] dark:hover:bg-white/[.02] transition cursor-pointer">
+            <input type="checkbox"
+                   id="{{ form.is_active.id_for_label }}"
+                   name="{{ form.is_active.name }}"
+                   class="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary"
+                   {% if form.is_active.value %}checked{% endif %}>
+            <div>
+              <div class="font-medium">{{ form.is_active.label }}</div>
+              <div class="text-xs text-[var(--muted)]">Отображать пример в слайдере на главной странице</div>
+            </div>
+          </label>
+          {% if form.is_active.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.is_active.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <a href="{% url 'dashboard:slider:list' %}" class="btn btn-ghost w-full sm:w-auto">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Отмена
+      </a>
+
+      <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        {% if action == 'edit' %}
+          <a href="{% url 'dashboard:slider:preview' example.pk %}" class="btn btn-ghost w-full sm:w-auto">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            Предпросмотр
+          </a>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary w-full sm:w-auto">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+          </svg>
+          {% if action == 'create' %}Создать пример{% else %}Сохранить изменения{% endif %}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Prompt character counter
+  const promptField = document.getElementById('{{ form.prompt.id_for_label }}');
+  const promptCounter = document.getElementById('prompt-length');
+
+  if (promptField && promptCounter) {
+    function updatePromptCounter() {
+      promptCounter.textContent = promptField.value.length;
+    }
+    updatePromptCounter();
+    promptField.addEventListener('input', updatePromptCounter);
+  }
+
+  // Image preview
+  const imageInput = document.getElementById('{{ form.image.id_for_label }}');
+  const imagePreview = document.getElementById('image-preview');
+  const previewContainer = document.getElementById('preview-container');
+  const currentImage = document.getElementById('current-image');
+
+  if (imageInput && imagePreview) {
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          imagePreview.src = e.target.result;
+          previewContainer.classList.remove('hidden');
+
+          if (currentImage) {
+            currentImage.style.opacity = '0.4';
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewContainer.classList.add('hidden');
+        if (currentImage) {
+          currentImage.style.opacity = '1';
+        }
+      }
+    });
+  }
+
+  // Random seed generator
+  const randomSeedBtn = document.getElementById('random-seed-btn');
+  const seedField = document.getElementById('{{ form.seed.id_for_label }}');
+
+  if (randomSeedBtn && seedField) {
+    randomSeedBtn.addEventListener('click', function() {
+      const randomSeed = Math.floor(Math.random() * 100000);
+      seedField.value = randomSeed;
+
+      // Visual feedback
+      randomSeedBtn.classList.add('animate-spin');
+      setTimeout(() => {
+        randomSeedBtn.classList.remove('animate-spin');
+      }, 500);
+    });
+  }
+
+  // Form validation
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      let hasErrors = false;
+      const requiredFields = [
+        document.getElementById('{{ form.title.id_for_label }}'),
+        document.getElementById('{{ form.prompt.id_for_label }}'),
+        document.getElementById('{{ form.description.id_for_label }}'),
+        document.getElementById('{{ form.alt.id_for_label }}')
+      ];
+
+      requiredFields.forEach(field => {
+        if (field && !field.value.trim()) {
+          field.classList.add('border-red-500', 'ring-2', 'ring-red-500/30');
+          hasErrors = true;
+
+          // Remove error styling after 3 seconds
+          setTimeout(() => {
+            field.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+          }, 3000);
+        } else if (field) {
+          field.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+        }
+      });
+
+      if (hasErrors) {
+        e.preventDefault();
+
+        // Scroll to first error
+        const firstError = requiredFields.find(f => f && !f.value.trim());
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstError.focus();
+        }
+
+        // Show error message
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'fixed top-4 right-4 card p-4 border-red-500 bg-red-50 dark:bg-red-900/20 z-50 max-w-md';
+        errorMsg.innerHTML = `
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+            </svg>
+            <div class="text-sm text-red-700 dark:text-red-300">
+              Пожалуйста, заполните все обязательные поля
+            </div>
+          </div>
+        `;
+        document.body.appendChild(errorMsg);
+
+        setTimeout(() => {
+          errorMsg.style.opacity = '0';
+          errorMsg.style.transition = 'opacity 0.3s';
+          setTimeout(() => errorMsg.remove(), 300);
+        }, 3000);
+      }
+    });
+
+    // Live validation feedback
+    const inputs = form.querySelectorAll('input[required], textarea[required]');
+    inputs.forEach(input => {
+      input.addEventListener('blur', function() {
+        if (this.value.trim()) {
+          this.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+          this.classList.add('border-green-500');
+          setTimeout(() => {
+            this.classList.remove('border-green-500');
+          }, 1500);
+        }
+      });
+    });
+  }
+
+  // Auto-resize textareas
+  const textareas = document.querySelectorAll('textarea');
+  textareas.forEach(textarea => {
+    function resize() {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    textarea.addEventListener('input', resize);
+    resize();
+  });
+});
+</script>
+
+<style>
+/* Smooth transitions for form elements */
+.field {
+  transition: all 0.2s ease;
+}
+
+.field:focus {
+  transform: translateY(-1px);
+}
+
+/* Custom file input styling */
+input[type="file"] + label:hover {
+  border-color: rgb(1 209 251 / 0.5);
+  background-color: rgb(1 209 251 / 0.02);
+}
+
+/* Checkbox custom styling */
+input[type="checkbox"]:checked {
+  background-color: rgb(1 209 251);
+  border-color: rgb(1 209 251);
+}
+
+/* Animation for random seed button */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 0.5s linear;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .field {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+</style>
+
+{% endblock %}

@@ -2,6 +2,7 @@
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import TemplateView
 from django.conf.urls.i18n import set_language, i18n_patterns
 
 from ai_gallery.views_auth import InstantSignupView
@@ -31,3 +32,25 @@ urlpatterns += i18n_patterns(
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Preview 404 page in development
+    urlpatterns += [path("dev/404/", TemplateView.as_view(template_name="404.html"))]
+    # Preview 400 page in development
+    urlpatterns += [path("dev/400/", TemplateView.as_view(template_name="404.html"))]
+
+# Custom error handlers
+def error_404(request, exception, template_name="404.html"):
+    from django.shortcuts import render
+    response = render(request, template_name, status=404)
+    # SEO: запрет индексации 404 страниц и корректная обработка любыми парсерами
+    response["X-Robots-Tag"] = "noindex, follow"
+    return response
+
+handler404 = "ai_gallery.urls.error_404"
+
+def error_400(request, exception, template_name="404.html"):
+    from django.shortcuts import render
+    response = render(request, template_name, status=400)
+    response["X-Robots-Tag"] = "noindex, follow"
+    return response
+
+handler400 = "ai_gallery.urls.error_400"

@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
@@ -170,7 +170,8 @@ class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 class PostCreateView(StaffRequiredMixin, View):
     def get(self, request):  # type: ignore
-        return render(request, "blog/form.html", {"form": PostForm(), "mode": "create"})
+        all_tags = [t.name for t in Tag.objects.all().order_by('name')]
+        return render(request, "blog/form.html", {"form": PostForm(), "mode": "create", "all_tags": all_tags})
 
     def post(self, request):  # type: ignore
         form = PostForm(request.POST, request.FILES)
@@ -184,7 +185,9 @@ class PostCreateView(StaffRequiredMixin, View):
                 post.published_at = timezone.now()
 
             post.save()
-            form.save_m2m()
+            # Теги обрабатываются в форме через save()
+            if hasattr(form, '_pending_tags'):
+                post.tags.set(form._pending_tags)
 
             messages.success(request, "Статья создана.")
             return redirect(post.get_absolute_url())
@@ -193,15 +196,17 @@ class PostCreateView(StaffRequiredMixin, View):
             request,
             "Исправьте ошибки: " + "; ".join(f"{k}: {', '.join(v)}" for k, v in form.errors.items())
         )
-        return render(request, "blog/form.html", {"form": form, "mode": "create"})
+        all_tags = [t.name for t in Tag.objects.all().order_by('name')]
+        return render(request, "blog/form.html", {"form": form, "mode": "create", "all_tags": all_tags})
 
 
 class PostUpdateView(StaffRequiredMixin, View):
     def get(self, request, slug):  # type: ignore
         post = get_object_or_404(Post, slug=slug)
+        all_tags = [t.name for t in Tag.objects.all().order_by('name')]
         return render(
             request, "blog/form.html",
-            {"form": PostForm(instance=post), "mode": "edit", "post": post}
+            {"form": PostForm(instance=post), "mode": "edit", "post": post, "all_tags": all_tags}
         )
 
     def post(self, request, slug):  # type: ignore
@@ -216,7 +221,9 @@ class PostUpdateView(StaffRequiredMixin, View):
                 post.published_at = timezone.now()
 
             post.save()
-            form.save_m2m()
+            # Теги обрабатываются в форме через save()
+            if hasattr(form, '_pending_tags'):
+                post.tags.set(form._pending_tags)
 
             messages.success(request, "Статья обновлена.")
             return redirect(post.get_absolute_url())
@@ -225,7 +232,8 @@ class PostUpdateView(StaffRequiredMixin, View):
             request,
             "Исправьте ошибки: " + "; ".join(f"{k}: {', '.join(v)}" for k, v in form.errors.items())
         )
-        return render(request, "blog/form.html", {"form": form, "mode": "edit", "post": post})
+        all_tags = [t.name for t in Tag.objects.all().order_by('name')]
+        return render(request, "blog/form.html", {"form": form, "mode": "edit", "post": post, "all_tags": all_tags})
 
 
 class PostDeleteView(StaffRequiredMixin, View):

@@ -43,14 +43,14 @@
         </p>
 
         <div class="hero-buttons">
-          <a class="btn btn-primary text-lg px-8 py-4" href="{% url 'generate:new' %}" data-generate-url="{% url 'generate:new' %}">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <a class="btn btn-primary text-sm sm:text-base lg:text-sm px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:px-5" href="{% url 'generate:new' %}" data-generate-url="{% url 'generate:new' %}">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
             Начать генерацию
           </a>
-          <a class="btn btn-ghost text-lg px-8 py-4" href="{% url 'gallery:index' %}">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <a class="btn btn-ghost text-sm sm:text-base lg:text-base px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:py-5" href="{% url 'gallery:index' %}">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"/>
             </svg>
             Открыть галерею
@@ -201,7 +201,7 @@
     </div>
 </section>
 
-<section class="py-8 sm:py-12 lg:py-16 xl:py-20 bg-black/[.02] dark:bg-white/[.02] rounded-xl sm:rounded-2xl">
+<section class="py-8 sm:py-12 lg:py-16 xl:py-20 rounded-xl sm:rounded-2xl">
     <div class="text-center max-w-3xl mx-auto mb-8 sm:mb-12 lg:mb-16">
       <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Демонстрация генерации</h2>
       <p class="text-base sm:text-lg lg:text-xl text-[var(--muted)]">Реалистичное освещение, чистое кадрирование и сочные цвета — прямо из коробки.</p>
@@ -226,44 +226,55 @@
 
           <div class="tab-content">
             <div class="tab-panel active" id="prompt" role="tabpanel">
-              <div class="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-black/80 text-white font-mono text-xs sm:text-sm">
-                <pre class="whitespace-pre-wrap break-words">Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves</pre>
+              <div class="relative">
+                <div class="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-black/80 text-white font-mono text-xs sm:text-sm">
+                  <pre class="whitespace-pre-wrap break-words" id="promptText">Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves</pre>
+                </div>
+                <button class="copy-prompt-btn absolute top-2 right-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        id="copyPromptBtn"
+                        aria-label="{% trans 'Копировать промпт' %}"
+                        title="{% trans 'Копировать промпт' %}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </button>
               </div>
             </div>
 
             <div class="tab-panel hidden" id="settings" role="tabpanel">
               <div class="space-y-3">
                 <div class="flex justify-between">
-                  <span class="text-[var(--muted)]">Шаги</span>
-                  <span class="font-medium">28</span>
+                  <span class="text-[var(--muted)]">{% trans "Шаги" %}</span>
+                  <span class="font-medium" id="settingsSteps">28</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-[var(--muted)]">CFG</span>
-                  <span class="font-medium">6.5</span>
+                  <span class="font-medium" id="settingsCfg">6.5</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-[var(--muted)]">Соотношение</span>
-                  <span class="font-medium">3:2</span>
+                  <span class="text-[var(--muted)]">{% trans "Соотношение" %}</span>
+                  <span class="font-medium" id="settingsRatio">3:2</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-[var(--muted)]">Seed</span>
-                  <span class="font-medium">auto</span>
+                  <span class="font-medium" id="settingsSeed">auto</span>
                 </div>
               </div>
             </div>
 
             <div class="tab-panel hidden" id="result" role="tabpanel">
               <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-                <img src="{% static 'img/woman.webp' %}"
-                     alt="Миниатюра результата"
+                <img id="resultImage"
+                     src="{% static 'img/woman.webp' %}"
+                     alt="{% trans 'Миниатюра результата' %}"
                      class="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl object-cover"
                      onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22&gt;&lt;rect width=%2264%22 height=%2264%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';">
                 <div class="flex-1 w-full">
-                  <div class="font-semibold mb-1 text-sm sm:text-base">Готово за 26 секунд</div>
-                  <div class="text-xs sm:text-sm text-[var(--muted)] mb-3">Сохранено в галерее и доступно в «Моих обработках»</div>
+                  <div class="font-semibold mb-1 text-sm sm:text-base">{% trans "Готово за" %} <span id="generationTime">26</span> {% trans "секунд" %}</div>
+                  <div class="text-xs sm:text-sm text-[var(--muted)] mb-3">{% trans "Сохранено в галерее и доступно в «Моих обработках»" %}</div>
                   <div class="flex flex-col sm:flex-row gap-2">
-                    <a class="btn btn-primary text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'generate:new' %}">Попробовать</a>
-                    <a class="btn btn-ghost text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'gallery:index' %}">Смотреть похожие</a>
+                    <a class="btn btn-primary text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'generate:new' %}">{% trans "Попробовать" %}</a>
+                    <a class="btn btn-ghost text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'gallery:index' %}">{% trans "Смотреть похожие" %}</a>
                   </div>
                 </div>
               </div>
@@ -289,17 +300,7 @@
 
       <div class="order-1 lg:order-2">
         <div class="relative w-full max-w-sm mx-auto lg:max-w-none">
-          <img class="w-full rounded-2xl sm:rounded-3xl object-cover aspect-[4/5]"
-               src="{% static 'img/woman.webp' %}"
-               alt="Пример сгенерированного изображения"
-               onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 500%22&gt;&lt;rect width=%22400%22 height=%22500%22 fill=%22%23e5e7eb%22/&gt;&lt;text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2216%22&gt;AI Generation&lt;/text&gt;&lt;/svg&gt;';">
-
-          <div class="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
-            <div class="card p-2 sm:p-3 backdrop-blur-sm bg-white/90 dark:bg-black/90">
-              <div class="text-xs sm:text-sm font-medium mb-1">Ultra-realistic portrait of a gorgeous mulatta woman</div>
-              <div class="text-xs text-[var(--muted)]">natural curls, cinematic warm sunlight through leaves</div>
-            </div>
-          </div>
+          {% include "includes/generation_slider.html" %}
         </div>
       </div>
     </div>
@@ -510,8 +511,8 @@
       </p>
 
       <div class="cta-buttons">
-        <a class="btn btn-primary text-base sm:text-lg px-4 sm:px-8 py-2 sm:py-4" href="{% url 'generate:new' %}">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <a class="btn btn-primary text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-10 py-2 sm:py-3 lg:py-5" href="{% url 'generate:new' %}">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
           Создать изображение

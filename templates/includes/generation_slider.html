@@ -1,0 +1,98 @@
+{% load static %}
+
+<!-- Generation Slider Component -->
+<div class="generation-slider" id="generationSlider">
+  <!-- Navigation arrows -->
+  <button class="slider-nav slider-nav-prev" id="prevSlide" aria-label="Предыдущий пример">
+    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+  </button>
+  <button class="slider-nav slider-nav-next" id="nextSlide" aria-label="Следующий пример">
+    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+    </svg>
+  </button>
+
+  <!-- Slides container -->
+  <div class="slider-container" id="sliderContainer">
+    <!-- Loading state -->
+    <div class="slide active flex items-center justify-center aspect-[4/5] bg-gray-100 dark:bg-gray-800 rounded-2xl sm:rounded-3xl">
+      <div class="text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+        <p class="text-sm text-[var(--muted)]">Загрузка...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicators -->
+  <div class="slider-indicators" id="sliderIndicators"></div>
+</div>
+
+<script>
+(async function() {
+  try {
+    // Загружаем данные
+    const response = await fetch('{% static "data/slider_examples.json" %}');
+    if (!response.ok) throw new Error('Failed to load slider data');
+
+    const sliderData = await response.json();
+    const container = document.getElementById('sliderContainer');
+    const indicators = document.getElementById('sliderIndicators');
+
+    // Очищаем loading state
+    container.innerHTML = '';
+
+    // Генерируем слайды
+    sliderData.forEach((slide, index) => {
+      const slideEl = document.createElement('div');
+      slideEl.className = `slide ${index === 0 ? 'active' : ''}`;
+      slideEl.dataset.slide = index;
+      slideEl.innerHTML = `
+        <img class="slide-image w-full rounded-2xl sm:rounded-3xl object-cover aspect-[4/5]"
+             src="${slide.image}"
+             alt="${slide.alt}"
+             loading="${index === 0 ? 'eager' : 'lazy'}"
+             onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 500%22&gt;&lt;rect width=%22400%22 height=%22500%22 fill=%22%23e5e7eb%22/&gt;&lt;text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2216%22&gt;AI Generation&lt;/text&gt;&lt;/svg&gt;';">
+        <div class="slide-info">
+          <div class="card p-2 sm:p-3 backdrop-blur-sm bg-white/90 dark:bg-black/90">
+            <div class="text-xs sm:text-sm font-medium mb-1">${slide.title}</div>
+            <div class="text-xs text-[var(--muted)]">${slide.description}</div>
+          </div>
+        </div>
+      `;
+      container.appendChild(slideEl);
+
+      const indicator = document.createElement('button');
+      indicator.className = `indicator ${index === 0 ? 'active' : ''}`;
+      indicator.dataset.slide = index;
+      indicator.setAttribute('aria-label', `Слайд ${index + 1}`);
+      indicators.appendChild(indicator);
+    });
+
+    window.sliderExamples = sliderData;
+
+    document.dispatchEvent(new CustomEvent('sliderDataLoaded', {
+      detail: { data: sliderData, totalSlides: sliderData.length }
+    }));
+
+    if (typeof initSlider === 'function') {
+      initSlider();
+    }
+
+  } catch (error) {
+    console.error('Error loading slider:', error);
+    document.getElementById('sliderContainer').innerHTML = `
+      <div class="slide active flex items-center justify-center aspect-[4/5] bg-red-50 dark:bg-red-900/20 rounded-2xl sm:rounded-3xl">
+        <div class="text-center p-4">
+          <svg class="w-12 h-12 text-red-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <p class="text-sm text-red-600 dark:text-red-400 font-medium">Ошибка загрузки примеров</p>
+          <p class="text-xs text-[var(--muted)] mt-1">Проверьте путь к slider_examples.json</p>
+        </div>
+      </div>
+    `;
+  }
+})();
+</script>

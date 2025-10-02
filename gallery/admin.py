@@ -1,7 +1,9 @@
 ﻿from __future__ import annotations
 
 from django import forms
+from django.contrib import admin
 from .models import Category, PhotoComment
+from .models_slider import SliderExample
 
 BANNED = {
     "nsfw", "nude", "nudity", "porn", "sex", "explicit", "xxx", "erotic",
@@ -69,3 +71,60 @@ class PhotoCommentForm(forms.ModelForm):
             raise forms.ValidationError("Комментарий не может быть пустым.")
         _sfw_check(tx)
         return tx
+
+
+@admin.register(SliderExample)
+class SliderExampleAdmin(admin.ModelAdmin):
+    """Админ-панель для управления примерами слайдера"""
+
+    list_display = [
+        'json_id', 'title', 'description', 'ratio', 'steps',
+        'cfg', 'is_active', 'order', 'created_at'
+    ]
+    list_filter = ['is_active', 'ratio', 'created_at', 'updated_at']
+    search_fields = ['title', 'description', 'prompt']
+    list_editable = ['is_active', 'order']
+    ordering = ['order', 'json_id']
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('title', 'prompt', 'description', 'alt', 'image')
+        }),
+        ('Настройки генерации', {
+            'fields': ('steps', 'cfg', 'ratio', 'seed')
+        }),
+        ('Дополнительно', {
+            'fields': ('order', 'is_active')
+        }),
+        ('Системная информация', {
+            'fields': ('json_id', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    readonly_fields = ['json_id', 'created_at', 'updated_at']
+
+    actions = ['make_active', 'make_inactive', 'export_to_json']
+
+    def make_active(self, request, queryset):
+        """Активировать выбранные примеры"""
+        count = queryset.update(is_active=True)
+        SliderExample.export_to_json()
+        self.message_user(request, f'Активировано примеров: {count}')
+    make_active.short_description = "Активировать выбранные примеры"
+
+    def make_inactive(self, request, queryset):
+        """Деактивировать выбранные примеры"""
+        count = queryset.update(is_active=False)
+        SliderExample.export_to_json()
+        self.message_user(request, f'Деактивировано примеров: {count}')
+    make_inactive.short_description = "Деактивировать выбранные примеры"
+
+    def export_to_json(self, request, queryset):
+        """Экспорт в JSON файл"""
+        success, message = SliderExample.export_to_json()
+        if success:
+            self.message_user(request, f'Экспорт завершен: {message}')
+        else:
+            self.message_user(request, f'Ошибка экспорта: {message}', level='ERROR')
+    export_to_json.short_description = "Экспортировать в JSON файл"

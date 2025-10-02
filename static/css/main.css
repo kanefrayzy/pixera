@@ -228,11 +228,11 @@
   .mobile-nav-hidden {
     display: none;
   }
-  
+
   .mobile-menu-button {
     display: flex;
   }
-  
+
   .mobile-menu {
     position: fixed;
     top: 0;
@@ -338,7 +338,7 @@
   .no-print {
     display: none !important;
   }
-  
+
   .card {
     border: 1px solid #ccc;
     box-shadow: none;

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-500/15 flex items-center justify-center">
+      <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-bold mb-2">Подтверждение удаления</h1>
+    <p class="text-[var(--muted)]">Это действие невозможно отменить</p>
+  </div>
+
+  <!-- Main Card -->
+  <div class="card border-2 border-red-200 dark:border-red-800">
+
+    <!-- Preview Section -->
+    <div class="p-6 sm:p-8 border-b border-[var(--bord)]">
+      <div class="text-center">
+        {% if example.image %}
+          <div class="mb-6">
+            <img src="{{ example.image.url }}"
+                 class="w-48 h-32 object-cover rounded-2xl mx-auto border-2 border-red-200 dark:border-red-800"
+                 alt="{{ example.alt }}">
+          </div>
+        {% endif %}
+
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold mb-2">Вы действительно хотите удалить пример:</h2>
+          <h3 class="text-2xl font-bold text-red-600 dark:text-red-400">"{{ example.title }}"</h3>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="inline-block text-left">
+          <dl class="space-y-3">
+            <div class="flex items-start gap-3">
+              <dt class="text-sm text-[var(--muted)] min-w-28">ID:</dt>
+              <dd class="text-sm font-medium">{{ example.json_id }}</dd>
+            </div>
+            <div class="flex items-start gap-3">
+              <dt class="text-sm text-[var(--muted)] min-w-28">Описание:</dt>
+              <dd class="text-sm font-medium">{{ example.description|truncatechars:100 }}</dd>
+            </div>
+            <div class="flex items-start gap-3">
+              <dt class="text-sm text-[var(--muted)] min-w-28">Создан:</dt>
+              <dd class="text-sm font-medium">{{ example.created_at|date:"d.m.Y H:i" }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warning Section -->
+    <div class="p-6 sm:p-8 border-b border-[var(--bord)] bg-amber-50 dark:bg-amber-900/20">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
+        </svg>
+        <div class="text-sm">
+          <div class="font-medium text-amber-800 dark:text-amber-200 mb-1">Внимание!</div>
+          <p class="text-amber-700 dark:text-amber-300">
+            Это действие нельзя отменить. Пример будет удален из базы данных и автоматически исключен из JSON файла.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="p-6 sm:p-8">
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Additional Confirmation Input (Optional Enhancement) -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium mb-3">
+            Для подтверждения введите название примера:
+          </label>
+          <input type="text"
+                 id="confirmInput"
+                 class="field w-full"
+                 placeholder="{{ example.title }}"
+                 autocomplete="off">
+          <p class="mt-2 text-xs text-[var(--muted)]">
+            Введите точное название для активации кнопки удаления
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 sm:justify-between">
+          <a href="{% url 'dashboard:slider:list' %}"
+             class="btn btn-ghost flex-1 sm:flex-none order-2 sm:order-1">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Отмена
+          </a>
+
+          <button type="submit"
+                  id="deleteBtn"
+                  class="btn bg-red-500 hover:bg-red-600 text-white flex-1 sm:flex-none order-1 sm:order-2 opacity-50 cursor-not-allowed"
+                  disabled>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Да, удалить
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Additional Info -->
+  <div class="mt-6 text-center text-sm text-[var(--muted)]">
+    <p>Если вы передумали, просто закройте эту страницу или нажмите "Отмена"</p>
+  </div>
+</div>
+
+<script>
+(function() {
+  const confirmInput = document.getElementById('confirmInput');
+  const deleteBtn = document.getElementById('deleteBtn');
+  const expectedText = "{{ example.title }}";
+
+  if (!confirmInput || !deleteBtn) return;
+
+  // Enable delete button only when input matches
+  confirmInput.addEventListener('input', () => {
+    const inputValue = confirmInput.value.trim();
+    const isMatch = inputValue === expectedText;
+
+    if (isMatch) {
+      deleteBtn.disabled = false;
+      deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      deleteBtn.classList.add('shadow-lg');
+    } else {
+      deleteBtn.disabled = true;
+      deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      deleteBtn.classList.remove('shadow-lg');
+    }
+  });
+
+  // Prevent form submission if confirmation doesn't match
+  const form = deleteBtn.closest('form');
+  form?.addEventListener('submit', (e) => {
+    if (confirmInput.value.trim() !== expectedText) {
+      e.preventDefault();
+      confirmInput.focus();
+      confirmInput.classList.add('border-red-500');
+      setTimeout(() => {
+        confirmInput.classList.remove('border-red-500');
+      }, 2000);
+    }
+  });
+
+  // Focus input on page load
+  confirmInput.focus();
+})();
+</script>
+
+{% endblock %}

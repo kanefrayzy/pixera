@@ -1,5 +1,5 @@
 ﻿# FILE: dashboard/urls.py
-from django.urls import path
+from django.urls import path, include
 from django.views.generic import RedirectView
 from . import views
 
@@ -19,6 +19,9 @@ urlpatterns = [
     path("purchase/<slug:plan_id>", views.purchase_start, name="purchase_start"),
     path("purchase/<slug:plan_id>/checkout", views.purchase_checkout, name="purchase_checkout"),
     path("purchase/<slug:plan_id>/pay", views.purchase_pay, name="purchase_pay"),
+
+    # Управление примерами слайдера
+    path("slider-examples/", include("gallery.urls_slider", namespace="slider")),
 
     # Сервисные алиасы (совместимость с реверсами в коде)
     path(
