@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import logging
 from typing import Tuple, Dict, List, Optional
 from uuid import uuid4
 
@@ -37,6 +38,8 @@ from .models import (
     ShowcaseImage,
 )
 
+log = logging.getLogger(__name__)
+
 # --- тарифы / стоимость ---
 TOKEN_COST = int(getattr(settings, "TOKEN_COST_PER_GEN", 10))
 FREE_FOR_STAFF = bool(getattr(settings, "FREE_FOR_STAFF", True))
@@ -65,8 +68,40 @@ def _tariffs_url() -> str:
 
 
 def _job_slug(job: GenerationJob) -> str:
+    """Создает безопасный slug из промпта с поддержкой кириллицы."""
     base = (job.prompt or "").strip() or "job"
-    s = slugify(base, allow_unicode=True) or "job"
+
+    # Попробуем стандартный slugify
+    s = slugify(base, allow_unicode=True)
+
+    # Если пустой (может случиться с некоторыми символами), используем транслитерацию
+    if not s:
+        # Простая транслитерация основных кириллических символов
+        translit_map = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+            'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+            ' ': '-', '_': '-'
+        }
+
+        import re
+        # Приводим к нижнему регистру и транслитерируем
+        text = base.lower()
+        transliterated = ''
+        for char in text:
+            transliterated += translit_map.get(char, char)
+
+        # Удаляем недопустимые символы и создаем slug
+        s = re.sub(r'[^a-zA-Z0-9\-_]', '', transliterated)
+        s = re.sub(r'[-_]+', '-', s)  # Убираем повторяющиеся дефисы
+        s = s.strip('-')  # Убираем дефисы в начале и конце
+
+        # Если всё равно пустой, используем fallback
+        if not s:
+            s = "job"
+
     return s[:60]
 
 
@@ -361,28 +396,46 @@ def _merge_grant_to_wallet_once(request: HttpRequest, wallet: Wallet) -> None:
     """
     Переносим остаток гостевого FreeGrant в кошелёк при первом визите после логина.
     """
-    if request.session.get("grant_merged_once"):
+    session_key = f"grant_merged_once_{wallet.user_id}"
+    if request.session.get(session_key):
         return
 
-    grant, _maybe_cookie = _ensure_grant(request)
-    if not grant:
-        request.session["grant_merged_once"] = True
-        request.session.modified = True
-        return
-
-    if grant.user_id == getattr(wallet.user, "id", None):
-        request.session["grant_merged_once"] = True
-        request.session.modified = True
-        return
-
-    # bind_to_user умеет аккуратно переносить остаток
     try:
-        grant.bind_to_user(wallet.user, transfer_left=True)
-    except Exception:
-        pass
+        with transaction.atomic():
+            # Используем select_for_update для предотвращения race conditions
+            wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
 
-    request.session["grant_merged_once"] = True
-    request.session.modified = True
+            grant, _maybe_cookie = _ensure_grant(request)
+            if not grant:
+                request.session[session_key] = True
+                request.session.modified = True
+                return
+
+            # Дополнительная проверка - грант уже привязан к этому пользователю
+            if grant.user_id == wallet.user_id:
+                request.session[session_key] = True
+                request.session.modified = True
+                return
+
+            # Проверяем, что у гранта есть токены для переноса
+            if grant.left <= 0:
+                request.session[session_key] = True
+                request.session.modified = True
+                return
+
+            # Логируем операцию для диагностики
+            log.info(f"Merging grant {grant.pk} (left={grant.left}) to user {wallet.user_id}")
+
+            # bind_to_user умеет аккуратно переносить остаток
+            grant.bind_to_user(wallet.user, transfer_left=True)
+
+            log.info(f"Successfully merged grant {grant.pk} to user {wallet.user_id}")
+
+    except Exception as e:
+        log.error(f"Grant merge failed: {e}")
+    finally:
+        request.session[session_key] = True
+        request.session.modified = True
 
 
 # =======================

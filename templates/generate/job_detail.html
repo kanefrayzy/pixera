@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% load generate_extras %}
 
 {% block title %}Ваша обработка — AI Gallery{% endblock %}
 
@@ -88,7 +89,7 @@
           {% else %}
             <img id="resultImg"
                  class="w-full aspect-square object-cover transition-all duration-500 blur-sm"
-                 src="{% url 'generate:job_image' pk=job.pk slug=job.prompt|slugify %}"
+                 src="{% url 'generate:job_image' pk=job.pk slug=job.prompt|safe_slugify %}"
                  alt="Результат генерации"
                  loading="eager"
                  decoding="async">

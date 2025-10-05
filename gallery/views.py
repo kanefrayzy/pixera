@@ -7,6 +7,7 @@ from typing import Any
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
@@ -19,6 +20,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST, require_http_methods
+from django.conf import settings
 
 from generate.models import GenerationJob
 from .forms import ShareFromJobForm, PhotoCommentForm
@@ -236,11 +238,20 @@ def trending(request: HttpRequest) -> HttpResponse:
       - by=new   : «самые залайканные за 10 дней»
     """
     mode = (request.GET.get("by") or "views").lower()
+    page_num = request.GET.get("page", 1)
+
+    cache_key = f"trending_{mode}_{page_num}"
+    cached_result = cache.get(cache_key)
+    if cached_result and not settings.DEBUG:
+        return cached_result
+
     now = timezone.now()
 
     base_qs = (
         PublicPhoto.objects.filter(is_active=True)
         .select_related("category", "uploaded_by")
+        .only("id", "image", "title", "caption", "created_at", "view_count", "likes_count",
+              "category__name", "uploaded_by__username")
     )
 
     if mode == "likes":
@@ -361,6 +372,7 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
     # корневые комментарии
     comments = (
         photo.comments.select_related("user")
+        .prefetch_related("replies__user", "likes")
         .filter(is_visible=True, parent__isnull=True)
         .order_by("created_at")
     )
@@ -417,7 +429,18 @@ def photo_like(request: HttpRequest, pk: int) -> HttpResponse:
     Счётчик likes_count у PublicPhoto изменяется атомарно, без скачков
     (с учётом консолидации гостевого лайка в пользовательский).
     """
-    photo = get_object_or_404(PublicPhoto, pk=pk, is_active=True)
+    try:
+        photo = PublicPhoto.objects.get(pk=pk, is_active=True)
+    except PublicPhoto.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Photo not found"}, status=404)
+
+    # Rate limiting for likes
+    client_ip = request.META.get('REMOTE_ADDR', '')
+    rate_key = f"like_rate_{client_ip}_{pk}"
+    if cache.get(rate_key):
+        return JsonResponse({"ok": False, "error": "Too many requests"}, status=429)
+    cache.set(rate_key, True, 2)
+
     skey = _ensure_session_key(request)
 
     with transaction.atomic():
@@ -611,6 +634,11 @@ def share_from_job(request, job_id: int):
                 source_job=job,
             )
 
+            # обновляем статус job на "Ожидает модерации" если не админ
+            if not will_publish_now:
+                job.status = GenerationJob.Status.PENDING_MODERATION
+                job.save(update_fields=['status'])
+
             # категории (в форме — ModelMultipleChoiceField "categories")
             cats = form.cleaned_data.get("categories")
             if cats:
@@ -657,6 +685,12 @@ def moderation_approve(request: HttpRequest, pk: int) -> HttpResponse:
     photo = get_object_or_404(PublicPhoto, pk=pk, is_active=False)
     photo.is_active = True
     photo.save(update_fields=["is_active"])
+
+    # обновляем статус связанного job обратно на DONE
+    if photo.source_job and photo.source_job.status == GenerationJob.Status.PENDING_MODERATION:
+        photo.source_job.status = GenerationJob.Status.DONE
+        photo.source_job.save(update_fields=['status'])
+
     messages.success(request, f"Фото №{pk} опубликовано.")
     return redirect(request.META.get("HTTP_REFERER") or reverse("gallery:moderation"))
 
@@ -665,6 +699,12 @@ def moderation_approve(request: HttpRequest, pk: int) -> HttpResponse:
 @require_POST
 def moderation_reject(request: HttpRequest, pk: int) -> HttpResponse:
     photo = get_object_or_404(PublicPhoto, pk=pk)
+
+    # обновляем статус связанного job обратно на DONE
+    if photo.source_job and photo.source_job.status == GenerationJob.Status.PENDING_MODERATION:
+        photo.source_job.status = GenerationJob.Status.DONE
+        photo.source_job.save(update_fields=['status'])
+
     try:
         if photo.image and photo.image.name:
             photo.image.delete(save=False)

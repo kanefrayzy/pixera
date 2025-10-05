@@ -40,7 +40,8 @@
               <a class="card-media" href="{% url 'generate:job_detail_no_slug' pk=j.id %}" aria-label="Открыть задачу #{{ j.id }}">
                 {# Покажем живой плейсхолдер эндпоинта, чтобы картинка появится сразу после готовности #}
                 <img
-                  src="{% url 'generate:job_image' pk=j.id slug=j.prompt|default_if_none:''|slugify %}"
+                  {% load generate_extras %}
+                  src="{% url 'generate:job_image' pk=j.id slug=j.prompt|default_if_none:''|safe_slugify %}"
                   alt="Задача #{{ j.id }} — {{ j.status }}"
                   loading="lazy"
                   decoding="async">

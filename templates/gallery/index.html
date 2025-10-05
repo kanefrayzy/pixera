@@ -16,7 +16,7 @@
         <h2 class="text-xl font-bold" id="mygen-title">Мои генерации</h2>
         <p class="text-sm text-[var(--muted)]">Ваши последние созданные изображения</p>
       </div>
-      
+
       <a class="btn btn-ghost" href="{% url 'dashboard:my_jobs' %}">
         Посмотреть все
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -28,11 +28,12 @@
     {% if my_thumbs %}
       <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3" role="list">
         {% for j in my_thumbs|slice:":6" %}
-          {% with s=j.prompt|slugify|default:"image" %}
+          {% load generate_extras %}
+          {% with s=j.prompt|safe_slugify|default:"image" %}
             <a role="listitem"
                class="group aspect-square rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800"
                href="{% url 'generate:job_image' j.pk s %}"
-               target="_blank" 
+               target="_blank"
                rel="noopener"
                title="Открыть изображение в новой вкладке">
               <img class="w-full h-full object-cover transition duration-300 group-hover:scale-105"
@@ -70,7 +71,7 @@
         <h2 class="text-xl font-bold">Категории</h2>
         <p class="text-sm text-[var(--muted)]">Исследуйте изображения по тематикам</p>
       </div>
-      
+
       <div class="flex items-center gap-3">
         <a class="btn btn-ghost" href="{% url 'gallery:trending' %}">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -83,9 +84,9 @@
 
     <!-- Category Pills -->
     <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Категории">
-      <a class="pill {% if not active_category %}bg-primary/15 text-primary border-primary/30{% endif %}" 
-         href="{% url 'gallery:index' %}" 
-         role="tab" 
+      <a class="pill {% if not active_category %}bg-primary/15 text-primary border-primary/30{% endif %}"
+         href="{% url 'gallery:index' %}"
+         role="tab"
          aria-selected="{{ active_category|yesno:'false,true' }}">
         Все
       </a>
@@ -141,10 +142,10 @@
               <!-- Image -->
               <a class="block relative" href="{{ detail_url }}" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
                 {% if p.image %}
-                  <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]" 
-                       loading="lazy" 
-                       src="{{ p.image.url }}" 
-                       alt="{{ p.title|default:'Фото' }}" 
+                  <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
+                       loading="lazy"
+                       src="{{ p.image.url }}"
+                       alt="{{ p.title|default:'Фото' }}"
                        itemprop="thumbnailUrl">
                 {% else %}
                   <div class="w-full aspect-[4/5] bg-gray-200 dark:bg-gray-700 flex items-center justify-center" aria-hidden="true">
@@ -165,16 +166,16 @@
                 <!-- Admin Controls -->
                 {% if request.user.is_staff %}
                   <div class="absolute top-3 left-3 flex gap-1">
-                    <a class="w-8 h-8 rounded-lg bg-black/50 text-white hover:bg-black/70 flex items-center justify-center text-xs transition" 
-                       href="{{ edit_url }}?next={{ request.get_full_path|urlencode }}" 
+                    <a class="w-8 h-8 rounded-lg bg-black/50 text-white hover:bg-black/70 flex items-center justify-center text-xs transition"
+                       href="{{ edit_url }}?next={{ request.get_full_path|urlencode }}"
                        onclick="event.stopPropagation();"
                        title="Редактировать">
                       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                       </svg>
                     </a>
-                    <a class="w-8 h-8 rounded-lg bg-red-500/80 text-white hover:bg-red-600 flex items-center justify-center text-xs transition" 
-                       href="{{ delete_url }}?next={{ request.get_full_path|urlencode }}" 
+                    <a class="w-8 h-8 rounded-lg bg-red-500/80 text-white hover:bg-red-600 flex items-center justify-center text-xs transition"
+                       href="{{ delete_url }}?next={{ request.get_full_path|urlencode }}"
                        onclick="event.stopPropagation();"
                        title="Удалить"
                        aria-label="Удалить">
@@ -207,9 +208,9 @@
                     <span id="like-count-{{ p.pk }}" class="text-sm font-medium">{{ p.likes_count|default:0 }}</span>
                   </button>
 
-                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]" 
-                     href="{{ detail_url }}#comments" 
-                     title="Комментарии" 
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="{{ detail_url }}#comments"
+                     title="Комментарии"
                      aria-label="Комментарии">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -328,10 +329,10 @@
                 {% endfor %}
               </select>
             </div>
-            
+
             <input name="photo_image" type="file" accept="image/*" class="field" required>
             <textarea name="photo_desc" class="field min-h-24 resize-none" placeholder="Короткое описание (опционально)"></textarea>
-            
+
             <label class="flex items-center gap-2 text-sm">
               <input type="checkbox" name="photo_is_public" value="1" checked class="w-4 h-4 text-primary rounded">
               <span>Опубликовать сразу</span>
@@ -362,21 +363,21 @@
     const nameEl = document.querySelector('input[name="cat_name"]');
     const slugEl = document.querySelector('input[name="cat_slug"]');
     if(!nameEl || !slugEl) return;
-    
+
     const slugify = (s) => (s || "")
       .toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
       .replace(/[^a-z0-9-_ ]+/g,'')
       .trim().replace(/\s+/g,'-').slice(0,80);
-    
+
     nameEl.addEventListener('input', ()=>{
       if(slugEl.value.trim() === '' || slugEl.dataset.touched !== '1'){
         slugEl.value = slugify(nameEl.value);
       }
     });
-    
-    slugEl.addEventListener('input', ()=>{ 
-      slugEl.dataset.touched = '1'; 
+
+    slugEl.addEventListener('input', ()=>{
+      slugEl.dataset.touched = '1';
     });
   })();
   </script>
@@ -415,16 +416,16 @@
         },
         credentials: 'same-origin'
       });
-      
+
       const j = await r.json().catch(()=>null);
       if (!r.ok || !j || j.ok !== true) throw new Error('like failed');
 
       // Update button state
       const heart = btn.querySelector('svg');
       const isLiked = !!j.liked;
-      
+
       btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
-      
+
       if (isLiked) {
         btn.classList.add('text-red-500');
         btn.classList.remove('text-[var(--muted)]');
@@ -490,7 +491,7 @@
   .btn {
     min-height: 44px;
   }
-  
+
   .like-toggle,
   .flex.items-center.gap-2.px-3.py-1\.5 {
     padding: 12px;

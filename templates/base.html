@@ -126,7 +126,7 @@
         height: 100%;
         padding-top: 4rem;
       }
-      @media (min-width: 768px) {
+      @media (min-width: 1024px) {
         body {
           padding-top: 0;
         }
@@ -349,7 +349,7 @@
   {% url 'generate:new' as gen_url %}
 
 
-  <header id="site-header" class="fixed md:sticky top-0 left-0 right-0 z-50 bg-[var(--bg)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg)]/60" role="banner">
+  <header id="site-header" class="fixed lg:sticky top-0 left-0 right-0 z-50 bg-[var(--bg)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg)]/60" role="banner">
     <div class="container flex h-16 items-center justify-between">
 
       <a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}"
@@ -359,7 +359,7 @@
       </a>
 
 
-      <nav class="hidden md:flex items-center gap-7" role="navigation" aria-label="{% trans 'Главное меню' %}">
+      <nav class="hidden lg:flex items-center gap-7" role="navigation" aria-label="{% trans 'Главное меню' %}">
         <a class="nav-link" href="/">{% trans "Главная" %}</a>
         <a class="nav-link" href="{% url 'gallery:index' %}">{% trans "Галерея" %}</a>
         <a class="nav-link" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
@@ -371,7 +371,7 @@
       </nav>
 
 
-      <div class="hidden md:flex items-center gap-3">
+      <div class="hidden lg:flex items-center gap-3">
 
         <details class="relative" id="langSwitch">
           <summary class="btn btn-ghost cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
@@ -426,7 +426,7 @@
       </div>
 
 
-  <div class="md:hidden flex items-center gap-2 ml-auto">
+  <div class="lg:hidden flex items-center gap-2 ml-auto">
     {% if request.user.is_authenticated %}
       <button class="btn btn-ghost" type="button" data-open-dashboard="1">{% trans "Кабинет" %}</button>
     {% else %}
@@ -481,7 +481,7 @@
     </div>
 
 
-    <div id="mobileMenu" class="md:hidden hidden bg-[var(--mobilemenu)] border-b border-[var(--bord)] shadow-soft">
+    <div id="mobileMenu" class="lg:hidden hidden bg-[var(--mobilemenu)] border-b border-[var(--bord)] shadow-soft">
       <div class="container py-4 flex flex-col gap-1">
         <a class="nav-link flex items-center gap-3" href="{% url 'gallery:index' %}">
           <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">

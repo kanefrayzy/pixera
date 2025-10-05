@@ -8,7 +8,6 @@ from dashboard.models import Wallet
 # будем лениво подтягивать FreeGrant, чтобы избежать циклических импортов при старте
 def _ensure_free_grant_for(request):
     """Возвращает или создаёт FreeGrant, аккуратно учитывая fp/gid/session/ip/ua."""
-    # импорт тут, а не сверху — чтобы apps грузились корректно
     from generate.models import FreeGrant
 
     # session_key обязателен для надёжной привязки гостевых задач
@@ -62,13 +61,14 @@ def wallet_context(request):
 
     # 2) один раз за сессию переносим остаток гостя
     try:
-        if not request.session.get("grant_merged_once"):
+        session_key = f"grant_merged_once_{request.user.id}"
+        if not request.session.get(session_key):
             grant = _ensure_free_grant_for(request)
             # если эта гостевая запись ещё не принадлежит этому юзеру — перенесём остаток
             if grant.user_id != request.user.id:
                 grant.transfer_all_left_to_wallet(request.user)  # перенесёт left и «обнулит» гостя
             # отметим, чтобы не делать это на каждом запросе
-            request.session["grant_merged_once"] = True
+            request.session[session_key] = True
             request.session.modified = True
     except Exception:
         # не валим рендер из-за технических ошибок с переносом

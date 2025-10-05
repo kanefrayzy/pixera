@@ -136,8 +136,6 @@ def _ensure_grant(request: HttpRequest) -> FreeGrant:
     """
     Ищем/создаём FreeGrant по нескольким идентификаторам.
     Cookie «gid» ставится при отдаче формы (views.new), здесь лишь используем.
-    ПРИМЕЧАНИЕ: в нашей модели FreeGrant.ensure_for уже создаёт и привязывает
-    AbuseCluster, так что grant.cluster должен быть заполнен.
     """
     _ensure_session_key(request)
     gid = _guest_cookie_id(request)
@@ -200,6 +198,15 @@ def api_submit(request: HttpRequest) -> JsonResponse:
     if not prompt:
         return _err("Пустой промпт")
 
+    if len(prompt) > 2000:
+        return _err("Промпт слишком длинный")
+
+    dangerous_patterns = ['<script', 'javascript:', 'data:', 'vbscript:', 'onload=', 'onerror=']
+    prompt_lower = prompt.lower()
+    for pattern in dangerous_patterns:
+        if pattern in prompt_lower:
+            return _err("Недопустимое содержимое в промпте")
+
     cost = _token_cost()
     is_staff_user = request.user.is_authenticated and (
         request.user.is_staff or request.user.is_superuser
@@ -261,25 +268,21 @@ def api_submit(request: HttpRequest) -> JsonResponse:
 
     # --- гость ----------------------------------------------------------------
     else:
-        # Определяем/создаём FreeGrant (внутри также привяжется AbuseCluster)
+        # Определяем/создаём FreeGrant
         grant = _ensure_grant(request)
 
-        # КЛАСТЕР: жёсткий лимит в «обработках» (по умолчанию 3 на кластер)
-        cluster = grant.cluster
-        if not cluster:
-            # на случай старых записей grant без кластера — создадим и привяжем
-            try:
-                cluster = AbuseCluster.ensure_for(
-                    fp=grant.fp,
-                    gid=grant.gid or None,
-                    ip_hash=grant.ip_hash or None,
-                    ua_hash=grant.ua_hash or None,
-                )
-                grant.cluster = cluster
-                grant.save(update_fields=["cluster"])
-            except Exception:
-                # если что-то пошло не так — не даём обойти лимит: ведём себя как «исчерпан»
-                return JsonResponse({"redirect": _tariffs_url()})
+        # Создаем или находим кластер для анти-абуза
+        cluster = None
+        try:
+            cluster = AbuseCluster.ensure_for(
+                fp=grant.fp,
+                gid=grant.gid or None,
+                ip_hash=grant.ip_hash or None,
+                ua_hash=grant.ua_hash or None,
+            )
+        except Exception:
+            # если что-то пошло не так — не даём обойти лимит: ведём себя как «исчерпан»
+            return JsonResponse({"redirect": _tariffs_url()})
 
         # 1) Пробуем списать 1 «обработку» из кластера (атомарно)
         spent_jobs = 0
@@ -386,18 +389,24 @@ def runware_webhook(request: HttpRequest) -> HttpResponse:
     На успех — финализируем (tasks._finalize_job_with_url), без повторных списаний.
     На провале — FAILED и рефанд токенов только авторизованному пользователю.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     token_expected = getattr(settings, "RUNWARE_WEBHOOK_TOKEN", "")
     token_get = request.GET.get("token") or request.headers.get("X-Runware-Token") or ""
     if token_expected and token_get != token_expected:
+        logger.warning(f"Invalid webhook token from {request.META.get('REMOTE_ADDR')}")
         return HttpResponseForbidden("bad token")
 
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        logger.error(f"Webhook JSON decode error: {e}")
         return HttpResponseBadRequest("bad json")
 
     arr = (body or {}).get("data") or []
     if not arr:
+        logger.warning("Webhook received empty data array")
         return HttpResponse("no data")
 
     item = arr[0] or {}
@@ -419,7 +428,6 @@ def runware_webhook(request: HttpRequest) -> HttpResponse:
             _finalize_success(job, image_url)
         return HttpResponse("ok")
 
-    # FAILED → фиксируем и рефандим авторизованному пользователю (если были списания)
     if job.status != GenerationJob.Status.FAILED:
         job.status = GenerationJob.Status.FAILED
         job.error = (item.get("error") or item.get("message") or "Generation failed")[:500]
@@ -427,14 +435,9 @@ def runware_webhook(request: HttpRequest) -> HttpResponse:
         job.provider_payload = item
         job.save(update_fields=["status", "error", "provider_status", "provider_payload"])
 
-        if job.user_id and job.tokens_spent > 0:
-            try:
-                with transaction.atomic():
-                    w = Wallet.objects.select_for_update().get(user_id=job.user_id)
-                    w.balance = int(w.balance or 0) + int(job.tokens_spent or 0)
-                    w.save(update_fields=["balance"])
-            except Exception:
-                pass
+        # Используем рефанд
+        from .tasks import _refund_if_needed
+        _refund_if_needed(job)
 
     return HttpResponse("ok")
 

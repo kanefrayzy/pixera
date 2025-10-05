@@ -329,18 +329,20 @@ class AntiAbuseShieldMiddleware:
         if not key:
             return 0
         ttl = self.WINDOW_SECONDS
-        cache.add(key, 0, ttl)  # чтобы TTL выставился на первый удар
+
         try:
-            val = cache.incr(key)
-        except Exception:
-            # бэкенд без incr
+            cache.add(key, 0, ttl)
+            return cache.incr(key)
+        except ValueError:
             try:
                 cur = int(cache.get(key) or 0)
+                val = cur + 1
+                cache.set(key, val, ttl)
+                return val
             except Exception:
-                cur = 0
-            val = cur + 1
-            cache.set(key, val, ttl)
-        return int(val)
+                return 0
+        except Exception:
+            return 0
 
     def __call__(self, request):
         request.abuse_soft_block = False
@@ -359,11 +361,11 @@ class AntiAbuseShieldMiddleware:
         ip_h = getattr(request, "device_ip_hash", None) or _ip_hash(request)
 
         keys = []
-        if fp:
+        if fp and len(fp) <= 64:
             keys.append(f"abuse:w:{fp}")
-        if gid:
+        if gid and len(gid) <= 64:
             keys.append(f"abuse:w_gid:{gid}")
-        if ip_h:
+        if ip_h and len(ip_h) <= 64:
             keys.append(f"abuse:w_ip:{ip_h}")
 
         exceeded = False

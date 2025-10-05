@@ -36,3 +36,69 @@
       </a>
     </div>
 </section>
+
+<script>
+// Like toggle functionality for trending gallery
+(function(){
+  function getCSRFCookie() {
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  // Like toggle functionality
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.like-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try{
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With':'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('like failed');
+
+      // Update button state
+      const heart = btn.querySelector('svg');
+      const isLiked = !!j.liked;
+
+      btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+
+      if (isLiked) {
+        btn.classList.add('text-red-500');
+        btn.classList.remove('text-[var(--muted)]');
+        heart.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-red-500');
+        btn.classList.add('text-[var(--muted)]');
+        heart.setAttribute('fill', 'none');
+      }
+
+      if (countEl && typeof j.count === 'number'){
+        countEl.textContent = j.count;
+      }
+    }catch(err){
+      console.warn('Like failed:', err);
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>

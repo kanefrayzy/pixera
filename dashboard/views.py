@@ -5,13 +5,15 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Q, Count
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.text import slugify
-from django.core.paginator import Paginator
-from django.db.models import Q# ← добавлено
-from django.db.models import Count
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
 
 from .models import Wallet
 from generate.models import GenerationJob
@@ -138,7 +140,10 @@ def my_jobs(request):
 
     qs = (
         GenerationJob.objects
-        .filter(user=request.user, status=GenerationJob.Status.DONE)
+        .filter(
+            user=request.user,
+            status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION]
+        )
         .order_by("-created_at")
     )
 
@@ -158,8 +163,8 @@ def my_jobs(request):
     if jobs and rel_name:
         job_ids = [j.id for j in jobs]
 
-        # Пример: {"source_job__in": job_ids, "is_active": True} или {"job__in": job_ids, ...}
-        filter_kwargs = {f"{rel_name}__in": job_ids, "is_active": True}
+        # Ищем PublicPhoto как активные (опубликованные), так и неактивные (на модерации)
+        filter_kwargs = {f"{rel_name}__in": job_ids}
 
         published = (
             PublicPhoto.objects
@@ -168,7 +173,7 @@ def my_jobs(request):
                 num_likes=Count("likes", distinct=True),
                 num_comments=Count("comments", distinct=True),
             )
-            .only("id", rel_name, "view_count", "title", "image")
+            .only("id", rel_name, "view_count", "title", "image", "is_active")
         )
 
         # key_attr == "source_job_id" или "job_id"
@@ -178,7 +183,8 @@ def my_jobs(request):
     cards = []
     for j in jobs:
         p = pub_by_job_id.get(j.id)
-        if p:
+        if p and p.is_active:
+            # Опубликовано в галерее
             cards.append({
                 "obj": j,
                 "is_published": True,
@@ -191,8 +197,22 @@ def my_jobs(request):
                     "detail_url_name": "gallery:photo_detail",
                 },
             })
+        elif p and not p.is_active:
+            # На модерации
+            cards.append({
+                "obj": j,
+                "is_published": False,
+                "pub": None,
+                "pending_moderation": True,
+            })
         else:
-            cards.append({"obj": j, "is_published": False, "pub": None})
+            # Не отправлено на публикацию
+            cards.append({
+                "obj": j,
+                "is_published": False,
+                "pub": None,
+                "pending_moderation": False,
+            })
 
     return render(
         request,
@@ -278,16 +298,30 @@ def purchase_checkout(request: HttpRequest, plan_id: str):
     )
 
 @login_required
+@require_http_methods(["POST"])
+@csrf_protect
 def purchase_pay(request: HttpRequest, plan_id: str):
-    if request.method != "POST":
-        return redirect("dashboard:purchase_checkout", plan_id=plan_id)
     plan = _get_plan_or_404(plan_id)
-    wallet, _ = Wallet.objects.get_or_create(user=request.user)
-    if plan.get("unlimited"):
-        wallet.balance = 10_000_000
-        wallet.save(update_fields=["balance"])
-        messages.success(request, "Безлимит активирован (заглушка).")
-    else:
-        wallet.topup(int(plan["tokens"]))
-        messages.success(request, f"Зачислено {plan['tokens']} TOK (заглушка).")
+    if not settings.DEBUG:
+        messages.error(request, "Платёжная система временно недоступна.")
+        return redirect("dashboard:purchase_checkout", plan_id=plan_id)
+
+    with transaction.atomic():
+        wallet = Wallet.objects.select_for_update().get_or_create(user=request.user)[0]
+
+        if plan.get("unlimited"):
+            # Заглушка для безлимита
+            wallet.balance = 10_000_000
+            wallet.save(update_fields=["balance"])
+            messages.success(request, "Безлимит активирован (заглушка).")
+        else:
+            # Валидация суммы токенов
+            tokens = int(plan["tokens"])
+            if tokens <= 0 or tokens > 100_000_000:
+                messages.error(request, "Некорректное количество токенов.")
+                return redirect("dashboard:purchase_checkout", plan_id=plan_id)
+
+            wallet.topup(tokens)
+            messages.success(request, f"Зачислено {tokens} TOK (заглушка).")
+
     return redirect("dashboard:balance")

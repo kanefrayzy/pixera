@@ -202,12 +202,22 @@
     if (!prompt) { txt.focus(); return; }
 
     const btn = document.getElementById('genBtn');
-    const prev = btn.textContent; btn.disabled = true; btn.textContent = 'Отправляю…';
+    const prev = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Отправляю…';
+
+    // Показываем лоадер сразу
+    show();
+    phaseEl.textContent = 'Отправка запроса...';
+    setProgress(0);
+
     try {
       const res = await submitTask(prompt);
       if (res && res.redirect) { window.location.href = res.redirect; return; }
       const id = res.id || res.job_id; if (!id) throw new Error('Некорректный ответ API (нет id)');
-      show();
+
+      // Обновляем фазу после успешной отправки
+      phaseEl.textContent = 'Генерация изображения...';
       runTimeline(() => window.location.href = JOB_DETAIL_TPL.replace('12345', id));
       poll(id).catch(err => { alert(err.message || String(err)); hide(); });
     } catch (err) {

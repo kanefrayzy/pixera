@@ -38,12 +38,18 @@
 
             <!-- Actions -->
             <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 px-3 py-1.5 text-[var(--muted)]">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <button type="button"
+                      class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if request.user.is_authenticated and p.pk in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                      data-photo-id="{{ p.pk }}"
+                      data-url="{% url 'gallery:photo_like' p.pk %}"
+                      data-count-target="like-count-{{ p.pk }}"
+                      aria-pressed="{% if request.user.is_authenticated and p.pk in liked_photo_ids %}true{% else %}false{% endif %}"
+                      aria-label="Лайк">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and p.pk in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                 </svg>
-                <span class="text-sm font-medium">{{ p.likes_count|default:0 }}</span>
-              </div>
+                <span id="like-count-{{ p.pk }}" class="text-sm font-medium">{{ p.likes_count|default:0 }}</span>
+              </button>
 
               <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
                  href="{{ detail_url }}#comments"
@@ -87,5 +93,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: normal;
+}
+
+.like-toggle {
+  transition: all 0.2s ease;
+}
+
+.like-toggle:active {
+  transform: scale(0.95);
+}
+
+.like-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.like-toggle svg {
+  transition: all 0.2s ease;
+}
+
+@media (hover: hover) {
+  .like-toggle:hover svg {
+    transform: scale(1.1);
+  }
 }
 </style>

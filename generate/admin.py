@@ -41,7 +41,7 @@ class SuggestionCategoryAdmin(admin.ModelAdmin):
 
     @admin.display(description="Подсказок", ordering="id")
     def suggestions_count(self, obj):
-        return obj.suggestions.count()
+        return obj.suggestions.count() if obj.pk else 0
 
 @admin.register(Suggestion)
 class SuggestionAdmin(admin.ModelAdmin):

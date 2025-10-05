@@ -1,5 +1,28 @@
 ﻿from django import forms
+from django.utils.html import strip_tags
+import re
 from .models import Category
+
+BANNED_WORDS = {
+    "script", "javascript", "onload", "onclick", "onerror", "alert", "eval",
+    "<script", "</script", "<iframe", "</iframe", "vbscript", "activex"
+}
+
+def clean_text_content(text: str) -> str:
+    """Очистка текста от потенциально опасного содержимого"""
+    if not text:
+        return ""
+
+    text = strip_tags(text).strip()
+    text_lower = text.lower()
+
+    for banned in BANNED_WORDS:
+        if banned in text_lower:
+            raise forms.ValidationError(f"Недопустимое содержимое в тексте")
+
+    text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', '', text)
+
+    return text[:500]
 
 
 class ShareFromJobForm(forms.Form):
@@ -29,10 +52,12 @@ class ShareFromJobForm(forms.Form):
 
     # Только «привести в порядок» строки
     def clean_title(self):
-        return (self.cleaned_data.get("title") or "").strip()
+        title = (self.cleaned_data.get("title") or "").strip()
+        return clean_text_content(title)[:140]
 
     def clean_caption(self):
-        return (self.cleaned_data.get("caption") or "").strip()
+        caption = (self.cleaned_data.get("caption") or "").strip()
+        return clean_text_content(caption)[:240]
 
 
 class PhotoCommentForm(forms.Form):
@@ -45,4 +70,4 @@ class PhotoCommentForm(forms.Form):
         tx = (self.cleaned_data.get("text") or "").strip()
         if not tx:
             raise forms.ValidationError("Комментарий не может быть пустым.")
-        return tx
+        return clean_text_content(tx)[:1000]

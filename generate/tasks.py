@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from dashboard.models import Wallet
@@ -98,6 +99,9 @@ def _finalize_job_with_bytes(job: GenerationJob, content: bytes, ext: str = "png
 
 def _demo_render(job: GenerationJob, width: int = FALLBACK_WIDTH, height: int = FALLBACK_HEIGHT) -> None:
     """Создаём простую PNG-картинку с текстом промпта — для DEV/демо."""
+    # Ограничение размера для предотвращения DoS
+    width = min(max(64, width), 2048)
+    height = min(max(64, height), 2048)
     try:
         from PIL import Image, ImageDraw, ImageFont
     except Exception:
@@ -146,19 +150,43 @@ def _demo_render(job: GenerationJob, width: int = FALLBACK_WIDTH, height: int = 
     _finalize_job_with_bytes(job, buf.getvalue(), ext="png")
 
 def _refund_if_needed(job: GenerationJob) -> None:
-    """Рефандим токены только авторизованному пользователю, если было списание."""
-    if not job.user_id:
-        return
+    """Рефандим токены авторизованному пользователю или в FreeGrant для гостя."""
     spent = int(getattr(job, "tokens_spent", 0) or 0)
     if spent <= 0:
         return
+
     try:
         with transaction.atomic():
-            w = Wallet.objects.select_for_update().get(user_id=job.user_id)
-            w.balance = int(w.balance or 0) + spent
-            w.save(update_fields=["balance"])
-    except Exception:
-        log.exception("Refund failed for job %s (user %s, spent=%s)", job.pk, job.user_id, spent)
+            if job.user_id:
+                # Авторизованный пользователь - возвращаем в кошелек
+                w = Wallet.objects.select_for_update().get(user_id=job.user_id)
+                w.balance = int(w.balance or 0) + spent
+                w.save(update_fields=["balance"])
+                log.info(f"Refunded {spent} tokens to wallet for user {job.user_id}")
+            else:
+                # Гость - возвращаем в FreeGrant
+                from .models import FreeGrant
+                grant_filters = []
+                if job.guest_gid:
+                    grant_filters.append(Q(gid=job.guest_gid))
+                if job.guest_fp:
+                    grant_filters.append(Q(fp=job.guest_fp))
+
+                if grant_filters:
+                    grant_q = grant_filters[0]
+                    for f in grant_filters[1:]:
+                        grant_q |= f
+
+                    grant = FreeGrant.objects.filter(grant_q, user__isnull=True).first()
+                    if grant:
+                        grant.consumed = max(0, int(grant.consumed) - spent)
+                        grant.save(update_fields=["consumed"])
+                        log.info(f"Refunded {spent} tokens to FreeGrant {grant.pk}")
+                    else:
+                        log.warning(f"No FreeGrant found for refund of job {job.pk}")
+
+    except Exception as e:
+        log.exception("Refund failed for job %s (user %s, spent=%s): %s", job.pk, job.user_id, spent, e)
 
 # ── Сабмит ────────────────────────────────────────────────────────────────────
 @shared_task(
@@ -171,8 +199,20 @@ def _refund_if_needed(job: GenerationJob) -> None:
     autoretry_for=(requests.RequestException,),
 )
 def run_generation_async(self, job_id: int) -> None:
-    job = GenerationJob.objects.get(pk=job_id)
+    try:
+        job = GenerationJob.objects.select_for_update().get(pk=job_id)
+    except GenerationJob.DoesNotExist:
+        log.error(f"GenerationJob {job_id} not found")
+        return
+
     if job.status in (GenerationJob.Status.DONE, GenerationJob.Status.RUNNING):
+        return
+
+    # Валидация промпта на предмет потенциально опасного контента
+    if not job.prompt or len(job.prompt) > 2000:
+        job.status = GenerationJob.Status.FAILED
+        job.error = "Invalid prompt"
+        job.save(update_fields=["status", "error"])
         return
 
     job.status = GenerationJob.Status.RUNNING
@@ -337,6 +377,31 @@ def _reschedule_poll(job: GenerationJob, attempt: int) -> None:
 def _finalize_job_with_url(job: GenerationJob, image_url: str) -> None:
     """Скачиваем картинку; если CDN падает — кэшируем внешний URL и считаем DONE."""
     if job.status == GenerationJob.Status.DONE:
+        return
+
+    # Валидация URL для предотвращения SSRF атак
+    if not image_url or not image_url.startswith(('https://', 'http://')):
+        job.status = GenerationJob.Status.FAILED
+        job.error = "Invalid image URL"
+        job.save(update_fields=["status", "error"])
+        return
+
+    # Проверка на локальные/приватные адреса
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(image_url)
+        if parsed.hostname in ('localhost', '127.0.0.1', '0.0.0.0') or \
+           parsed.hostname.startswith('192.168.') or \
+           parsed.hostname.startswith('10.') or \
+           parsed.hostname.startswith('172.'):
+            job.status = GenerationJob.Status.FAILED
+            job.error = "Invalid image URL"
+            job.save(update_fields=["status", "error"])
+            return
+    except Exception:
+        job.status = GenerationJob.Status.FAILED
+        job.error = "Invalid image URL"
+        job.save(update_fields=["status", "error"])
         return
 
     timeout = int(getattr(settings, "RUNWARE_DOWNLOAD_TIMEOUT", 300))

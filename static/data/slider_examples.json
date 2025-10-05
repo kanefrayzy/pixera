@@ -14,12 +14,12 @@
     }
   },
   {
-    "id": 3,
-    "title": "Реалистичный портрет",
-    "prompt": "Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves",
-    "image": "/media/slider_examples/ai-generation-14.jpg",
-    "description": "Профессиональное освещение и детализация",
-    "alt": "Пример 1: Портрет женщины",
+    "id": 4,
+    "title": "A portrait of a woman, natural soft lighting",
+    "prompt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic.",
+    "image": "/media/slider_examples/ai-generation-40_xgcvdQd.jpg",
+    "description": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic",
+    "alt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic, 580x730.",
     "settings": {
       "steps": 28,
       "cfg": 6.5,
@@ -28,12 +28,12 @@
     }
   },
   {
-    "id": 4,
-    "title": "A portrait of a woman, natural soft lighting",
-    "prompt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic.",
-    "image": "/media/slider_examples/ai-generation-40_xgcvdQd.jpg",
-    "description": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic",
-    "alt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic, 580x730.",
+    "id": 3,
+    "title": "Реалистичный портрет",
+    "prompt": "Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves",
+    "image": "/media/slider_examples/ai-generation-14.jpg",
+    "description": "Профессиональное освещение и детализация",
+    "alt": "Пример 1: Портрет женщины",
     "settings": {
       "steps": 28,
       "cfg": 6.5,

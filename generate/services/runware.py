@@ -53,9 +53,26 @@ def _parse_response(resp: requests.Response) -> dict:
 
 def _post(tasks: List[Dict[str, Any]], timeout: Tuple[int, int] = (10, 60), headers: Optional[dict] = None) -> dict:
     """Отправка массива задач. timeout=(connect, read)."""
+    if not tasks or len(tasks) > 10:  # Ограничение на количество задач
+        raise RunwareError("Invalid tasks count")
+
+    # Валидация каждой задачи
+    for task in tasks:
+        if not isinstance(task, dict):
+            raise RunwareError("Invalid task format")
+
+        # Проверка на потенциально опасные поля
+        if 'prompt' in task and len(str(task['prompt'])) > 2000:
+            raise RunwareError("Prompt too long")
+
     url = _get_api_url()
-    r = requests.post(url, json=tasks, headers=headers or _headers_with_bearer(), timeout=timeout)
-    return _parse_response(r)
+    try:
+        r = requests.post(url, json=tasks, headers=headers or _headers_with_bearer(), timeout=timeout)
+        return _parse_response(r)
+    except requests.exceptions.Timeout:
+        raise RunwareError("Request timeout")
+    except requests.exceptions.ConnectionError:
+        raise RunwareError("Connection error")
 
 
 # ───────────────────────────── public operations ─────────────────────────── #

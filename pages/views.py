@@ -11,12 +11,42 @@ def age_accept(request):
     resp.set_cookie("age_ok", "1", max_age=60*60*24*365, samesite="Lax", secure=False, path="/")
     return resp
 
+def _ensure_session_key(request):
+    """Обеспечиваем наличие session_key для гостевых лайков."""
+    if not request.session.session_key:
+        request.session.create()
+    return request.session.session_key
+
 def home(request):
     # Получаем трендовые фотографии для главной страницы
     trending_photos = get_trending_photos()
-    
+
+    # Определяем лайкнутые id для текущего пользователя/гостя
+    liked_photo_ids: set[int] = set()
+    photo_ids = [p.id for p in trending_photos] if trending_photos else []
+
+    if photo_ids:
+        try:
+            from gallery.models import PhotoLike
+            if request.user.is_authenticated:
+                liked_photo_ids = set(
+                    PhotoLike.objects.filter(
+                        user=request.user, photo_id__in=photo_ids
+                    ).values_list("photo_id", flat=True)
+                )
+            else:
+                skey = _ensure_session_key(request)
+                liked_photo_ids = set(
+                    PhotoLike.objects.filter(
+                        user__isnull=True, session_key=skey, photo_id__in=photo_ids
+                    ).values_list("photo_id", flat=True)
+                )
+        except ImportError:
+            pass
+
     context = {
         'trending_photos': trending_photos,
+        'liked_photo_ids': liked_photo_ids,
     }
     return render(request, "pages/home.html", context)
 
@@ -24,16 +54,16 @@ def get_trending_photos():
 
     try:
         from gallery.models import PublicPhoto
-        
+
         # Получаем фото за последний месяц
         last_month = timezone.now() - timedelta(days=30)
-        
+
         trending_by_likes = PublicPhoto.objects.filter(
             created_at__gte=last_month,
             is_active=True
-        ).select_related('uploaded_by').order_by('-likes_count', '-view_count')[:12]
+        ).select_related('uploaded_by', 'category').order_by('-likes_count', '-view_count')[:12]
         return trending_by_likes
-        
+
     except ImportError:
         # Если модель PublicPhoto не существует или приложение gallery не подключено
         return []

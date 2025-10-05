@@ -319,6 +319,7 @@ class GenerationJob(models.Model):
         RUNNING = "RUNNING", "Обработка"
         DONE    = "DONE",    "Готово"
         FAILED  = "FAILED",  "Ошибка"
+        PENDING_MODERATION = "PENDING_MODERATION", "Ожидает модерации"
 
     # --- принадлежность и гостевые идентификаторы ---
     user = models.ForeignKey(
@@ -344,7 +345,7 @@ class GenerationJob(models.Model):
 
     # --- статус и ошибки ---
     status = models.CharField(
-        max_length=12, choices=Status.choices, default=Status.PENDING, db_index=True
+        max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
     )
     error = models.TextField(blank=True, default="")
 
@@ -492,7 +493,8 @@ class FreeGrant(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        db_index=True
     )
 
     # Идентификаторы гостя
@@ -521,11 +523,22 @@ class FreeGrant(models.Model):
     def left(self) -> int:
         return max(int(self.total) - int(self.consumed), 0)
 
+    @property
+    def is_bound_to_user(self) -> bool:
+        """Проверяет, привязан ли грант к пользователю."""
+        return self.user_id is not None
+
     def spend(self, amount: int) -> int:
         """Списать amount, вернуть фактически списанное."""
         amount = max(int(amount), 0)
         if amount == 0:
             return 0
+
+        # Защита от попытки списания с уже привязанного гранта
+        if self.is_bound_to_user:
+            log.warning(f"Attempt to spend from bound grant {self.pk}")
+            return 0
+
         can = self.left
         take = min(can, amount)
         if take <= 0:
@@ -538,17 +551,34 @@ class FreeGrant(models.Model):
         """Привязать грант к пользователю, опционально переложив остаток в кошелёк."""
         if not user:
             return
+
+        # Защита от повторного переноса токенов
+        if self.user_id == user.id:
+            # Грант уже привязан к этому пользователю
+            return
+
         from dashboard.models import Wallet  # локальный импорт, чтобы не ловить циклы
         with transaction.atomic():
+            # Повторная проверка под блокировкой
+            grant = FreeGrant.objects.select_for_update().get(pk=self.pk)
+            if grant.user_id == user.id:
+                return  # Уже привязан
+
             if transfer_left:
-                left = self.left
+                left = grant.left
                 if left > 0:
                     wallet, _ = Wallet.objects.get_or_create(user=user)
+                    wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
                     wallet.balance = int(wallet.balance or 0) + left
                     wallet.save(update_fields=["balance"])
-                    self.consumed = int(self.total)  # остаток списали
+                    grant.consumed = int(grant.total)  # остаток списали
+
+            grant.user = user
+            grant.save(update_fields=["user", "consumed", "updated_at"])
+
+            # Обновляем текущий объект
             self.user = user
-            self.save(update_fields=["user", "consumed", "updated_at"])
+            self.consumed = grant.consumed
 
     @classmethod
     def ensure_for(
