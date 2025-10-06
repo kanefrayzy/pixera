@@ -5,3 +5,226 @@
 /* Hide horizontal scrollbar in pill rows */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Category Cards Redesign */
+.cat-card-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  min-width: 5rem;
+  border-radius: 1rem;
+  border: 1.5px solid var(--bord);
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  user-select: none;
+}
+
+.cat-card:hover {
+  border-color: var(--primary);
+  background: var(--hover);
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cat-card.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.3);
+}
+
+.cat-card.active .cat-card-icon {
+  color: white;
+}
+
+.cat-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: var(--primary-soft);
+  color: var(--primary);
+  transition: all 0.2s ease;
+}
+
+.cat-card:hover .cat-card-icon {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.05);
+}
+
+.cat-card.active .cat-card-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.cat-card-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-card-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 1px;
+  transition: width 0.2s ease;
+}
+
+.cat-card.active .cat-card-indicator {
+  width: 80%;
+  background: white;
+}
+
+/* Category Actions for Staff */
+.cat-card-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.cat-card-wrapper:hover .cat-card-actions {
+  opacity: 1;
+}
+
+.cat-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0;
+}
+
+.cat-action-btn.edit {
+  background: rgba(245, 158, 11, 0.1);
+  color: rgb(217, 119, 6);
+}
+
+.cat-action-btn.edit:hover {
+  background: rgba(245, 158, 11, 0.2);
+  transform: scale(1.05);
+}
+
+.cat-action-btn.delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(220, 38, 38);
+}
+
+.cat-action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.05);
+}
+
+/* Navigation Arrows */
+.js-cat-scroll-left,
+.js-cat-scroll-right {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.js-cat-scroll-left:hover,
+.js-cat-scroll-right:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Scroll Indicators */
+.cat-scroll-indicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cat-scroll-indicator.active {
+  background: var(--primary);
+  transform: scale(1.2);
+}
+
+.cat-scroll-indicator:hover {
+  background: var(--primary);
+  transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .cat-card {
+    min-width: 4rem;
+    padding: 0.75rem 0.75rem;
+    gap: 0.375rem;
+  }
+
+  .cat-card-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .cat-card-name {
+    font-size: 0.6875rem;
+    max-width: 3.5rem;
+  }
+
+  .js-cat-scroll-left,
+  .js-cat-scroll-right {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .cat-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .cat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .cat-card.active {
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.4);
+}
+
+/* Animation for category switching */
+@keyframes categoryPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.cat-card.active {
+  animation: categoryPulse 0.3s ease-out;
+}

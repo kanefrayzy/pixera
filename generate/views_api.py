@@ -577,4 +577,28 @@ def guest_balance(request: HttpRequest) -> JsonResponse:
     if not grant:
         return _ok(tokens=None, gens_left=None, found=False)
 
-    return _ok(tokens=int(grant.left), gens_left=int(grant.diamonds_left), found=True)
+    # Проверяем состояние AbuseCluster перед отображением токенов
+    try:
+        cluster = AbuseCluster.ensure_for(
+            fp=hard_fp,
+            gid=_guest_cookie_id(request) or None,
+            ip_hash=_ip_hash(request) or None,
+            ua_hash=_ua_hash(request) or None,
+            create_if_missing=False
+        )
+        # Если кластер существует и лимит исчерпан, показываем 0 токенов
+        if cluster and cluster.jobs_left <= 0:
+            return _ok(tokens=0, gens_left=0, found=True)
+    except AbuseCluster.DoesNotExist:
+        # Кластер не найден (новый пользователь), показываем токены из гранта
+        pass
+    except Exception:
+        # При любой ошибке показываем токены из гранта
+        pass
+
+    # Рассчитываем количество обработок из токенов
+    tokens_left = int(grant.left)
+    cost = _token_cost()
+    gens_left = (tokens_left // cost) if cost > 0 else 0
+
+    return _ok(tokens=tokens_left, gens_left=gens_left, found=True)

@@ -24,15 +24,124 @@
   // Category switching
   document.querySelectorAll('.js-cat-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.js-cat-btn').forEach(b => {
-        b.classList.remove('bg-primary/15', 'text-primary', 'border-primary/30');
-        b.classList.add('bg-black/[.04]', 'dark:bg-white/5');
+      // Remove active state from all category cards
+      document.querySelectorAll('.cat-card').forEach(card => {
+        card.classList.remove('active');
+        card.setAttribute('aria-selected', 'false');
       });
-      btn.classList.add('bg-primary/15', 'text-primary', 'border-primary/30');
-      btn.classList.remove('bg-black/[.04]', 'dark:bg-white/5');
+
+      // Add active state to clicked card
+      const card = btn.closest ? btn.closest('.cat-card') : btn;
+      if (card && card.classList.contains('cat-card')) {
+        card.classList.add('active');
+        card.setAttribute('aria-selected', 'true');
+      }
+
       renderCat(btn.dataset.cat || 'all');
     });
   });
+
+  /* === CATEGORY CARDS NAVIGATION ========================================== */
+  const catContainer = document.querySelector('.js-cat-container');
+  const leftArrow = document.querySelector('.js-cat-scroll-left');
+  const rightArrow = document.querySelector('.js-cat-scroll-right');
+  const indicatorsContainer = document.querySelector('.js-cat-indicators');
+
+  if (catContainer && leftArrow && rightArrow) {
+    let currentScrollIndex = 0;
+    const scrollStep = 200; // pixels to scroll per click
+
+    function updateArrowVisibility() {
+      const { scrollLeft, scrollWidth, clientWidth } = catContainer;
+
+      if (scrollLeft <= 0) {
+        leftArrow.style.opacity = '0';
+        leftArrow.style.pointerEvents = 'none';
+      } else {
+        leftArrow.style.opacity = '1';
+        leftArrow.style.pointerEvents = 'auto';
+      }
+
+      if (scrollLeft >= scrollWidth - clientWidth - 1) {
+        rightArrow.style.opacity = '0';
+        rightArrow.style.pointerEvents = 'none';
+      } else {
+        rightArrow.style.opacity = '1';
+        rightArrow.style.pointerEvents = 'auto';
+      }
+    }
+
+    function updateScrollIndicators() {
+      if (!indicatorsContainer) return;
+
+      const { scrollWidth, clientWidth } = catContainer;
+      const needsIndicators = scrollWidth > clientWidth;
+
+      if (!needsIndicators) {
+        indicatorsContainer.style.display = 'none';
+        return;
+      }
+
+      indicatorsContainer.style.display = 'flex';
+      const maxScroll = scrollWidth - clientWidth;
+      const sections = Math.ceil(maxScroll / scrollStep) + 1;
+
+      indicatorsContainer.innerHTML = '';
+      for (let i = 0; i < sections; i++) {
+        const indicator = document.createElement('div');
+        indicator.className = 'cat-scroll-indicator';
+        if (i === currentScrollIndex) indicator.classList.add('active');
+
+        indicator.addEventListener('click', () => {
+          const targetScroll = Math.min(i * scrollStep, maxScroll);
+          catContainer.scrollTo({ left: targetScroll, behavior: 'smooth' });
+          currentScrollIndex = i;
+          updateScrollIndicators();
+        });
+
+        indicatorsContainer.appendChild(indicator);
+      }
+    }
+
+    leftArrow.addEventListener('click', () => {
+      const newScrollLeft = Math.max(0, catContainer.scrollLeft - scrollStep);
+      catContainer.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+      currentScrollIndex = Math.max(0, currentScrollIndex - 1);
+      updateScrollIndicators();
+    });
+
+    rightArrow.addEventListener('click', () => {
+      const maxScroll = catContainer.scrollWidth - catContainer.clientWidth;
+      const newScrollLeft = Math.min(maxScroll, catContainer.scrollLeft + scrollStep);
+      catContainer.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+      currentScrollIndex = Math.min(Math.ceil(maxScroll / scrollStep), currentScrollIndex + 1);
+      updateScrollIndicators();
+    });
+
+    catContainer.addEventListener('scroll', () => {
+      updateArrowVisibility();
+
+      // Update current scroll index based on scroll position
+      const scrollRatio = catContainer.scrollLeft / (catContainer.scrollWidth - catContainer.clientWidth);
+      const maxIndex = Math.ceil((catContainer.scrollWidth - catContainer.clientWidth) / scrollStep);
+      currentScrollIndex = Math.round(scrollRatio * maxIndex);
+      updateScrollIndicators();
+    });
+
+    // Initialize visibility and indicators
+    setTimeout(() => {
+      updateArrowVisibility();
+      updateScrollIndicators();
+    }, 100);
+
+    // Update on window resize
+    window.addEventListener('resize', () => {
+      setTimeout(() => {
+        updateArrowVisibility();
+        updateScrollIndicators();
+      }, 100);
+    });
+  }
 
   // Insert suggestion text
   const txt = document.getElementById('prompt') || document.querySelector('textarea[name="prompt"]');

@@ -1,5 +1,3 @@
-/* Home Page Styles - Mobile First Design */
-
 /* Gradient text effect */
 .gradient-text {
   background: linear-gradient(to right, rgb(1 209 251), rgb(59 130 246), rgb(168 85 247));
@@ -821,7 +819,7 @@
 /* Desktop (1024px+) */
 @media (min-width: 1024px) {
   .hero-section {
-    padding: 2rem 0;
+    padding: 4rem 0;
   }
 
   .hero-title {

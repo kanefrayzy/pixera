@@ -8,7 +8,7 @@
 <!-- Age Gate Modal -->
 <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="ageTitle" aria-describedby="ageDesc">
   <div class="card max-w-md w-full p-8 text-center">
-    
+
     <!-- Icon -->
     <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/15 flex items-center justify-center">
       <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -18,13 +18,17 @@
 
     <!-- Content -->
     <h1 id="ageTitle" class="text-2xl font-bold mb-4">
-      {% trans "Age Confirmation" %}
+      {{ request.age_gate_title|default:"Age Confirmation" }}
     </h1>
-    
+
     <p id="ageDesc" class="text-[var(--muted)] mb-8 leading-relaxed">
-      {% blocktrans %}
-      By continuing you confirm you are 18+ years old. Content remains SFW, but the site uses a general age gate per your policy.
-      {% endblocktrans %}
+      {% if request.age_gate_text %}
+        {{ request.age_gate_text }}
+      {% else %}
+        {% blocktrans %}
+        By continuing you confirm you are 18+ years old. Content remains SFW, but the site uses a general age gate per your policy.
+        {% endblocktrans %}
+      {% endif %}
     </p>
 
     <!-- Compute next URL -->
@@ -43,7 +47,7 @@
         </svg>
         {% trans "I am 18+" %}
       </button>
-      
+
       <button
         id="decline"
         class="btn btn-ghost w-full text-sm py-2"
@@ -84,7 +88,7 @@
 <!-- Under 18 Modal (Hidden) -->
 <div id="underAgeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden" role="dialog" aria-modal="true">
   <div class="card max-w-md w-full p-8 text-center">
-    
+
     <!-- Warning Icon -->
     <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-red-500/15 flex items-center justify-center">
       <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -96,7 +100,7 @@
     <h2 class="text-xl font-bold mb-4 text-red-600 dark:text-red-400">
       {% trans "Access Restricted" %}
     </h2>
-    
+
     <p class="text-[var(--muted)] mb-6">
       {% trans "This site is only available to users 18 years and older. Please come back when you meet the age requirement." %}
     </p>
@@ -138,7 +142,7 @@
       // Set age gate cookie for 1 year
       const expiry = new Date();
       expiry.setFullYear(expiry.getFullYear() + 1);
-      
+
       let cookie = "age_gate_ok=1; Path=/; SameSite=Lax; Expires=" + expiry.toUTCString();
       if (location.protocol === "https:") {
         cookie += "; Secure";
@@ -148,7 +152,7 @@
       // Redirect to next URL
       const next = agreeBtn.getAttribute('data-next') || '/';
       let target = '/';
-      
+
       try {
         const url = new URL(next, location.origin);
         if (url.origin === location.origin) {
@@ -199,10 +203,10 @@
 
   // Focus management
   agreeBtn.focus();
-  
+
   // Prevent background scrolling
   document.body.style.overflow = 'hidden';
-  
+
   // Cleanup function (if needed)
   window.addEventListener('beforeunload', function() {
     document.body.style.overflow = '';
@@ -268,7 +272,7 @@ button:focus {
     margin: 1rem;
     max-width: calc(100vw - 2rem);
   }
-  
+
   .btn {
     min-height: 48px;
   }
@@ -279,7 +283,7 @@ button:focus {
   .card {
     border: 2px solid currentColor;
   }
-  
+
   .btn {
     border: 2px solid currentColor;
   }

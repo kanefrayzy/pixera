@@ -44,6 +44,40 @@ def _ensure_session_key(request: HttpRequest) -> str:
     return request.session.session_key
 
 
+def _guest_cookie_id(request: HttpRequest) -> str:
+    """Получаем cookie 'gid' для гостя."""
+    return (request.COOKIES.get("gid") or "").strip()
+
+
+def _get_fp_from_request(request: HttpRequest) -> str:
+    """Получаем fingerprint из cookie, заголовка или middleware."""
+    # 1) middleware мог положить request.fp
+    fp = getattr(request, "fp", "") or ""
+    if fp:
+        return fp.strip()
+
+    # 2) cookie с фронта
+    fp_cookie_name = getattr(settings, "FP_COOKIE_NAME", "aid_fp")
+    fp = (request.COOKIES.get(fp_cookie_name) or "").strip()
+    if fp:
+        return fp
+
+    # 3) заголовок (если фронт его шлёт)
+    hdr = getattr(settings, "FP_HEADER_NAME", "X-Device-Fingerprint")
+    fp = (request.META.get(f"HTTP_{hdr.upper().replace('-', '_')}", "") or "").strip()
+    return fp
+
+
+def _hard_fingerprint(request: HttpRequest) -> str:
+    """Стабильный серверный fingerprint (fallback)."""
+    import hashlib
+    ua = (request.META.get("HTTP_USER_AGENT") or "").strip()
+    ip = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip() or \
+         (request.META.get("REMOTE_ADDR") or "")
+    raw = f"{ua}|{ip}|{settings.SECRET_KEY}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
 def _job_has_file(job: GenerationJob) -> bool:
     """Проверяем, что у задачи есть валидный файл результата."""
     f = getattr(job, "result_image", None)
@@ -161,14 +195,34 @@ def index(request: HttpRequest) -> HttpResponse:
             .order_by("-created_at")[:6]
         )
     else:
+        # Для гостей ищем по всем возможным идентификаторам
+        from django.db.models import Q
+
         skey = _ensure_session_key(request)
+        gid = _guest_cookie_id(request) or ""
+        fp = _get_fp_from_request(request) or _hard_fingerprint(request)
+
+        # Строим запрос с учетом всех идентификаторов
+        q = Q(user__isnull=True, status=GenerationJob.Status.DONE)
+        guest_filters = Q()
+
+        if skey:
+            guest_filters |= Q(guest_session_key=skey)
+        if gid:
+            guest_filters |= Q(guest_gid=gid)
+        if fp:
+            guest_filters |= Q(guest_fp=fp)
+
+        # Если есть хотя бы один идентификатор, применяем фильтр
+        if guest_filters:
+            q &= guest_filters
+        else:
+            # Если нет идентификаторов, возвращаем пустой queryset
+            q &= Q(pk__isnull=True)
+
         my_thumbs = (
             GenerationJob.objects
-            .filter(
-                user__isnull=True,
-                guest_session_key=skey,
-                status=GenerationJob.Status.DONE,
-            )
+            .filter(q)
             .order_by("-created_at")[:6]
         )
 

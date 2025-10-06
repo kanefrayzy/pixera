@@ -485,12 +485,34 @@ def new(request: HttpRequest) -> HttpResponse:
         grant, maybe_gid = _ensure_grant(request)
         set_cookie_gid = maybe_gid
         if grant:
-            # у модели часто есть свойство/поле left; на всякий — считаем безопасно
+            # Проверяем состояние AbuseCluster перед отображением токенов
             try:
-                guest_tokens = int(getattr(grant, "left", max(grant.total - grant.consumed, 0)))
+                from .models import AbuseCluster
+                cluster = AbuseCluster.ensure_for(
+                    fp=_hard_fingerprint(request),
+                    gid=_guest_cookie_id(request) or None,
+                    ip_hash=_ip_hash(request) or None,
+                    ua_hash=_ua_hash(request) or None,
+                    create_if_missing=False
+                )
+                # Если кластер существует и лимит исчерпан, показываем 0 токенов
+                if cluster and cluster.jobs_left <= 0:
+                    guest_tokens = 0
+                    guest_gens_left = 0
+                else:
+                    # у модели часто есть свойство/поле left; на всякий — считаем безопасно
+                    try:
+                        guest_tokens = int(getattr(grant, "left", max(grant.total - grant.consumed, 0)))
+                    except Exception:
+                        guest_tokens = 0
+                    guest_gens_left = (guest_tokens // int(price or 1)) if price else 0
             except Exception:
-                guest_tokens = 0
-            guest_gens_left = (guest_tokens // int(price or 1)) if price else 0
+                # Если кластер не найден (новый пользователь), показываем токены из гранта
+                try:
+                    guest_tokens = int(getattr(grant, "left", max(grant.total - grant.consumed, 0)))
+                except Exception:
+                    guest_tokens = 0
+                guest_gens_left = (guest_tokens // int(price or 1)) if price else 0
         else:
             # Защита сработала: без fp новый грант не создан → ничего не добавляем
             guest_tokens = 0

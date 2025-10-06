@@ -112,13 +112,32 @@ def _set_cookie(response, name: str, value: str, *, years: int = 5, http_only: b
 class AgeGateMiddleware:
     """
     Ставит флаг request.age_ok из cookie 'age_ok'.
-    Показываем плашку 18+ на фронте, если cookie нет.
+    Показываем плашку 18+ на фронте, если cookie нет И если плашка включена в настройках.
     """
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        # Проверяем cookie возраста
         request.age_ok = request.COOKIES.get("age_ok") == "1"
+
+        # Проверяем, включена ли плашка в настройках
+        try:
+            from pages.models import SiteSettings
+            settings = SiteSettings.get_settings()
+            request.age_gate_enabled = settings.age_gate_enabled
+            request.age_gate_title = settings.age_gate_title
+            request.age_gate_text = settings.age_gate_text
+
+            # Если плашка отключена в настройках, считаем что возраст подтвержден
+            if not settings.age_gate_enabled:
+                request.age_ok = True
+        except Exception:
+            # Если настройки недоступны (например, при первом запуске), используем значения по умолчанию
+            request.age_gate_enabled = True
+            request.age_gate_title = "Вам есть 18 лет?"
+            request.age_gate_text = "Доступ к сайту разрешён только пользователям старше 18 лет. Подтвердите возраст для продолжения работы."
+
         return self.get_response(request)
 
 

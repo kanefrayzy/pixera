@@ -216,7 +216,6 @@
 
 .pill:hover {
   background: rgba(0,0,0,0.06);
-  transform: translateY(-1px);
 }
 
 [data-theme="dark"] .pill:hover {

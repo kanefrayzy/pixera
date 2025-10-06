@@ -1,31 +1,31 @@
 {% load i18n %}
 
-{% if not request.age_ok %}
-<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" 
-     id="ageGate" 
-     role="dialog" 
-     aria-modal="true" 
-     aria-labelledby="ageTitle" 
+{% if not request.age_ok and request.age_gate_enabled %}
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+     id="ageGate"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="ageTitle"
      aria-describedby="ageDesc">
-  
-  <div class="card p-8 max-w-md w-full max-h-max text-center transform scale-95 opacity-0 transition-all duration-300" 
+
+  <div class="card p-8 max-w-md w-full max-h-max text-center transform scale-95 opacity-0 transition-all duration-300"
        id="ageGateBox"
-       role="document" 
+       role="document"
        tabindex="-1">
-    
+
     <!-- Icon -->
     <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-amber-500/15 flex items-center justify-center">
       <svg class="w-8 h-8 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
       </svg>
     </div>
-    
+
     <!-- Content -->
-    <h2 id="ageTitle" class="text-2xl font-bold mb-4">{% trans "Вам есть 18 лет?" %}</h2>
+    <h2 id="ageTitle" class="text-2xl font-bold mb-4">{{ request.age_gate_title|default:"Вам есть 18 лет?" }}</h2>
     <p id="ageDesc" class="text-[var(--muted)] mb-8 leading-relaxed">
-      {% trans "Доступ к сайту разрешён только пользователям старше 18 лет. Подтвердите возраст для продолжения работы." %}
+      {{ request.age_gate_text|default:"Доступ к сайту разрешён только пользователям старше 18 лет. Подтвердите возраст для продолжения работы." }}
     </p>
-    
+
     <!-- Actions -->
     <div class="flex flex-col sm:flex-row gap-3">
       <button class="btn btn-primary flex-1" id="ageYes" type="button">
@@ -41,7 +41,7 @@
         {% trans "Нет" %}
       </button>
     </div>
-    
+
     <!-- Footer Info -->
     <div class="mt-6 pt-6 border-t border-[var(--bord)]">
       <p class="text-xs text-[var(--muted)]">
@@ -74,13 +74,13 @@
   // Focus trap
   function trapFocus(e) {
     if (e.key !== 'Tab') return;
-    
+
     const focusables = box.querySelectorAll('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
     if (!focusables.length) return;
-    
+
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
-    
+
     if (e.shiftKey && document.activeElement === first) {
       e.preventDefault();
       last.focus();
@@ -89,7 +89,7 @@
       first.focus();
     }
   }
-  
+
   box.addEventListener('keydown', trapFocus);
 
   // CSRF token helper
@@ -101,7 +101,7 @@
   function setAgeCookie() {
     const expires = new Date();
     expires.setFullYear(expires.getFullYear() + 1);
-    
+
     let cookie = `age_gate_ok=1; Path=/; SameSite=Lax; Expires=${expires.toUTCString()}`;
     if (location.protocol === 'https:') {
       cookie += '; Secure';
@@ -114,7 +114,7 @@
     box.style.transform = 'scale(0.95)';
     box.style.opacity = '0';
     overlay.style.opacity = '0';
-    
+
     setTimeout(() => {
       overlay.remove();
       document.documentElement.style.overflow = '';
@@ -250,7 +250,7 @@
     margin: 1rem;
     max-width: calc(100vw - 2rem);
   }
-  
+
   .btn {
     min-height: 48px; /* Better touch targets */
   }
@@ -261,7 +261,7 @@
   #ageGate {
     background-color: rgba(0, 0, 0, 0.8);
   }
-  
+
   #ageGateBox {
     border: 2px solid currentColor;
   }
@@ -273,11 +273,11 @@
     transition: opacity 0.2s ease;
     transform: scale(1) !important;
   }
-  
+
   .animate-spin {
     animation: none;
   }
-  
+
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
   }

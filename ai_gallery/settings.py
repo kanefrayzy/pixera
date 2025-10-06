@@ -146,6 +146,7 @@ TEMPLATES = [
                 "gallery.context_processors.nav_context",
                 "ai_gallery.context_processors.auth_flags",
                 "dashboard.context_processors.wallet_context",
+                "pages.context_processors.site_settings",
             ],
         },
     }

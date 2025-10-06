@@ -1,57 +1,15 @@
 [
   {
-    "id": 2,
-    "title": "Магический мир",
-    "prompt": "Magical fantasy landscape with floating islands connected by golden bridges, ethereal atmosphere with mystical light beams, ancient ruins covered in glowing moss, dragons soaring in purple sky, concept art style, highly detailed",
-    "image": "/media/slider_examples/77dad4ce-5efb-4273-afc4-1bae64ea0067.webp",
-    "description": "Летающие острова и мистический свет",
-    "alt": "Пример 3: Фэнтези пейзаж",
+    "id": 0,
+    "title": "Классический шедевр",
+    "prompt": "masterpiece, ultra realistic, cinematic lighting, Renaissance style portrait of a woman, delicate details, soft shadows, 8k, Canon EOS R5 photo, Rembrandt light, award-winning photo",
+    "image": "/media/slider_examples/04256c39-e20d-4627-a7f6-3b075f0d51e2.jpg",
+    "description": "Краткое описание для пользователей...",
+    "alt": "Описание изображения для доступности и поисковых систем",
     "settings": {
-      "steps": 30,
-      "cfg": 6.5,
-      "ratio": "4:3",
-      "seed": "auto"
-    }
-  },
-  {
-    "id": 4,
-    "title": "A portrait of a woman, natural soft lighting",
-    "prompt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic.",
-    "image": "/media/slider_examples/ai-generation-40_xgcvdQd.jpg",
-    "description": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic",
-    "alt": "A portrait of a woman, natural soft lighting, 35mm lens look, shallow depth of field, pastel background, clean minimalist composition, subtle rim lighting, highly detailed, photorealistic, 580x730.",
-    "settings": {
-      "steps": 28,
-      "cfg": 6.5,
+      "steps": 33,
+      "cfg": 3.0,
       "ratio": "3:2",
-      "seed": "auto"
-    }
-  },
-  {
-    "id": 3,
-    "title": "Реалистичный портрет",
-    "prompt": "Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves",
-    "image": "/media/slider_examples/ai-generation-14.jpg",
-    "description": "Профессиональное освещение и детализация",
-    "alt": "Пример 1: Портрет женщины",
-    "settings": {
-      "steps": 28,
-      "cfg": 6.5,
-      "ratio": "3:2",
-      "seed": "auto"
-    }
-  },
-  {
-    "id": 1,
-    "title": "Киберпанк город",
-    "prompt": "Futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, rain droplets, towering holographic billboards, flying cars in distance, cinematic composition, 8k ultra detailed, blade runner aesthetic",
-    "image": "/media/slider_examples/41.jpg",
-    "description": "Неоновые огни и футуристическая атмосфера",
-    "alt": "Пример 2: Футуристический город",
-    "settings": {
-      "steps": 35,
-      "cfg": 6.5,
-      "ratio": "16:9",
       "seed": "auto"
     }
   }
