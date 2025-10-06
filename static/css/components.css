@@ -310,26 +310,6 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  #mobileMenu .nav-link:hover {
-    background: rgba(1, 209, 251, 0.1);
-    border-color: rgba(1, 209, 251, 0.3);
-    transform: translateX(8px);
-    box-shadow: 0 4px 15px rgba(1, 209, 251, 0.2);
-  }
-
-  #mobileMenu .nav-link::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 0;
-    background: linear-gradient(to bottom, #01D1FB, #EC4899);
-    border-radius: 0 2px 2px 0;
-    transition: height 0.3s ease;
-  }
-
   #mobileMenu .nav-link:hover::before {
     height: 70%;
   }
@@ -727,26 +707,6 @@
     margin: 4px 0;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  #mobileMenu .nav-link:hover {
-    background: rgba(1, 209, 251, 0.1);
-    border-color: rgba(1, 209, 251, 0.3);
-    transform: translateX(8px);
-    box-shadow: 0 4px 15px rgba(1, 209, 251, 0.2);
-  }
-
-  #mobileMenu .nav-link::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 0;
-    background: linear-gradient(to bottom, #01D1FB, #EC4899);
-    border-radius: 0 2px 2px 0;
-    transition: height 0.3s ease;
   }
 
   #mobileMenu .nav-link:hover::before {
