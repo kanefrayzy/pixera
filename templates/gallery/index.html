@@ -39,17 +39,27 @@
         {% for j in my_thumbs|slice:":6" %}
           {% load generate_extras %}
           {% with s=j.prompt|safe_slugify|default:"image" %}
-            <a role="listitem"
-               class="group aspect-square rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800"
-               href="{% url 'generate:job_image' j.pk s %}"
-               target="_blank"
-               rel="noopener"
-               title="Открыть изображение в новой вкладке">
-              <img class="w-full h-full object-cover transition duration-300 group-hover:scale-105"
-                   loading="lazy"
-                   src="{% url 'generate:job_image' j.pk s %}"
-                   alt="{{ j.prompt|default:'Моя генерация' }}">
-            </a>
+            <div role="listitem" class="group relative aspect-square rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+              <a class="block w-full h-full"
+                 href="{% url 'generate:job_image' j.pk s %}"
+                 target="_blank"
+                 rel="noopener"
+                 title="Открыть изображение в новой вкладке">
+                <img class="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                     loading="lazy"
+                     src="{% url 'generate:job_image' j.pk s %}"
+                     alt="{{ j.prompt|default:'Моя генерация' }}">
+              </a>
+              {% if j.status == 'PENDING_MODERATION' %}
+                <div class="absolute top-2 left-2 px-2 py-1 bg-orange-500/90 text-white text-xs rounded-md font-medium">
+                  На модерации
+                </div>
+              {% elif j.id in published_job_ids %}
+                <div class="absolute top-2 left-2 px-2 py-1 bg-green-500/90 text-white text-xs rounded-md font-medium">
+                  Опубликовано
+                </div>
+              {% endif %}
+            </div>
           {% endwith %}
         {% endfor %}
       </div>

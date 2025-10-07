@@ -17,20 +17,20 @@
 
 
   <div class="grid lg:grid-cols-3 gap-8">
-    
+
     <!-- Main Image Section -->
     <div class="lg:col-span-2 space-y-6">
-      
+
       <!-- Header -->
       <div class="flex flex-wrap items-center gap-3">
         {% with first_tag=photo.categories.all|first %}
           {% if first_tag %}
-            <a class="pill bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition" 
+            <a class="pill bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition"
                href="{% url 'gallery:index' %}?cat={{ first_tag.slug|urlencode }}">
               #{{ first_tag.name }}
             </a>
           {% elif photo.category %}
-            <a class="pill bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition" 
+            <a class="pill bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition"
                href="{% url 'gallery:index' %}?cat={{ photo.category.slug|urlencode }}">
               #{{ photo.category.name }}
             </a>
@@ -38,20 +38,20 @@
             <span class="pill opacity-70">Без категории</span>
           {% endif %}
         {% endwith %}
-        
+
         <!-- Admin Controls -->
         {% if request.user.is_staff %}
           <div class="flex gap-2 ml-auto">
-            <a class="btn btn-ghost px-3 py-1.5 text-sm" 
+            <a class="btn btn-ghost px-3 py-1.5 text-sm"
                href="{{ edit_url }}?next={{ request.get_full_path|urlencode }}">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
               Редактировать
             </a>
-            <a class="btn btn-ghost px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" 
-               href="{{ delete_url }}?next={{ request.get_full_path|urlencode }}" 
-               title="Удалить" 
+            <a class="btn btn-ghost px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+               href="{{ delete_url }}?next={{ request.get_full_path|urlencode }}"
+               title="Удалить"
                aria-label="Удалить">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -66,17 +66,17 @@
       <!-- Image Container -->
       <div class="relative">
         <div class="card overflow-hidden">
-          <a href="{{ photo.image.url }}" 
-             target="_blank" 
+          <a href="{{ photo.image.url }}"
+             target="_blank"
              rel="noopener"
              class="group block relative">
             <div class="media-frame">
-              <img class="max-w-full max-h-[80vh] w-auto h-auto object-contain transition duration-300" 
-                   src="{{ photo.image.url }}" 
-                   alt="{{ photo.title|default:'AI изображение' }}" 
+              <img class="max-w-full max-h-[80vh] w-auto h-auto object-contain transition duration-300"
+                   src="{{ photo.image.url }}"
+                   alt="{{ photo.title|default:'AI изображение' }}"
                    loading="lazy">
             </div>
-            
+
             <!-- Overlay on hover -->
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
               <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -140,7 +140,7 @@
 
     <!-- Sidebar -->
   <div class="space-y-6 lg:space-y-6 sm:space-y-4">
-      
+
       <!-- Photo Info -->
       {% if photo.description %}
         <div class="card p-6">
@@ -161,12 +161,12 @@
               </time>
             </div>
           {% endif %}
-          
+
           <div class="flex justify-between">
             <span class="text-[var(--muted)]">Формат:</span>
             <span class="font-medium">JPEG</span>
           </div>
-          
+
           <div class="flex justify-between">
             <span class="text-[var(--muted)]">Генератор:</span>
             <span class="font-medium">AI Gallery</span>
@@ -183,9 +183,9 @@
               {% url 'gallery:photo_detail' rp.pk as rurl %}
               <a class="block group rounded-xl overflow-hidden border border-[var(--bord)]" href="{{ rurl }}" title="{{ rp.title|default:'Изображение' }}">
                 {% if rp.image %}
-                  <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.03]" 
-                       src="{{ rp.image.url }}" 
-                       alt="{{ rp.title|default:'Изображение' }}" 
+                  <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.03]"
+                       src="{{ rp.image.url }}"
+                       alt="{{ rp.title|default:'Изображение' }}"
                        loading="lazy">
                 {% else %}
                   <div class="w-full aspect-square bg-gray-100 dark:bg-gray-800"></div>
@@ -206,7 +206,7 @@
   <!-- Comments Section -->
   <div class="card p-6 sm:p-8" id="comments">
     <h2 class="text-xl font-semibold mb-6">
-      Комментарии 
+      Комментарии
       <span class="text-[var(--muted)] font-normal">
         ({{ photo.comments_count|default:0 }})
       </span>
@@ -214,9 +214,9 @@
 
     <!-- Comment Form -->
     {% if request.user.is_authenticated %}
-  <form method="post" 
-    action="{% url 'gallery:photo_comment' photo.pk %}" 
-    class="mb-8" 
+  <form method="post"
+    action="{% url 'gallery:photo_comment' photo.pk %}"
+    class="mb-8"
     id="photoCommentForm"
     data-comment-form="root">
         {% csrf_token %}
@@ -225,8 +225,8 @@
             {{ request.user.first_name|first|default:request.user.username|first|upper }}
           </div>
           <div class="flex-1">
-            <textarea name="text" 
-                      class="field min-h-28 sm:min-h-24 resize-none mb-3" 
+            <textarea name="text"
+                      class="field min-h-28 sm:min-h-24 resize-none mb-3"
                       placeholder="Напишите комментарий..."
                       maxlength="1000"
                       required></textarea>
@@ -248,7 +248,7 @@
           <div class="text-sm">
             <span class="font-medium text-blue-800 dark:text-blue-200">Войдите, чтобы комментировать</span>
             <p class="text-blue-700 dark:text-blue-300 mt-1">
-              <a href="{% url 'account_login' %}" class="underline hover:no-underline">Войти</a> или 
+              <a href="{% url 'account_login' %}" class="underline hover:no-underline">Войти</a> или
               <a href="{% url 'account_signup' %}" class="underline hover:no-underline">создать аккаунт</a>
             </p>
           </div>
@@ -265,7 +265,7 @@
             <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
               {{ c.user.first_name|first|default:c.user.username|first|upper }}
             </div>
-            
+
             <div class="flex-1 min-w-0">
               <!-- Comment Header -->
               <div class="flex items-center gap-2 mb-2">
@@ -281,21 +281,21 @@
 
               <!-- Comment Actions -->
               <div class="flex flex-wrap items-center gap-3">
-                <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment text-[var(--muted)] hover:text-red-500"
+                <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment {% if c.pk in liked_comment_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %} hover:text-red-500"
                         data-url="{% url 'gallery:comment_like' c.pk %}"
                         data-count-id="clc-{{ c.pk }}"
                         type="button"
-                        aria-pressed="false"
+                        aria-pressed="{% if c.pk in liked_comment_ids %}true{% else %}false{% endif %}"
                         aria-label="Лайк комментарию">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pk in liked_comment_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                   </svg>
-                  <span id="clc-{{ c.pk }}" class="text-sm">{{ c.likes.count }}</span>
+                  <span id="clc-{{ c.pk }}" class="text-sm">{{ c.likes_count|default:0 }}</span>
                 </button>
 
                 {% if request.user.is_authenticated %}
-                  <button class="text-sm text-[var(--muted)] hover:text-[var(--text)] transition js-reply-toggle" 
-                          type="button" 
+                  <button class="text-sm text-[var(--muted)] hover:text-[var(--text)] transition js-reply-toggle"
+                          type="button"
                           data-target="reply-{{ c.pk }}"
                           onclick="(function(btn){var id=btn.getAttribute('data-target');var f=document.getElementById(id);if(!f)return;var h=f.classList.contains('hidden');f.classList.toggle('hidden', !h);if(h){var ta=f.querySelector('textarea');if(ta){setTimeout(function(){ta.focus();},100);}}})(this)">
                     Ответить
@@ -305,9 +305,9 @@
 
               <!-- Reply Form -->
               {% if request.user.is_authenticated %}
-        <form id="reply-{{ c.pk }}" 
-          class="mt-4 hidden" 
-          method="post" 
+        <form id="reply-{{ c.pk }}"
+          class="mt-4 hidden"
+          method="post"
           action="{% url 'gallery:comment_reply' c.pk %}"
           data-comment-form="reply">
                   {% csrf_token %}
@@ -316,8 +316,8 @@
                       {{ request.user.first_name|first|default:request.user.username|first|upper }}
                     </div>
                     <div class="flex-1">
-                      <textarea name="text" 
-                                class="field min-h-24 sm:min-h-20 resize-none mb-2 text-sm" 
+                      <textarea name="text"
+                                class="field min-h-24 sm:min-h-20 resize-none mb-2 text-sm"
                                 placeholder="Ваш ответ..."
                                 maxlength="1000"
                                 required></textarea>
@@ -339,7 +339,7 @@
                         <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                           {{ r.user.first_name|first|default:r.user.username|first|upper }}
                         </div>
-                        
+
                         <div class="flex-1 min-w-0">
                           <div class="flex items-center gap-2 mb-1">
                             <span class="font-medium text-sm">{{ r.user.get_full_name|default:r.user.username }}</span>
@@ -348,19 +348,19 @@
                               {{ r.created_at|date:'d.m.Y H:i' }}
                             </time>
                           </div>
-                          
+
                           <div class="text-sm leading-relaxed mb-2 comment-text">{{ r.text }}</div>
-                          
-                          <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment text-[var(--muted)] hover:text-red-500"
+
+                          <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment {% if r.pk in liked_comment_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %} hover:text-red-500"
                                   data-url="{% url 'gallery:comment_like' r.pk %}"
                                   data-count-id="clc-{{ r.pk }}"
                                   type="button"
-                                  aria-pressed="false"
+                                  aria-pressed="{% if r.pk in liked_comment_ids %}true{% else %}false{% endif %}"
                                   aria-label="Лайк ответу">
-                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="{% if r.pk in liked_comment_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                             </svg>
-                            <span id="clc-{{ r.pk }}" class="text-xs">{{ r.likes.count }}</span>
+                            <span id="clc-{{ r.pk }}" class="text-xs">{{ r.likes_count|default:0 }}</span>
                           </button>
                         </div>
                       </div>
@@ -394,7 +394,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const img = document.querySelector('img[src="{{ photo.image.url }}"]');
   const dimensionsEl = document.getElementById('imageDimensions');
-  
+
   if (img && dimensionsEl) {
     img.onload = () => {
       dimensionsEl.textContent = `${img.naturalWidth}×${img.naturalHeight}`;
@@ -434,16 +434,16 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         credentials: 'same-origin'
       });
-      
+
       const j = await r.json().catch(() => null);
       if (!r.ok || !j || j.ok !== true) throw new Error('like failed');
 
       // Update button state
       const heart = btn.querySelector('svg');
       const isLiked = !!j.liked;
-      
+
       btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
-      
+
       if (isLiked) {
         btn.classList.add('text-red-500');
         btn.classList.remove('text-[var(--muted)]');
@@ -470,19 +470,19 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('.js-like-comment');
   if (!btn) return;
-  
+
   e.preventDefault();
   e.stopPropagation();
-  
+
   if (btn.disabled || btn.dataset.loading === '1') return;
   btn.dataset.loading = '1';
   btn.disabled = true;
-  
+
   function getCSRFCookie(){
     const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
     return m ? decodeURIComponent(m[1]) : "";
   }
-  
+
   try {
     const response = await fetch(btn.dataset.url, {
       method: 'POST',
@@ -492,7 +492,7 @@ document.addEventListener('click', async (e) => {
       },
       credentials: 'same-origin'
     });
-    
+
     const data = await response.json().catch(() => null);
     if (!response.ok || !data || data.ok !== true) {
       throw new Error('Comment like failed');
@@ -504,13 +504,13 @@ document.addEventListener('click', async (e) => {
     if (countEl && typeof data.count === 'number') {
       countEl.textContent = data.count;
     }
-    
+
     // Update button state
     const heart = btn.querySelector('svg');
     const isLiked = !!data.liked;
-    
+
     btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
-    
+
     if (isLiked) {
       btn.classList.add('text-red-500');
       btn.classList.remove('text-[var(--muted)]');
@@ -520,7 +520,7 @@ document.addEventListener('click', async (e) => {
       btn.classList.add('text-[var(--muted)]');
       heart.setAttribute('fill', 'none');
     }
-    
+
   } catch (err) {
     console.warn('Comment like failed:', err);
   } finally {
@@ -533,14 +533,14 @@ document.addEventListener('click', async (e) => {
 document.addEventListener('click', (e) => {
   const toggleBtn = e.target.closest('.js-reply-toggle');
   if (!toggleBtn) return;
-  
+
   const targetId = toggleBtn.getAttribute('data-target');
   const form = document.getElementById(targetId);
-  
+
   if (form) {
     const isHidden = form.classList.contains('hidden');
     form.classList.toggle('hidden', !isHidden);
-    
+
     if (isHidden) {
       // Focus on textarea when showing form
       const textarea = form.querySelector('textarea');
@@ -634,15 +634,15 @@ textarea {
   .grid.lg\\:grid-cols-3 {
     grid-template-columns: 1fr;
   }
-  
+
   .lg\\:col-span-2 {
     order: 1;
   }
-  
+
   .btn {
     min-height: 44px;
   }
-  
+
   .flex.items-center.gap-6 {
     gap: 1rem;
   }

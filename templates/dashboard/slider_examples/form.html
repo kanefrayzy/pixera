@@ -240,27 +240,6 @@
           {% endif %}
         </div>
 
-        <!-- Ratio -->
-        <div>
-          <label for="{{ form.ratio.id_for_label }}" class="block text-sm font-medium mb-2">
-            {{ form.ratio.label }}
-          </label>
-          <select id="{{ form.ratio.id_for_label }}"
-                  name="{{ form.ratio.name }}"
-                  class="field {% if form.ratio.errors %}border-red-500{% endif %}">
-            <option value="">Выберите соотношение</option>
-            <option value="1:1" {% if form.ratio.value == "1:1" %}selected{% endif %}>1:1 (квадрат)</option>
-            <option value="3:2" {% if form.ratio.value == "3:2" %}selected{% endif %}>3:2 (альбом)</option>
-            <option value="2:3" {% if form.ratio.value == "2:3" %}selected{% endif %}>2:3 (портрет)</option>
-            <option value="4:3" {% if form.ratio.value == "4:3" %}selected{% endif %}>4:3</option>
-            <option value="16:9" {% if form.ratio.value == "16:9" %}selected{% endif %}>16:9 (широкий)</option>
-          </select>
-          {% if form.ratio.errors %}
-            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
-              {% for error in form.ratio.errors %}{{ error }}{% endfor %}
-            </div>
-          {% endif %}
-        </div>
 
         <!-- Seed -->
         <div>

@@ -1,6 +1,7 @@
 import json
 import os
-from django.db import models
+from django.db import models, transaction
+from django.db.models import Max
 from django.conf import settings
 from django.core.files.storage import default_storage
 
@@ -8,13 +9,15 @@ from django.core.files.storage import default_storage
 class SliderExample(models.Model):
     """Модель для управления примерами слайдера из JSON файла"""
 
-    json_id = models.IntegerField(unique=True, help_text="ID в JSON файле")
+    json_id = models.IntegerField(help_text="ID в JSON файле", blank=True, null=True, db_index=True)
     title = models.CharField(max_length=200, verbose_name="Заголовок")
     prompt = models.TextField(verbose_name="Промт")
     image = models.ImageField(
         upload_to='slider_examples/',
         verbose_name="Изображение",
-        help_text="Загрузите изображение для примера"
+        help_text="Загрузите изображение для примера",
+        blank=True,
+        null=True
     )
     description = models.CharField(max_length=500, verbose_name="Описание")
     alt = models.CharField(max_length=200, verbose_name="Alt текст для изображения")
@@ -22,18 +25,7 @@ class SliderExample(models.Model):
     # Настройки генерации
     steps = models.IntegerField(default=28, verbose_name="Количество шагов")
     cfg = models.FloatField(default=7.0, verbose_name="CFG Scale")
-    ratio = models.CharField(
-        max_length=10,
-        default="3:2",
-        verbose_name="Соотношение сторон",
-        choices=[
-            ("1:1", "1:1 (квадрат)"),
-            ("3:2", "3:2 (фото)"),
-            ("4:3", "4:3 (стандарт)"),
-            ("16:9", "16:9 (широкий)"),
-            ("9:16", "9:16 (вертикальный)"),
-        ]
-    )
+    # ratio убран - всегда используется 3:2
     seed = models.CharField(
         max_length=20,
         default="auto",
@@ -54,6 +46,15 @@ class SliderExample(models.Model):
 
     def __str__(self):
         return f"{self.title} (ID: {self.json_id})"
+
+    @property
+    def ratio(self):
+        """Соотношение сторон всегда 3:2"""
+        return "3:2"
+
+    def save(self, *args, **kwargs):
+        """Переопределяем save для базовых операций"""
+        super().save(*args, **kwargs)
 
     @classmethod
     def get_json_file_path(cls):
@@ -82,7 +83,7 @@ class SliderExample(models.Model):
                         'alt': item['alt'],
                         'steps': item['settings']['steps'],
                         'cfg': item['settings']['cfg'],
-                        'ratio': item['settings']['ratio'],
+                        # ratio убран - всегда 3:2
                         'seed': str(item['settings']['seed']),
                         'order': item['id'],
                     }

@@ -10,7 +10,7 @@ class SliderExampleForm(forms.ModelForm):
         model = SliderExample
         fields = [
             'title', 'prompt', 'image', 'description', 'alt',
-            'steps', 'cfg', 'ratio', 'seed', 'order', 'is_active'
+            'steps', 'cfg', 'seed', 'order', 'is_active'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -40,9 +40,6 @@ class SliderExampleForm(forms.ModelForm):
                 'step': 0.1,
                 'min': 1.0,
                 'max': 20.0
-            }),
-            'ratio': forms.Select(attrs={
-                'class': 'form-control'
             }),
             'seed': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -79,11 +76,35 @@ class SliderExampleForm(forms.ModelForm):
             raise ValidationError('CFG Scale должен быть от 1.0 до 20.0')
         return cfg
 
+    def clean_cfg(self):
+        cfg = self.cleaned_data.get('cfg')
+        if cfg and (cfg < 1.0 or cfg > 20.0):
+            raise ValidationError('CFG Scale должен быть от 1.0 до 20.0')
+        return cfg
+
     def clean_steps(self):
         steps = self.cleaned_data.get('steps')
         if steps and (steps < 1 or steps > 100):
             raise ValidationError('Количество шагов должно быть от 1 до 100')
         return steps
+
+    def save(self, commit=True):
+        """Переопределяем save для автоматической генерации json_id"""
+        instance = super().save(commit=False)
+
+        # Генерируем json_id только для новых объектов
+        if instance.pk is None and instance.json_id is None:
+            from django.db.models import Max
+            from django.db import transaction
+
+            with transaction.atomic():
+                max_id = SliderExample.objects.select_for_update().aggregate(Max('json_id'))['json_id__max']
+                instance.json_id = (max_id + 1) if max_id is not None else 0
+
+        if commit:
+            instance.save()
+
+        return instance
 
 
 class BulkImportForm(forms.Form):
@@ -133,15 +154,6 @@ class SliderExampleFilterForm(forms.Form):
             ('1', 'Активные'),
             ('0', 'Неактивные'),
         ],
-        widget=forms.Select(attrs={
-            'class': 'field'
-        })
-    )
-
-    ratio = forms.ChoiceField(
-        required=False,
-        label='Соотношение сторон',
-        choices=[('', 'Все соотношения')] + SliderExample._meta.get_field('ratio').choices,
         widget=forms.Select(attrs={
             'class': 'field'
         })

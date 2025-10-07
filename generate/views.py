@@ -405,6 +405,14 @@ def _merge_grant_to_wallet_once(request: HttpRequest, wallet: Wallet) -> None:
             # Используем select_for_update для предотвращения race conditions
             wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
 
+            # Проверяем, есть ли уже привязанный к этому пользователю FreeGrant
+            existing_grant = FreeGrant.objects.filter(user=wallet.user).first()
+            if existing_grant:
+                # У пользователя уже есть привязанный грант, не создаем новый и не переносим токены
+                request.session[session_key] = True
+                request.session.modified = True
+                return
+
             grant, _maybe_cookie = _ensure_grant(request)
             if not grant:
                 request.session[session_key] = True

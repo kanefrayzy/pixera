@@ -191,7 +191,10 @@ def index(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         my_thumbs = (
             GenerationJob.objects
-            .filter(user=request.user, status=GenerationJob.Status.DONE)
+            .filter(
+                user=request.user,
+                status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION]
+            )
             .order_by("-created_at")[:6]
         )
     else:
@@ -203,7 +206,7 @@ def index(request: HttpRequest) -> HttpResponse:
         fp = _get_fp_from_request(request) or _hard_fingerprint(request)
 
         # Строим запрос с учетом всех идентификаторов
-        q = Q(user__isnull=True, status=GenerationJob.Status.DONE)
+        q = Q(user__isnull=True, status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION])
         guest_filters = Q()
 
         if skey:
@@ -265,11 +268,23 @@ def index(request: HttpRequest) -> HttpResponse:
                 ).values_list("photo_id", flat=True)
             )
 
+    # Определяем статус публикации для my_thumbs
+    published_job_ids = set()
+    if my_thumbs:
+        job_ids = [j.id for j in my_thumbs]
+        published_job_ids = set(
+            PublicPhoto.objects.filter(
+                source_job__in=job_ids,
+                is_active=True
+            ).values_list("source_job_id", flat=True)
+        )
+
     return render(
         request,
         "gallery/index.html",
         {
             "my_thumbs": my_thumbs,
+            "published_job_ids": published_job_ids,
             "categories": categories,
             "active_category": active_category,
             "public_photos": page_obj.object_list,
@@ -313,7 +328,7 @@ def trending(request: HttpRequest) -> HttpResponse:
     elif mode == "new":
         photos_qs = (
             base_qs.filter(created_at__gte=now - timedelta(days=10))
-                   .order_by("-likes_count", "-view_count", "-created_at")
+                   .order_by("-created_at", "-likes_count", "-view_count")
         )
     else:  # views
         photos_qs = base_qs.order_by("-view_count", "-likes_count", "-created_at")
@@ -369,7 +384,7 @@ def trending_snippet(request: HttpRequest) -> HttpResponse:
     elif mode == "new":
         photos_qs = (
             base_qs.filter(created_at__gte=now - timedelta(days=10))
-                   .order_by("-likes_count", "-view_count", "-created_at")
+                   .order_by("-created_at", "-likes_count", "-view_count")
         )
     else:  # views
         photos_qs = base_qs.order_by("-view_count", "-likes_count", "-created_at")
@@ -439,6 +454,29 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
         skey = _ensure_session_key(request)
         liked = PhotoLike.objects.filter(user__isnull=True, session_key=skey, photo=photo).exists()
 
+    # Определяем лайкнутые комментарии для текущего пользователя/гостя
+    liked_comment_ids: set[int] = set()
+    all_comment_ids = []
+    for c in comments:
+        all_comment_ids.append(c.pk)
+        for r in c.replies.all():
+            all_comment_ids.append(r.pk)
+
+    if all_comment_ids:
+        if request.user.is_authenticated:
+            liked_comment_ids = set(
+                CommentLike.objects.filter(
+                    user=request.user, comment_id__in=all_comment_ids
+                ).values_list("comment_id", flat=True)
+            )
+        else:
+            skey = _ensure_session_key(request)
+            liked_comment_ids = set(
+                CommentLike.objects.filter(
+                    user__isnull=True, session_key=skey, comment_id__in=all_comment_ids
+                ).values_list("comment_id", flat=True)
+            )
+
     # ───────── Похожие изображения (по категории; фолбэк — топ по лайкам) ─────────
     try:
         related_photos = []
@@ -468,6 +506,7 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
             "photo": photo,
             "comments": comments,
             "liked": liked,
+            "liked_comment_ids": liked_comment_ids,
             "comment_form": PhotoCommentForm(),
             "related_photos": related_photos,
         },

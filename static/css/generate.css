@@ -228,3 +228,276 @@
 .cat-card.active {
   animation: categoryPulse 0.3s ease-out;
 }
+
+/* Showcase Cards Styles */
+.showcase-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.showcase-card .card {
+  border: 1px solid var(--bord);
+  background: var(--card);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+.showcase-card:hover .card {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 1;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 2;
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 479px) {
+  /* Extra small screens */
+  .showcase-card .card {
+    border-radius: 0.5rem;
+  }
+
+  .showcase-card .btn {
+    font-size: 10px;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
+  }
+
+  .showcase-card .btn svg {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (min-width: 480px) {
+  /* Small screens and up */
+  .showcase-card .card {
+    border-radius: 0.75rem;
+  }
+
+  .showcase-card:hover .card {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  }
+}
+
+@media (min-width: 768px) {
+  /* Medium screens and up */
+  .showcase-card:hover .card {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Large screens and up */
+  .showcase-card .card:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    transform-origin: left;
+  }
+
+  .showcase-card:hover .card:before {
+    transform: scaleX(1);
+  }
+
+  .showcase-card:hover .card {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* Button improvements for mobile */
+.showcase-card .btn-primary {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.showcase-card .btn-primary:hover {
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
+}
+
+/* Empty state improvements */
+.showcase-card .col-span-full {
+  grid-column: 1 / -1;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .showcase-card .card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border-color: var(--bord);
+}
+
+[data-theme="dark"] .showcase-card:hover .card {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .showcase-card .btn-primary {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .showcase-card .btn-primary:hover {
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.4);
+}
+
+/* Additional responsive utilities */
+@media (max-width: 479px) {
+  .xs\:hidden {
+    display: none;
+  }
+}
+
+@media (min-width: 480px) {
+  .xs\:flex {
+    display: flex;
+  }
+}
+
+/* Showcase refresh animations */
+.showcase-item {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.showcase-enter {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+.showcase-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.showcase-exit {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.showcase-exit-active {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+}
+
+/* Refresh button animations */
+#refreshShowcase {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#refreshShowcase:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#refreshShowcase:active {
+  transform: translateY(0);
+}
+
+#refreshShowcase svg {
+  transition: transform 0.2s ease;
+}
+
+#refreshShowcase:hover svg {
+  transform: rotate(180deg);
+}
+
+/* Loading state for refresh button */
+#refreshShowcase .animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Showcase Image Protection */
+.showcase-image-container {
+  position: relative;
+  cursor: pointer;
+}
+
+.showcase-image {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.showcase-overlay {
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.showcase-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.showcase-open-btn {
+  transform: scale(0.9);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.showcase-overlay.show .showcase-open-btn {
+  transform: scale(1);
+}
+
+.showcase-cancel-btn {
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.showcase-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile adjustments for overlay */
+@media (max-width: 479px) {
+  .showcase-overlay .btn {
+    font-size: 12px;
+    padding: 0.5rem 1rem;
+  }
+
+  .showcase-cancel-btn {
+    font-size: 12px;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* Animation for image click */
+.showcase-image-container.clicked .showcase-image {
+  transform: scale(1.02);
+}
+
+/* Prevent double-tap zoom on mobile */
+.showcase-image-container {
+  touch-action: manipulation;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

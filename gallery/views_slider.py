@@ -28,7 +28,6 @@ def slider_examples_list(request):
     if filter_form.is_valid():
         title = filter_form.cleaned_data.get('title')
         is_active = filter_form.cleaned_data.get('is_active')
-        ratio = filter_form.cleaned_data.get('ratio')
 
         if title:
             examples = examples.filter(
@@ -37,9 +36,6 @@ def slider_examples_list(request):
 
         if is_active:
             examples = examples.filter(is_active=is_active == '1')
-
-        if ratio:
-            examples = examples.filter(ratio=ratio)
 
     examples = examples.order_by('order', 'json_id')
 

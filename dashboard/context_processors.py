@@ -56,22 +56,27 @@ def wallet_context(request):
     if not request.user.is_authenticated:
         return {}
 
-    # 1) гарантируем кошелёк (без автодоначислений!)
+    # 1) гарантируем кошелёк
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
 
     # 2) один раз за сессию переносим остаток гостя
     try:
         session_key = f"grant_merged_once_{request.user.id}"
         if not request.session.get(session_key):
-            grant = _ensure_free_grant_for(request)
-            # если эта гостевая запись ещё не принадлежит этому юзеру — перенесём остаток
-            if grant.user_id != request.user.id:
-                grant.transfer_all_left_to_wallet(request.user)  # перенесёт left и «обнулит» гостя
-            # отметим, чтобы не делать это на каждом запросе
+            # Проверяем, есть ли уже привязанный к этому пользователю FreeGrant
+            from generate.models import FreeGrant
+            existing_grant = FreeGrant.objects.filter(user=request.user).first()
+            if existing_grant:
+                # У пользователя уже есть привязанный грант, не создаем новый и не переносим токены
+                pass
+            else:
+                grant = _ensure_free_grant_for(request)
+                # если эта гостевая запись ещё не принадлежит этому юзеру — перенесём остаток
+                if grant.user_id != request.user.id:
+                    grant.bind_to_user(request.user, transfer_left=True)
             request.session[session_key] = True
             request.session.modified = True
     except Exception:
-        # не валим рендер из-за технических ошибок с переносом
         pass
 
     # 3) расчёт стоимости и оставшихся генераций

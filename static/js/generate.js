@@ -446,3 +446,94 @@
     });
   }
 })();
+
+/* === SHOWCASE IMAGE PROTECTION =========================================== */
+(function(){
+  // Handle image clicks with confirmation overlay
+  document.addEventListener('click', function(e) {
+    const imageContainer = e.target.closest('.showcase-image-container');
+    const openBtn = e.target.closest('.showcase-open-btn');
+    const cancelBtn = e.target.closest('.showcase-cancel-btn');
+    const overlay = e.target.closest('.showcase-overlay');
+
+    // If clicked on image or container (but not on overlay)
+    if (imageContainer && !overlay) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Close any other open overlays
+      document.querySelectorAll('.showcase-overlay.show').forEach(otherOverlay => {
+        if (otherOverlay !== imageContainer.querySelector('.showcase-overlay')) {
+          otherOverlay.classList.remove('show');
+          otherOverlay.closest('.showcase-image-container').classList.remove('clicked');
+        }
+      });
+
+      // Toggle current overlay
+      const currentOverlay = imageContainer.querySelector('.showcase-overlay');
+      if (currentOverlay) {
+        currentOverlay.classList.add('show');
+        imageContainer.classList.add('clicked');
+      }
+    }
+
+    // If clicked on open button
+    if (openBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const container = openBtn.closest('.showcase-image-container');
+      const imageUrl = container?.dataset.imageUrl;
+
+      if (imageUrl) {
+        window.open(imageUrl, '_blank', 'noopener');
+      }
+
+      // Hide overlay
+      const overlay = container?.querySelector('.showcase-overlay');
+      if (overlay) {
+        overlay.classList.remove('show');
+        container.classList.remove('clicked');
+      }
+    }
+
+    // If clicked on cancel button
+    if (cancelBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const container = cancelBtn.closest('.showcase-image-container');
+      const overlay = container?.querySelector('.showcase-overlay');
+
+      if (overlay) {
+        overlay.classList.remove('show');
+        container.classList.remove('clicked');
+      }
+    }
+
+    // If clicked outside any image container, close all overlays
+    if (!imageContainer) {
+      document.querySelectorAll('.showcase-overlay.show').forEach(overlay => {
+        overlay.classList.remove('show');
+        overlay.closest('.showcase-image-container').classList.remove('clicked');
+      });
+    }
+  });
+
+  // Close overlay on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.showcase-overlay.show').forEach(overlay => {
+        overlay.classList.remove('show');
+        overlay.closest('.showcase-image-container').classList.remove('clicked');
+      });
+    }
+  });
+
+  // Prevent context menu on images to avoid confusion
+  document.addEventListener('contextmenu', function(e) {
+    if (e.target.closest('.showcase-image')) {
+      e.preventDefault();
+    }
+  });
+})();

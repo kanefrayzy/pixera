@@ -8,14 +8,16 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+from .utils import transliterate_slug
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Tag
 # ──────────────────────────────────────────────────────────────────────────────
 class Tag(models.Model):
     name = models.CharField("Название", max_length=48, unique=True)
-    # важное: позволяем юникод в самом поле
-    slug = models.SlugField("Слаг", max_length=64, unique=True, db_index=True, allow_unicode=True)
+    # убираем allow_unicode=True, теперь используем только латинские символы
+    slug = models.SlugField("Слаг", max_length=64, unique=True, db_index=True)
 
     class Meta:
         ordering = ["name"]
@@ -27,7 +29,7 @@ class Tag(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base = slugify(self.name, allow_unicode=True) or "tag"
+            base = transliterate_slug(self.name) or "tag"
             slug = base
             i = 2
             while Tag.objects.filter(slug=slug).exclude(pk=self.pk).exists():
@@ -50,8 +52,8 @@ class PostQuerySet(models.QuerySet):
 # ──────────────────────────────────────────────────────────────────────────────
 class Post(models.Model):
     title = models.CharField("Заголовок", max_length=180)
-    # важное: allow_unicode=True, чтобы Django валидировал кириллицу в слагах
-    slug = models.SlugField("Слаг", max_length=200, unique=True, blank=True, allow_unicode=True)
+    # убираем allow_unicode=True, теперь используем только латинские символы
+    slug = models.SlugField("Слаг", max_length=200, unique=True, blank=True)
     cover = models.ImageField("Обложка", upload_to="blog/covers/")
     excerpt = models.TextField("Краткое описание", max_length=300, blank=True)
     body = models.TextField("Текст статьи", blank=True)
@@ -111,7 +113,7 @@ class Post(models.Model):
     def save(self, *args, **kwargs) -> None:
         if not self.slug:
             # режем запас по длине (чуть меньше max_length, чтобы влезли суффиксы -2, -3, ...)
-            base = (slugify(self.title, allow_unicode=True) or "post")[:190]
+            base = transliterate_slug(self.title)[:190]
             slug = base
             i = 2
             while Post.objects.filter(slug=slug).exclude(pk=self.pk).exists():

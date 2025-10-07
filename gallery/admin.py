@@ -78,10 +78,10 @@ class SliderExampleAdmin(admin.ModelAdmin):
     """Админ-панель для управления примерами слайдера"""
 
     list_display = [
-        'json_id', 'title', 'description', 'ratio', 'steps',
+        'json_id', 'title', 'description', 'steps',
         'cfg', 'is_active', 'order', 'created_at'
     ]
-    list_filter = ['is_active', 'ratio', 'created_at', 'updated_at']
+    list_filter = ['is_active', 'created_at', 'updated_at']
     search_fields = ['title', 'description', 'prompt']
     list_editable = ['is_active', 'order']
     ordering = ['order', 'json_id']
@@ -91,7 +91,7 @@ class SliderExampleAdmin(admin.ModelAdmin):
             'fields': ('title', 'prompt', 'description', 'alt', 'image')
         }),
         ('Настройки генерации', {
-            'fields': ('steps', 'cfg', 'ratio', 'seed')
+            'fields': ('steps', 'cfg', 'seed')
         }),
         ('Дополнительно', {
             'fields': ('order', 'is_active')

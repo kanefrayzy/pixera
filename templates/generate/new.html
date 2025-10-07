@@ -107,6 +107,64 @@
     <meta itemprop="description" content="Онлайн-генератор изображений на ИИ: фотореализм, художественные стили и подсказки. Стоимость — токены, 1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK.">
   </div>
 
+
+
+  <!-- Generation Form -->
+  <form method="post" class="card p-6 sm:p-8" novalidate itemprop="potentialAction" itemscope itemtype="https://schema.org/CreateAction">
+    {% csrf_token %}
+    <meta itemprop="name" content="Создать изображение по текстовому описанию">
+
+    <div class="space-y-6">
+      <!-- Prompt Input -->
+      <div>
+        <label class="block text-sm font-medium mb-3" for="prompt">Описание изображения</label>
+        <div class="relative">
+          <textarea
+            id="prompt"
+            name="prompt"
+            class="field min-h-36 sm:min-h-32 resize-none"
+            placeholder="Пример: cinematic portrait, soft studio light, 85mm, shallow DOF, orange accents"
+            required
+            aria-required="true"
+            maxlength="1500"
+            itemprop="actionOption"></textarea>
+
+          <!-- Floating Tags -->
+          <div class="absolute top-3 right-3 flex flex-wrap gap-1 pointer-events-none opacity-30" aria-hidden="true">
+            <span class="badge text-xs">style</span>
+            <span class="badge text-xs">lighting</span>
+            <span class="badge text-xs">lens</span>
+          </div>
+        </div>
+
+        <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[var(--muted)]">
+          <p>Совет: укажите стиль, свет, объектив, материалы и настроение. Избегайте двойных отрицаний.</p>
+          <p>Стоимость: <strong class="text-[var(--text)]">{% with c=price|default:TOKENS_PRICE_PER_GEN|default:10 %}{{ c }} TOK{% endwith %}</strong></p>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center flex-wrap justify-center gap-3 w-full sm:w-auto">
+          <button class="btn btn-primary text-base px-8 py-3 w-full sm:w-auto" id="genBtn" type="submit">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Сгенерировать
+          </button>
+          <span class="text-sm text-[var(--muted)]">Обычно ~1 минута</span>
+        </div>
+
+        <!-- Quick Stats -->
+  <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-[var(--muted)]">
+          <span class="pill">10M+ генераций</span>
+          <span class="pill">Фотореализм</span>
+          <span class="pill">×4 Upscale</span>
+        </div>
+      </div>
+    </div>
+  </form>
+
   <!-- Suggestions Section -->
   {% if suggestion_categories %}
   <div class="card p-6">
@@ -205,78 +263,22 @@
   </div>
   {% endif %}
 
-  <!-- Generation Form -->
-  <form method="post" class="card p-6 sm:p-8" novalidate itemprop="potentialAction" itemscope itemtype="https://schema.org/CreateAction">
-    {% csrf_token %}
-    <meta itemprop="name" content="Создать изображение по текстовому описанию">
-
-    <div class="space-y-6">
-      <!-- Prompt Input -->
-      <div>
-        <label class="block text-sm font-medium mb-3" for="prompt">Описание изображения</label>
-        <div class="relative">
-          <textarea
-            id="prompt"
-            name="prompt"
-            class="field min-h-36 sm:min-h-32 resize-none"
-            placeholder="Пример: cinematic portrait, soft studio light, 85mm, shallow DOF, orange accents"
-            required
-            aria-required="true"
-            maxlength="1500"
-            itemprop="actionOption"></textarea>
-
-          <!-- Floating Tags -->
-          <div class="absolute top-3 right-3 flex flex-wrap gap-1 pointer-events-none opacity-30" aria-hidden="true">
-            <span class="badge text-xs">style</span>
-            <span class="badge text-xs">lighting</span>
-            <span class="badge text-xs">lens</span>
-          </div>
-        </div>
-
-        <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[var(--muted)]">
-          <p>Совет: укажите стиль, свет, объектив, материалы и настроение. Избегайте двойных отрицаний.</p>
-          <p>Стоимость: <strong class="text-[var(--text)]">{% with c=price|default:TOKENS_PRICE_PER_GEN|default:10 %}{{ c }} TOK{% endwith %}</strong></p>
-        </div>
-      </div>
-
-      <!-- Generate Button -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center flex-wrap justify-center gap-3 w-full sm:w-auto">
-          <button class="btn btn-primary text-base px-8 py-3 w-full sm:w-auto" id="genBtn" type="submit">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            Сгенерировать
-          </button>
-          <span class="text-sm text-[var(--muted)]">Обычно ~1 минута</span>
-        </div>
-
-        <!-- Quick Stats -->
-  <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-[var(--muted)]">
-          <span class="pill">10M+ генераций</span>
-          <span class="pill">Фотореализм</span>
-          <span class="pill">×4 Upscale</span>
-        </div>
-      </div>
-    </div>
-  </form>
-
   <!-- Showcase Section -->
   {% if showcase_images %}
-  <div class="card p-6" aria-labelledby="showcaseTitle">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+  <div class="card p-4 sm:p-6 lg:p-8" aria-labelledby="showcaseTitle">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 mb-4 sm:mb-6">
       <div>
-        <h2 id="showcaseTitle" class="text-lg font-semibold">Примеры результатов</h2>
-        <p class="text-sm text-[var(--muted)]">Вдохновляйтесь работами других пользователей</p>
+        <h2 id="showcaseTitle" class="text-lg sm:text-xl lg:text-2xl font-bold">Примеры результатов</h2>
+        <p class="text-xs sm:text-sm text-[var(--muted)] mt-1">Вдохновляйтесь работами других пользователей</p>
       </div>
 
       {% if showcase_categories %}
         <div class="overflow-x-auto no-scrollbar -mx-2 px-2">
           <div class="flex items-center gap-2 min-w-max">
-            <button class="pill bg-primary/15 text-primary border-primary/30 js-sh-cat" data-cat="all">Все</button>
+            <button class="pill bg-primary/15 text-primary border-primary/30 js-sh-cat text-xs sm:text-sm" data-cat="all">Все</button>
             {% for sc in showcase_categories %}
               {% if sc.is_active %}
-                <button class="pill js-sh-cat" data-cat="{{ sc.slug }}">{{ sc.name }}</button>
+                <button class="pill js-sh-cat text-xs sm:text-sm" data-cat="{{ sc.slug }}">{{ sc.name }}</button>
               {% endif %}
             {% endfor %}
           </div>
@@ -284,36 +286,105 @@
       {% endif %}
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      {% for item in showcase_images %}
+    <!-- Mobile: 2 columns, Tablet: 3 columns, Desktop: 4 columns -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6" id="showcaseGrid">
+      {% for item in showcase_images|slice:":6" %}
         {% if item.is_active %}
-          <article class="group" data-cat="{{ item.category.slug|default:'misc' }}" itemscope itemtype="https://schema.org/ImageObject">
-            <div class="card overflow-hidden">
-              <a href="{{ item.image.url }}" target="_blank" rel="noopener" itemprop="contentUrl">
+          <article class="group showcase-card showcase-item" data-cat="{{ item.category.slug|default:'misc' }}" itemscope itemtype="https://schema.org/ImageObject">
+            <div class="card overflow-hidden transition-all duration-300">
+              <!-- Image Container -->
+              <div class="relative overflow-hidden showcase-image-container" data-image-url="{{ item.image.url }}">
                 <img
                   loading="lazy"
                   src="{{ item.image.url }}"
                   alt="{{ item.title|default:'Пример изображения' }}"
                   itemprop="image"
-                  class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.03]">
-              </a>
-              <div class="p-3">
-                <div class="flex items-center justify-between text-xs mb-2">
-                  <span class="pill">{{ item.category.name|default:'Misc' }}</span>
-                  <span class="text-[var(--muted)]">♡ {{ item.likes_count|default:0 }}</span>
+                  class="w-full aspect-[4/5] sm:aspect-[3/4] object-cover transition duration-300 group-hover:scale-105 cursor-pointer showcase-image">
+
+                <!-- Overlay with category - hidden on very small screens -->
+                <div class="absolute top-2 left-2 right-2 hidden xs:flex items-center justify-between pointer-events-none">
+                  <span class="pill bg-black/70 text-white backdrop-blur-sm border-white/20 text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1">
+                    {{ item.category.name|default:'Misc' }}
+                  </span>
+                  <span class="pill bg-black/70 text-white backdrop-blur-sm border-white/20 flex items-center gap-1 text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1">
+                    <svg class="w-2 h-2 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+                    </svg>
+                    {{ item.likes_count|default:0 }}
+                  </span>
                 </div>
-                <div class="font-medium text-sm" itemprop="name">{{ item.title }}</div>
+
+                <!-- Open Button Overlay (hidden by default) -->
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 invisible transition-all duration-300 showcase-overlay">
+                  <div class="flex flex-col items-center gap-3 text-white">
+                    <button class="btn btn-primary px-6 py-2 text-sm showcase-open-btn" type="button">
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                      </svg>
+                      Открыть
+                    </button>
+                    <button class="btn btn-ghost text-white hover:text-white text-sm py-1 px-3 showcase-cancel-btn" type="button">
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card Content -->
+              <div class="p-2 sm:p-3 lg:p-4 space-y-2 sm:space-y-3">
+                <!-- Title -->
+                <h3 class="font-medium sm:font-semibold text-xs sm:text-sm lg:text-base leading-tight line-clamp-1" itemprop="name">
+                  {{ item.title|default:'Пример изображения' }}
+                </h3>
+
+                <!-- Category on mobile (replaces overlay) -->
+                <div class="flex xs:hidden items-center justify-between text-[10px] text-[var(--muted)]">
+                  <span class="pill text-[10px] px-1.5 py-0.5">{{ item.category.name|default:'Misc' }}</span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+                    </svg>
+                    {{ item.likes_count|default:0 }}
+                  </span>
+                </div>
+
+                <!-- Prompt Preview -->
                 {% if item.prompt %}
-                  <button type="button" class="btn btn-ghost mt-2 w-full text-xs py-1.5 js-insert-prompt" data-prompt="{{ item.prompt|escape }}">
-                    Вставить промпт
+                  <div class="text-[10px] sm:text-xs text-[var(--muted)] leading-relaxed">
+                    <p class="line-clamp-2 overflow-hidden">
+                      {{ item.prompt|truncatechars:80|truncatechars:120 }}...
+                    </p>
+                  </div>
+
+                  <!-- Insert Prompt Button -->
+                  <button type="button" class="btn btn-primary w-full text-[10px] sm:text-xs py-1.5 sm:py-2 transition-all duration-200 js-insert-prompt" data-prompt="{{ item.prompt|escape }}">
+                    <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    <span class="hidden sm:inline">Использовать промпт</span>
+                    <span class="sm:hidden">Промпт</span>
                   </button>
+                {% else %}
+                  <div class="text-[10px] sm:text-xs text-[var(--muted)] italic">
+                    Промпт не указан
+                  </div>
                 {% endif %}
               </div>
             </div>
           </article>
         {% endif %}
       {% empty %}
-        <p class="text-[var(--muted)] col-span-full text-center py-8">Пока нет примеров.</p>
+        <div class="col-span-full text-center py-8 sm:py-12">
+          <div class="max-w-xs sm:max-w-md mx-auto">
+            <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-[var(--muted)]/10 flex items-center justify-center">
+              <svg class="w-6 h-6 sm:w-8 sm:h-8 text-[var(--muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <p class="text-[var(--muted)] text-sm sm:text-lg">Пока нет примеров</p>
+            <p class="text-[var(--muted)] text-xs sm:text-sm mt-1 sm:mt-2">Первые работы появятся совсем скоро</p>
+          </div>
+        </div>
       {% endfor %}
     </div>
   </div>

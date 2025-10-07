@@ -57,18 +57,24 @@ def on_user_logged_in(sender, request, user, **kwargs):
 
     # --- 1) Перенос гостевых токенов ---
     try:
-        gid = (request.COOKIES.get("gid") or "").strip()
-        grant = FreeGrant.ensure_for(
-            fp=_hard_fp(request),
-            gid=gid,
-            session_key=request.session.session_key,
-            ip_hash=_ip_hash(request),
-            ua_hash=_ua_hash(request),
-            first_ip=(request.META.get("REMOTE_ADDR") or "").strip() or None,
-        )
-        # если уже привязано к этому юзеру — переносить нечего
-        if grant.user_id != user.id:
-            grant.transfer_all_left_to_wallet(user)  # перенесёт left и сделает consumed=total
+        # Проверяем, есть ли уже привязанный к этому пользователю FreeGrant
+        existing_grant = FreeGrant.objects.filter(user=user).first()
+        if existing_grant:
+            # У пользователя уже есть привязанный грант, не создаем новый и не переносим токены
+            pass
+        else:
+            gid = (request.COOKIES.get("gid") or "").strip()
+            grant = FreeGrant.ensure_for(
+                fp=_hard_fp(request),
+                gid=gid,
+                session_key=request.session.session_key,
+                ip_hash=_ip_hash(request),
+                ua_hash=_ua_hash(request),
+                first_ip=(request.META.get("REMOTE_ADDR") or "").strip() or None,
+            )
+            # если уже привязано к этому юзеру — переносить нечего
+            if grant.user_id != user.id:
+                grant.bind_to_user(user, transfer_left=True)  # используем правильный метод
     except Exception:
         # не мешаем логину даже если что-то пошло не так
         pass

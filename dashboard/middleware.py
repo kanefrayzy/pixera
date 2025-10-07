@@ -30,7 +30,8 @@ class EnsureWalletMiddleware:
 
         if user and user.is_authenticated and not request.session.get(self._SESSION_FLAG):
             try:
-                Wallet.objects.get_or_create(
+                # Проверяем, есть ли уже кошелек у пользователя
+                wallet, created = Wallet.objects.get_or_create(
                     user=user,
                     # ВАЖНО: стартовый баланс только при создании, существующие кошельки не трогаем
                     defaults={
@@ -38,6 +39,7 @@ class EnsureWalletMiddleware:
                         "purchased_total": 0,
                     },
                 )
+                # Если кошелек уже существовал, не добавляем токены повторно
             except Exception:
                 # Не блокируем пайплайн из-за ошибок кошелька
                 pass

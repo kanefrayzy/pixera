@@ -1,14 +1,28 @@
 [
   {
-    "id": 0,
-    "title": "Классический шедевр",
-    "prompt": "masterpiece, ultra realistic, cinematic lighting, Renaissance style portrait of a woman, delicate details, soft shadows, 8k, Canon EOS R5 photo, Rembrandt light, award-winning photo",
-    "image": "/media/slider_examples/04256c39-e20d-4627-a7f6-3b075f0d51e2.jpg",
-    "description": "Краткое описание для пользователей...",
-    "alt": "Описание изображения для доступности и поисковых систем",
+    "id": 1,
+    "title": "Футуристческий портрет",
+    "prompt": "Футуристческий портрет",
+    "image": "/media/slider_examples/41_pqAN3f3.jpg",
+    "description": "Футуристческий портрет",
+    "alt": "Футуристческий портрет",
     "settings": {
-      "steps": 33,
-      "cfg": 3.0,
+      "steps": 28,
+      "cfg": 6.5,
+      "ratio": "3:2",
+      "seed": "auto"
+    }
+  },
+  {
+    "id": 0,
+    "title": "Сияние летнего солнца",
+    "prompt": "Portrait of a smiling woman with curly hair standing among green leaves, golden hour sunlight, warm tones, natural beauty, soft focus, 85mm lens, cinematic lighting, realistic skin texture",
+    "image": "/media/slider_examples/AI_foto.webp",
+    "description": "Портрет молодой женщины с естественной улыбкой и вьющимися волосами, освещённой мягким золотым светом заката. Она стоит среди зелёных листьев, создавая ощущение тепла, спокойствия и гармонии с природой.",
+    "alt": "Женщина с вьющимися волосами улыбается среди зелёных листьев на закате.",
+    "settings": {
+      "steps": 28,
+      "cfg": 7.5,
       "ratio": "3:2",
       "seed": "auto"
     }
