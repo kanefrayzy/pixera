@@ -97,6 +97,158 @@ def _finalize_job_with_bytes(job: GenerationJob, content: bytes, ext: str = "png
     _safe_set(job, "provider_status", "success")
     job.save(update_fields=_safe_fields(job, ["status", "error", "result_image", "provider_status"]))
 
+
+# ── Video Polling ─────────────────────────────────────────────────────────────
+@shared_task(
+    bind=True,
+    name="generate.tasks.poll_video_result",
+    queue=RUNWARE_QUEUE,
+    soft_time_limit=180,  # Видео генерируется дольше
+    time_limit=240,
+    max_retries=120,  # 2 минуты максимум
+)
+def poll_video_result(self, job_id: int, attempt: int = 1) -> None:
+    """
+    Polling статуса видео от Runware.
+    Запускается автоматически после video_submit.
+    """
+    try:
+        job = GenerationJob.objects.select_for_update().get(pk=job_id)
+    except GenerationJob.DoesNotExist:
+        log.error(f"Video job {job_id} not found")
+        return
+
+    if job.status in (GenerationJob.Status.DONE, GenerationJob.Status.FAILED):
+        return
+
+    provider_uuid = getattr(job, "provider_task_uuid", None)
+    if not provider_uuid:
+        log.warning(f"Video job {job_id} has no provider_task_uuid")
+        return
+
+    # Импортируем функцию проверки статуса
+    try:
+        from ai_gallery.services.runware_client import check_video_status
+
+        status_data = check_video_status(provider_uuid)
+        log.info(f"Video poll attempt {attempt} for job {job_id}: {status_data}")
+
+        # Парсим ответ
+        raw = status_data or {}
+        data_val = raw.get('data')
+        item = None
+
+        if isinstance(data_val, list) and data_val:
+            item = data_val[0]
+        elif isinstance(data_val, dict):
+            item = data_val
+        else:
+            item = raw
+
+        status_val = (item or {}).get('status') or raw.get('status') or (item or {}).get('state')
+        video_url = (
+            (item or {}).get('videoURL')
+            or raw.get('videoURL')
+            or ((item or {}).get('output') or {}).get('videoURL')
+        )
+
+        # Успех!
+        if str(status_val).lower() in {'completed', 'done', 'finished'} and video_url:
+            log.info(f"Video job {job_id} completed! URL: {video_url}")
+
+            # Списываем токены
+            from dashboard.models import Wallet
+            from .models import FreeGrant
+
+            token_cost = job.video_model.token_cost if job.video_model else 20
+
+            if job.user and not job.user.is_staff:
+                wallet = Wallet.objects.select_for_update().get(user=job.user)
+                wallet.balance -= token_cost
+                wallet.save()
+            elif not job.user:
+                # Гость
+                from django.conf import settings
+                grant = FreeGrant.objects.filter(
+                    gid=job.guest_gid if job.guest_gid else None,
+                    fp=job.guest_fp if job.guest_fp else None,
+                    user__isnull=True
+                ).first()
+                if grant:
+                    grant.spend(token_cost)
+
+            # Обновляем job
+            job.result_video_url = video_url
+            job.status = GenerationJob.Status.DONE
+            job.tokens_spent = token_cost
+            from datetime import timedelta
+            from django.utils import timezone
+            job.video_cached_until = timezone.now() + timedelta(hours=24)
+            job.save()
+
+            # Сохраняем в галерею
+            if job.user:
+                try:
+                    from gallery.models import Image as GalleryImage
+                    GalleryImage.objects.create(
+                        user=job.user,
+                        prompt=job.prompt,
+                        image_url=video_url,
+                        is_video=True,
+                        is_public=False,
+                        is_nsfw=False,
+                    )
+                except Exception as e:
+                    log.error(f"Failed to save video to gallery: {e}")
+
+            return
+
+        # Провал
+        if str(status_val).lower() in {'failed', 'error'}:
+            job.status = GenerationJob.Status.FAILED
+            job.error = raw.get('error') or (item or {}).get('error') or 'Video generation failed'
+            job.save()
+
+            # Рефанд токенов
+            _refund_if_needed(job)
+            return
+
+        # Всё ещё обрабатывается
+        log.info(f"Video job {job_id} still processing (attempt {attempt})")
+
+        # Проверяем таймаут (120 попыток = ~2 минуты)
+        if attempt >= 120:
+            log.error(f"Video job {job_id} timed out after {attempt} attempts")
+            job.status = GenerationJob.Status.FAILED
+            job.error = "Video generation timed out"
+            job.save()
+            _refund_if_needed(job)
+            return
+
+        # Перезапускаем через 1 секунду
+        poll_video_result.apply_async(
+            args=[job_id, attempt + 1],
+            countdown=1,
+            queue=RUNWARE_QUEUE
+        )
+
+    except Exception as e:
+        log.error(f"Error polling video job {job_id}: {e}", exc_info=True)
+
+        # Таймаут или продолжаем?
+        if attempt >= 120:
+            job.status = GenerationJob.Status.FAILED
+            job.error = f"Polling failed: {str(e)}"
+            job.save()
+            _refund_if_needed(job)
+        else:
+            # Retry через 2 секунды
+            poll_video_result.apply_async(
+                args=[job_id, attempt + 1],
+                countdown=2,
+                queue=RUNWARE_QUEUE
+            )
+
 def _demo_render(job: GenerationJob, width: int = FALLBACK_WIDTH, height: int = FALLBACK_HEIGHT) -> None:
     """Создаём простую PNG-картинку с текстом промпта — для DEV/демо."""
     # Ограничение размера для предотвращения DoS

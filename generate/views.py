@@ -48,6 +48,17 @@ GUEST_INITIAL_TOKENS = int(getattr(settings, "GUEST_INITIAL_TOKENS", 30))
 # имя cookie с device-fp (если фронт его ставит)
 FP_COOKIE_NAME = getattr(settings, "FP_COOKIE_NAME", "aid_fp")
 
+# Список категорий для блока подсказок (из static/img/category)
+CATEGORY_NAMES = [
+    'абстракция', 'Архитектура', 'будущее', 'винтаж', 'времена года', 'города', 
+    'детство', 'для разработки', 'еда', 'животные', 'интерьер', 'исскуство', 
+    'история', 'космос', 'макросъемка', 'медитация', 'минимализм', 'мифология', 
+    'мода', 'музыка', 'наука', 'ночь', 'пейзажи', 'подводный мир', 'портреты', 
+    'праздники', 'приключения', 'природа', 'профессии', 'романтика', 'свет и тень', 
+    'спорт', 'текстуры', 'технологии', 'транспорт', 'уют', 'Фэнтези', 'экстрим', 
+    'эмоции', 'Эстетика'
+]
+
 
 # =======================
 #       helpers
@@ -462,17 +473,51 @@ def new(request: HttpRequest) -> HttpResponse:
     suggestion_categories: List[SuggestionCategory] = list(
         SuggestionCategory.objects.filter(is_active=True)
         .prefetch_related("suggestions")
-        .order_by("order", "name")
+        .order_by("name")
     )
     suggestions_flat: List[Suggestion] = list(
         Suggestion.objects.filter(is_active=True).order_by("order", "title")
     )
+    
+    # Категории промптов с изображениями и пагинацией (для изображений)
+    from .models import PromptCategory, VideoPromptCategory, ShowcaseVideo
+    prompt_categories_queryset = PromptCategory.objects.filter(is_active=True).prefetch_related("prompts").order_by("order", "name")
+    prompt_categories_paginator = Paginator(prompt_categories_queryset, 24)  # 24 категории на странице
+    prompt_page_number = request.GET.get('prompt_page', 1)
+    prompt_page_obj = prompt_categories_paginator.get_page(prompt_page_number)
+    prompt_categories: List[PromptCategory] = list(prompt_page_obj.object_list)
+    
+    # Категории промптов для ВИДЕО (отдельные)
+    video_prompt_categories_queryset = VideoPromptCategory.objects.filter(is_active=True).prefetch_related("video_prompts").order_by("order", "name")
+    video_prompt_categories_paginator = Paginator(video_prompt_categories_queryset, 24)
+    video_prompt_page_number = request.GET.get('video_prompt_page', 1)
+    video_prompt_page_obj = video_prompt_categories_paginator.get_page(video_prompt_page_number)
+    video_prompt_categories: List[VideoPromptCategory] = list(video_prompt_page_obj.object_list)
+    
     showcase_categories: List[ShowcaseCategory] = list(
         ShowcaseCategory.objects.filter(is_active=True).order_by("order", "name")
     )
-    showcase_images: List[ShowcaseImage] = list(
-        ShowcaseImage.objects.filter(is_active=True).order_by("order", "-created_at")[:18]
-    )
+    # Пагинация для showcase ИЗОБРАЖЕНИЙ (16 на страницу) + серверная фильтрация по категории
+    page_number = request.GET.get('showcase_page', 1)
+    active_scat = (request.GET.get('scat') or '').strip()
+    showcase_queryset = ShowcaseImage.objects.filter(is_active=True)
+    if active_scat:
+        showcase_queryset = showcase_queryset.filter(category__slug=active_scat)
+    showcase_queryset = showcase_queryset.order_by("order", "-created_at")
+    showcase_paginator = Paginator(showcase_queryset, 16)
+    showcase_page = showcase_paginator.get_page(page_number)
+    showcase_images: List[ShowcaseImage] = list(showcase_page.object_list)
+    
+    # Пагинация для showcase ВИДЕО (отдельные, 12 на страницу)
+    video_showcase_page_number = request.GET.get('video_showcase_page', 1)
+    active_video_scat = (request.GET.get('video_scat') or '').strip()
+    video_showcase_queryset = ShowcaseVideo.objects.filter(is_active=True)
+    if active_video_scat:
+        video_showcase_queryset = video_showcase_queryset.filter(category__slug=active_video_scat)
+    video_showcase_queryset = video_showcase_queryset.order_by("order", "-created_at")
+    video_showcase_paginator = Paginator(video_showcase_queryset, 12)
+    video_showcase_page = video_showcase_paginator.get_page(video_showcase_page_number)
+    showcase_videos: List[ShowcaseVideo] = list(video_showcase_page.object_list)
 
     wallet = None
     set_cookie_gid: Optional[str] = None
@@ -536,8 +581,21 @@ def new(request: HttpRequest) -> HttpResponse:
         "tariffs_url": _tariffs_url(),
         "suggestion_categories": suggestion_categories,
         "suggestions": suggestions_flat,
+        # Категории и промпты для ИЗОБРАЖЕНИЙ
+        "prompt_categories": prompt_categories,
+        "prompt_page_obj": prompt_page_obj,
+        # Категории и промпты для ВИДЕО (отдельные)
+        "video_prompt_categories": video_prompt_categories,
+        "video_prompt_page_obj": video_prompt_page_obj,
+        # Showcase
         "showcase_categories": showcase_categories,
         "showcase_images": showcase_images,
+        "showcase_page": showcase_page,
+        "showcase_videos": showcase_videos,
+        "video_showcase_page": video_showcase_page,
+        "category_names": CATEGORY_NAMES,
+        "active_scat": active_scat,
+        "active_video_scat": active_video_scat,
     }
 
     resp = render(request, "generate/new.html", ctx)
@@ -868,3 +926,55 @@ def api_suggestion_delete(request: HttpRequest, pk: int) -> JsonResponse:
     s = get_object_or_404(Suggestion, pk=pk)
     s.delete()
     return JsonResponse({"ok": True})
+
+
+# =======================
+#   PROMPT CATEGORIES
+# =======================
+@require_http_methods(["GET"])
+def prompts_page(request: HttpRequest) -> HttpResponse:
+    """Страница с категориями промптов"""
+    from .models import PromptCategory
+    
+    # Получаем все активные категории с пагинацией
+    categories_queryset = PromptCategory.objects.filter(is_active=True).prefetch_related('prompts').order_by('order', 'name')
+    
+    # Пагинация - 24 категории на страницу
+    paginator = Paginator(categories_queryset, 24)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Добавляем счетчик активных промптов для каждой категории
+    categories = list(page_obj.object_list)
+    
+    return render(request, 'generate/prompts.html', {
+        'categories': categories,
+        'page_obj': page_obj,
+    })
+
+
+def category_prompts_api(request: HttpRequest, category_id: int) -> JsonResponse:
+    """API для получения промптов категории"""
+    from .models import PromptCategory
+    
+    category = get_object_or_404(PromptCategory, id=category_id, is_active=True)
+    prompts = category.prompts.filter(is_active=True).order_by('order', 'title')
+    
+    prompts_data = [
+        {
+            'id': p.id,
+            'title': p.title,
+            'prompt_text': p.prompt_text,
+            'prompt_en': p.get_prompt_for_generation(),  # Профессиональный английский промпт (для использования)
+            'prompt_en_raw': p.prompt_en,                # Оригинальное значение для редактирования
+            'order': p.order,
+            'is_active': p.is_active,
+        }
+        for p in prompts
+    ]
+    
+    return JsonResponse({
+        'category_name': category.name,
+        'category_description': category.description,
+        'prompts': prompts_data,
+    })

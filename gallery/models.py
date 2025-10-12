@@ -27,6 +27,27 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
 
+class VideoCategory(models.Model):
+    """Категории для видео (отдельные от фото)."""
+    name = models.CharField("Название", max_length=80, unique=True)
+    slug = models.SlugField("Слаг", max_length=80, unique=True, db_index=True)
+    order = models.PositiveIntegerField(default=0, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ("order", "name")
+        verbose_name = "Категория видео"
+        verbose_name_plural = "Категории видео"
+
+    def __str__(self) -> str:
+        return self.name
+
+    def save(self, *args, **kwargs) -> None:
+        if not self.slug:
+            self.slug = slugify(self.name or "")
+        super().save(*args, **kwargs)
+
+
 class PublicPhoto(models.Model):
     """
     Единственная валидная модель публикации в галерее.
@@ -168,6 +189,188 @@ class CommentLike(models.Model):
     def __str__(self) -> str:
         who = f"u{self.user_id}" if self.user_id else f"sess:{self.session_key or '-'}"
         return f"Like c{self.comment_id} by {who}"
+
+
+class Image(models.Model):
+    """
+    Личная галерея пользователя (изображения и видео).
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="gallery_images",
+    )
+    prompt = models.TextField(blank=True)
+    image_url = models.URLField(max_length=500)  # URL изображения или видео
+    is_video = models.BooleanField(default=False, db_index=True)  # Флаг видео
+    is_public = models.BooleanField(default=False, db_index=True)
+    is_nsfw = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    # Связь с задачей генерации
+    generation_job = models.ForeignKey(
+        "generate.GenerationJob",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="gallery_entries",
+    )
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = "Изображение галереи"
+        verbose_name_plural = "Изображения галереи"
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["user", "is_video"]),
+        ]
+
+    def __str__(self) -> str:
+        media_type = "Видео" if self.is_video else "Изображение"
+        return f"{media_type} #{self.pk} пользователя {self.user.username}"
+
+
+class PublicVideo(models.Model):
+    """
+    Публичное видео в галерее (аналог PublicPhoto).
+    """
+    video_url = models.URLField("URL видео", max_length=500)
+    thumbnail = models.ImageField("Превью", upload_to="public_videos/%Y/%m/", null=True, blank=True)
+    title = models.CharField("Название", max_length=140, blank=True)
+    caption = models.CharField("Описание", max_length=240, blank=True)
+    order = models.PositiveIntegerField(default=0, db_index=True)
+    is_active = models.BooleanField("Опубликовано", default=True, db_index=True)
+
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="uploaded_public_videos",
+        verbose_name="Загрузил"
+    )
+
+    # Связь с задачей генерации
+    source_job = models.ForeignKey(
+        "generate.GenerationJob",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="public_video_entries",
+        db_index=True,
+        verbose_name="Задача генерации"
+    )
+
+    category = models.ForeignKey(
+        "VideoCategory",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="videos",
+        verbose_name="Категория"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    # Счётчики (денормализованные)
+    view_count = models.PositiveIntegerField("Просмотры", default=0, db_index=True)
+    likes_count = models.PositiveIntegerField("Лайки", default=0, db_index=True)
+    comments_count = models.PositiveIntegerField("Комментарии", default=0, db_index=True)
+
+    class Meta:
+        ordering = ("order", "-created_at")
+        verbose_name = "Публичное видео"
+        verbose_name_plural = "Публичные видео"
+
+    def __str__(self) -> str:
+        return self.title or f"PublicVideo #{self.pk}"
+
+
+class VideoLike(models.Model):
+    """
+    Лайк публичного видео (аналог PhotoLike).
+    """
+    video = models.ForeignKey(PublicVideo, on_delete=models.CASCADE, related_name="likes")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE,
+        related_name="video_likes",
+    )
+    session_key = models.CharField(max_length=40, blank=True, default="", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Лайк видео"
+        verbose_name_plural = "Лайки видео"
+        constraints = [
+            UniqueConstraint(
+                fields=["video", "user"],
+                condition=Q(user__isnull=False),
+                name="uq_video_like_user",
+            ),
+            UniqueConstraint(
+                fields=["video", "session_key"],
+                condition=~Q(session_key=""),
+                name="uq_video_like_session",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        who = f"u{self.user_id}" if self.user_id else f"sess:{self.session_key or '-'}"
+        return f"❤ {who} -> video {self.video_id}"
+
+
+class VideoComment(models.Model):
+    """
+    Комментарий к видео (аналог PhotoComment).
+    """
+    video = models.ForeignKey(PublicVideo, related_name="comments", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    text = models.TextField("Текст")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    is_visible = models.BooleanField("Видимый", default=True, db_index=True)
+
+    # Древовидные ответы
+    parent = models.ForeignKey(
+        "self", null=True, blank=True, related_name="replies", on_delete=models.CASCADE,
+        verbose_name="Родительский комментарий"
+    )
+
+    # Счётчик лайков
+    likes_count = models.PositiveIntegerField("Лайки", default=0, db_index=True)
+
+    class Meta:
+        ordering = ("created_at", "pk")
+        verbose_name = "Комментарий к видео"
+        verbose_name_plural = "Комментарии к видео"
+
+    def __str__(self) -> str:
+        return f"Comment #{self.pk} on video {self.video_id}"
+
+
+class VideoCommentLike(models.Model):
+    """
+    Лайк комментария к видео (аналог CommentLike).
+    """
+    comment = models.ForeignKey(VideoComment, related_name="likes", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=40, blank=True, default="", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Лайк комментария к видео"
+        verbose_name_plural = "Лайки комментариев к видео"
+        constraints = [
+            UniqueConstraint(
+                fields=["comment", "user"],
+                condition=Q(user__isnull=False),
+                name="uq_video_comment_like_user",
+            ),
+            UniqueConstraint(
+                fields=["comment", "session_key"],
+                condition=~Q(session_key=""),
+                name="uq_video_comment_like_session",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        who = f"u{self.user_id}" if self.user_id else f"sess:{self.session_key or '-'}"
+        return f"Like vc{self.comment_id} by {who}"
 
 
 class Like(models.Model):

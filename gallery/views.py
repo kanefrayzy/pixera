@@ -27,9 +27,13 @@ from .forms import ShareFromJobForm, PhotoCommentForm
 from .models import (
     PublicPhoto,
     Category,
+    VideoCategory,
     PhotoLike,
     PhotoComment,
     CommentLike,
+    Image,
+    PublicVideo,
+    VideoLike,
 )
 
 MIN_THUMB_SIZE = 1024  # 1 KiB — меньше считаем «пустышкой»
@@ -183,11 +187,80 @@ def index(request: HttpRequest) -> HttpResponse:
             messages.success(request, "Фото добавлено в публичную ленту.")
             return redirect("gallery:index")
 
+        elif action == "add_video":
+            title = (request.POST.get("video_title") or "").strip()
+            desc = (request.POST.get("video_desc") or "").strip()
+            cat_id = request.POST.get("video_category")
+            is_public = bool(request.POST.get("video_is_public"))
+            video_url = (request.POST.get("video_url") or "").strip()
+            thumbnail_file = request.FILES.get("video_thumbnail")
+
+            if not title:
+                messages.error(request, "Введите заголовок видео.")
+                return redirect("gallery:index")
+            if not video_url:
+                messages.error(request, "Введите URL видео.")
+                return redirect("gallery:index")
+
+            video = PublicVideo.objects.create(
+                video_url=video_url,
+                thumbnail=thumbnail_file,
+                title=title,
+                caption=desc,
+                uploaded_by=request.user,
+                is_active=is_public,
+            )
+
+            try:
+                cat = VideoCategory.objects.get(pk=cat_id) if cat_id else None
+            except VideoCategory.DoesNotExist:
+                cat = None
+
+            if cat and hasattr(video, "category"):
+                video.category = cat
+                video.save(update_fields=["category"])
+
+            messages.success(request, "Видео добавлено в публичную ленту.")
+            return redirect("gallery:index")
+
+        elif action == "add_video_category":
+            name = (request.POST.get("video_cat_name") or "").strip()
+            slug = (request.POST.get("video_cat_slug") or "").strip()
+
+            if not name:
+                messages.error(request, "Введите название категории видео.")
+                return redirect("gallery:index")
+
+            if not slug:
+                slug = slugify(name)[:80]
+
+            if VideoCategory.objects.filter(slug=slug).exists():
+                messages.error(request, "Категория видео с таким слагом уже существует.")
+                return redirect("gallery:index")
+
+            VideoCategory.objects.create(name=name, slug=slug)
+            messages.success(request, f"Категория видео «{name}» создана.")
+            return redirect("gallery:index")
+
+        elif action == "del_video_category":
+            cat_id = request.POST.get("video_cat_id")
+            try:
+                cat = VideoCategory.objects.get(pk=cat_id)
+            except (VideoCategory.DoesNotExist, ValueError, TypeError):
+                messages.error(request, "Категория видео не найдена.")
+                return redirect("gallery:index")
+
+            name = cat.name
+            cat.delete()
+            messages.success(request, f"Категория видео «{name}» удалена.")
+            return redirect("gallery:index")
+
         # неизвестное действие
         messages.error(request, "Неизвестное действие.")
         return redirect("gallery:index")
 
     # ───────── Дальше — обычный GET ─────────
+    # ФОТО: только изображения (НЕ видео)
     if request.user.is_authenticated:
         my_thumbs = (
             GenerationJob.objects
@@ -195,6 +268,7 @@ def index(request: HttpRequest) -> HttpResponse:
                 user=request.user,
                 status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION]
             )
+            .exclude(generation_type='video')  # Исключаем видео!
             .order_by("-created_at")[:6]
         )
     else:
@@ -226,14 +300,24 @@ def index(request: HttpRequest) -> HttpResponse:
         my_thumbs = (
             GenerationJob.objects
             .filter(q)
+            .exclude(generation_type='video')  # Исключаем видео!
             .order_by("-created_at")[:6]
         )
 
     cat_slug = (request.GET.get("cat") or "").strip()
     categories = Category.objects.all()
+    video_categories = VideoCategory.objects.all()
 
+    # ПУБЛИЧНЫЕ ФОТО
     photos_qs = (
         PublicPhoto.objects.filter(is_active=True)
+        .select_related("uploaded_by", "category")
+        .order_by("order", "-created_at")
+    )
+
+    # ПУБЛИЧНЫЕ ВИДЕО
+    videos_qs = (
+        PublicVideo.objects.filter(is_active=True)
         .select_related("uploaded_by", "category")
         .order_by("order", "-created_at")
     )
@@ -244,13 +328,18 @@ def index(request: HttpRequest) -> HttpResponse:
         if active_category:
             if hasattr(PublicPhoto, "categories"):
                 photos_qs = photos_qs.filter(categories__slug=cat_slug)
+                videos_qs = videos_qs.filter(categories__slug=cat_slug)
             else:
                 photos_qs = photos_qs.filter(category__slug=cat_slug)
+                videos_qs = videos_qs.filter(category__slug=cat_slug)
 
     paginator = Paginator(photos_qs, 6)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
 
-    # Определяем лайкнутые id на странице — для юзера и для гостя
+    videos_paginator = Paginator(videos_qs, 6)
+    videos_page_obj = videos_paginator.get_page(request.GET.get("vpage") or 1)
+
+    # Определяем лайкнутые ФОТО на странице
     liked_photo_ids: set[int] = set()
     page_photo_ids = list(page_obj.object_list.values_list("id", flat=True)) if page_obj.object_list else []
     if page_photo_ids:
@@ -268,6 +357,24 @@ def index(request: HttpRequest) -> HttpResponse:
                 ).values_list("photo_id", flat=True)
             )
 
+    # Определяем лайкнутые ВИДЕО на странице
+    liked_video_ids: set[int] = set()
+    page_video_ids = list(videos_page_obj.object_list.values_list("id", flat=True)) if videos_page_obj.object_list else []
+    if page_video_ids:
+        if request.user.is_authenticated:
+            liked_video_ids = set(
+                VideoLike.objects.filter(
+                    user=request.user, video_id__in=page_video_ids
+                ).values_list("video_id", flat=True)
+            )
+        else:
+            skey = _ensure_session_key(request)
+            liked_video_ids = set(
+                VideoLike.objects.filter(
+                    user__isnull=True, session_key=skey, video_id__in=page_video_ids
+                ).values_list("video_id", flat=True)
+            )
+
     # Определяем статус публикации для my_thumbs
     published_job_ids = set()
     if my_thumbs:
@@ -279,26 +386,83 @@ def index(request: HttpRequest) -> HttpResponse:
             ).values_list("source_job_id", flat=True)
         )
 
+    # Получаем видео для пользователя С ПРЕВЬЮ
+    my_videos = []
+    if request.user.is_authenticated:
+        videos_qs = (
+            Image.objects.filter(user=request.user, is_video=True)
+            .select_related('generation_job')
+            .order_by("-created_at")[:6]
+        )
+        my_videos = [
+            {
+                'id': v.id,
+                'video_url': v.image_url,
+                'thumbnail_url': v.generation_job.result_image.url if v.generation_job and v.generation_job.result_image else None,
+                'prompt': v.prompt,
+                'created_at': v.created_at,
+            }
+            for v in videos_qs
+        ]
+    else:
+        # Для гостей ищем видео по идентификаторам через GenerationJob
+        from django.db.models import Q
+        skey = _ensure_session_key(request)
+        gid = _guest_cookie_id(request) or ""
+        fp = _get_fp_from_request(request) or _hard_fingerprint(request)
+
+        q = Q(user__isnull=True, generation_type='video', status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION])
+        guest_filters = Q()
+
+        if skey:
+            guest_filters |= Q(guest_session_key=skey)
+        if gid:
+            guest_filters |= Q(guest_gid=gid)
+        if fp:
+            guest_filters |= Q(guest_fp=fp)
+
+        if guest_filters:
+            q &= guest_filters
+        else:
+            q &= Q(pk__isnull=True)
+
+        video_jobs = GenerationJob.objects.filter(q).order_by("-created_at")[:6]
+        my_videos = [
+            {
+                'id': job.id,
+                'video_url': job.result_video_url,
+                'prompt': job.prompt,
+                'created_at': job.created_at,
+            }
+            for job in video_jobs if job.result_video_url
+        ]
+
     return render(
         request,
         "gallery/index.html",
         {
             "my_thumbs": my_thumbs,
+            "my_videos": my_videos,
             "published_job_ids": published_job_ids,
             "categories": categories,
+            "video_categories": video_categories,
             "active_category": active_category,
             "public_photos": page_obj.object_list,
             "page_obj": page_obj,
             "liked_photo_ids": liked_photo_ids,
+            "public_videos": videos_page_obj.object_list,
+            "videos_page_obj": videos_page_obj,
+            "liked_video_ids": liked_video_ids,
             "cat_slug": cat_slug,
             "pending_count": PublicPhoto.objects.filter(is_active=False).count()
+                if request.user.is_staff else 0,
+            "pending_videos_count": PublicVideo.objects.filter(is_active=False).count()
                 if request.user.is_staff else 0,
         },
     )
 
 
 # ───────────────────────── TRENDING ─────────────────────────
-# /gallery/trending/?by=views|likes|new
 def trending(request: HttpRequest) -> HttpResponse:
     """
     Тренды:
@@ -767,9 +931,15 @@ def share_from_job(request, job_id: int):
 
 @staff_member_required
 def moderation(request: HttpRequest) -> HttpResponse:
-    """Список работ, ожидающих публикации."""
-    pendings = PublicPhoto.objects.filter(is_active=False).order_by("-created_at")
-    return render(request, "gallery/moderation.html", {"pendings": pendings})
+    """Список работ, ожидающих публикации - фото и видео."""
+    pending_photos = PublicPhoto.objects.filter(is_active=False).select_related("uploaded_by").order_by("-created_at")
+    pending_videos = PublicVideo.objects.filter(is_active=False).select_related("uploaded_by").order_by("-created_at")
+
+    return render(request, "gallery/moderation.html", {
+        "pending_photos": pending_photos,
+        "pending_videos": pending_videos,
+        "total_pending": pending_photos.count() + pending_videos.count(),
+    })
 
 
 @staff_member_required

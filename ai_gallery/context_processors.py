@@ -3,11 +3,23 @@ from django.conf import settings
 
 
 def auth_flags(request):
+    google = bool(
+        getattr(settings, "GOOGLE_CLIENT_ID", None)
+        and getattr(settings, "GOOGLE_CLIENT_SECRET", None)
+    )
+    facebook = bool(
+        getattr(settings, "FACEBOOK_CLIENT_ID", None)
+        and getattr(settings, "FACEBOOK_CLIENT_SECRET", None)
+    )
+    discord = bool(
+        getattr(settings, "DISCORD_CLIENT_ID", None)
+        and getattr(settings, "DISCORD_CLIENT_SECRET", None)
+    )
     return {
-        "GOOGLE_ENABLED": bool(
-            getattr(settings, "GOOGLE_CLIENT_ID", None)
-            and getattr(settings, "GOOGLE_CLIENT_SECRET", None)
-        ),
+        "GOOGLE_ENABLED": google,
+        "FACEBOOK_ENABLED": facebook,
+        "DISCORD_ENABLED": discord,
+        "ANY_SOCIAL_ENABLED": google or facebook or discord,
         "DEFAULT_THEME": getattr(settings, "DEFAULT_THEME", "dark"),
     }
 

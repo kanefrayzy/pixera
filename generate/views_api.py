@@ -27,6 +27,7 @@ from .tasks import run_generation_async  # submit в очередь
 
 # утилиты из views (не дублируем)
 from .views import _ensure_session_key, _tariffs_url
+from .services.translator import translate_prompt_if_needed
 
 # Celery/Kombu исключения для graceful-fallback
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -207,6 +208,20 @@ def api_submit(request: HttpRequest) -> JsonResponse:
         if pattern in prompt_lower:
             return _err("Недопустимое содержимое в промпте")
 
+    # Переводим промпт на английский если нужно
+    try:
+        translated_prompt = translate_prompt_if_needed(prompt)
+        # Сохраняем оригинальный промпт для отображения пользователю
+        original_prompt = prompt
+        prompt = translated_prompt
+            
+    except Exception as e:
+        # В случае ошибки перевода, используем оригинальный промпт
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Ошибка перевода промпта: {e}")
+        original_prompt = prompt
+
     cost = _token_cost()
     is_staff_user = request.user.is_authenticated and (
         request.user.is_staff or request.user.is_superuser
@@ -261,6 +276,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             guest_fp="",
             cluster=cluster,
             prompt=prompt,
+            original_prompt=original_prompt,
             status=GenerationJob.Status.PENDING,
             error="",
             tokens_spent=tokens_spent,
@@ -327,6 +343,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             guest_fp=grant.fp,
             cluster=cluster,
             prompt=prompt,
+            original_prompt=original_prompt,
             status=GenerationJob.Status.PENDING,
             error="",
             tokens_spent=cost,

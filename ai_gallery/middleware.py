@@ -118,22 +118,32 @@ class AgeGateMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Проверяем cookie возраста
-        request.age_ok = request.COOKIES.get("age_ok") == "1"
+        # 1) Читаем cookie возраста (поддерживаем оба названия для совместимости)
+        age_ok_cookie = request.COOKIES.get("age_ok") == "1"
+        age_gate_ok_cookie = request.COOKIES.get("age_gate_ok") == "1"
+        request.age_ok = bool(age_ok_cookie or age_gate_ok_cookie)
 
-        # Проверяем, включена ли плашка в настройках
+        # 2) ENV-переключатель: главный рубильник
+        env_enabled = bool(getattr(settings, "AGE_GATE_ENABLED", False))
+        if not env_enabled:
+            # Полностью отключаем плашку через .env
+            request.age_gate_enabled = False
+            request.age_ok = True  # доступ без подтверждения
+            # Значения по умолчанию (чтобы шаблоны не падали при обращении)
+            request.age_gate_title = "Вам есть 18 лет?"
+            request.age_gate_text = "Доступ к сайту разрешён только пользователям старше 18 лет. Подтвердите возраст для продолжения работы."
+            return self.get_response(request)
+
+        # 3) Когда рубильник включён — читаем текст из БД (если доступна),
+        #    но признак включения берём из ENV (env_enabled=True)
         try:
             from pages.models import SiteSettings
-            settings = SiteSettings.get_settings()
-            request.age_gate_enabled = settings.age_gate_enabled
-            request.age_gate_title = settings.age_gate_title
-            request.age_gate_text = settings.age_gate_text
-
-            # Если плашка отключена в настройках, считаем что возраст подтвержден
-            if not settings.age_gate_enabled:
-                request.age_ok = True
+            s = SiteSettings.get_settings()
+            request.age_gate_enabled = True
+            request.age_gate_title = s.age_gate_title
+            request.age_gate_text = s.age_gate_text
         except Exception:
-            # Если настройки недоступны (например, при первом запуске), используем значения по умолчанию
+            # Фолбэк к значениям по умолчанию
             request.age_gate_enabled = True
             request.age_gate_title = "Вам есть 18 лет?"
             request.age_gate_text = "Доступ к сайту разрешён только пользователям старше 18 лет. Подтвердите возраст для продолжения работы."

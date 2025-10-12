@@ -42,6 +42,9 @@ CSRF_TRUSTED_ORIGINS = env_list(
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SITE_ID = env_int("SITE_ID", 1)
 
+# URL configuration
+APPEND_SLASH = False
+
 # ── i18n ──────────────────────────────────────────────────────────────────────
 LANGUAGE_CODE = os.getenv("LANGUAGE_CODE", "ru")
 TIME_ZONE = os.getenv("TIME_ZONE", "UTC")
@@ -66,6 +69,7 @@ FREE_FOR_STAFF = env_bool("FREE_FOR_STAFF", True)
 ENABLE_DEVICE_FP = env_bool("ENABLE_DEVICE_FP", True)   # ВКЛЮЧЕНО
 ENABLE_ANTIABUSE = env_bool("ENABLE_ANTIABUSE", True)   # ВКЛЮЧЕНО
 ENABLE_DRF_THROTTLE = env_bool("ENABLE_DRF_THROTTLE", True)
+AGE_GATE_ENABLED = env_bool("AGE_GATE_ENABLED", False)
 
 # ── apps ──────────────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -85,6 +89,8 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.facebook",
+    "allauth.socialaccount.providers.discord",
 
     "pages",
     "dashboard.apps.DashboardConfig",
@@ -128,6 +134,8 @@ if not ENABLE_DEVICE_FP and "ai_gallery.middleware.DeviceFingerprintMiddleware" 
     MIDDLEWARE.remove("ai_gallery.middleware.DeviceFingerprintMiddleware")
 if not ENABLE_ANTIABUSE and "ai_gallery.middleware.AntiAbuseShieldMiddleware" in MIDDLEWARE:
     MIDDLEWARE.remove("ai_gallery.middleware.AntiAbuseShieldMiddleware")
+if not AGE_GATE_ENABLED and "ai_gallery.middleware.AgeGateMiddleware" in MIDDLEWARE:
+    MIDDLEWARE.remove("ai_gallery.middleware.AgeGateMiddleware")
 
 ROOT_URLCONF = "ai_gallery.urls"
 
@@ -209,7 +217,16 @@ SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"access_type": "online"},
-    }
+    },
+    "facebook": {
+        "SCOPE": ["email", "public_profile"],
+        "AUTH_PARAMS": {},
+        "FIELDS": ["id", "email", "name", "first_name", "last_name"],
+    },
+    "discord": {
+        "SCOPE": ["identify", "email"],
+        "AUTH_PARAMS": {},
+    },
 }
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -217,6 +234,24 @@ if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
     SOCIALACCOUNT_PROVIDERS["google"]["APP"] = {
         "client_id": GOOGLE_CLIENT_ID,
         "secret": GOOGLE_CLIENT_SECRET,
+        "key": "",
+    }
+
+FACEBOOK_CLIENT_ID = os.getenv("FACEBOOK_CLIENT_ID")
+FACEBOOK_CLIENT_SECRET = os.getenv("FACEBOOK_CLIENT_SECRET")
+if FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET:
+    SOCIALACCOUNT_PROVIDERS["facebook"]["APP"] = {
+        "client_id": FACEBOOK_CLIENT_ID,
+        "secret": FACEBOOK_CLIENT_SECRET,
+        "key": "",
+    }
+
+DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
+DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
+if DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET:
+    SOCIALACCOUNT_PROVIDERS["discord"]["APP"] = {
+        "client_id": DISCORD_CLIENT_ID,
+        "secret": DISCORD_CLIENT_SECRET,
         "key": "",
     }
 
@@ -372,3 +407,6 @@ FP_PARAM_NAME  = os.getenv("FP_PARAM_NAME",  "fp")
 
 SUPPORT_TELEGRAM_URL = os.getenv("SUPPORT_TELEGRAM_URL", "https://t.me/your_support")
 TELEGRAM_SUPPORT_URL = os.getenv("TELEGRAM_SUPPORT_URL", "https://t.me/your_support_handle")
+
+# ── DeepL Translate ───────────────────────────────────────────────────────────
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY", "")

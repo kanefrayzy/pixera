@@ -2,7 +2,14 @@
 
 from django import forms
 from django.contrib import admin
-from .models import Category, PhotoComment
+from .models import (
+    Category,
+    PhotoComment,
+    PublicVideo,
+    VideoComment,
+    VideoLike,
+    VideoCommentLike
+)
 from .models_slider import SliderExample
 
 BANNED = {
@@ -128,3 +135,45 @@ class SliderExampleAdmin(admin.ModelAdmin):
         else:
             self.message_user(request, f'Ошибка экспорта: {message}', level='ERROR')
     export_to_json.short_description = "Экспортировать в JSON файл"
+
+
+@admin.register(PublicVideo)
+class PublicVideoAdmin(admin.ModelAdmin):
+    """Админ-панель для публичных видео"""
+    list_display = ['id', 'title', 'uploaded_by', 'is_active', 'view_count', 'likes_count', 'comments_count', 'created_at']
+    list_filter = ['is_active', 'created_at', 'category']
+    search_fields = ['title', 'caption', 'uploaded_by__username']
+    list_editable = ['is_active']
+    ordering = ['-created_at']
+    readonly_fields = ['view_count', 'likes_count', 'comments_count', 'created_at']
+
+
+@admin.register(VideoComment)
+class VideoCommentAdmin(admin.ModelAdmin):
+    """Админ-панель для комментариев к видео"""
+    list_display = ['id', 'video', 'user', 'text_preview', 'is_visible', 'likes_count', 'created_at']
+    list_filter = ['is_visible', 'created_at']
+    search_fields = ['text', 'user__username', 'video__title']
+    list_editable = ['is_visible']
+    ordering = ['-created_at']
+
+    def text_preview(self, obj):
+        return obj.text[:50] + '...' if len(obj.text) > 50 else obj.text
+    text_preview.short_description = 'Текст'
+
+
+@admin.register(VideoLike)
+class VideoLikeAdmin(admin.ModelAdmin):
+    """Админ-панель для лайков видео"""
+    list_display = ['id', 'video', 'user', 'session_key', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['video__title', 'user__username']
+    ordering = ['-created_at']
+
+
+@admin.register(VideoCommentLike)
+class VideoCommentLikeAdmin(admin.ModelAdmin):
+    """Админ-панель для лайков комментариев к видео"""
+    list_display = ['id', 'comment', 'user', 'session_key', 'created_at']
+    list_filter = ['created_at']
+    ordering = ['-created_at']
