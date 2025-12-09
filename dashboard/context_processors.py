@@ -53,7 +53,8 @@ def wallet_context(request):
       - gens_left (сколько генераций доступно по текущей цене)
     И *однократно за сессию* переносит остаток гостевой квоты в кошелёк.
     """
-    if not request.user.is_authenticated:
+    # Проверяем наличие user (может отсутствовать в обработчиках ошибок)
+    if not hasattr(request, 'user') or not request.user.is_authenticated:
         return {}
 
     # 1) гарантируем кошелёк
