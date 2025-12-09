@@ -2,8 +2,9 @@
 set -e
 
 echo "Waiting for MySQL..."
-while ! nc -z db 3306; do
-  sleep 0.5
+until nc -z db 3306 2>/dev/null; do
+  echo "MySQL is unavailable - sleeping"
+  sleep 2
 done
 echo "MySQL started"
 
