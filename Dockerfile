@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     pkg-config \
     netcat-openbsd \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Создаём рабочую директорию

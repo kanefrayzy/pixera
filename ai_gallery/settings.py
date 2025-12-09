@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_filters",
     "channels",
+    "django_celery_beat",
 
     "allauth",
     "allauth.account",
