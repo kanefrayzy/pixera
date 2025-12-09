@@ -68,18 +68,28 @@ def create_categories_from_files(apps, schema_editor):
     print('Обновление категорий...')
     for order, name in enumerate(category_names, start=1):
         # Обновляем или создаем категорию
-        category, created = PromptCategory.objects.update_or_create(
-            name=name,
-            defaults={
-                'description': descriptions.get(name, f'Промпты в категории {name}'),
-                'order': order,
-                'is_active': True
-            }
-        )
-        if created:
-            print(f'✅ Создана категория: {name}')
-        else:
-            print(f'ℹ️  Обновлена категория: {name}')
+        try:
+            category, created = PromptCategory.objects.get_or_create(
+                name=name,
+                defaults={
+                    'description': descriptions.get(name, f'Промпты в категории {name}'),
+                    'order': order,
+                    'is_active': True
+                }
+            )
+            # Обновляем существующую категорию
+            if not created:
+                category.description = descriptions.get(name, f'Промпты в категории {name}')
+                category.order = order
+                category.is_active = True
+                category.save()
+            
+            if created:
+                print(f'✅ Создана категория: {name}')
+            else:
+                print(f'ℹ️  Обновлена категория: {name}')
+        except Exception as e:
+            print(f'⚠️  Ошибка при обработке категории {name}: {e}')
 
 
 def reverse_migration(apps, schema_editor):
