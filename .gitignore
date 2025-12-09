@@ -16,7 +16,6 @@ db.sqlite3.bak
 # Environment
 .env
 .env.local
-.env.production
 *.env
 
 # Docker
