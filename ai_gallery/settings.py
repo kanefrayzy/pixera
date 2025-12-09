@@ -70,6 +70,9 @@ ENABLE_DEVICE_FP = env_bool("ENABLE_DEVICE_FP", True)   # ВКЛЮЧЕНО
 ENABLE_ANTIABUSE = env_bool("ENABLE_ANTIABUSE", True)   # ВКЛЮЧЕНО
 ENABLE_DRF_THROTTLE = env_bool("ENABLE_DRF_THROTTLE", True)
 AGE_GATE_ENABLED = env_bool("AGE_GATE_ENABLED", False)
+# Allow skipping token checks and charges in local dev (DEBUG)
+# ВАЖНО: Установлено False чтобы токены списывались даже в режиме разработки
+ALLOW_FREE_LOCAL_VIDEO = env_bool("ALLOW_FREE_LOCAL_VIDEO", False)
 
 # ── apps ──────────────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -84,6 +87,7 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "django_filters",
+    "channels",
 
     "allauth",
     "allauth.account",
@@ -104,6 +108,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+
+    # Catch SessionInterrupted and gracefully recover on GET
+    "ai_gallery.middleware.SessionRescueMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
 
@@ -154,6 +161,8 @@ TEMPLATES = [
                 "gallery.context_processors.nav_context",
                 "ai_gallery.context_processors.auth_flags",
                 "dashboard.context_processors.wallet_context",
+                "dashboard.context_processors.user_profile",
+                "dashboard.context_processors.follow_stats",
                 "pages.context_processors.site_settings",
             ],
         },
@@ -161,40 +170,47 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "ai_gallery.wsgi.application"
+ASGI_APPLICATION = "ai_gallery.asgi.application"
 
-# ── database (MySQL) ──────────────────────────────────────────────────────────
-MYSQL_NAME = env_required("MYSQL_DATABASE")
-MYSQL_USER = env_required("MYSQL_USER")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
-MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.mysql",
-#         "NAME": MYSQL_NAME,
-#         "USER": MYSQL_USER,
-#         "PASSWORD": MYSQL_PASSWORD,
-#         "HOST": MYSQL_HOST,
-#         "PORT": MYSQL_PORT,
-#         "CONN_MAX_AGE": 60,
-#         "OPTIONS": {
-#             "charset": "utf8mb4",
-#             "init_command": (
-#                 "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,"
-#                 "NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_ENGINE_SUBSTITUTION'"
-#             ),
-#         },
-#     }
-# }
-
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# ── Channels (WebSocket) ──────────────────────────────────────────────────────
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
+
+# ── database (MySQL в продакшн, SQLite в dev) ────────────────────────────────
+if DEBUG:
+    # Development: SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+            'OPTIONS': {
+                'timeout': 30
+            },
+        }
+    }
+else:
+    # Production: MySQL
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("MYSQL_DATABASE", "pixera"),
+            "USER": os.getenv("MYSQL_USER", "pixera_user"),
+            "PASSWORD": os.getenv("MYSQL_PASSWORD", ""),
+            "HOST": os.getenv("MYSQL_HOST", "db"),
+            "PORT": os.getenv("MYSQL_PORT", "3306"),
+            "CONN_MAX_AGE": 60,
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                "init_command": (
+                    "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,"
+                    "NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_ENGINE_SUBSTITUTION'"
+                ),
+            },
+        }
+    }
 
 # ── auth (allauth) ────────────────────────────────────────────────────────────
 AUTHENTICATION_BACKENDS = [
@@ -202,8 +218,9 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 LOGIN_URL = "account_login"
-LOGIN_REDIRECT_URL = "/dashboard/"
+LOGIN_REDIRECT_URL = "/dashboard/me"
 ACCOUNT_SIGNUP_REDIRECT_URL = LOGIN_REDIRECT_URL
+ACCOUNT_ADAPTER = "ai_gallery.adapters.AccountAdapter"
 LOGOUT_REDIRECT_URL = "pages:home"
 
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
@@ -268,6 +285,10 @@ WHITENOISE_MAX_AGE = 31536000
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Video tools
+# Path to ffmpeg binary for video compression. Override via env if needed.
+FFMPEG_BIN = os.getenv("FFMPEG_BIN", "ffmpeg")
+
 # ── dev proxy / ngrok ─────────────────────────────────────────────────────────
 NGROK_DOMAIN = os.getenv("NGROK_DOMAIN")
 if NGROK_DOMAIN:
@@ -312,7 +333,7 @@ if ENABLE_DRF_THROTTLE:
 
 # ── Email ─────────────────────────────────────────────────────────────────────
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "AI Gallery <no-reply@example.com>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Pixera <no-reply@pixera.com>")
 
 # ── Security ──────────────────────────────────────────────────────────────────
 SESSION_COOKIE_SECURE = not DEBUG
@@ -325,7 +346,7 @@ SECURE_REFERRER_POLICY = os.getenv("SECURE_REFERRER_POLICY", "strict-origin-when
 X_FRAME_OPTIONS = "DENY"
 
 SESSION_COOKIE_AGE = env_int("SESSION_COOKIE_AGE", 60 * 60 * 24 * 60)  # 60 дней
-SESSION_SAVE_EVERY_REQUEST = env_bool("SESSION_SAVE_EVERY_REQUEST", True)
+SESSION_SAVE_EVERY_REQUEST = env_bool("SESSION_SAVE_EVERY_REQUEST", False)
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -346,7 +367,16 @@ USE_CELERY = env_bool("USE_CELERY", False)
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "memory://")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "cache+memory://")
 
-CELERY_TASK_ALWAYS_EAGER = True if (DEBUG or not USE_CELERY or CELERY_BROKER_URL.startswith("memory")) else False
+# ЗАКОММЕНТИРОВАНО: Разрешаем Celery в режиме DEBUG для разработки
+# if DEBUG:
+#     USE_CELERY = False
+#     CELERY_BROKER_URL = "memory://"
+#     CELERY_RESULT_BACKEND = "cache+memory://"
+
+# Режим для разработки / продакшена:
+# - при USE_CELERY=False или memory:// задачи выполняются синхронно (ALWAYS_EAGER=True)
+# - при USE_CELERY=True и Redis — задачи идут в Celery/Redis через worker
+CELERY_TASK_ALWAYS_EAGER = True if (not USE_CELERY or CELERY_BROKER_URL.startswith("memory")) else False
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_ACKS_LATE = True
@@ -363,6 +393,8 @@ CELERY_TASK_DEFAULT_QUEUE = CELERY_QUEUE_SUBMIT
 CELERY_TASK_ROUTES = {
     "generate.tasks.run_generation_async": {"queue": CELERY_QUEUE_SUBMIT},
     "generate.tasks.poll_runware_result": {"queue": CELERY_QUEUE_SUBMIT},
+    "generate.tasks.process_video_generation_async": {"queue": CELERY_QUEUE_SUBMIT},
+    "generate.tasks.poll_video_result": {"queue": CELERY_QUEUE_SUBMIT},
 }
 
 # ── Runware ───────────────────────────────────────────────────────────────────

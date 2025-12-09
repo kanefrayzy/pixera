@@ -1,0 +1,72 @@
+/* Video Quantity Selector Styles */
+#video-quantity-container {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+#video-quantity-container label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #333;
+}
+
+#video-quantity-container label i {
+    margin-right: 8px;
+    color: #007bff;
+}
+
+.quantity-selector {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.quantity-selector .form-range {
+    flex: 1;
+    height: 6px;
+    background: #dee2e6;
+    border-radius: 3px;
+    outline: none;
+}
+
+.quantity-selector .form-range::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.quantity-selector .form-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.quantity-display {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 80px;
+    padding: 8px 15px;
+    background: white;
+    border: 2px solid #007bff;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+#video-quantity-value {
+    font-size: 1.2em;
+    color: #007bff;
+}
+
+.quantity-label {
+    color: #666;
+    font-size: 0.9em;
+}

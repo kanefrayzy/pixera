@@ -1,0 +1,1154 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load generate_extras %}
+
+{% block title %}Тренды видео — Pixera{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold">Тренды видео</h1>
+      <p class="text-[var(--muted)] mt-2">Самые популярные видео сообщества</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a class="btn btn-ghost" href="{% url 'gallery:index' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Галерея
+      </a>
+      <a class="btn btn-primary" href="{% url 'generate:new' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        Создать
+      </a>
+    </div>
+  </div>
+
+  {% if request.user.is_authenticated %}
+  <!-- Accounts search (Instagram-like) -->
+  <section id="accFollowSection"
+           class="space-y-6"
+           data-search-endpoint="{% url 'dashboard:api:follow_search' %}"
+           data-recs-endpoint="{% url 'dashboard:api:follow_recommendations' %}"
+           data-toggle-endpoint="{% url 'dashboard:api:follow_toggle' %}">
+    <!-- Search accounts -->
+    <div class="card p-6">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl border border-[var(--bord)] grid place-items-center bg-white/40 dark:bg-white/5">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="6"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <input id="accSearchInput"
+               class="field flex-1"
+               type="search"
+               placeholder="Поиск аккаунтов для подписки…"
+               autocomplete="off"
+               aria-label="Поиск аккаунтов">
+      </div>
+      <div id="accSearchResults" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="font-semibold">Рекомендации подписок</h2>
+        <button id="accRecsRefresh" class="btn btn-ghost text-sm">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4.5 12a7.5 7.5 0 0 1 12.49-5.303L19.5 9M19.5 12a7.5 7.5 0 0 1-12.49 5.303L4.5 15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          </svg>
+          Обновить
+        </button>
+      </div>
+      <div id="accRecs" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="card p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h2 id="sort" class="font-semibold mb-2" style="scroll-margin-top: 80px;" data-active-mode="{{ active_mode }}">Сортировка</h2>
+        <p class="text-sm text-[var(--muted)]">Выберите критерий для отображения популярного контента</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Фото/Видео переключатель -->
+        <div class="inline-flex rounded-xl border border-[var(--bord)] overflow-hidden">
+          <a href="{% url 'gallery:trending' %}?by={{ active_mode }}#sort"
+             class="px-3 py-1.5 text-xs sm:text-sm hover:bg-black/[.04] dark:hover:bg-white/10 transition">
+            Фото
+          </a>
+          <span class="px-3 py-1.5 text-xs sm:text-sm bg-primary/15 text-primary border-l border-[var(--bord)]">Видео</span>
+        </div>
+
+        <!-- Режим сортировки -->
+        <nav class="flex flex-wrap gap-2" aria-label="Режим сортировки">
+          {% with m=active_mode %}
+            <a class="flex items-center gap-1 pill {% if m == 'views' %}bg-primary/15 text-primary border-primary/30{% endif %}"
+               href="{% url 'gallery:trending_videos' %}?by=views">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              По просмотрам
+            </a>
+            <a class="flex items-center gap-1 pill {% if m == 'likes' %}bg-primary/15 text-primary border-primary/30{% endif %}"
+               href="{% url 'gallery:trending_videos' %}?by=likes">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              По лайкам
+            </a>
+            <a class="flex items-center gap-1 pill {% if m == 'new' %}bg-primary/15 text-primary border-primary/30{% endif %}"
+               href="{% url 'gallery:trending_videos' %}?by=new">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Новые (за месяц)
+            </a>
+          {% endwith %}
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  {% if trending_videos %}
+    <div id="trending-videos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+      {% for v in trending_videos %}
+        {% url 'gallery:video_like' v.pk as like_url %}
+        {% url 'gallery:video_likers' v.pk as likers_url %}
+        {% url 'gallery:video_save' v.pk as save_url %}
+
+        <article class="group" itemscope itemtype="https://schema.org/VideoObject">
+          <div class="card overflow-hidden">
+
+            <div class="relative">
+              <video class="w-full aspect-[4/5] object-cover cursor-pointer hover:cursor-pointer transition-all duration-300 group-hover:scale-[1.02]"
+                     poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}"
+                     preload="metadata"
+                     muted
+                     loop
+                     playsinline webkit-playsinline x5-playsinline
+                     itemprop="contentUrl">
+                <source src="{{ v.video_url }}" type="video/mp4">
+              </video>
+
+              <div class="absolute inset-0 cursor-pointer pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
+
+              <!-- Play/Pause overlay -->
+              <div class="absolute inset-0 flex items-center justify-center pointer-events-none video-play-overlay transition-opacity duration-200">
+                <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70">
+                  <svg class="w-8 h-8 text-white ml-1 play-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  <svg class="w-8 h-8 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Sound Toggle + Volume -->
+              <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                  <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                    <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                    <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                  </svg>
+                  <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                    <path d="M18 8l-6 6"></path>
+                    <path d="M12 8l6 6"></path>
+                  </svg>
+                </button>
+                <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+              </div>
+
+              <!-- Top-right overlays (model + views) -->
+              <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                {% with job=v.source_job %}
+                {% if job %}
+                <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                  {{ job|model_display }}
+                </div>
+                {% endif %}
+                {% endwith %}
+                <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5 1.3-4.5 6-10 6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                  </svg>
+                  <span>{{ v.view_count|default:0 }}</span>
+                </div>
+              </div>
+
+            </div>
+
+              <div class="p-4">
+              <!-- Title (clickable link to detail) -->
+              <a href="{{ v.get_absolute_url }}" class="block group/title">
+                <h3 class="font-semibold mb-3 line-clamp-1 group-hover/title:text-primary transition" itemprop="name">
+                  {{ v.title|default:"Без названия" }}
+                </h3>
+              </a>
+
+              <!-- Author (avatar + username) like in gallery -->
+              <div class="flex items-center gap-2 mb-3">
+                {% if v.uploaded_by and v.uploaded_by.profile and v.uploaded_by.profile.avatar %}
+                  <img src="{{ v.uploaded_by.profile.avatar.url }}" alt="{{ v.uploaded_by.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                {% else %}
+                  <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                    {{ v.uploaded_by.username|default:"U"|slice:":1"|upper }}
+                  </span>
+                {% endif %}
+                <a href="{% if v.uploaded_by and v.uploaded_by.username %}{% url 'profile_short' v.uploaded_by.username %}{% else %}#{% endif %}"
+                   class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                   aria-label="@{{ v.uploaded_by.username|default:'unknown' }}">
+                  @{{ v.uploaded_by.username|default:"unknown" }}
+                </a>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 flex-nowrap">
+                <button type="button"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if request.user.is_authenticated and v.pk in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                        data-id="{{ v.pk }}"
+                        data-url="{{ like_url }}"
+                        aria-pressed="{% if request.user.is_authenticated and v.pk in liked_video_ids %}true{% else %}false{% endif %}"
+                        aria-label="Лайк">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and v.pk in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  <span id="like-count-{{ v.pk }}" class="text-sm font-medium cursor-pointer likers-hotspot" data-open-likers="1" data-url="{{ likers_url }}" aria-label="Кто лайкнул">{{ v.likes_count|default:0 }}</span>
+                  <span class="px-1 text-[var(--muted)] hover:text-[var(--text)] hidden sm:inline" data-open-likers="1" data-url="{{ likers_url }}" aria-label="Кто лайкнул">…</span>
+                </button>
+
+                <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg:white/10 transition text-[var(--muted)]"
+                   href="{{ v.get_absolute_url }}"
+                   title="Комментарии">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                  </svg>
+                  <span class="text-sm font-medium">{{ v.comments_count|default:0 }}</span>
+                </a>
+
+                <button type="button"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                        data-id="{{ v.pk }}"
+                        data-url="{{ save_url }}"
+                        data-count-target="save-count-{{ v.pk }}"
+                        aria-pressed="{% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}true{% else %}false{% endif %}"
+                        aria-label="Сохранить">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                  </svg>
+                  <span id="save-count-{{ v.pk }}" class="text-sm font-medium">{{ v.saves_count|default:0 }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    <!-- Пагинация удалена: используется клиентская кнопка «Показать ещё» -->
+
+  {% else %}
+    <div class="card p-12 text-center mt-8">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+        <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-semibold mb-3">Пока нет популярных видео</h2>
+      <p class="text-[var(--muted)] mb-8 max-w-md mx-auto">
+        Станьте первым, кто опубликует трендовое видео. Поделитесь своим творением с сообществом.
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a class="btn btn-primary" href="{% url 'generate:new' %}">Создать видео</a>
+        <a class="btn btn-ghost" href="{% url 'gallery:index' %}">Смотреть галерею</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  // Like toggle (видео)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.like-toggle');
+    if (!btn) return;
+    if (e.target.closest('[data-open-likers]')) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = 'like-count-' + btn.dataset.id;
+    const countEl = document.getElementById(countId);
+
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFCookie(), 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('like failed');
+
+      const vid = btn.dataset.id;
+      const isLiked = !!j.liked;
+
+      // Sync all like buttons and counters for this video across the page (default grid + hidden groups)
+      document.querySelectorAll('.like-toggle[data-id="'+vid+'"]').forEach(other=>{
+        other.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+        other.classList.toggle('text-red-500', isLiked);
+        const svg = other.querySelector('svg');
+        if (svg) svg.setAttribute('fill', isLiked ? 'currentColor' : 'none');
+      });
+
+      if (typeof j.count === 'number') {
+        document.querySelectorAll('[id="like-count-'+vid+'"]').forEach(el=>{ el.textContent = j.count; });
+      }
+    } catch (err) {
+      console.warn('Video like failed:', err);
+    } finally {
+      delete btn.dataset.loading; btn.disabled = false;
+    }
+  });
+
+  // Likers modal (упрощённо)
+  const modal = document.getElementById('likersModal');
+  const body = document.getElementById('likersBody');
+  const CURRENT_USER = "{{ request.user.username|default:''|escapejs }}";
+  function openModal(){ if(!modal) return; modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ if(!modal) return; modal.classList.add('hidden'); document.body.style.overflow=''; body && (body.innerHTML=''); }
+  document.addEventListener('click', (e)=>{
+    if (!modal) return;
+    if (e.target.dataset.likersClose==='1') closeModal();
+    const el = e.target.closest('[data-open-likers]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    const url = el.getAttribute('data-url');
+    if (!url || !body) return;
+    body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>';
+    openModal();
+    fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' })
+      .then(r=>r.json()).then(j=>{
+        const arr = Array.isArray(j.likers)? j.likers: [];
+        if (!arr.length) { body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Пока нет лайков</div>'; return; }
+        body.innerHTML = arr.map(item => {
+          const avatar = item.avatar ? `<img src="${item.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${item.username}">`
+                                     : `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white grid place-items-center font-bold">${(item.name||item.username||'?').slice(0,1).toUpperCase()}</div>`;
+          const isMe = !!CURRENT_USER && !!item.username && (item.username === CURRENT_USER);
+          const rightCtrl = isMe
+            ? `<span class="px-3 py-1.5 text-xs rounded-md bg-black/10 dark:bg-white/10 text-[var(--muted)] select-none">Вы</span>`
+            : '';
+          return `
+          <div class="flex items-center justify-between p-3 sm:p-4">
+            <div class="flex items-center gap-3 min-w-0">
+              ${avatar}
+              <div class="min-w-0">
+                <div class="font-medium truncate">${(item.name||'')}</div>
+                <div class="text-xs text-[var(--muted)] truncate">@${item.username}</div>
+              </div>
+            </div>
+            ${rightCtrl}
+          </div>`;
+        }).join('');
+      }).catch(()=>{ body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Ошибка загрузки</div>'; });
+  });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && modal && !modal.classList.contains('hidden')) closeModal(); });
+})();
+</script>
+
+<script>
+/* Save toggle (видео) */
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.save-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const vid = btn.dataset.id;
+
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFCookie(), 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('save failed');
+
+      const isSaved = !!j.saved;
+
+      // Sync all save buttons and counters for this video across the page (default grid + hidden groups)
+      document.querySelectorAll('.save-toggle[data-id="'+vid+'"]').forEach(other=>{
+        other.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
+        other.classList.toggle('text-emerald-500', isSaved);
+        other.classList.toggle('text-[var(--muted)]', !isSaved);
+        const svg = other.querySelector('svg');
+        if (svg) svg.setAttribute('fill', isSaved ? 'currentColor' : 'none');
+      });
+
+      if (typeof j.count === 'number') {
+        document.querySelectorAll('[id="save-count-'+vid+'"]').forEach(el=>{ el.textContent = j.count; });
+      }
+    } catch (err) {
+      console.warn('Video save failed:', err);
+    } finally {
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+<!-- Likers Modal (reuse from photos page if present) -->
+<div id="likersModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
+  <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="font-semibold">Оценили</h3>
+      <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">
+      <div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Video interactions for trending videos (play/pause overlay + sound controls), scoped to #trending-videos-grid
+(function(){
+  const CONTAINER = '#trending-videos-grid';
+  const VOL_KEY = 'trending_video_volume_pct';
+
+  function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
+  function setPlaying(card, playing){
+    if (!card) return;
+    card.classList.toggle('playing', !!playing);
+    const overlay = card.querySelector('.video-play-overlay');
+    if (overlay){
+      const playI = overlay.querySelector('.play-icon');
+      const pauseI = overlay.querySelector('.pause-icon');
+      if (playI && pauseI){
+        playI.classList.toggle('hidden', !!playing);
+        pauseI.classList.toggle('hidden', !playing);
+      }
+    }
+  }
+  function pauseAll(except){
+    document.querySelectorAll(CONTAINER + ' video').forEach(v=>{
+      if (v !== except){
+        try{ v.pause(); }catch(_){}
+        setPlaying(findCard(v), false);
+      }
+    });
+  }
+  function getSavedVol(){ try{ const v = localStorage.getItem(VOL_KEY); const n = Number(v); return isFinite(n)? Math.max(0, Math.min(100, n)) : null; }catch(_){ return null; } }
+  function setSavedVol(p){ try{ localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, p)))); }catch(_){ } }
+  function hasAudio(video){
+    if (!video) return false;
+    try{
+      if (typeof video.mozHasAudio !== 'undefined') return !!video.mozHasAudio;
+      if (video.audioTracks && video.audioTracks.length) return true;
+      if (typeof video.webkitAudioDecodedByteCount !== 'undefined') return video.webkitAudioDecodedByteCount > 0;
+    }catch(_){}
+    return false;
+  }
+  function markBtnState(btn, video){
+    const disabled = video ? !hasAudio(video) : true;
+    btn.dataset.disabled = disabled ? '1' : '0';
+    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    btn.title = disabled ? 'Нет аудио' : '';
+    btn.classList.toggle('opacity-60', disabled);
+    btn.classList.toggle('cursor-not-allowed', disabled);
+    const onI = btn.querySelector('.icon-vol-on');
+    const offI = btn.querySelector('.icon-vol-off');
+    if (disabled){
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+    } else {
+      if (onI && offI){
+        const muted = !!video?.muted;
+        onI.classList.toggle('hidden', muted);
+        offI.classList.toggle('hidden', !muted);
+      }
+    }
+    const card = findCard(btn);
+    const slider = card && card.querySelector('.vid-vol');
+    if (slider){
+      slider.classList.toggle('hidden', disabled);
+      slider.disabled = !!disabled;
+    }
+  }
+  function updateSoundBtn(btn, muted){
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){
+      const onI = btn.querySelector('.icon-vol-on');
+      const offI = btn.querySelector('.icon-vol-off');
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+      btn.setAttribute('aria-label','Нет аудио');
+      return;
+    }
+    const onI = btn.querySelector('.icon-vol-on');
+    const offI = btn.querySelector('.icon-vol-off');
+    if (onI && offI){
+      onI.classList.toggle('hidden', muted);
+      offI.classList.toggle('hidden', !muted);
+    }
+    btn.setAttribute('aria-label', muted ? 'Включить звук' : 'Выключить звук');
+  }
+
+  function initSoundButtons(){
+    document.querySelectorAll(CONTAINER + ' .vid-snd-btn').forEach(btn=>{
+      const card = findCard(btn);
+      const video = card && card.querySelector('video');
+      const slider = card && card.querySelector('.vid-vol');
+      const saved = getSavedVol();
+      if (video && saved !== null){
+        video.volume = saved/100;
+        if (saved > 0) video.muted = false;
+      }
+      markBtnState(btn, video);
+      updateSoundBtn(btn, !video ? true : !!video.muted);
+      if (slider){
+        slider.value = saved !== null ? saved : Math.round((video?.volume || 0.6)*100);
+        slider.addEventListener('input', ()=>{
+          const pct = Math.max(0, Math.min(100, Number(slider.value)||0));
+          setSavedVol(pct);
+          if (video){
+            video.volume = pct/100;
+            video.muted = pct === 0;
+            if (!video.muted){ try{ video.play(); }catch(_){ } }
+            updateSoundBtn(btn, video.muted);
+          }
+        });
+      }
+      if (video){
+        video.addEventListener('loadedmetadata', ()=> markBtnState(btn, video));
+        video.addEventListener('play', ()=> markBtnState(btn, video));
+      }
+    });
+  }
+
+  // Toggle playback on video click
+  document.addEventListener('click', (e)=>{
+    const video = e.target.closest(CONTAINER + ' video');
+    if (!video || video.hasAttribute('controls')) return;
+    const card = findCard(video);
+    if (video.paused){
+      pauseAll(video);
+      video.play().catch(()=>{});
+      setPlaying(card, true);
+    } else {
+      video.pause();
+      setPlaying(card, false);
+    }
+  });
+
+  // Toggle playback on overlay click
+  document.addEventListener('click', (e)=>{
+    const ov = e.target.closest(CONTAINER + ' .video-play-overlay');
+    if (!ov) return;
+    const card = findCard(ov);
+    const video = card && card.querySelector('video');
+    if (!video || video.hasAttribute('controls')) return;
+    e.preventDefault(); e.stopPropagation();
+    if (video.paused){
+      pauseAll(video);
+      video.play().catch(()=>{});
+      setPlaying(card, true);
+    } else {
+      video.pause();
+      setPlaying(card, false);
+    }
+  });
+
+  // Toggle sound button
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest(CONTAINER + ' .vid-snd-btn');
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){ e.preventDefault(); e.stopPropagation(); return; }
+    e.preventDefault(); e.stopPropagation();
+    const card = findCard(btn);
+    const video = card && card.querySelector('video');
+    const slider = card && card.querySelector('.vid-vol');
+    if (!video) return;
+
+    if (video.muted){
+      let pct = Number(slider?.value);
+      if (!isFinite(pct) || pct === 0){
+        pct = getSavedVol();
+        if (pct === null || pct === 0) pct = 60;
+        if (slider) slider.value = pct;
+        setSavedVol(pct);
+      }
+      video.volume = pct/100;
+      video.muted = false;
+      try{ video.play(); }catch(_){}
+    } else {
+      video.muted = true;
+    }
+    updateSoundBtn(btn, video.muted);
+  });
+
+  // Sync overlay with native events
+  document.querySelectorAll(CONTAINER + ' video').forEach(video=>{
+    video.addEventListener('ended', ()=> setPlaying(findCard(video), false));
+    video.addEventListener('play',  ()=> setPlaying(findCard(video), true));
+    video.addEventListener('pause', ()=> setPlaying(findCard(video), false));
+  });
+
+  // Initialize sound buttons on load
+  initSoundButtons();
+})();
+</script>
+<style>
+.line-clamp-2 {
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.group:hover .card { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,.1); }
+[data-theme="dark"] .group:hover .card { box-shadow: 0 20px 40px rgba(0,0,0,.3); }
+.pill { transition: all 0.2s ease; }
+.pill:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+[data-theme="dark"] .pill:hover { box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+@media (max-width: 640px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-4 { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+}
+</style>
+<script>
+// "Показать ещё" для трендов видео (20 карточек за клик), адаптивно, поддержка тёмной/светлой темы
+(function(){
+  const grid = document.getElementById('trending-videos-grid');
+  if (!grid) return;
+  const cards = Array.from(grid.querySelectorAll('article'));
+  const BATCH = 20;
+  if (cards.length <= BATCH) return;
+
+  let shown = BATCH;
+  cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+
+  const wrap = document.createElement('div');
+  wrap.className = 'mt-6 text-center';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn-outline w-full sm:w-auto';
+  btn.textContent = 'Показать ещё';
+  btn.addEventListener('click', ()=>{
+    shown += BATCH;
+    cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+    if (shown >= cards.length) btn.classList.add('hidden');
+  });
+  wrap.appendChild(btn);
+  // append after grid
+  grid.parentElement.appendChild(wrap);
+})();
+</script>
+<script>
+/* Intercept sort/photo-video links to load content via AJAX without page reload.
+   Keeps viewport near the "Сортировка" block (uses scroll-margin-top on #sort). */
+(function(){ return;
+  const SORT_ID = 'sort';
+  // Prefetch cache to eliminate any perceived loading; does not change visuals
+  const cache = new Map();
+  const cleanURL = (u) => String(u).split('#')[0];
+
+  function prefetch(url){
+    const key = cleanURL(url);
+    if (cache.has(key)) return;
+    fetchDoc(url).then(doc => cache.set(key, doc)).catch(()=>{});
+  }
+
+  async function getDoc(url){
+    const key = cleanURL(url);
+    if (cache.has(key)) return cache.get(key);
+    const doc = await fetchDoc(url);
+    cache.set(key, doc);
+    return doc;
+  }
+
+  function prefetchSortLinks(){
+    const sortEl = document.getElementById(SORT_ID);
+    const card = sortEl && sortEl.closest('.card');
+    if (!card) return;
+    card.querySelectorAll('a[href]').forEach(a=> prefetch(a.href));
+  }
+
+  // Prefetch common targets on idle for instant switching
+  (window.requestIdleCallback ? requestIdleCallback : setTimeout)(prefetchSortLinks, 0);
+
+  // Prefetch on hover/touch to avoid any delay on click
+  document.addEventListener('mouseover', (e)=>{
+    const a = e.target.closest('a[href]');
+    if (!a || !isInSortCard(a)) return;
+    prefetch(a.href);
+  }, { passive: true });
+
+  document.addEventListener('touchstart', (e)=>{
+    const a = e.target.closest('a[href]');
+    if (!a || !isInSortCard(a)) return;
+    prefetch(a.href);
+  }, { passive: true });
+
+  let switching = false;
+
+  function isInSortCard(a){
+    if (!a) return false;
+    const card = a.closest('.card');
+    return !!(card && card.querySelector('#' + SORT_ID));
+  }
+
+  async function fetchDoc(url){
+    const clean = String(url).split('#')[0];
+    const r = await fetch(clean, { headers: { 'X-Requested-With': 'fetch' }, credentials: 'same-origin' });
+    const html = await r.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  function reapplyShowMore(grid){
+    if (!grid) return;
+    try{
+      const next = grid.nextElementSibling;
+      if (next && next.classList.contains('mt-6') && next.classList.contains('text-center')) {
+        next.remove();
+      }
+    }catch(_){}
+
+    const cards = Array.from(grid.querySelectorAll('article'));
+    const BATCH = 20;
+    if (cards.length <= BATCH) return;
+
+    let shown = BATCH;
+    cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+
+    const wrap = document.createElement('div');
+    wrap.className = 'mt-6 text-center';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-outline w-full sm:w-auto';
+    btn.textContent = 'Показать ещё';
+    btn.addEventListener('click', ()=>{
+      shown += BATCH;
+      cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+      if (shown >= cards.length) btn.classList.add('hidden');
+    });
+    wrap.appendChild(btn);
+    grid.parentElement.appendChild(wrap);
+  }
+
+  // Prevent native navigation early to ensure fully in-place switching (no page load)
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    if (!isInSortCard(a)) return;
+    e.preventDefault();
+  }, true);
+
+  document.addEventListener('click', async (e)=>{
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    if (!isInSortCard(a)) return;
+
+    let urlObj;
+    try{
+      urlObj = new URL(a.href, window.location.origin);
+    }catch(_){ return; }
+
+    // Only handle trending routes (/gallery/trending, /gallery/trending_videos, /gallery/trending/videos)
+    if (!/^\/gallery\/trending(?:\/videos|_videos)?\/?$/.test(urlObj.pathname)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (switching) { return; }
+    switching = true;
+
+    try{
+      let doc = cache.get(cleanURL(a.href));
+      if (!doc) {
+        prefetch(a.href);
+        doc = await getDoc(a.href);
+      }
+      const newGrid = doc.querySelector('#trending-photos-grid, #trending-videos-grid');
+      if (!newGrid) throw new Error('no grid');
+
+      const curGrid = document.querySelector('#trending-photos-grid, #trending-videos-grid');
+      if (!curGrid) throw new Error('no curGrid');
+
+      // Replace sort card (Фото/Видео toggle + pills) to reflect target page state
+      (function(){
+        const newSortEl = doc.getElementById(SORT_ID);
+        const curSortEl = document.getElementById(SORT_ID);
+        const newSortCard = newSortEl ? newSortEl.closest('.card') : null;
+        const curSortCard = curSortEl ? curSortEl.closest('.card') : null;
+        if (newSortCard && curSortCard) {
+          curSortCard.outerHTML = newSortCard.outerHTML;
+        }
+      })();
+      prefetchSortLinks();
+
+      // Replace header (title block)
+      (function(){
+        function findHeader(root){
+          const h1 = root.querySelector('h1.text-3xl.font-bold');
+          if (!h1) return null;
+          let el = h1;
+          while (el && el !== root){
+            if (el.classList && el.classList.contains('flex') && el.classList.contains('gap-4')) return el;
+            el = el.parentElement;
+          }
+          return null;
+        }
+        const newHeader = findHeader(doc);
+        const curHeader = findHeader(document);
+        if (newHeader && curHeader){
+          curHeader.outerHTML = newHeader.outerHTML;
+        }
+      })();
+
+      // Swap grids
+      curGrid.outerHTML = newGrid.outerHTML;
+
+      // Re-apply "show more"
+      const grid = document.querySelector('#trending-photos-grid, #trending-videos-grid');
+      reapplyShowMore(grid);
+
+
+      // No scroll; just finish instantly
+      switching = false;
+    }catch(_){ switching = false; }
+  });
+})();
+</script>
+<script>
+/* In-place trend switcher (videos page): no network, no URL change, no scroll. */
+(function(){
+  const SORT_ID = 'sort';
+  const PILL_ACTIVE = ['bg-primary/15','text-primary','border-primary/30'];
+  const TOGGLE_ACTIVE = ['bg-primary/15','text-primary'];
+
+  function byId(id){ return document.getElementById(id); }
+  function inSortCard(el){
+    const card = el && el.closest && el.closest('.card');
+    return !!(card && card.querySelector('#'+SORT_ID));
+  }
+  function hide(el){ if (el) el.classList.add('hidden'); }
+  function show(el){ if (el) el.classList.remove('hidden'); }
+  function addActive(el){ if(!el) return; PILL_ACTIVE.forEach(c=>el.classList.add(c)); }
+  function remActive(el){ if(!el) return; PILL_ACTIVE.forEach(c=>el.classList.remove(c)); }
+
+  // Neutralize links in sort card to prevent any native navigation / address bar spinner
+  function neutralizeSortLinks(){
+    const sort = byId(SORT_ID);
+    const card = sort && sort.closest('.card');
+    if (!card) return;
+    card.querySelectorAll('a[href]').forEach(a=>{
+      if (!a.dataset.href) a.dataset.href = a.getAttribute('href') || a.href || '';
+      a.setAttribute('href','javascript:void(0)');
+      a.setAttribute('role','button');
+      a.setAttribute('rel','noopener');
+    });
+  }
+
+  function parseTarget(a){
+    const raw = (a && (a.dataset.href || a.getAttribute('href'))) || '';
+    try{
+      const u = new URL(raw, window.location.origin);
+      const mode = (u.searchParams.get('by') || 'views').toLowerCase();
+      const media = (u.pathname.includes('trending_videos') || u.pathname.includes('/trending/videos')) ? 'videos' : 'photos';
+      return { media, mode };
+    }catch(_){
+      return null;
+    }
+  }
+
+  function updateSortUI(media, mode){
+    const sort = byId(SORT_ID);
+    const card = sort && sort.closest('.card');
+    if (!card) return;
+
+    // Pills active state by ?by=...
+    const pills = card.querySelectorAll('nav a[role="button"], nav a[href], nav a');
+    pills.forEach(a=>{
+      const t = parseTarget(a) || {};
+      const on = (t.mode === mode);
+      if (on) addActive(a); else remActive(a);
+    });
+
+    // Ensure pills point to the correct base (photos or videos) while preserving ?by=<mode>
+    const basePath = (media === 'videos') ? '/gallery/trending_videos' : '/gallery/trending';
+    pills.forEach(a=>{
+      const raw = a.dataset.href || a.getAttribute('href') || '';
+      try{
+        const u = new URL(raw, window.location.origin);
+        const by = (u.searchParams.get('by') || mode);
+        const newUrl = new URL(basePath, window.location.origin);
+        newUrl.searchParams.set('by', by);
+        a.dataset.href = newUrl.pathname + newUrl.search;
+      }catch(_){}
+    });
+
+    // Фото/Видео toggle visuals (use toggle-specific active classes to preserve original look)
+    const toggle = card.querySelector('.inline-flex.rounded-xl.border');
+    if (toggle){
+      const videoSpan = toggle.querySelector('span'); // On videos page active "Видео" is a <span>
+      const photoA = toggle.querySelector('a[role="button"], a[href]');
+
+      // remove active styles from both first
+      [videoSpan, photoA].forEach(el=>{
+        if (!el) return;
+        TOGGLE_ACTIVE.forEach(c=>el.classList.remove(c));
+        el.classList.remove('bg-primary/15','text-primary'); // ensure clean state
+      });
+
+      // also normalize borders
+      if (videoSpan) {
+        videoSpan.classList.remove('border-r');
+        videoSpan.classList.remove('border-[var(--bord)]');
+      }
+      if (photoA) {
+        photoA.classList.remove('border-l');
+        photoA.classList.remove('border-[var(--bord)]');
+      }
+
+      if (media === 'videos'){
+        // Video active: highlight videoSpan and give it left border to match original
+        if (videoSpan){
+          TOGGLE_ACTIVE.forEach(c=>videoSpan.classList.add(c));
+          videoSpan.classList.add('border-l','border-[var(--bord)]');
+        }
+      } else {
+        // Photos active: highlight photoA and give it right border to match original
+        if (photoA){
+          TOGGLE_ACTIVE.forEach(c=>photoA.classList.add(c));
+          photoA.classList.add('border-r','border-[var(--bord)]');
+        }
+      }
+    }
+  }
+
+  function showGroup(media, mode){
+    // Hide default grids if present
+    hide(byId('trending-photos-grid'));
+    hide(byId('trending-videos-grid'));
+
+    // Hide all pre-rendered groups
+    ['views','likes','new'].forEach(m=>{
+      hide(byId('photos-group-'+m));
+      hide(byId('videos-group-'+m));
+    });
+
+    // Show requested group
+    const id = (media === 'videos') ? ('videos-group-'+mode) : ('photos-group-'+mode);
+    const el = byId(id);
+    if (el) show(el);
+
+    // Always keep accounts search + recommendations visible
+    show(byId('accFollowSection'));
+
+    updateSortUI(media, mode);
+  }
+
+  // Photo/Video toggle click handler (works on both <span> and <a>), keeps visuals unchanged
+  function getActiveMode(){
+    try{
+      const sort = byId(SORT_ID);
+      const card = sort && sort.closest('.card');
+      const nav = card && card.querySelector('nav');
+      if (!nav) return 'views';
+      const links = Array.from(nav.querySelectorAll('a'));
+      const active = links.find(el => PILL_ACTIVE.every(c => el.classList.contains(c)));
+      if (active){
+        const t = parseTarget(active);
+        return (t && t.mode) || 'views';
+      }
+    }catch(_){}
+    return 'views';
+  }
+
+  document.addEventListener('click', (e)=>{
+    const sort = byId(SORT_ID);
+    const card = sort && sort.closest('.card');
+    const toggle = card && card.querySelector('.inline-flex.rounded-xl.border');
+    if (!toggle) return;
+
+    const target = e.target.closest('span, a');
+    if (!target || !toggle.contains(target)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const children = Array.from(toggle.children || []);
+    const left = children[0];  // Фото (link) на видео-странице
+    const right = children[1]; // Видео (span) на видео-странице
+    const mode = getActiveMode();
+
+    if (target === left){
+      // Force photos group, keep current mode
+      showGroup('photos', mode);
+    } else if (target === right){
+      // Force videos group, keep current mode
+      showGroup('videos', mode);
+    }
+  }, true);
+
+  // Prevent any navigation originating from sort card
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a');
+    if (!a || !inSortCard(a)) return;
+    e.preventDefault();
+  }, true);
+
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a');
+    if (!a || !inSortCard(a)) return;
+    e.preventDefault();
+    const t = parseTarget(a);
+    if (!t) return;
+    showGroup(t.media, t.mode);
+  });
+
+  // Init
+  neutralizeSortLinks();
+  (function init(){
+    try {
+      const sort = byId(SORT_ID);
+      const activeMode = (sort && (sort.dataset.activeMode || '{{ active_mode|default:"views" }}')) || 'views';
+      // Hide any duplicate pre-rendered groups first
+      ['views','likes','new'].forEach(m=>{
+        hide(byId('photos-group-'+m));
+        hide(byId('videos-group-'+m));
+      });
+      // Keep existing default videos grid visible initially; sync pills
+      updateSortUI('videos', activeMode);
+    } catch(_) {}
+  })();
+})();
+</script>
+
+<!-- Pre-rendered hidden groups for instant in-place switching (videos page) -->
+<div id="photos-group-views" class="hidden mt-8">
+  {% include "includes/trending_photos_grid.html" with trending_photos=photos_views liked_photo_ids=liked_photo_ids_views saved_photo_ids=saved_photo_ids_views active_mode='views' %}
+</div>
+<div id="photos-group-likes" class="hidden mt-8">
+  {% include "includes/trending_photos_grid.html" with trending_photos=photos_likes liked_photo_ids=liked_photo_ids_likes saved_photo_ids=saved_photo_ids_likes active_mode='likes' %}
+</div>
+<div id="photos-group-new" class="hidden mt-8">
+  {% include "includes/trending_photos_grid.html" with trending_photos=photos_new liked_photo_ids=liked_photo_ids_new saved_photo_ids=saved_photo_ids_new active_mode='new' %}
+</div>
+
+<div id="videos-group-views" class="hidden mt-8">
+  {% include "includes/trending_video_grid.html" with trending_videos=videos_views liked_video_ids=liked_video_ids_views saved_video_ids=saved_video_ids_views %}
+</div>
+<div id="videos-group-likes" class="hidden mt-8">
+  {% include "includes/trending_video_grid.html" with trending_videos=videos_likes liked_video_ids=liked_video_ids_likes saved_video_ids=saved_video_ids_likes %}
+</div>
+<div id="videos-group-new" class="hidden mt-8">
+  {% include "includes/trending_video_grid.html" with trending_videos=videos_new liked_video_ids=liked_video_ids_new saved_video_ids=saved_video_ids_new %}
+</div>
+
+<style>
+/* Enlarge invisible tap area under the like number for mobile without changing layout */
+.likers-hotspot { position: relative; }
+.likers-hotspot::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 100%;
+  height: 14px;
+}
+
+/* Narrow phones: prevent overflow near 420px by slightly reducing paddings/icons in actions row */
+@media (max-width: 420px) {
+  /* tighten paddings on all three action buttons without changing design */
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 {
+    padding: 6px 8px;
+  }
+  /* slightly smaller icons in actions row */
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* minor font size reduction only inside action buttons */
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm {
+    font-size: 12px;
+  }
+}
+@media (max-width: 375px) {
+  /* hold single-line actions down to ~375px */
+  .flex.items-center.justify-between.gap-2.flex-nowrap { gap: 0.25rem !important; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 { padding: 5px 6px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap svg,
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg { width: 12px; height: 12px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap .text-sm,
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm { font-size: 11px; }
+}
+@media (max-width: 340px) {
+  /* ensure fit down to 320px */
+  .flex.items-center.justify-between.gap-2.flex-nowrap { gap: 0.2rem !important; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 { padding: 4px 5px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap svg,
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg { width: 11px; height: 11px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap .text-sm,
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm { font-size: 10px; }
+}
+</style>
+
+{% endblock %}

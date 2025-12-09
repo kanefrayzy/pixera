@@ -1,5 +1,6 @@
 ﻿# FILE: ai_gallery/context_processors.py
 from django.conf import settings
+import time
 
 
 def auth_flags(request):
@@ -44,6 +45,8 @@ def wallet_context(request):
         "guest_balance": None,
         "guest_tokens": None,  # alias для шаблонов
         "SUPPORT_TELEGRAM_URL": getattr(settings, "SUPPORT_TELEGRAM_URL", ""),
+        # Cache-busting for static assets (used as ?v=...), falls back to current timestamp
+        "STATIC_VERSION": getattr(settings, "STATIC_VERSION", int(time.time())),
     }
 
     user = getattr(request, "user", None)

@@ -1,0 +1,1255 @@
+﻿{% load static %}
+
+<!-- Prompt Categories Section -->
+<div id="promptCats" class="prompt-categories-section">
+  <div class="section-header">
+    <h2 class="section-title">Категории подсказок</h2>
+    <p class="section-subtitle">Выберите категорию для быстрого старта</p>
+  </div>
+
+  {% if request.user.is_staff %}
+  <!-- Admin: Create Prompt Category -->
+  <div class="pc-admin-create">
+    <div class="pc-admin-grid">
+      <form id="pcForm" method="post" action="{% url 'generate:api_pc_create' %}" enctype="multipart/form-data" onsubmit="return (window.__pcSubmit ? window.__pcSubmit(event) : true)" style="display:contents">
+        {% csrf_token %}
+        <input type="text" id="pcName" name="name" class="field" placeholder="Название категории" maxlength="100" required>
+        <input type="text" id="pcDesc" name="description" class="field" placeholder="Описание (необязательно)">
+        <input type="number" id="pcOrder" name="order" class="field" placeholder="Порядок" value="0">
+        <label class="pc-inline">
+          <input type="checkbox" id="pcActive" name="is_active" checked>
+          <span>Активна</span>
+        </label>
+        <label class="pc-file">
+          <input type="file" id="pcImage" name="image" accept="image/*">
+          <span>Изображение</span>
+        </label>
+        <button class="btn btn-primary" id="pcCreateBtn" type="submit">+ Категория</button>
+      </form>
+    </div>
+    <div class="text-xs text-[var(--muted)] mt-2">Картинка используется как обложка карточки категории.</div>
+    <div id="pcStatus" class="text-xs mt-2"></div>
+  </div>
+  {% endif %}
+
+  <!-- First Row: 5 categories + "Show All" button (always visible) -->
+  {% if prompt_page_obj.number == 1 %}
+  <div class="categories-grid-compact">
+    {% for category in prompt_categories %}
+      {% if forloop.counter <= 5 %}
+      <div class="category-card-compact" data-category-id="{{ category.id }}" data-name="{{ category.name|escape }}" data-desc="{{ category.description|escape }}" data-order="{{ category.order }}" data-active="{{ category.is_active|yesno:'1,0' }}" {% if category.image %}data-image-url="{{ category.image.url }}"{% else %}data-image-url=""{% endif %}>
+        <div class="category-image-wrapper-compact">
+          {% if category.image %}
+          <img
+            src="{{ category.image.url }}"
+            alt="{{ category.name }}"
+            class="category-image-compact"
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
+            width="600"
+            height="600"
+          >
+          {% else %}
+          <div class="category-image-compact" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+          {% endif %}
+          <div class="category-overlay-compact"></div>
+          <h3 class="category-name-compact">{{ category.name }}</h3>
+
+          {% if request.user.is_staff %}
+          <div class="pc-card-actions">
+            <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="{{ category.id }}">✎</button>
+            <button class="pc-btn pc-del" type="button" title="Удалить" data-id="{{ category.id }}">✕</button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    <!-- Show All Button (6th element in first row) -->
+    {% if prompt_page_obj.number == 1 %}
+    <button type="button" id="showAllCategoriesBtn" class="category-card-compact category-show-all">
+      <div class="category-image-wrapper-compact">
+        <div class="show-all-content">
+          <svg class="show-all-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+          <span class="show-all-text">Все категории</span>
+          <span class="show-all-count">{{ prompt_page_obj.paginator.count|default:0 }}</span>
+        </div>
+      </div>
+    </button>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- All Categories Section -->
+  <div id="allCategoriesSection" class="{% if prompt_page_obj.number == 1 %}hidden {% endif %}mt-6">
+    <div class="categories-grid-full">
+      {% for category in prompt_categories %}
+        {% if prompt_page_obj.number != 1 or forloop.counter > 5 %}
+        <div class="category-card-compact" data-category-id="{{ category.id }}" data-name="{{ category.name|escape }}" data-desc="{{ category.description|escape }}" data-order="{{ category.order }}" data-active="{{ category.is_active|yesno:'1,0' }}" {% if category.image %}data-image-url="{{ category.image.url }}"{% else %}data-image-url=""{% endif %}>
+          <div class="category-image-wrapper-compact">
+            {% if category.image %}
+            <img
+              src="{{ category.image.url }}"
+              alt="{{ category.name }}"
+              class="category-image-compact"
+              loading="lazy"
+              decoding="async"
+              fetchpriority="low"
+              width="600"
+              height="600"
+            >
+            {% else %}
+            <div class="category-image-compact" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            {% endif %}
+            <div class="category-overlay-compact"></div>
+            <h3 class="category-name-compact">{{ category.name }}</h3>
+
+            {% if request.user.is_staff %}
+            <div class="pc-card-actions">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="{{ category.id }}">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="{{ category.id }}">✕</button>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if prompt_page_obj.paginator.num_pages > 1 %}
+    <nav class="flex items-center justify-center mt-6" aria-label="Пагинация категорий">
+      <div class="flex items-center gap-1 flex-wrap justify-center">
+        {% if prompt_page_obj.has_previous %}
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page=1#promptCats" aria-label="Первая">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+            </svg>
+            <span class="hidden sm:inline">Первая</span>
+          </a>
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ prompt_page_obj.previous_page_number }}#promptCats" aria-label="Назад">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span class="hidden sm:inline">Назад</span>
+          </a>
+        {% endif %}
+
+        {% with total=prompt_page_obj.paginator.num_pages current=prompt_page_obj.number %}
+          {% for i in prompt_page_obj.paginator.page_range %}
+            {% if i == 1 or i == total or i >= current|add:"-2" and i <= current|add:"2" %}
+              {% if i == current %}
+                <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">{{ i }}</span>
+              {% else %}
+                <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ i }}#promptCats">{{ i }}</a>
+              {% endif %}
+            {% elif i == 2 and current > 4 %}
+              <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+            {% elif i == total|add:"-1" and current < total|add:"-3" %}
+              <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+            {% endif %}
+          {% endfor %}
+        {% endwith %}
+
+        {% if prompt_page_obj.has_next %}
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ prompt_page_obj.next_page_number }}#promptCats" aria-label="Вперёд">
+            <span class="hidden sm:inline">Вперёд</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ prompt_page_obj.paginator.num_pages }}#promptCats" aria-label="Последняя">
+            <span class="hidden sm:inline">Последняя</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+            </svg>
+          </a>
+        {% endif %}
+      </div>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+{% if request.user.is_staff %}
+<!-- Edit Prompt Category Modal -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="pcEditModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-xl w-full overflow-hidden border border-[var(--bord)] shadow-2xl">
+    <div class="p-4 sm:p-6 border-b border-[var(--bord)] flex items-center justify-between">
+      <h3 class="text-lg font-bold">Редактирование категории</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)]" id="pcEditClose" type="button">✕</button>
+    </div>
+    <div class="p-4 sm:p-6 space-y-3">
+      <input type="hidden" id="pcEditId">
+      <input id="pcEditName" class="field w-full" type="text" placeholder="Название">
+      <textarea id="pcEditDesc" class="field w-full" rows="3" placeholder="Описание"></textarea>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="pcEditOrder" class="field" type="number" placeholder="Порядок">
+        <label class="pc-inline"><input id="pcEditActive" type="checkbox"><span>Активна</span></label>
+      </div>
+      <label class="pc-file w-full">
+        <input type="file" id="pcEditImage" accept="image/*">
+        <span>Заменить изображение</span>
+      </label>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button class="btn btn-ghost" id="pcEditCancel" type="button">Отмена</button>
+        <button class="btn btn-primary" id="pcEditSave" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+/* ===== Секция категорий ===== */
+.prompt-categories-section {
+  width: 100%;
+}
+
+/* При переходе по якорю фиксируем положение блока вверху вьюпорта
+   с учётом возможной фиксированной шапки (адаптивно) */
+#promptCats {
+  scroll-margin-top: clamp(56px, 8vh, 96px);
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text, #ffffff);
+  margin: 0 0 0.25rem 0;
+}
+
+.section-subtitle {
+  font-size: 0.875rem;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  margin: 0;
+}
+
+.pc-admin-create {
+  margin: 1rem 0 1.25rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--bord);
+  border-radius: 0.75rem;
+  background: rgba(0,0,0,.03);
+}
+html[data-theme="light"] .pc-admin-create { background: rgba(0,0,0,.02); }
+.pc-admin-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 2fr 3fr 1fr auto auto auto;
+}
+.pc-inline { display: inline-flex; align-items: center; gap: .5rem; padding: .5rem .75rem; border:1px dashed var(--bord); border-radius:.5rem; }
+.pc-file { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border:1px dashed var(--bord); border-radius:.5rem; cursor:pointer; }
+.pc-file input[type="file"]{ display:none; }
+
+/* ===== Компактная сетка (6 элементов в ряд) ===== */
+.categories-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.categories-grid-full {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+/* ===== Компактная карточка ===== */
+.category-card-compact {
+  position: relative;
+  cursor: pointer;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+
+.category-card-compact:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+}
+
+.category-image-wrapper-compact {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%; /* Квадрат */
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.category-image-compact {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.category-card-compact:hover .category-image-compact {
+  transform: scale(1.1);
+}
+
+.category-overlay-compact {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%);
+  z-index: 1;
+  transition: background 0.3s ease;
+}
+
+.category-card-compact:hover .category-overlay-compact {
+  background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.9) 100%);
+}
+
+.category-name-compact {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.875rem 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  z-index: 2;
+  margin: 0;
+  text-shadow:
+    0 2px 8px rgba(0,0,0,0.9),
+    0 1px 3px rgba(0,0,0,0.8),
+    -1px -1px 0 rgba(0,0,0,0.5),
+    1px -1px 0 rgba(0,0,0,0.5),
+    -1px 1px 0 rgba(0,0,0,0.5),
+    1px 1px 0 rgba(0,0,0,0.5);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Admin buttons on card */
+.pc-card-actions{
+  position:absolute; top:6px; right:6px; z-index:3; display:flex; gap:6px;
+}
+.pc-btn{ background:rgba(0,0,0,.6); color:#fff; border:1px solid rgba(255,255,255,.25); width:28px; height:28px; line-height:26px; text-align:center; border-radius:8px; cursor:pointer; font-weight:700; }
+.pc-btn:hover{ background:rgba(0,0,0,.8); }
+
+/* ===== Кнопка "Показать все" ===== */
+.category-show-all {
+  background: transparent;
+}
+
+.category-show-all .category-image-wrapper-compact {
+  /* Цвет как у кнопок сайта */
+  background: var(--primary);
+  position: relative;
+  isolation: isolate; /* создаёт новый контекст наложения для оверлея */
+}
+
+.show-all-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  z-index: 1; /* контент поверх оверлея */
+}
+
+.show-all-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #ffffff;
+  transition: transform 0.3s ease;
+}
+/* Оверлей для читаемости текста (обе темы) */
+.category-show-all .category-image-wrapper-compact::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(0,0,0,.18), rgba(0,0,0,.28));
+  z-index: 0;
+}
+/* Усиление контраста в светлой теме */
+html[data-theme="light"] .category-show-all .category-image-wrapper-compact::before {
+  background: linear-gradient(135deg, rgba(0,0,0,.22), rgba(0,0,0,.35));
+}
+html[data-theme="light"] .category-show-all .category-image-wrapper-compact {
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
+}
+
+.category-show-all:hover .show-all-icon {
+  transform: translateY(4px);
+}
+
+.show-all-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.show-all-count {
+  font-size: 0.6875rem;
+  color: rgba(255,255,255,0.8);
+}
+
+/* ===== Светлая тема ===== */
+html[data-theme="light"] .section-title {
+  color: #0f1419;
+}
+
+html[data-theme="light"] .section-subtitle {
+  color: #6b7280;
+}
+
+html[data-theme="light"] .category-card-compact:hover {
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
+}
+
+/* ===== Адаптив ===== */
+@media (max-width: 1024px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .pc-admin-grid { grid-template-columns: 2fr 3fr 1fr auto auto auto; }
+}
+
+@media (max-width: 768px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.625rem;
+  }
+  .pc-admin-grid { grid-template-columns: 1fr 1fr 1fr auto; }
+
+  .category-name-compact {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .show-all-text {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.75rem;
+    padding: 0.625rem 0.375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .show-all-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .show-all-text {
+    font-size: 0.6875rem;
+  }
+
+  .show-all-count {
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .category-name-compact {
+    font-size: 0.75rem;
+    padding: 0.625rem 0.375rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    gap: 0.375rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.6875rem;
+    padding: 0.5rem 0.25rem;
+    letter-spacing: 0;
+  }
+
+  .show-all-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .show-all-text {
+    font-size: 0.625rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.8125rem;
+  }
+}
+
+/* ===== Анимация ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#allCategoriesSection:not(.hidden) {
+  animation: fadeIn 0.3s ease-out;
+}
+/* Hide server pagination for prompt categories (client-side "Показать ещё") */
+nav[aria-label="Пагинация категорий"] { display: none !important; }
+</style>
+
+<script>
+(function initImagePrompts() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initImagePrompts, { once: true });
+    return;
+  }
+  const IS_STAFF = (document.getElementById('gen-root')?.dataset.isStaff || 'false') === 'true';
+
+  // CSRF helper
+  function getCSRF() {
+    const input = (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value;
+    if (input) return input;
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+  }
+  async function postFD(url, fd) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'fetch' },
+      body: fd,
+      credentials: 'same-origin'
+    });
+
+    // Try to parse JSON when возможно
+    let j = {};
+    const ctype = (r.headers.get('content-type') || '').toLowerCase();
+    if (ctype.includes('application/json')) {
+      try { j = await r.json(); } catch(_) { j = {}; }
+    } else {
+      // Fallback — читаемый текст
+      try { const t = await r.text(); j = { ok: r.ok, error: (t || '').slice(0, 300) }; } catch(_) { j = {}; }
+    }
+
+    // Если редиректит на страницу логина — явно сообщаем
+    if (r.redirected) {
+      const to = r.url || '';
+      if (to.includes('/accounts/login') || to.includes('/admin/login')) {
+        throw new Error('Требуется вход. Войдите под staff (админ) и повторите действие.');
+      }
+    }
+
+    // Частые случаи с понятными подсказками
+    if (r.status === 403) {
+      throw new Error(j.error || 'Недостаточно прав (нужен staff) или CSRF-токен недействителен.');
+    }
+    if (r.status === 400) {
+      throw new Error(j.error || 'Неверные данные формы. Проверьте поля.');
+    }
+
+    if (!r.ok || j.ok === false) {
+      throw new Error(j.error || ('Ошибка ' + r.status));
+    }
+    return j;
+  }
+  async function postJSON(url, data) {
+    const fd = new FormData();
+    Object.entries(data || {}).forEach(([k, v]) => fd.append(k, v));
+    return postFD(url, fd);
+  }
+
+  // Кнопка "Показать все категории"
+  const showAllBtn = document.getElementById('showAllCategoriesBtn');
+  const allCategoriesSection = document.getElementById('allCategoriesSection');
+  const promptCatsEl = document.getElementById('promptCats');
+
+  // Progressive "Show more" for image categories — 3 rows initially, responsive
+  function setupShowMoreImages() {
+    const compact = document.querySelector('.categories-grid-compact');
+    const fullSection = document.getElementById('allCategoriesSection');
+    const full = fullSection ? fullSection.querySelector('.categories-grid-full') : null;
+    if (!compact) return;
+
+    // Move all cards into a single grid
+    const cards = [];
+    compact.querySelectorAll('.category-card-compact').forEach(c => {
+      if (!c.classList.contains('category-show-all')) cards.push(c);
+    });
+    if (full) {
+      full.querySelectorAll('.category-card-compact').forEach(c => cards.push(c));
+    }
+
+    // Remove "Show all" and merge remaining cards into compact grid
+    try { showAllBtn?.remove(); } catch(_) {}
+    if (fullSection) {
+      if (full) {
+        full.querySelectorAll('.category-card-compact').forEach(c => {
+          if (!c.classList.contains('category-show-all')) compact.appendChild(c);
+        });
+      }
+      fullSection.remove();
+    }
+
+    // Create "Show more" button if not exists
+    let btn = document.getElementById('pcShowMore');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'pcShowMore';
+      btn.type = 'button';
+      btn.className = 'btn btn-ghost w-full mt-4 text-sm';
+      btn.innerHTML = '<span>Показать ещё</span>';
+      // place right after grid
+      compact.parentElement.appendChild(btn);
+    }
+
+    function getCols() {
+      const cs = getComputedStyle(compact);
+      const cols = (cs.gridTemplateColumns || '').split(' ').filter(Boolean).length || 3;
+      return Math.max(1, cols);
+    }
+
+    let extraRows = 0;
+
+    function update() {
+      const cols = getCols();
+      const base = 3 * cols; // 3 rows initially
+      const visible = base + extraRows * cols;
+      const allCards = Array.from(compact.querySelectorAll('.category-card-compact'));
+      let shown = 0;
+      allCards.forEach(card => {
+        const hide = shown >= visible;
+        card.classList.toggle('hidden', hide);
+        if (!hide) shown += 1;
+      });
+      btn.style.display = shown >= allCards.length ? 'none' : '';
+    }
+
+    update();
+    btn.addEventListener('click', () => { extraRows += 1; update(); });
+    window.addEventListener('resize', () => { update(); });
+  }
+
+  // Initialize 3-rows + "Show more" for image categories
+  setupShowMoreImages();
+
+  // Оставаться строго на блоке подсказок после перехода по пагинации/якорю
+  function stayOnPromptCats() {
+    if (!promptCatsEl) return;
+    try {
+      const usp = new URLSearchParams(window.location.search);
+      if (window.location.hash === '#promptCats' || usp.has('prompt_page')) {
+        // Даем браузеру отрисовать разметку, затем скроллим к началу блока
+        setTimeout(() => {
+          try { promptCatsEl.scrollIntoView({ behavior: 'auto', block: 'start' }); }
+          catch(_) { window.location.hash = '#promptCats'; }
+        }, 0);
+      }
+    } catch(_) {}
+  }
+  stayOnPromptCats();
+
+  // Тоггл показа всех категорий (кнопка "Все категории" <-> "Скрыть")
+  function setShowAllState(expanded) {
+    if (!allCategoriesSection) return;
+    const icon = showAllBtn?.querySelector('.show-all-icon');
+    const text = showAllBtn?.querySelector('.show-all-text');
+    if (expanded) {
+      allCategoriesSection.classList.remove('hidden');
+      if (text) text.textContent = 'Скрыть';
+      if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>';
+    } else {
+      allCategoriesSection.classList.add('hidden');
+      if (text) text.textContent = 'Все категории';
+      if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>';
+    }
+  }
+
+  let expanded = false;
+
+  if (showAllBtn && allCategoriesSection) {
+    showAllBtn.addEventListener('click', function() {
+      expanded = !expanded;
+      setShowAllState(expanded);
+      // Плавная прокрутка
+      if (expanded) {
+        setTimeout(() => {
+          try { allCategoriesSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(_) {}
+        }, 100);
+      } else {
+        try { showAllBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_) {}
+      }
+    });
+  }
+
+  // Авторазворачивание отключено: на странице генерации всегда стартуем в свернутом состоянии
+
+  // Обработка кликов по категориям - открытие модального окна с промптами
+  const categoryCards = document.querySelectorAll('.category-card-compact:not(.category-show-all)');
+
+  categoryCards.forEach(card => {
+    card.addEventListener('click', async function(e) {
+      // игнор кликов по админ-кнопкам
+      if (e.target.closest('.pc-card-actions')) return;
+
+      const categoryId = this.dataset.categoryId;
+      if (!categoryId) return;
+
+      const categoryName = this.querySelector('.category-name-compact').textContent;
+      const modal = document.getElementById('promptCategoryModal');
+      const modalTitle = document.getElementById('modalCategoryTitle');
+      const modalContainer = document.getElementById('modalPromptsContainer');
+
+      if (!modal || !modalTitle || !modalContainer) {
+        console.error('Modal elements not found');
+        return;
+      }
+
+      modalTitle.textContent = categoryName;
+      modalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Загрузка...</div>';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      try {
+        const response = await fetch(`/generate/api/categories/${categoryId}/prompts`);
+        const data = await response.json();
+
+        const adminCreate = IS_STAFF ? `
+          <div class="p-3 mb-3 rounded-xl border border-[var(--bord)] bg-black/[.03] dark:bg-white/[.03]">
+            <div class="grid gap-2 sm:grid-cols-2">
+              <input id="cpTitle" class="field" type="text" placeholder="Заголовок" maxlength="150">
+              <input id="cpOrder" class="field" type="number" placeholder="Порядок" value="0">
+              <select id="cpSubcat" class="field">
+                <option value="">Без подкатегории</option>
+              </select>
+              <textarea id="cpText" class="field sm:col-span-2" rows="3" placeholder="Текст промпта"></textarea>
+              <textarea id="cpEn" class="field sm:col-span-2" rows="3" placeholder="Английский промпт (опционально)"></textarea>
+              <label class="pc-inline"><input id="cpActive" type="checkbox" checked><span>Активен</span></label>
+              <div class="flex items-center justify-end sm:justify-start">
+                <button id="cpCreateBtn" class="btn btn-primary" type="button">+ Промпт</button>
+              </div>
+            </div>
+            <div class="mt-3 rounded-lg border border-[var(--bord)] p-3">
+              <div class="text-xs text-[var(--muted)] mb-2">Подкатегории (админ)</div>
+              <div class="grid gap-2 sm:grid-cols-3">
+                <input id="scName" class="field" type="text" placeholder="Название подкатегории" maxlength="120">
+                <input id="scOrder" class="field" type="number" placeholder="Порядок" value="0">
+                <label class="pc-inline"><input id="scActive" type="checkbox" checked><span>Активна</span></label>
+              </div>
+              <div class="mt-2 flex justify-end">
+                <button id="scCreateBtn" class="btn btn-ghost" type="button">+ Подкатегория</button>
+              </div>
+            </div>
+          </div>
+        ` : '';
+
+        const items = (data.prompts || []).map(prompt => `
+          <div class="prompt-item-modal" data-id="${prompt.id}" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en_raw || '')}" data-order="${prompt.order||0}" data-active="${prompt.is_active ? '1':'0'}">
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+              <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+              <div class="flex items-center gap-2">
+                ${IS_STAFF ? `<button class="btn btn-ghost text-xs js-cp-edit" type="button">Редактировать</button><button class="btn btn-ghost text-xs js-cp-del" type="button">Удалить</button>` : ''}
+                <button class="btn btn-primary shrink-0 w-full sm:w-auto js-use-btn">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                  Использовать
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        modalContainer.innerHTML = `
+          ${adminCreate}
+          <div id="pg-subcats" class="flex flex-wrap gap-2 mb-3"></div>
+          <div id="pg-items" class="space-y-3">${items || '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>'}</div>
+        `;
+
+        // Load subcategories and render pills + fill admin select
+        async function loadSubcategories() {
+          try {
+            const r = await fetch(`/generate/api/prompt-categories/${categoryId}/subcategories`);
+            const j = await r.json();
+            const wrap = modalContainer.querySelector('#pg-subcats');
+            if (!wrap) return;
+
+            const subs = (j.subcategories || []);
+
+            // Fill admin select for prompt creation
+            const sel = modalContainer.querySelector('#cpSubcat');
+            if (sel) {
+              sel.innerHTML = `<option value="">Без подкатегории</option>` + subs.map(sc => `<option value="${sc.id}">${escapeHtml(sc.name)}</option>`).join('');
+            }
+
+            // Render subcategory pills
+            const pills = [];
+            pills.push(`<button type="button" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm pg-subpill" data-id="">Все</button>`);
+            subs.forEach(sc => {
+              pills.push(`<button type="button" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/60 hover:text-primary text-xs sm:text-sm pg-subpill" data-id="${sc.id}">${escapeHtml(sc.name)} <span class="text-[var(--muted)]">(${sc.prompts_count})</span></button>`);
+            });
+            wrap.innerHTML = pills.join('');
+
+            // Bind pill clicks
+            wrap.querySelectorAll('.pg-subpill').forEach(btn => {
+              btn.addEventListener('click', async () => {
+                const subId = btn.dataset.id || '';
+                wrap.querySelectorAll('.pg-subpill').forEach(b => b.classList.remove('bg-primary/15','text-primary','border-primary/30'));
+                const itemsWrap = modalContainer.querySelector('#pg-items');
+
+                if (subId === '') {
+                  btn.classList.add('bg-primary/15','text-primary','border-primary/30');
+                  itemsWrap.innerHTML = `${items || '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>'}`;
+                  bindUseButtons(itemsWrap);
+                } else {
+                  try {
+                    const r2 = await fetch(`/generate/api/subcategories/${subId}/prompts`);
+                    const j2 = await r2.json();
+                    const dataItems = (j2.prompts || []);
+                    const itemsHtml = dataItems.map(prompt => `
+                      <div class="prompt-item-modal" data-id="${prompt.id}" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en_raw || '')}" data-order="${prompt.order||0}" data-active="${prompt.is_active ? '1':'0'}">
+                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                          <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+                          <div class="flex items-center gap-2">
+                            ${IS_STAFF ? `<button class="btn btn-ghost text-xs js-cp-edit" type="button">Редактировать</button><button class="btn btn-ghost text-xs js-cp-del" type="button">Удалить</button>` : ''}
+                            <button class="btn btn-primary shrink-0 w-full sm:w-auto prompt-use-btn">
+                              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                              Использовать
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('');
+                    itemsWrap.innerHTML = itemsHtml || '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>';
+                    bindUseButtons(itemsWrap);
+                    btn.classList.add('bg-primary/15','text-primary','border-primary/30');
+                  } catch (e) {
+                    itemsWrap.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки подкатегории</div>';
+                  }
+                }
+              });
+            });
+
+            // Admin: create subcategory
+            modalContainer.querySelector('#scCreateBtn')?.addEventListener('click', async () => {
+              const name = (modalContainer.querySelector('#scName')?.value || '').trim();
+              const order = modalContainer.querySelector('#scOrder')?.value || '0';
+              const active = modalContainer.querySelector('#scActive')?.checked ? '1' : '0';
+              if (!name) { alert('Введите название подкатегории'); return; }
+              try {
+                await postJSON('/generate/api/subcategories/create', { category_id: categoryId, name, order, is_active: active });
+                await loadSubcategories();
+                (modalContainer.querySelector('#scName') || {}).value = '';
+                (modalContainer.querySelector('#scOrder') || {}).value = '0';
+              } catch (e) { alert(e.message || String(e)); }
+            });
+
+            // Default selection: "Все"
+            const first = wrap.querySelector('.pg-subpill[data-id=""]');
+            if (first) first.click();
+          } catch (e) {
+            // silent
+          }
+        }
+
+        // Local helpers to (re)bind "Use" buttons inside current container
+        function bindUseButtons(rootEl) {
+          rootEl.querySelectorAll('.prompt-use-btn, .js-use-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const promptItem = this.closest('.prompt-item-modal');
+              const promptTextEn = promptItem?.dataset.promptEn;
+              const promptTextRu = promptItem?.dataset.prompt;
+              const promptToUse = promptTextEn && promptTextEn.trim() !== '' ? promptTextEn : promptTextRu;
+
+              copyToClipboard(promptToUse || '');
+
+              const originalHTML = this.innerHTML;
+              this.innerHTML = `
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Скопировано!
+              `;
+              this.classList.add('copied');
+              setTimeout(() => { this.innerHTML = originalHTML; this.classList.remove('copied'); }, 2000);
+
+              const promptField = document.getElementById('prompt');
+              if (promptField && promptToUse) {
+                const currentValue = promptField.value.trim();
+                promptField.value = currentValue ? (currentValue + ', ' + promptToUse) : promptToUse;
+                promptField.focus();
+              }
+              closePromptModal();
+            });
+          });
+        }
+
+        // Bootstrap subcategories UI
+        loadSubcategories();
+
+        // Create prompt
+        if (IS_STAFF) {
+          modalContainer.querySelector('#cpCreateBtn')?.addEventListener('click', async () => {
+            const title = (modalContainer.querySelector('#cpTitle')?.value || '').trim();
+            const text = (modalContainer.querySelector('#cpText')?.value || '').trim();
+            const en = (modalContainer.querySelector('#cpEn')?.value || '').trim();
+            const order = modalContainer.querySelector('#cpOrder')?.value || '0';
+            const active = modalContainer.querySelector('#cpActive')?.checked ? '1' : '0';
+            if (!title || !text) { alert('Заполните заголовок и текст'); return; }
+            try {
+              const subSel = modalContainer.querySelector('#cpSubcat');
+              const subcategory_id = (subSel && subSel.value) ? subSel.value : '';
+              await postJSON('/generate/api/prompts/create', { category_id: categoryId, subcategory_id, title, prompt_text: text, prompt_en: en, order, is_active: active });
+              location.reload();
+            } catch (e) { alert(e.message || String(e)); }
+          });
+        }
+
+        // Use buttons
+        modalContainer.querySelectorAll('.js-use-btn').forEach(btn => {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const promptItem = this.closest('.prompt-item-modal');
+
+            const promptTextEn = promptItem.dataset.promptEn;
+            const promptTextRu = promptItem.dataset.prompt;
+            const promptToUse = promptTextEn && promptTextEn.trim() !== '' ? promptTextEn : promptTextRu;
+
+            copyToClipboard(promptToUse);
+
+            const originalHTML = this.innerHTML;
+            this.innerHTML = `
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Скопировано!
+            `;
+            this.classList.add('copied');
+
+            setTimeout(() => {
+              this.innerHTML = originalHTML;
+              this.classList.remove('copied');
+            }, 2000);
+
+            const promptField = document.getElementById('prompt');
+            if (promptField) {
+              const currentValue = promptField.value.trim();
+              if (currentValue) {
+                promptField.value = currentValue + ', ' + promptToUse;
+              } else {
+                promptField.value = promptToUse;
+              }
+              promptField.focus();
+            }
+
+            closePromptModal();
+          });
+        });
+
+        // Edit/delete prompt (admin)
+        if (IS_STAFF) {
+          modalContainer.addEventListener('click', async (ev) => {
+            const editBtn = ev.target.closest('.js-cp-edit');
+            const delBtn = ev.target.closest('.js-cp-del');
+            const item = ev.target.closest('.prompt-item-modal');
+            if (!item) return;
+
+            if (delBtn) {
+              ev.preventDefault();
+              if (!confirm('Удалить промпт?')) return;
+              try {
+                await postJSON(`/generate/api/prompts/${item.dataset.id}/delete`, {});
+                location.reload();
+              } catch (e) { alert(e.message || String(e)); }
+              return;
+            }
+            if (editBtn) {
+              ev.preventDefault();
+              const title = prompt('Заголовок', item.querySelector('p')?.textContent?.slice(0, 150) || '');
+              if (title === null) return;
+              const text = prompt('Текст промпта', item.dataset.prompt || '');
+              if (text === null) return;
+              const en = prompt('Английский промпт', item.dataset.promptEn || '');
+              if (en === null) return;
+              const order = prompt('Порядок', item.dataset.order || '0');
+              if (order === null) return;
+              const active = confirm('Сделать активным? ОК=Да, Отмена=Нет');
+              try {
+                await postJSON(`/generate/api/prompts/${item.dataset.id}/update`, {
+                  title, prompt_text: text, prompt_en: en, order, is_active: active ? '1' : '0'
+                });
+                location.reload();
+              } catch (e) { alert(e.message || String(e)); }
+              return;
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading prompts:', error);
+        modalContainer.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки промптов</div>';
+      }
+    });
+  });
+
+  function closePromptModal() {
+    const modal = document.getElementById('promptCategoryModal');
+    if (modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  // Ensure modal can be closed by the cross, overlay and Escape
+  document.getElementById('closePromptModal')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closePromptModal();
+  });
+  document.getElementById('promptCategoryModal')?.addEventListener('click', (e) => {
+    var t = e.target;
+    if (t && t.id === 'promptCategoryModal') {
+      closePromptModal();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePromptModal();
+  });
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Admin: create category
+  // Provide a global fallback handler so click works even if listener didn't bind
+  window.__pcCreate = async function(ev) {
+    try {
+      const btn = ev?.currentTarget || document.getElementById('pcCreateBtn');
+      const name = (document.getElementById('pcName')?.value || '').trim();
+      const desc = (document.getElementById('pcDesc')?.value || '').trim();
+      const order = document.getElementById('pcOrder')?.value || '0';
+      const active = document.getElementById('pcActive')?.checked ? '1' : '0';
+      const imgInput = document.getElementById('pcImage');
+      const status = document.getElementById('pcStatus');
+      if (!name) { alert('Введите название'); return false; }
+
+      const fd = new FormData();
+      fd.append('name', name);
+      if (desc) fd.append('description', desc);
+      fd.append('order', order);
+      fd.append('is_active', active);
+      if (imgInput?.files?.[0]) fd.append('image', imgInput.files[0]);
+
+      if (btn) { btn.disabled = true; btn.textContent = 'Создание...'; }
+      if (status) { status.textContent = 'Отправка запроса...'; status.style.color = 'var(--muted)'; }
+
+      const res = await postFD('/generate/api/prompt-categories/create', fd);
+      if (status) { status.textContent = 'Готово: ' + (res?.name || name); status.style.color = '#10b981'; }
+      location.reload();
+      return false;
+    } catch (e) {
+      const status = document.getElementById('pcStatus');
+      if (status) { status.textContent = 'Ошибка: ' + (e.message || String(e)); status.style.color = '#ef4444'; }
+      alert(e.message || String(e));
+      const btn = document.getElementById('pcCreateBtn');
+      if (btn) { btn.disabled = false; btn.textContent = '+ Категория'; }
+      return false;
+    }
+  };
+
+  // Form submit fallback (progressive enhancement)
+  window.__pcSubmit = async function(ev) {
+    try {
+      ev.preventDefault();
+      const form = ev.currentTarget || document.getElementById('pcForm');
+      const btn = document.getElementById('pcCreateBtn');
+      const status = document.getElementById('pcStatus');
+      const fd = new FormData(form);
+      const name = (fd.get('name') || '').toString().trim();
+      if (!name) { alert('Введите название'); return false; }
+      if (btn) { btn.disabled = true; btn.textContent = 'Создание...'; }
+      if (status) { status.textContent = 'Отправка запроса...'; status.style.color = 'var(--muted)'; }
+      const res = await postFD(form.action, fd);
+      if (status) { status.textContent = 'Готово: ' + (res?.name || name); status.style.color = '#10b981'; }
+      location.reload();
+      return false;
+    } catch (e) {
+      const btn = document.getElementById('pcCreateBtn');
+      const status = document.getElementById('pcStatus');
+      if (status) { status.textContent = 'Ошибка: ' + (e.message || String(e)); status.style.color = '#ef4444'; }
+      alert(e.message || String(e));
+      if (btn) { btn.disabled = false; btn.textContent = '+ Категория'; }
+      return false;
+    }
+  };
+
+  // Bind by presence of staff-only controls in DOM (more robust than relying on dataset)
+  if (document.getElementById('pcCreateBtn')) {
+    document.getElementById('pcCreateBtn')?.addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      const name = (document.getElementById('pcName')?.value || '').trim();
+      const desc = (document.getElementById('pcDesc')?.value || '').trim();
+      const order = document.getElementById('pcOrder')?.value || '0';
+      const active = document.getElementById('pcActive')?.checked ? '1' : '0';
+      const imgInput = document.getElementById('pcImage');
+
+      if (!name) { alert('Введите название'); return; }
+
+      const fd = new FormData();
+      fd.append('name', name);
+      if (desc) fd.append('description', desc);
+      fd.append('order', order);
+      fd.append('is_active', active);
+      if (imgInput?.files?.[0]) fd.append('image', imgInput.files[0]);
+
+      try {
+        // Visual feedback while sending
+        const status = document.getElementById('pcStatus');
+        const oldText = btn.textContent;
+        btn.textContent = 'Создание...';
+        btn.disabled = true;
+        if (status) { status.textContent = 'Отправка запроса...'; status.style.color = 'var(--muted)'; }
+
+        const res = await postFD('/generate/api/prompt-categories/create', fd);
+        console.log('PromptCategory created:', res);
+        if (status) { status.textContent = 'Готово: ' + (res?.name || name); status.style.color = '#10b981'; }
+        // Перезагрузим для обновления списка
+        location.reload();
+      } catch (e) {
+        console.error('Create category failed:', e);
+        const status = document.getElementById('pcStatus');
+        if (status) { status.textContent = 'Ошибка: ' + (e.message || String(e)); status.style.color = '#ef4444'; }
+        alert(e.message || String(e));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '+ Категория';
+      }
+    });
+
+    // Admin: edit/delete category
+    document.addEventListener('click', async (e) => {
+      const btnEdit = e.target.closest('.pc-edit');
+      const btnDel = e.target.closest('.pc-del');
+
+      if (btnDel) {
+        e.preventDefault(); e.stopPropagation();
+        const id = btnDel.dataset.id;
+        if (!confirm('Удалить категорию? Все промпты будут удалены вместе с ней.')) return;
+        try { await postJSON(`/generate/api/prompt-categories/${id}/delete`, {}); location.reload(); }
+        catch (e2) { alert(e2.message || String(e2)); }
+        return;
+      }
+
+      if (btnEdit) {
+        e.preventDefault(); e.stopPropagation();
+        const card = btnEdit.closest('.category-card-compact');
+        const id = btnEdit.dataset.id;
+        // Fill modal
+        const modal = document.getElementById('pcEditModal');
+        modal?.classList.add('active');
+        if (modal) {
+          modal.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        }
+        document.getElementById('pcEditId').value = id;
+        document.getElementById('pcEditName').value = card?.dataset.name || '';
+        document.getElementById('pcEditDesc').value = card?.dataset.desc || '';
+        document.getElementById('pcEditOrder').value = card?.dataset.order || '0';
+        document.getElementById('pcEditActive').checked = (card?.dataset.active === '1');
+      }
+    });
+
+    function closePcEdit() {
+      const modal = document.getElementById('pcEditModal');
+      if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; document.body.style.overflow = ''; }
+    }
+    document.getElementById('pcEditClose')?.addEventListener('click', closePcEdit);
+    document.getElementById('pcEditCancel')?.addEventListener('click', closePcEdit);
+    document.getElementById('pcEditModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'pcEditModal') closePcEdit();
+    });
+    document.getElementById('pcEditSave')?.addEventListener('click', async () => {
+      const id = document.getElementById('pcEditId').value;
+      const name = document.getElementById('pcEditName').value;
+      const desc = document.getElementById('pcEditDesc').value;
+      const order = document.getElementById('pcEditOrder').value;
+      const active = document.getElementById('pcEditActive').checked ? '1' : '0';
+      const img = document.getElementById('pcEditImage').files?.[0];
+      const fd = new FormData();
+      if (name) fd.append('name', name);
+      fd.append('description', desc || '');
+      fd.append('order', order || '0');
+      fd.append('is_active', active);
+      if (img) fd.append('image', img);
+      try { await postFD(`/generate/api/prompt-categories/${id}/update`, fd); location.reload(); }
+      catch (e) { alert(e.message || String(e)); }
+    });
+  }
+})();
+</script>

@@ -1,0 +1,16 @@
+{
+  "name": "AI Gallery",
+  "short_name": "AI Gallery",
+  "description": "AI Gallery - генерация и галерея изображений",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0E14",
+  "theme_color": "#01D1FB",
+  "icons": [
+    {
+      "src": "/static/img/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

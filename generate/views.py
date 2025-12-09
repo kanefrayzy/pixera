@@ -15,7 +15,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import connection, transaction, utils as db_utils
-from django.db.models import Q
+from django.db.models import Q, F, Value
+from django.db.models.functions import Greatest
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -29,6 +30,8 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods, require_POST
 
 from dashboard.models import Wallet
+from gallery.models import Like, JobComment, JobCommentLike, JobSave, Image as GalleryImage
+from .models_image import ImageModelConfiguration
 from .models import (
     GenerationJob,
     Suggestion,
@@ -50,12 +53,12 @@ FP_COOKIE_NAME = getattr(settings, "FP_COOKIE_NAME", "aid_fp")
 
 # Список категорий для блока подсказок (из static/img/category)
 CATEGORY_NAMES = [
-    'абстракция', 'Архитектура', 'будущее', 'винтаж', 'времена года', 'города', 
-    'детство', 'для разработки', 'еда', 'животные', 'интерьер', 'исскуство', 
-    'история', 'космос', 'макросъемка', 'медитация', 'минимализм', 'мифология', 
-    'мода', 'музыка', 'наука', 'ночь', 'пейзажи', 'подводный мир', 'портреты', 
-    'праздники', 'приключения', 'природа', 'профессии', 'романтика', 'свет и тень', 
-    'спорт', 'текстуры', 'технологии', 'транспорт', 'уют', 'Фэнтези', 'экстрим', 
+    'абстракция', 'Архитектура', 'будущее', 'винтаж', 'времена года', 'города',
+    'детство', 'для разработки', 'еда', 'животные', 'интерьер', 'исскуство',
+    'история', 'космос', 'макросъемка', 'медитация', 'минимализм', 'мифология',
+    'мода', 'музыка', 'наука', 'ночь', 'пейзажи', 'подводный мир', 'портреты',
+    'праздники', 'приключения', 'природа', 'профессии', 'романтика', 'свет и тень',
+    'спорт', 'текстуры', 'технологии', 'транспорт', 'уют', 'Фэнтези', 'экстрим',
     'эмоции', 'Эстетика'
 ]
 
@@ -361,6 +364,58 @@ def _image_cache_key(job_id: int) -> str:
 def _image_url_cache_key(job_id: int) -> str:
     return f"genimgurl:{job_id}"
 
+# Opportunistic cleanup: remove non-persisted jobs older than 24h
+# This keeps only "saved to My Jobs" items; others are auto-pruned.
+from django.utils import timezone as _tz  # local alias to avoid clashes
+from datetime import timedelta as _td
+
+def _cleanup_unpersisted_jobs(limit: int = 100) -> None:
+    try:
+        cutoff = _tz.now() - _td(hours=24)
+        qs = GenerationJob.objects.filter(persisted=False, created_at__lt=cutoff).order_by("id")[:limit]
+        ids = list(qs.values_list("id", flat=True))
+        for job in qs:
+            # Remove stored files and caches (same as delete flow)
+            # 1) Image file (if any)
+            try:
+                if getattr(job, "result_image", None) and job.result_image.name:
+                    job.result_image.delete(save=False)
+            except Exception:
+                pass
+            # 2) Video file (if any persisted under MEDIA_URL)
+            try:
+                from django.conf import settings as _s
+                from django.core.files.storage import default_storage as _ds
+                from urllib.parse import urlparse as _u
+                vurl = (getattr(job, "result_video_url", "") or "").strip()
+                if vurl:
+                    media_url = str(getattr(_s, "MEDIA_URL", "/media/") or "/media/")
+                    rel = None
+                    if vurl.startswith(media_url):
+                        rel = vurl[len(media_url):].lstrip("/")
+                    else:
+                        parsed = _u(vurl)
+                        if parsed.path and "/media/" in parsed.path:
+                            rel = parsed.path.split("/media/", 1)[-1].lstrip("/")
+                    if rel:
+                        try:
+                            _ds.delete(rel)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+            # 3) Cache keys
+            try:
+                cache.delete(_image_cache_key(job.pk))
+                cache.delete(_image_url_cache_key(job.pk))
+            except Exception:
+                pass
+        if ids:
+            GenerationJob.objects.filter(id__in=ids).delete()
+    except Exception:
+        # never break page render on cleanup errors
+        pass
+
 
 def _default_back_url(request: HttpRequest) -> str:
     for name in ("dashboard:my_jobs", "gallery:index"):
@@ -401,6 +456,29 @@ def _owner_allowed(request: HttpRequest, job: GenerationJob) -> bool:
         pass
 
     return False
+
+
+def _viewer_allowed_on_job(request: HttpRequest, job: GenerationJob) -> bool:
+    """
+    Разрешаем взаимодействия с job не только владельцу:
+    - владелец/тот же гость — как раньше (_owner_allowed)
+    - если профиль автора НЕ приватный — позволяем лайки/комментарии другим пользователям
+      (используется на странице профиля открытых аккаунтов).
+    Для приватного профиля оставляем запрет.
+    По умолчанию (если Profile отсутствует) считаем профиль открытым.
+    """
+    if _owner_allowed(request, job):
+        return True
+    try:
+        from dashboard.models import Profile
+        prof = Profile.objects.filter(user_id=job.user_id).only("is_private").first()
+        if prof is None:
+            # Нет записи профиля — трактуем как открытый профиль
+            return True
+        return not bool(getattr(prof, "is_private", False))
+    except Exception:
+        # На сбоях не блокируем лайки/комменты для открытых профилей
+        return True
 
 
 def _merge_grant_to_wallet_once(request: HttpRequest, wallet: Wallet) -> None:
@@ -465,6 +543,12 @@ def new(request: HttpRequest) -> HttpResponse:
     is_staff = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
     price = 0 if (FREE_FOR_STAFF and is_staff) else TOKEN_COST
 
+    # Auto-cleanup: drop non-persisted jobs older than 24h (only for new logic)
+    try:
+        _cleanup_unpersisted_jobs()
+    except Exception:
+        pass
+
     # если пользователь уже вошёл — «подцепим» его прошлые гостевые задачи
     if request.user.is_authenticated:
         _claim_guest_jobs_for_user(request)
@@ -478,7 +562,7 @@ def new(request: HttpRequest) -> HttpResponse:
     suggestions_flat: List[Suggestion] = list(
         Suggestion.objects.filter(is_active=True).order_by("order", "title")
     )
-    
+
     # Категории промптов с изображениями и пагинацией (для изображений)
     from .models import PromptCategory, VideoPromptCategory, ShowcaseVideo
     prompt_categories_queryset = PromptCategory.objects.filter(is_active=True).prefetch_related("prompts").order_by("order", "name")
@@ -486,14 +570,14 @@ def new(request: HttpRequest) -> HttpResponse:
     prompt_page_number = request.GET.get('prompt_page', 1)
     prompt_page_obj = prompt_categories_paginator.get_page(prompt_page_number)
     prompt_categories: List[PromptCategory] = list(prompt_page_obj.object_list)
-    
+
     # Категории промптов для ВИДЕО (отдельные)
     video_prompt_categories_queryset = VideoPromptCategory.objects.filter(is_active=True).prefetch_related("video_prompts").order_by("order", "name")
     video_prompt_categories_paginator = Paginator(video_prompt_categories_queryset, 24)
     video_prompt_page_number = request.GET.get('video_prompt_page', 1)
     video_prompt_page_obj = video_prompt_categories_paginator.get_page(video_prompt_page_number)
     video_prompt_categories: List[VideoPromptCategory] = list(video_prompt_page_obj.object_list)
-    
+
     showcase_categories: List[ShowcaseCategory] = list(
         ShowcaseCategory.objects.filter(is_active=True).order_by("order", "name")
     )
@@ -507,7 +591,7 @@ def new(request: HttpRequest) -> HttpResponse:
     showcase_paginator = Paginator(showcase_queryset, 16)
     showcase_page = showcase_paginator.get_page(page_number)
     showcase_images: List[ShowcaseImage] = list(showcase_page.object_list)
-    
+
     # Пагинация для showcase ВИДЕО (отдельные, 12 на страницу)
     video_showcase_page_number = request.GET.get('video_showcase_page', 1)
     active_video_scat = (request.GET.get('video_scat') or '').strip()
@@ -558,18 +642,25 @@ def new(request: HttpRequest) -> HttpResponse:
                         guest_tokens = int(getattr(grant, "left", max(grant.total - grant.consumed, 0)))
                     except Exception:
                         guest_tokens = 0
-                    guest_gens_left = (guest_tokens // int(price or 1)) if price else 0
+                    guest_gens_cap = int(getattr(cluster, "jobs_left", 3))
+                    guest_gens_left = min(guest_gens_cap, (guest_tokens // int(price or 1)) if price else guest_gens_cap)
             except Exception:
                 # Если кластер не найден (новый пользователь), показываем токены из гранта
                 try:
                     guest_tokens = int(getattr(grant, "left", max(grant.total - grant.consumed, 0)))
                 except Exception:
                     guest_tokens = 0
-                guest_gens_left = (guest_tokens // int(price or 1)) if price else 0
+                guest_gens_cap = 3
+                guest_gens_left = min(guest_gens_cap, (guest_tokens // int(price or 1)) if price else guest_gens_cap)
         else:
             # Защита сработала: без fp новый грант не создан → ничего не добавляем
             guest_tokens = 0
             guest_gens_left = 0
+
+    user_key = f"u:{request.user.id}" if request.user.is_authenticated else f"g:{_ensure_session_key(request)}:{_guest_cookie_id(request) or ''}"
+
+    # Получить активные модели изображений
+    image_models = ImageModelConfiguration.objects.filter(is_active=True).order_by('order', 'name')
 
     ctx = {
         "wallet": wallet,
@@ -596,6 +687,9 @@ def new(request: HttpRequest) -> HttpResponse:
         "category_names": CATEGORY_NAMES,
         "active_scat": active_scat,
         "active_video_scat": active_video_scat,
+        "DEFAULT_IMAGE_MODEL": getattr(settings, "RUNWARE_DEFAULT_MODEL", "runware:101@1"),
+        "user_key": user_key,
+        "image_models": image_models,
     }
 
     resp = render(request, "generate/new.html", ctx)
@@ -607,7 +701,7 @@ def new(request: HttpRequest) -> HttpResponse:
 
 def job_detail(request: HttpRequest, pk: int, slug: str) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
-    if not _owner_allowed(request, job):
+    if not _viewer_allowed_on_job(request, job):
         return HttpResponseForbidden("Forbidden")
 
     canonical = _job_slug(job)
@@ -623,10 +717,44 @@ def job_detail(request: HttpRequest, pk: int, slug: str) -> HttpResponse:
     except NoReverseMatch:
         image_url = ""
 
+    # Comments and likes context for job modal
+    root_comments = (
+        JobComment.objects.select_related("user")
+        .prefetch_related("user__profile", "replies__user", "replies__user__profile", "likes")
+        .filter(job=job, is_visible=True, parent__isnull=True)
+        .order_by("created_at")
+    )
+    # Liked job?
+    job_liked = False
+    if request.user.is_authenticated:
+        job_liked = Like.objects.filter(user=request.user, job=job).exists()
+    job_like_count = Like.objects.filter(job=job).count()
+
+    liked_comment_ids = set()
+    all_ids = []
+    for c in root_comments:
+        all_ids.append(c.pk)
+        for r in c.replies.all():
+            all_ids.append(r.pk)
+    if all_ids and request.user.is_authenticated:
+        liked_comment_ids = set(
+            JobCommentLike.objects.filter(user=request.user, comment_id__in=all_ids)
+            .values_list("comment_id", flat=True)
+        )
+
     return render(
         request,
         "generate/job_detail.html",
-        {"job": job, "poll_url": poll_url, "estimate_ms": 60000, "image_url": image_url},
+        {
+            "job": job,
+            "poll_url": poll_url,
+            "estimate_ms": 60000,
+            "image_url": image_url,
+            "comments": root_comments,
+            "job_liked": job_liked,
+            "job_like_count": job_like_count,
+            "liked_comment_ids": liked_comment_ids,
+        },
     )
 
 
@@ -661,14 +789,14 @@ def job_status(request: HttpRequest, pk: int, slug: str) -> JsonResponse:
 
 def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
-    if not _owner_allowed(request, job):
+    if not _viewer_allowed_on_job(request, job):
         return HttpResponseForbidden("Forbidden")
     return redirect("generate:job_detail", pk=pk, slug=_job_slug(job))
 
 
 def job_status_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
-    if not _owner_allowed(request, job):
+    if not _viewer_allowed_on_job(request, job):
         return JsonResponse({"error": "forbidden"}, status=403)
     return redirect("generate:job_status", pk=pk, slug=_job_slug(job))
 
@@ -708,7 +836,7 @@ def job_image(request: HttpRequest, pk: int, slug: str) -> HttpResponse:
     # 3) плейсхолдер
     if not content:
         try:
-            text = (job.prompt or "AI Gallery").strip()[:24]
+            text = (job.prompt or "Pixera").strip()[:24]
             img = Image.new("RGB", (512, 512), (18, 18, 22))
             draw = ImageDraw.Draw(img)
             try:
@@ -801,6 +929,12 @@ def job_delete(request, pk: int):
     except Exception:
         pass
 
+    # Remove related personal gallery entries for this job (prevents stale tiles in "Мои генерации")
+    try:
+        GalleryImage.objects.filter(generation_job=job).delete()
+    except Exception:
+        pass
+
     try:
         job.delete()
     except (db_utils.OperationalError, db_utils.IntegrityError, TypeError):
@@ -823,48 +957,243 @@ def job_delete(request, pk: int):
 
 @login_required
 def my_jobs_all(request: HttpRequest) -> HttpResponse:
-    # на всякий случай перед показом — привяжем гостевые задачи к юзеру
-    _claim_guest_jobs_for_user(request)
+    """
+    Canonical redirect: unify 'My Jobs' under /dashboard/my-jobs
+    so cabinet and gallery use the same URL (with any query preserved).
+    """
+    base = reverse("dashboard:my_jobs")
+    qs = request.META.get("QUERY_STRING", "")
+    if qs:
+        return redirect(f"{base}?{qs}", permanent=True)
+    return redirect(base, permanent=True)
 
-    qs = (
-        GenerationJob.objects.filter(user_id=request.user.id)
-        .order_by("-created_at")
-        .select_related("user")
+
+# =======================
+#   JOB INTERACTIONS (likes/comments for unpublished jobs)
+# =======================
+
+@login_required
+@require_POST
+def job_like_toggle(request: HttpRequest, pk: int) -> JsonResponse:
+    job = get_object_or_404(GenerationJob, pk=pk)
+    if not _viewer_allowed_on_job(request, job):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    liked = False
+    with transaction.atomic():
+        existing = Like.objects.select_for_update().filter(user=request.user, job=job).first()
+        if existing:
+            existing.delete()
+            liked = False
+        else:
+            Like.objects.create(user=request.user, job=job)
+            liked = True
+
+    count = Like.objects.filter(job=job).count()
+    # Notify owner about job like
+    try:
+        from dashboard.models import Notification
+        if liked and request.user.is_authenticated and getattr(job, "user_id", None) and request.user.id != job.user_id:
+            # Determine if it's photo or video based on generation_type
+            gen_type = getattr(job, "generation_type", "image")
+            if gen_type == "video":
+                message_text = f"@{request.user.username} понравилось ваше видео"
+            else:
+                message_text = f"@{request.user.username} понравилось ваше фото"
+
+            Notification.create(
+                recipient=job.user,
+                actor=request.user,
+                type=Notification.Type.LIKE_JOB,
+                message=message_text,
+                link=reverse("generate:job_detail", args=[job.pk, _job_slug(job)]),
+                payload={"job_id": job.pk, "count": int(count), "generation_type": gen_type},
+            )
+    except Exception:
+        pass
+    return JsonResponse({"ok": True, "liked": liked, "count": count})
+
+
+@login_required
+@require_POST
+def job_comment_add(request: HttpRequest, pk: int) -> JsonResponse:
+    job = get_object_or_404(GenerationJob, pk=pk)
+    if not _viewer_allowed_on_job(request, job):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    text = (request.POST.get("text") or "").strip()
+    if not text:
+        return JsonResponse({"ok": False, "error": "empty"}, status=400)
+
+    jc = JobComment.objects.create(job=job, user=request.user, text=text, parent=None)
+    # Notify owner about new job comment
+    try:
+        from dashboard.models import Notification
+        if request.user.is_authenticated and getattr(job, "user_id", None) and request.user.id != job.user_id:
+            Notification.create(
+                recipient=job.user,
+                actor=request.user,
+                type=Notification.Type.COMMENT_JOB,
+                message=f"@{request.user.username} прокомментировал(а) вашу генерацию",
+                link=reverse("generate:job_detail", args=[job.pk, _job_slug(job)]) + "#comments",
+                payload={"job_id": job.pk, "comment_id": jc.pk},
+            )
+    except Exception:
+        pass
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def job_comment_reply(request: HttpRequest, pk: int) -> JsonResponse:
+    parent = get_object_or_404(JobComment, pk=pk, is_visible=True)
+    job = parent.job
+    if not _viewer_allowed_on_job(request, job):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    text = (request.POST.get("text") or "").strip()
+    if not text:
+        return JsonResponse({"ok": False, "error": "empty"}, status=400)
+
+    jc = JobComment.objects.create(job=job, user=request.user, text=text, parent=parent)
+    # Notify comment author about reply on job
+    try:
+        from dashboard.models import Notification
+        if request.user.is_authenticated and getattr(parent, "user_id", None) and request.user.id != parent.user_id:
+                Notification.create(
+                    recipient=parent.user,
+                    actor=request.user,
+                    type=Notification.Type.REPLY_JOB,
+                    message=f"@{request.user.username} ответил(а) на ваш комментарий",
+                    link=reverse("generate:job_detail", args=[job.pk, _job_slug(job)]) + f"#c{jc.pk}",
+                    payload={"job_id": job.pk, "comment_id": parent.pk, "reply_id": jc.pk},
+                )
+    except Exception:
+        pass
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def job_save_toggle(request: HttpRequest, pk: int) -> JsonResponse:
+    """
+    Toggle save (bookmark) for ANY GenerationJob (published or not).
+    Returns: { ok: true, saved: bool, count: int }
+    """
+    job = get_object_or_404(GenerationJob, pk=pk)
+    if not _viewer_allowed_on_job(request, job):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    saved = False
+    with transaction.atomic():
+        existing = JobSave.objects.select_for_update().filter(user=request.user, job=job).first()
+        if existing:
+            existing.delete()
+            saved = False
+        else:
+            JobSave.objects.create(user=request.user, job=job)
+            saved = True
+
+    count = JobSave.objects.filter(job=job).count()
+    return JsonResponse({"ok": True, "saved": saved, "count": count})
+
+
+@login_required
+@require_POST
+def job_comment_like_toggle(request: HttpRequest, pk: int) -> JsonResponse:
+    comment = get_object_or_404(JobComment, pk=pk, is_visible=True)
+    job = comment.job
+    if not _viewer_allowed_on_job(request, job):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    liked = False
+    with transaction.atomic():
+        existing = JobCommentLike.objects.select_for_update().filter(user=request.user, comment=comment).first()
+        if existing:
+            existing.delete()
+            liked = False
+        else:
+            JobCommentLike.objects.create(user=request.user, comment=comment)
+            liked = True
+
+        # denorm counter on JobComment
+        if liked:
+            JobComment.objects.filter(pk=comment.pk).update(likes_count=F("likes_count") + 1)
+        else:
+            JobComment.objects.filter(pk=comment.pk).update(likes_count=Greatest(F("likes_count") - 1, Value(0)))
+
+    new_count = JobComment.objects.filter(pk=comment.pk).values_list("likes_count", flat=True).first() or 0
+    # Notify comment author about like on job comment
+    try:
+        from dashboard.models import Notification
+        if liked and request.user.is_authenticated and getattr(comment, "user_id", None) and request.user.id != comment.user_id:
+            Notification.create(
+                recipient=comment.user,
+                actor=request.user,
+                type=Notification.Type.COMMENT_LIKE_JOB,
+                message=f"@{request.user.username} понравился ваш комментарий",
+                link=reverse("generate:job_detail", args=[comment.job_id, _job_slug(comment.job)]) + f"#c{comment.pk}",
+                payload={"job_id": comment.job_id, "comment_id": comment.pk, "count": int(new_count)},
+            )
+    except Exception:
+        pass
+    return JsonResponse({"ok": True, "liked": liked, "count": new_count})
+
+
+def job_likers(request: HttpRequest, pk: int) -> JsonResponse:
+    """
+    Список пользователей, лайкнувших задачу (GenerationJob).
+    Доступ разрешён владельцу/тому же гостю и зрителям открытого профиля (_viewer_allowed_on_job).
+    Формат ответа:
+      { ok: true, likers: [{username, name, avatar, is_following}] }
+    """
+    job = get_object_or_404(GenerationJob, pk=pk)
+    if not _viewer_allowed_on_job(request, job):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    # Берём только пользовательские лайки (user != null)
+    likes_qs = (
+        Like.objects
+        .select_related("user", "user__profile")
+        .filter(job=job, user__isnull=False)
+        .order_by("-id")
     )
 
-    paginator = Paginator(qs, 24)
-    page_obj = paginator.get_page(request.GET.get("page"))
+    user_ids = list(likes_qs.values_list("user_id", flat=True))
 
-    jobs_cards = []
-    for obj in page_obj.object_list:
-        s = slugify((obj.prompt or "image"), allow_unicode=True) or "image"
+    # Кто из них уже «в подписках» у текущего пользователя
+    following_set = set()
+    if request.user.is_authenticated and user_ids:
         try:
-            img_url = reverse("generate:job_image", args=[obj.pk, s])
-        except NoReverseMatch:
-            img_url = ""
-        try:
-            detail_url = reverse("generate:job_detail", args=[obj.pk, s])
-        except NoReverseMatch:
-            detail_url = ""
-        try:
-            delete_url = reverse("generate:job_confirm_delete", args=[obj.pk])
-        except NoReverseMatch:
-            delete_url = ""
+            from dashboard.models import Follow
+            following_set = set(
+                Follow.objects.filter(follower=request.user, following_id__in=user_ids)
+                .values_list("following_id", flat=True)
+            )
+        except Exception:
+            following_set = set()
 
-        jobs_cards.append(
-            {
-                "obj": obj,
-                "img_url": img_url,
-                "share_url": detail_url,
-                "delete_url": delete_url,
-                "title": (obj.prompt or "Моя генерация")[:42],
-                "created_at": obj.created_at,
-                "status": obj.status,
-            }
-        )
+    def _avatar(u) -> str:
+        try:
+            prof = getattr(u, "profile", None)
+            av = getattr(prof, "avatar", None)
+            return av.url if (av and getattr(av, "url", None)) else ""
+        except Exception:
+            return ""
 
-    ctx = {"page_obj": page_obj, "jobs_cards": jobs_cards}
-    return render(request, "gallery/my_jobs.html", ctx)
+    data = []
+    for lk in likes_qs:
+        u = lk.user
+        if not u:
+            continue
+        data.append({
+            "username": u.username,
+            "name": (u.get_full_name() or u.username),
+            "avatar": _avatar(u),
+            "is_following": (u.id in following_set),
+        })
+
+    return JsonResponse({"ok": True, "likers": data})
 
 
 # =======================
@@ -935,18 +1264,18 @@ def api_suggestion_delete(request: HttpRequest, pk: int) -> JsonResponse:
 def prompts_page(request: HttpRequest) -> HttpResponse:
     """Страница с категориями промптов"""
     from .models import PromptCategory
-    
+
     # Получаем все активные категории с пагинацией
     categories_queryset = PromptCategory.objects.filter(is_active=True).prefetch_related('prompts').order_by('order', 'name')
-    
+
     # Пагинация - 24 категории на страницу
     paginator = Paginator(categories_queryset, 24)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
-    
+
     # Добавляем счетчик активных промптов для каждой категории
     categories = list(page_obj.object_list)
-    
+
     return render(request, 'generate/prompts.html', {
         'categories': categories,
         'page_obj': page_obj,
@@ -956,10 +1285,10 @@ def prompts_page(request: HttpRequest) -> HttpResponse:
 def category_prompts_api(request: HttpRequest, category_id: int) -> JsonResponse:
     """API для получения промптов категории"""
     from .models import PromptCategory
-    
+
     category = get_object_or_404(PromptCategory, id=category_id, is_active=True)
     prompts = category.prompts.filter(is_active=True).order_by('order', 'title')
-    
+
     prompts_data = [
         {
             'id': p.id,
@@ -972,7 +1301,7 @@ def category_prompts_api(request: HttpRequest, category_id: int) -> JsonResponse
         }
         for p in prompts
     ]
-    
+
     return JsonResponse({
         'category_name': category.name,
         'category_description': category.description,

@@ -10,7 +10,10 @@ django-allauth>=0.63
 requests>=2.32
 requests-oauthlib>=2.0
 cryptography>=42,<44
-requests>=2.32
-requests-oauthlib>=2.0
-
-
+python-slugify>=8.0,<9
+mysqlclient>=2.2,<3
+gunicorn>=21.2,<22
+django-celery-beat>=2.5,<3
+channels>=4.0,<5
+channels-redis>=4.1,<5
+daphne>=4.0,<5

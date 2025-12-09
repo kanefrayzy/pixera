@@ -1,0 +1,425 @@
+/**
+ * Стили для генерации видео
+ * Обеспечивает читаемость на светлой и темной темах
+ */
+
+/* ===== Переключатель режимов генерации ===== */
+.generation-mode-tab {
+  color: var(--muted);
+  transition: all 0.2s ease;
+}
+
+.generation-mode-tab.active {
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.generation-mode-tab:hover:not(.active) {
+  color: var(--text);
+}
+
+/* ===== Табы источника видео ===== */
+.video-source-tab {
+  color: var(--muted);
+  transition: all 0.2s ease;
+}
+
+.video-source-tab.active {
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.video-source-tab:hover:not(.active) {
+  color: var(--text);
+}
+
+/* ===== Select для моделей видео ===== */
+#video-model {
+  background: var(--bg-2, #11121a);
+  color: var(--text);
+  border: 1px solid var(--bord);
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+}
+
+#video-model:hover {
+  border-color: var(--primary);
+}
+
+#video-model:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+#video-model option {
+  background: var(--bg-2, #11121a);
+  color: var(--text);
+  padding: 0.5rem;
+}
+
+/* Светлая тема */
+html[data-theme="light"] #video-model {
+  background: #ffffff;
+  color: #0f1419;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme="light"] #video-model option {
+  background: #ffffff;
+  color: #0f1419;
+}
+
+html[data-theme="light"] #video-model:hover {
+  border-color: #6366f1;
+}
+
+html[data-theme="light"] #video-model:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ===== Кнопки соотношения сторон ===== */
+.aspect-ratio-btn {
+  border-color: var(--bord);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.aspect-ratio-btn.active {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+}
+
+.aspect-ratio-btn:hover:not(.active) {
+  border-color: rgba(99, 102, 241, 0.5);
+  color: var(--text);
+}
+
+/* Светлая тема */
+html[data-theme="light"] .aspect-ratio-btn {
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #6b7280;
+}
+
+html[data-theme="light"] .aspect-ratio-btn.active {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+html[data-theme="light"] .aspect-ratio-btn:hover:not(.active) {
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #0f1419;
+}
+
+/* ===== Слайдеры ===== */
+.slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--bord);
+  border-radius: 4px;
+  outline: none;
+}
+
+.slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  transition: all 0.2s;
+}
+
+.slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6);
+}
+
+.slider-thumb::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  transition: all 0.2s;
+}
+
+.slider-thumb::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6);
+}
+
+/* Светлая тема - слайдеры */
+html[data-theme="light"] .slider-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Drag & Drop область ===== */
+#video-upload-area {
+  transition: all 0.2s ease;
+}
+
+#video-upload-area.dragover {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+html[data-theme="light"] #video-upload-area.dragover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* ===== Модальное окно результата видео ===== */
+.video-result-modal {
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+.video-result-modal .modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--bord);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+html[data-theme="light"] .video-result-modal .modal-content {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Превью видео ===== */
+.video-preview-container {
+  background: #000000;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.video-preview-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ===== Кнопки действий с видео ===== */
+.video-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.video-action-btn.primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+}
+
+.video-action-btn.primary:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.video-action-btn.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--bord);
+}
+
+.video-action-btn.secondary:hover {
+  background: var(--bord);
+}
+
+html[data-theme="light"] .video-action-btn.secondary {
+  color: #0f1419;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="light"] .video-action-btn.secondary:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* ===== Анимации ===== */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.video-result-modal.active {
+  animation: fadeInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Специфичные поля провайдера ===== */
+#provider-specific-fields {
+  transition: all 0.3s ease;
+}
+
+#provider-specific-fields.hidden {
+  display: none;
+}
+
+/* Чекбоксы провайдера */
+#provider-fields-container input[type="checkbox"] {
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+#provider-fields-container input[type="checkbox"]:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Select провайдера */
+#provider-fields-container select {
+  background: var(--bg-2, #11121a);
+  color: var(--text);
+  border: 1px solid var(--bord);
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+#provider-fields-container select:hover {
+  border-color: var(--primary);
+}
+
+#provider-fields-container select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+#provider-fields-container select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#provider-fields-container select option {
+  background: var(--bg-2, #11121a);
+  color: var(--text);
+}
+
+/* Светлая тема - специфичные поля */
+html[data-theme="light"] #provider-fields-container select {
+  background: #ffffff;
+  color: #0f1419;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme="light"] #provider-fields-container select option {
+  background: #ffffff;
+  color: #0f1419;
+}
+
+html[data-theme="light"] #provider-fields-container select:hover {
+  border-color: #6366f1;
+}
+
+html[data-theme="light"] #provider-fields-container select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Контейнеры полей провайдера */
+#provider-fields-container > div {
+  transition: all 0.2s ease;
+}
+
+/* Заголовок секции провайдера */
+#provider-specific-fields h4 {
+  color: var(--text);
+  font-weight: 600;
+}
+
+html[data-theme="light"] #provider-specific-fields h4 {
+  color: #0f1419;
+}
+
+/* Описания полей */
+#provider-fields-container p {
+  color: var(--muted);
+}
+
+html[data-theme="light"] #provider-fields-container p {
+  color: #6b7280;
+}
+
+/* Лейблы полей */
+#provider-fields-container label {
+  color: var(--text);
+  font-weight: 500;
+}
+
+html[data-theme="light"] #provider-fields-container label {
+  color: #0f1419;
+}
+
+/* Фоновые блоки для чекбоксов */
+#provider-fields-container .bg-\[var\(--bord\)\]\/30 {
+  background: rgba(var(--bord-rgb, 30, 32, 48), 0.3);
+}
+
+#provider-fields-container .hover\:bg-\[var\(--bord\)\]\/50:hover {
+  background: rgba(var(--bord-rgb, 30, 32, 48), 0.5);
+}
+
+html[data-theme="light"] #provider-fields-container .bg-\[var\(--bord\)\]\/30 {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+html[data-theme="light"] #provider-fields-container .hover\:bg-\[var\(--bord\)\]\/50:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ===== Адаптивность ===== */
+@media (max-width: 640px) {
+  #video-model {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+  }
+  
+  .aspect-ratio-btn {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .video-action-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
+  
+  #provider-fields-container {
+    grid-template-columns: 1fr;
+  }
+  
+  #provider-fields-container select {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+  }
+}

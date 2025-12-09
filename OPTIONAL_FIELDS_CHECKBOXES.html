@@ -1,0 +1,157 @@
+<!-- ============================================ -->
+<!-- ДОБАВЬТЕ ЭТУ СЕКЦИЮ В templates/generate/video_model_form.html -->
+<!-- ПОСЛЕ СЕКЦИИ "Заметки администратора" -->
+<!-- ============================================ -->
+
+<!-- Опциональные поля для пользователя -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        Опциональные поля для пользователя
+    </h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Выберите какие поля будут доступны пользователям при генерации видео с этой моделью.
+        Если ничего не выбрано - будут показаны все поля (обратная совместимость).
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Базовые параметры -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-2">
+                Базовые параметры
+            </h3>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="duration_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Длительность</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="resolution_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Разрешение</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="camera_movement_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Движение камеры</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="seed_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Seed</span>
+            </label>
+        </div>
+
+        <!-- I2V параметры -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-2">
+                Image-to-Video
+            </h3>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="motion_strength_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Сила движения</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="audio_inputs_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Аудио входы</span>
+            </label>
+            <p class="text-xs text-gray-500 dark:text-gray-400 italic mt-2">
+                Примечание: "Исходное фото" управляется автоматически при переключении режима I2V/T2V
+            </p>
+        </div>
+
+        <!-- Промпт и режим -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-2">
+                Промпт и режим
+            </h3>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="generation_mode_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Режим генерации (T2V/I2V)</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="prompt_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Промпт</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="auto_translate_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Автоперевод</span>
+            </label>
+        </div>
+
+        <!-- Дополнительные поля -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-2">
+                Дополнительно
+            </h3>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="aspect_ratio_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Соотношение сторон</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="reference_images_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Референсные изображения</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="prompt_generator_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Генератор промптов</span>
+            </label>
+        </div>
+
+        <!-- Продвинутые параметры -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-2">
+                Продвинутые параметры
+            </h3>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="fps_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">FPS</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="guidance_scale_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Guidance Scale</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="inference_steps_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Шаги генерации</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="quality_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Качество</span>
+            </label>
+        </div>
+
+        <!-- Стиль и формат -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-2">
+                Стиль и формат
+            </h3>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="style_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Стиль</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="output_format_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Формат вывода</span>
+            </label>
+            <label class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
+                <input type="checkbox" name="negative_prompt_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Негативный промпт</span>
+            </label>
+        </div>
+
+    </div>
+
+    <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div class="text-sm text-blue-800 dark:text-blue-300">
+                <p class="font-medium mb-1">Как это работает:</p>
+                <ul class="list-disc list-inside space-y-1 text-xs">
+                    <li>Отмеченные поля будут доступны пользователям при генерации</li>
+                    <li>Неотмеченные поля будут скрыты</li>
+                    <li>Если ничего не выбрано - показываются все поля (обратная совместимость)</li>
+                    <li>Настройки сохраняются автоматически при сохранении модели</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

@@ -7,6 +7,7 @@ class HomePageManager {
 
     init() {
         this.initTabs();
+        this.initDemoMediaTabs();
         this.initQuickPrompt();
         this.initFAQ();
         this.initAnimations();
@@ -56,6 +57,168 @@ class HomePageManager {
                     button.click();
                 }
             });
+        });
+    }
+
+    // Sync left side panel with media tabs (Фото/Видео)
+    initDemoMediaTabs() {
+        const imagesTab = document.querySelector('.demo-tab[data-demo-tab="images"]');
+        const videosTab = document.querySelector('.demo-tab[data-demo-tab="videos"]');
+        const resultBtn = document.querySelector('.tab-btn[data-tab="result"]');
+        const resultPanel = document.getElementById('result');
+        const promptBtn = document.querySelector('.tab-btn[data-tab="prompt"]');
+        const promptPanel = document.getElementById('prompt');
+
+        // Track last selected items to ensure different prompts for Photo vs Video
+        let lastImageItem = null;
+        let lastVideoItem = null;
+
+        const applyFromItem = (item) => {
+            if (!item) return;
+            const promptEl = document.getElementById('promptText');
+            const sSteps = document.getElementById('settingsSteps');
+            const sCfg = document.getElementById('settingsCfg');
+            const sRatio = document.getElementById('settingsRatio');
+            const sSeed = document.getElementById('settingsSeed');
+            const resultImg = document.getElementById('resultImage');
+
+            if (promptEl) promptEl.textContent = item.prompt || '';
+            if (sSteps) sSteps.textContent = item.settings?.steps ?? '';
+            if (sCfg) sCfg.textContent = item.settings?.cfg ?? '';
+            if (sRatio) sRatio.textContent = item.settings?.ratio ?? '3:2';
+            if (sSeed) sSeed.textContent = item.settings?.seed ?? 'auto';
+
+            // Для фото item.image, для видео — item.thumbnail (если есть)
+            if (resultImg) {
+                if (item.image) {
+                    resultImg.src = item.image;
+                    resultImg.alt = `Результат: ${item.title || ''}`;
+                } else if (item.thumbnail) {
+                    resultImg.src = item.thumbnail;
+                    resultImg.alt = `Результат: ${item.title || ''}`;
+                }
+            }
+        };
+
+        const updateFromImage = () => {
+            try {
+                const pre = window.sliderExamples || [];
+                let idx = 0;
+                const active = document.querySelector('#sliderContainer .slide.active');
+                if (active && active.dataset && active.dataset.slide) {
+                    const n = parseInt(active.dataset.slide, 10);
+                    if (!isNaN(n)) idx = n;
+                } else {
+                    const gs = window.homeManager?.generationSlider;
+                    if (gs && Number.isFinite(gs.currentSlide)) idx = gs.currentSlide;
+                }
+                const item = pre[idx] || pre[0];
+                if (item) {
+                    applyFromItem(item);
+                    lastImageItem = item;
+                }
+            } catch (e) { /* noop */ }
+        };
+
+        const updateFromVideo = () => {
+            try {
+                const data = window.videoSliderExamples || [];
+                const idx = (typeof window.videoActiveIndex !== 'undefined') ? window.videoActiveIndex : 0;
+                const item = data[idx] || data[0];
+                if (item) lastVideoItem = item;
+                applyFromItem(item);
+            } catch (e) { /* noop */ }
+        };
+
+        // Показ/скрытие вкладки "Результат" в зависимости от режима
+        const setResultVisibility = (mode) => {
+            const isImages = mode === 'images';
+            if (!resultBtn || !resultPanel) return;
+
+            // Какой таб в левом блоке сейчас активен (prompt/settings/result)
+            const activeLeftTab = document.querySelector('.tab-btn.active')?.getAttribute('data-tab');
+
+            if (isImages) {
+                // Для фото показываем кнопку "Результат"
+                resultBtn.classList.remove('hidden');
+                // Панель "Результат" показываем ТОЛЬКО если активен соответствующий таб
+                if (activeLeftTab === 'result') {
+                    resultPanel.classList.remove('hidden');
+                    resultPanel.setAttribute('aria-hidden', 'false');
+                } else {
+                    resultPanel.classList.add('hidden');
+                    resultPanel.setAttribute('aria-hidden', 'true');
+                }
+            } else {
+                // Для видео прячем кнопку "Результат"
+                resultBtn.classList.add('hidden');
+                // Если был активен "Результат" — переключаем на "Промпт"
+                if (activeLeftTab === 'result' && promptBtn && promptPanel) {
+                    resultBtn.classList.remove('active');
+                    resultBtn.setAttribute('aria-selected', 'false');
+                    promptBtn.classList.add('active');
+                    promptBtn.setAttribute('aria-selected', 'true');
+                    // Прячем панель "Результат", показываем панель "Промпт"
+                    resultPanel.classList.add('hidden');
+                    resultPanel.setAttribute('aria-hidden', 'true');
+                    promptPanel.classList.remove('hidden');
+                    promptPanel.classList.add('active');
+                    promptPanel.setAttribute('aria-hidden', 'false');
+                } else {
+                    // При видео всегда скрываем панель "Результат"
+                    resultPanel.classList.add('hidden');
+                    resultPanel.setAttribute('aria-hidden', 'true');
+                }
+            }
+        };
+
+        // Инициализация по текущему активному табу (вёрстка по умолчанию — "Видео")
+        const initialMode = (videosTab && videosTab.classList.contains('active')) ? 'videos' : 'images';
+        setResultVisibility(initialMode);
+        if (initialMode === 'videos') {
+            setTimeout(updateFromVideo, 0);
+        } else {
+            setTimeout(updateFromImage, 0);
+        }
+
+        // На переключение вкладки "Фото" / "Видео" — синхронизируем левую панель
+        if (imagesTab) {
+            imagesTab.addEventListener('click', () => {
+                setResultVisibility('images');
+                document.dispatchEvent(new CustomEvent('demoMediaTabChanged', { detail: { tab: 'images' } }));
+                updateFromImage();
+            });
+        }
+        if (videosTab) {
+            videosTab.addEventListener('click', () => {
+                setResultVisibility('videos');
+                document.dispatchEvent(new CustomEvent('demoMediaTabChanged', { detail: { tab: 'videos' } }));
+                updateFromVideo();
+            });
+        }
+
+        // Когда сменили слайд видео (стрелки/индикатор) — если активна вкладка "Видео", обновляем левую панель
+        document.addEventListener('videoSlideChanged', (e) => {
+            window.videoActiveIndex = e?.detail?.index || 0;
+            const isVideosActive = videosTab && videosTab.classList.contains('active');
+            if (isVideosActive && e?.detail?.item) {
+                applyFromItem(e.detail.item);
+            }
+        });
+
+        // Если данные видео подгрузились позже — при событии загрузки тоже синхронизируем
+        document.addEventListener('videoSliderDataLoaded', () => {
+            const isVideosActive = videosTab && videosTab.classList.contains('active');
+            if (isVideosActive) updateFromVideo();
+        });
+
+        // Фото-слайдер: при загрузке данных мгновенно обновляем левую панель, если активна вкладка «Фото»
+        document.addEventListener('sliderDataLoaded', (e) => {
+            const isImagesActive = imagesTab && imagesTab.classList.contains('active');
+            if (Array.isArray(e?.detail?.data) && e.detail.data.length) {
+                lastImageItem = e.detail.data[0];
+            }
+            if (isImagesActive) updateFromImage();
         });
     }
 
@@ -249,10 +412,10 @@ class HomePageManager {
             observer.observe(el);
         });
 
-        // Parallax effect for hero section (only on non-mobile)
-        if (window.innerWidth > 768 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            this.initParallax();
-        }
+        // Parallax effect disabled for performance on all devices
+        // if (window.innerWidth > 768 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        //     this.initParallax();
+        // }
     }
 
     // Stagger animations for grid items
@@ -616,49 +779,32 @@ class GenerationSlider {
     }
 
     init() {
-        // Добавляем небольшую задержку для полной загрузки DOM
-        setTimeout(() => {
-            this.loadSliderData();
-            this.setupElements();
-            this.bindEvents();
+        // Не используем больше демо/фоллбеки: только то, что создано админом
+        this.setupElements();
+        this.bindEvents();
 
-            // Слушаем событие загрузки данных слайдера
-            document.addEventListener('sliderDataLoaded', (event) => {
-                if (event.detail && event.detail.data) {
-                    console.log('Received sliderDataLoaded event:', event.detail.data);
-                    this.sliderData = event.detail.data;
-                    this.updateSlide(0);
-                }
-            });
-
+        // Мгновенно берём предзагруженные данные (из generation_slider.html)
+        if (Array.isArray(window.sliderExamples) && window.sliderExamples.length) {
+            this.sliderData = window.sliderExamples;
             this.updateSlide(0);
+        }
+
+        // Обновляемся, когда слайды фотографий построены из preloaded/кэша
+        document.addEventListener('sliderDataLoaded', (event) => {
+            if (event.detail && Array.isArray(event.detail.data)) {
+                this.sliderData = event.detail.data;
+                this.updateSlide(0);
+            }
+        });
+
+        if (this.sliderData && this.sliderData.length > 1) {
             this.startAutoplay();
-        }, 100);
+        }
     }
 
     loadSliderData() {
-        // Проверяем, загружены ли данные через generation_slider.html
-        if (window.sliderExamples && window.sliderExamples.length > 0) {
-            console.log('Using slider data from window.sliderExamples:', window.sliderExamples);
-            this.sliderData = window.sliderExamples;
-            return;
-        }
-
-        // Пытаемся найти данные в script теге
-        const dataScript = document.getElementById('sliderData');
-        if (dataScript) {
-            try {
-                this.sliderData = JSON.parse(dataScript.textContent);
-                console.log('Using slider data from script tag:', this.sliderData);
-                return;
-            } catch (e) {
-                console.warn('Failed to parse slider data, using fallback');
-            }
-        }
-
-        // Пытаемся загрузить данные напрямую из JSON файла
-        console.log('Loading slider data from JSON file...');
-        this.loadSliderDataFromJSON();
+        // Источник данных только из preloaded (созданные админом)
+        this.sliderData = Array.isArray(window.sliderExamples) ? window.sliderExamples : [];
     }
 
     async loadSliderDataFromJSON() {
@@ -681,38 +827,15 @@ class GenerationSlider {
     }
 
     getFallbackData() {
-        return [
-            {
-                id: 0,
-                title: "Реалистичный портрет",
-                prompt: "Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves",
-                image: "/static/img/woman.webp",
-                description: "Профессиональное освещение и детализация",
-                settings: { steps: 28, cfg: 6.5, ratio: "3:2", seed: "auto" }
-            },
-            {
-                id: 1,
-                title: "Киберпанк город",
-                prompt: "Futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, rain droplets, towering holographic billboards, flying cars in distance, cinematic composition, 8k ultra detailed, blade runner aesthetic",
-                image: "/static/img/bg.png",
-                description: "Неоновые огни и футуристическая атмосфера",
-                settings: { steps: 35, cfg: 7.0, ratio: "16:9", seed: "42851" }
-            },
-            {
-                id: 2,
-                title: "Магический мир",
-                prompt: "Magical fantasy landscape with floating islands connected by golden bridges, ethereal atmosphere with mystical light beams, ancient ruins covered in glowing moss, dragons soaring in purple sky, concept art style, highly detailed",
-                image: "/static/img/small-bg.png",
-                description: "Летающие острова и мистический свет",
-                settings: { steps: 30, cfg: 8.0, ratio: "4:3", seed: "12345" }
-            }
-        ];
+        // Больше не используем демо-данные — только админские примеры
+        return [];
     }
 
     setupElements() {
         this.slider = document.getElementById('generationSlider');
-        this.slides = document.querySelectorAll('.slide');
-        this.indicators = document.querySelectorAll('.indicator');
+        // Scope only to the IMAGE slider to avoid interfering with video slides
+        this.slides = this.slider ? this.slider.querySelectorAll('.slide') : [];
+        this.indicators = this.slider ? this.slider.querySelectorAll('.indicator') : [];
         this.prevBtn = document.getElementById('prevSlide');
         this.nextBtn = document.getElementById('nextSlide');
 
@@ -923,33 +1046,39 @@ class GenerationSlider {
             indicator.classList.toggle('active', i === index);
         });
 
-        // Update prompt text
-        if (this.promptText) {
-            this.promptText.textContent = slideData.prompt;
-        }
+        // Обновлять левую панель только если активна вкладка "Фото"
+        const imagesTab = document.querySelector('.demo-tab[data-demo-tab="images"]');
+        const isImagesActive = imagesTab && imagesTab.classList.contains('active');
 
-        // Update result image
-        if (this.resultImage) {
-            this.resultImage.src = slideData.image;
-            this.resultImage.alt = `Результат: ${slideData.title}`;
-            console.log('Updated result image to:', slideData.image);
-        }
+        if (isImagesActive) {
+            // Update prompt text
+            if (this.promptText) {
+                this.promptText.textContent = slideData.prompt;
+            }
 
-        // Update generation time
-        if (this.generationTimeElement) {
-            this.generationTimeElement.textContent = this.generationTimes[index] || '26';
-        }
+            // Update result image
+            if (this.resultImage && slideData.image) {
+                this.resultImage.src = slideData.image;
+                this.resultImage.alt = `Результат: ${slideData.title}`;
+                console.log('Updated result image to:', slideData.image);
+            }
 
-        // Update settings
-        if (slideData.settings) {
-            if (this.settingsSteps) this.settingsSteps.textContent = slideData.settings.steps;
-            if (this.settingsCfg) this.settingsCfg.textContent = slideData.settings.cfg;
-            if (this.settingsRatio) this.settingsRatio.textContent = slideData.settings.ratio;
-            if (this.settingsSeed) this.settingsSeed.textContent = slideData.settings.seed;
-        }
+            // Update generation time
+            if (this.generationTimeElement) {
+                this.generationTimeElement.textContent = this.generationTimes[index] || '26';
+            }
 
-        // Announce to screen readers
-        this.announceSlideChange(index);
+            // Update settings
+            if (slideData.settings) {
+                if (this.settingsSteps) this.settingsSteps.textContent = slideData.settings.steps;
+                if (this.settingsCfg) this.settingsCfg.textContent = slideData.settings.cfg;
+                if (this.settingsRatio) this.settingsRatio.textContent = slideData.settings.ratio;
+                if (this.settingsSeed) this.settingsSeed.textContent = slideData.settings.seed;
+            }
+
+            // Announce to screen readers
+            this.announceSlideChange(index);
+        }
 
         // Restart autoplay timer
         this.startAutoplay();

@@ -9,6 +9,9 @@ import os
 from pathlib import Path
 
 from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from channels.security.websocket import AllowedHostsOriginValidator
 
 # ── Load .env early (so DJANGO_SETTINGS_MODULE and others can come from env) ──
 try:
@@ -25,5 +28,21 @@ if load_dotenv:
 # ── Default settings module (can be overridden by environment) ──
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", os.getenv("DJANGO_SETTINGS_MODULE", "ai_gallery.settings"))
 
-# ── Create ASGI application ──
-application = get_asgi_application()
+# ── Create Django ASGI application first (must be before importing routing) ──
+django_asgi_app = get_asgi_application()
+
+# ── Import WebSocket routing after Django setup ──
+try:
+    from dashboard.routing import websocket_urlpatterns
+except ImportError:
+    websocket_urlpatterns = []
+
+# ── Create ASGI application with WebSocket support ──
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+    "websocket": AllowedHostsOriginValidator(
+        AuthMiddlewareStack(
+            URLRouter(websocket_urlpatterns)
+        )
+    ),
+})

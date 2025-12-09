@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
 {# ───── META/SEO ───── #}
-{% block meta_title %}{{ post.seo_title|default:post.title }} | Блог AI Gallery{% endblock %}
+{% block meta_title %}{{ post.seo_title|default:post.title }} | Блог Pixera{% endblock %}
 {% block meta_description %}{{ post.seo_description|default:post.excerpt|default:"" }}{% endblock %}
 {% block canonical %}{{ request.scheme }}://{{ request.get_host }}{{ post.get_absolute_url }}{% endblock %}
 {% block robots %}index, follow{% endblock %}
@@ -36,7 +36,7 @@
     "dateModified": "{{ post.updated_at|date:'c' }}",
     "mainEntityOfPage": "{{ request.scheme }}://{{ request.get_host }}{{ post.get_absolute_url }}",
     "inLanguage": "{{ request.LANGUAGE_CODE|default:'ru' }}",
-    "author": {% if post.author_name %}{"@type":"Person","name":"{{ post.author_name|escapejs }}"}{% else %}{"@type":"Organization","name":"AI Gallery"}{% endif %}
+    "author": {% if post.author_name %}{"@type":"Person","name":"{{ post.author_name|escapejs }}"}{% else %}{"@type":"Organization","name":"Pixera"}{% endif %}
   }
   </script>
 

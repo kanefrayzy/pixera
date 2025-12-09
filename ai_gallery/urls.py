@@ -4,11 +4,14 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
 from django.conf.urls.i18n import set_language, i18n_patterns
+from dashboard import views as dashboard_views
+from pages.health import HealthCheckView
 
 from ai_gallery.views_auth import InstantSignupView
 
 # Без языкового префикса
 urlpatterns = [
+    path("health/", HealthCheckView.as_view(), name="health_check"),
     path("i18n/setlang/", set_language, name="set_language"),
     path("i18n/", include("django.conf.urls.i18n")),
     path("admin/", admin.site.urls),
@@ -19,6 +22,7 @@ urlpatterns += i18n_patterns(
     # allauth под префиксом (чтобы /en/accounts/login/ работал)
     path("accounts/signup/", InstantSignupView.as_view(), name="account_signup"),
     path("accounts/", include("allauth.urls")),
+    path("profile-<str:username>", dashboard_views.profile, name="profile_short"),
 
     # приложения
     path("", include(("pages.urls", "pages"), namespace="pages")),

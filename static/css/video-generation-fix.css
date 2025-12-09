@@ -1,0 +1,120 @@
+/**
+ * Video Generation Animation Fix
+ * Ensures animations stay within card boundaries
+ */
+
+/* Ensure video result tiles contain animations properly */
+.video-result-tile {
+  position: relative;
+  overflow: hidden;
+  contain: layout style paint;
+}
+
+/* Fix puzzle loader positioning to stay within tile */
+.video-result-tile .puzzle-grid {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure shimmer animation stays within bounds */
+.video-result-tile .animate-shimmer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Prevent animation overflow on queue card */
+#video-queue-card {
+  position: relative;
+  overflow: hidden;
+  contain: layout style;
+}
+
+/* Ensure results grid contains all animations */
+#video-results-grid {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Fix for modal animations */
+.video-result-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow-y: auto;
+}
+
+.video-result-modal .modal-content {
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Ensure video preview stays within container */
+.video-preview-container {
+  position: relative;
+  overflow: hidden;
+  contain: layout style paint;
+}
+
+/* Fix for generation loader overlay */
+#glx {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  overflow: hidden;
+}
+
+/* Responsive fixes for small screens */
+@media (max-width: 640px) {
+  .video-result-tile {
+    min-height: 200px;
+  }
+
+  #video-queue-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-result-tile {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 375px) {
+  .video-result-tile {
+    min-height: 160px;
+  }
+}
+
+@media (max-width: 320px) {
+  .video-result-tile {
+    min-height: 140px;
+  }
+
+  #video-queue-card {
+    padding: 0.75rem;
+  }
+}
+
+/* Animation performance optimizations */
+.puzzle-piece,
+.animate-shimmer,
+.video-result-tile video {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Ensure proper stacking context */
+.video-result-tile > * {
+  position: relative;
+  z-index: auto;
+}
+
+.video-result-tile .tile-remove-btn,
+.video-result-tile .persist-btn {
+  position: relative;
+  z-index: 10;
+}

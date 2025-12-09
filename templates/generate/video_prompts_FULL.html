@@ -1,0 +1,100 @@
+﻿{% load static %}
+
+<!-- Категории промптов для видео -->
+<div id="videoPromptCats" class="prompt-categories-section">
+  <div class="section-header">
+    <h2 class="section-title">Категории подсказок</h2>
+    <p class="section-subtitle">Выберите категорию для быстрого старта</p>
+  </div>
+
+  {% if request.user.is_staff %}
+  <!-- Admin: Create Video Prompt Category -->
+  <div class="pc-admin-create">
+    <div class="pc-admin-grid">
+      <input type="text" id="vpcName" class="field" placeholder="Название категории" maxlength="100">
+      <input type="text" id="vpcDesc" class="field" placeholder="Описание (необязательно)">
+      <input type="number" id="vpcOrder" class="field" placeholder="Порядок" value="0">
+      <select id="vpcMode" class="field">
+        <option value="i2v">Image-to-Video</option>
+        <option value="t2v" selected>Text-to-Video</option>
+      </select>
+      <label class="pc-inline">
+        <input type="checkbox" id="vpcActive" checked>
+        <span>Активна</span>
+      </label>
+      <label class="pc-file">
+        <input type="file" id="vpcImage" accept="image/*">
+        <span>Изображение</span>
+      </label>
+      <button class="btn btn-primary" id="vpcCreateBtn" type="button">+ Категория</button>
+    </div>
+    <div class="text-xs text-[var(--muted)] mt-2">Картинка используется как обложка карточки категории.</div>
+  </div>
+  {% endif %}
+
+  <!-- Categories Container (loaded via JS) -->
+  <div id="videoCategoriesContainer">
+    <p class="text-center text-muted">Загрузка категорий...</p>
+  </div>
+</div>
+
+<!-- Showcase Section -->
+<div id="videoShowcaseSection" class="mt-6">
+  <div class="section-header">
+    <h2 class="section-title">Примеры результатов</h2>
+    <p class="section-subtitle">Вдохновляйтесь работами других пользователей</p>
+  </div>
+
+  <!-- Showcase Container (loaded via JS) -->
+  <div id="videoShowcaseContainer" class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mt-6">
+    <p class="text-center text-muted col-span-full">Загрузка примеров...</p>
+  </div>
+</div>
+
+<!-- Modal for Video Prompts -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="videoPromptCategoryModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-[var(--bord)] shadow-2xl animate-modal-in">
+    <div class="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--bord)] p-4 sm:p-6 flex items-center justify-between z-10">
+      <h3 class="text-lg sm:text-xl font-bold" id="videoModalCategoryTitle">Промпты видео</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" id="closeVideoPromptModal" aria-label="Закрыть">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-88px)] custom-scrollbar" id="videoModalPromptsContainer">
+      <div class="text-center text-[var(--muted)] py-8">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+{% if request.user.is_staff %}
+<!-- Edit Video Category Modal -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="vpcEditModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-xl w-full overflow-hidden border border-[var(--bord)] shadow-2xl">
+    <div class="p-4 sm:p-6 border-b border-[var(--bord)] flex items-center justify-between">
+      <h3 class="text-lg font-bold">Редактирование категории</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)]" id="vpcEditClose" type="button">✕</button>
+    </div>
+    <div class="p-4 sm:p-6 space-y-3">
+      <input type="hidden" id="vpcEditId">
+      <input id="vpcEditName" class="field w-full" type="text" placeholder="Название">
+      <textarea id="vpcEditDesc" class="field w-full" rows="3" placeholder="Описание"></textarea>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="vpcEditOrder" class="field" type="number" placeholder="Порядок">
+        <label class="pc-inline"><input id="vpcEditActive" type="checkbox"><span>Активна</span></label>
+      </div>
+      <label class="pc-file w-full">
+        <input type="file" id="vpcEditImage" accept="image/*">
+        <span>Заменить изображение</span>
+      </label>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button class="btn btn-ghost" id="vpcEditCancel" type="button">Отмена</button>
+        <button class="btn btn-primary" id="vpcEditSave" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="{% static 'js/video-prompts.js' %}"></script>

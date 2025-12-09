@@ -1,0 +1,744 @@
+﻿{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Уведомления — Pixera" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+
+  <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0 flex-1">
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight break-words">{% trans "Уведомления" %}</h1>
+      <p class="text-sm text-[var(--muted)] mt-1 max-w-prose sm:max-w-xl">{% trans "Последние события в галерее. Поддерживается тёмная/светлая тема и адаптив до 320px." %}</p>
+    </div>
+
+    <div class="flex items-center sm:justify-end gap-2 w-full sm:w-auto">
+      <button id="markAllBtn" type="button" class="btn btn-ghost w-full xs:w-auto sm:w-auto justify-center sm:justify-between whitespace-nowrap">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 13l4 4L20 7"/>
+        </svg>
+        <span class="hidden xs:inline">{% trans "Отметить все прочитанными" %}</span>
+        <span class="inline xs:hidden">{% trans "Все прочитано" %}</span>
+      </button>
+    </div>
+  </header>
+
+
+  <section class="card p-0 overflow-hidden">
+    <div id="notifToolbar" class="flex items-center justify-between gap-2 px-4 py-3 border-b border-[var(--bord)]">
+      <div class="flex items-center gap-2">
+        <span class="badge">
+          <span id="wsStatus" class="w-2 h-2 rounded-full bg-gray-400 mr-2" title="{% trans 'Статус подключения' %}"></span>
+          <span id="unreadCount" class="font-semibold">0</span>
+          <span class="ml-1 text-[var(--muted)]">{% trans "непрочитанных" %}</span>
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="refreshBtn" type="button" class="btn btn-ghost px-3 py-2" title="{% trans 'Обновить' %}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12a8 8 0 10-6.219 7.781M20 12v5m0 0h-5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <ul id="notifList" class="divide-y divide-[var(--bord)]">
+      <!-- items injected by JS -->
+    </ul>
+
+    <div class="px-4 py-3 border-t border-[var(--bord)] flex items-center justify-center">
+      <button id="loadMoreBtn" type="button" class="btn btn-ghost">{% trans "Показать ещё" %}</button>
+    </div>
+  </section>
+
+  <section id="emptyState" class="card p-8 text-center hidden">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-black/[.04] dark:bg-white/10 grid place-items-center">
+      <svg class="w-8 h-8 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 8a6 6 0 10-12 0v5l-1 2h14l-1-2V8zM13.73 21a2 2 0 01-3.46 0"/>
+      </svg>
+    </div>
+    <h2 class="text-lg font-semibold mb-1">{% trans "Нет уведомлений" %}</h2>
+    <p class="text-sm text-[var(--muted)]">{% trans "Здесь будут появляться лайки, комментарии и другие события." %}</p>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+(function(){
+  const LIST_URL = "{% url 'dashboard:api:notifications_list' %}";
+  const UNREAD_URL = "{% url 'dashboard:api:notifications_unread_count' %}";
+  const MARK_URL = "{% url 'dashboard:api:notifications_mark_read' %}";
+  const MARK_ALL_URL = "{% url 'dashboard:api:notifications_mark_all_read' %}";
+
+  const listEl = document.getElementById('notifList');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const unreadEl = document.getElementById('unreadCount');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const markAllBtn = document.getElementById('markAllBtn');
+  const emptyState = document.getElementById('emptyState');
+  const wsStatusEl = document.getElementById('wsStatus');
+
+  let nextCursor = null;
+  let loading = false;
+  let knownIds = new Set();
+  let initialized = false;
+  let notifSoundUnlocked = false;
+  let audioCtx = null;
+  let ws = null;
+  let wsReconnectTimer = null;
+
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  function fmtDate(iso){
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString();
+    } catch(e) { return iso; }
+  }
+
+  async function unlockNotifSound(){
+    if (notifSoundUnlocked) return;
+    try{
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      await audioCtx.resume();
+      notifSoundUnlocked = true;
+      console.log('✅ Sound ready');
+    }catch(err){
+      console.error('❌ Sound init failed:', err);
+      notifSoundUnlocked = false;
+    }
+  }
+
+  function playLunarBeep(){
+    try{
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(()=>{});
+      }
+      const ctx = audioCtx;
+      const now = ctx.currentTime;
+
+      // Создаем три осциллятора для богатого "лунного" звука
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const osc3 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc3.type = 'triangle';
+
+      // Улучшенный "лунный" трёхтональный звон с гармониками
+      osc1.frequency.setValueAtTime(880, now);          // A5 - основной тон
+      osc2.frequency.setValueAtTime(1320, now + 0.05);  // E6 - квинта выше
+      osc3.frequency.setValueAtTime(1760, now + 0.10);  // A6 - октава выше
+
+      // Плавная огибающая для мягкого звучания
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.05);       // плавный вход
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5); // длинное затухание
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      osc3.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now + 0.05);
+      osc3.start(now + 0.10);
+      osc1.stop(now + 1.5);
+      osc2.stop(now + 1.5);
+      osc3.stop(now + 1.5);
+    }catch(_){}
+  }
+
+  async function playNotifSound(){
+    try{
+      await unlockNotifSound();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+      playLunarBeep();
+      console.log('🔊 Notification sound played');
+    }catch(err){
+      console.error('❌ Error playing sound:', err);
+      notifSoundUnlocked = false;
+      await unlockNotifSound();
+    }
+  }
+
+  function canUseWebNotifications(){
+    return typeof window !== 'undefined' && 'Notification' in window;
+  }
+
+  async function registerServiceWorker(){
+    if (!('serviceWorker' in navigator)) return null;
+    try{
+      const registration = await navigator.serviceWorker.register('/static/js/notification-service-worker.js');
+      console.log('Service Worker registered:', registration);
+      return registration;
+    }catch(err){
+      console.error('Service Worker registration failed:', err);
+      return null;
+    }
+  }
+
+  async function requestWebNotifPermissionOnce(){
+    if (!canUseWebNotifications()) return;
+    if (Notification.permission === 'default') {
+      try{
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          await registerServiceWorker();
+        }
+      }catch(_){}
+    } else if (Notification.permission === 'granted') {
+      await registerServiceWorker();
+    }
+  }
+
+  async function showWebNotification(n){
+    if (!canUseWebNotifications() || Notification.permission !== 'granted') return;
+    try{
+      const actor = n.actor || {};
+      const uname = (actor.username || '').trim();
+      const msgText = cleanMessage(n.message || '', uname);
+      const body = (uname ? '@' + uname + ' — ' : '') + (msgText || '{% trans "Новое уведомление" %}');
+      const icon = actor.avatar_url || "{% static 'img/icons/android-chrome-192x192.png' %}";
+      const badge = "{% static 'img/icons/android-chrome-96x96.png' %}";
+      const link = n.link || '/dashboard/notifications';
+
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification('Pixera', {
+          body: body,
+          icon: icon,
+          badge: badge,
+          tag: 'ai-gallery-notif-' + String(n.id || ''),
+          requireInteraction: false,
+          vibrate: [200, 100, 200],
+          data: { url: link }
+        });
+      } else {
+        const notification = new Notification('Pixera', {
+          body: body,
+          icon: icon,
+          badge: badge,
+          tag: 'ai-gallery-notif-' + String(n.id || ''),
+          requireInteraction: false,
+          vibrate: [200, 100, 200],
+          data: { link }
+        });
+        notification.onclick = function(ev){
+          ev.preventDefault();
+          if (notification.data && notification.data.link && notification.data.link !== '#') {
+            window.open(notification.data.link, '_blank');
+          } else {
+            window.focus();
+          }
+          notification.close();
+        };
+      }
+    }catch(err){
+      console.error('Error showing notification:', err);
+    }
+  }
+
+  function iconForType(type){
+    switch(type){
+      case 'like_photo':
+      case 'comment_like_photo':
+        return '<svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-6.58-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.42-8 11-8 11z"/></svg>';
+      case 'comment_photo':
+      case 'reply_photo':
+        return '<svg class="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0"/></svg>';
+      case 'like_video':
+      case 'comment_like_video':
+        return '<svg class="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-6.58-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.42-8 11-8 11z"/></svg>';
+      case 'comment_video':
+      case 'reply_video':
+        return '<svg class="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>';
+      case 'like_job':
+      case 'comment_like_job':
+        return '<svg class="w-4 h-4 text-pink-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-6.58-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.42-8 11-8 11z"/></svg>';
+      case 'comment_job':
+      case 'reply_job':
+        return '<svg class="w-4 h-4 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0"/></svg>';
+      case 'follow':
+        return '<svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 19a7 7 0 00-7-7H5"/></svg>';
+      case 'wallet_topup':
+        return '<svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>';
+      case 'admin_message':
+        return '<svg class="w-4 h-4 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h8M5 20l2-4h10l2 4M12 4v2"/></svg>';
+      case 'recommendation':
+        return '<svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>';
+      default:
+        return '<svg class="w-4 h-4 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/></svg>';
+    }
+  }
+
+  function userProfileHref(username){
+    if (!username) return '#';
+    return '/dashboard/profile/' + encodeURIComponent(username);
+  }
+  function cleanMessage(message, username){
+    try{
+      const u = (username || '').trim();
+      if (!u) return message || '';
+      const pref = '@' + u;
+      let txt = String(message || '');
+      if (txt.startsWith(pref)){
+        txt = txt.slice(pref.length).trimStart();
+      }
+      return txt;
+    }catch(_){
+      return message || '';
+    }
+  }
+  function actorAvatar(actor){
+    const username = (actor && actor.username) || '';
+    const avatar = (actor && actor.avatar_url) || '';
+    const href = userProfileHref(username);
+    if (avatar) {
+      return '<a href="'+href+'" class="shrink-0" aria-label="@'+username+'"><img src="'+avatar+'" alt="'+username+'" class="w-9 h-9 rounded-full object-cover"/></a>';
+    }
+    const ch = (username || 'U').slice(0,1).toUpperCase();
+    return '<a href="'+href+'" class="shrink-0" aria-label="@'+username+'"><span class="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-xs font-bold">'+ch+'</span></a>';
+  }
+
+  function renderItem(n){
+    const isRead = !!n.is_read;
+    const link = n.link || '#';
+    const actor = n.actor || {};
+    const prev = n.preview || {};
+    const uname = (actor.username || '').trim();
+    const actorLink = uname ? `<a href="${userProfileHref(uname)}" class="text-sm sm:text-base font-semibold hover:text-primary transition">@${uname}</a>` : '';
+    const msgText = cleanMessage(n.message || '', uname);
+
+    // Handle deleted content
+    const isDeleted = (prev.kind && (prev.kind.includes('_deleted') || prev.kind === 'photo_deleted' || prev.kind === 'video_deleted' || prev.kind === 'job_deleted'));
+
+    let thumb = '';
+    if (isDeleted) {
+      // Show "deleted" placeholder
+      thumb = `<a href="${link}" class="shrink-0">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-gray-400/20 to-gray-500/20 dark:from-gray-600/20 dark:to-gray-700/20 flex items-center justify-center border border-gray-300/30 dark:border-gray-600/30">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </div>
+      </a>`;
+    } else if (prev.kind === 'video' && prev.video_url) {
+      // Video thumbnail with play button - use poster if available, otherwise video first frame
+      const posterUrl = prev.poster_url || prev.image_url || '';
+      const videoForPoster = prev.video_url || '';
+      thumb = `<button type="button" class="shrink-0 nf-open" data-id="${n.id}" data-detail-url="${link}" data-video-url="${prev.video_url}" data-poster-url="${posterUrl}" aria-label="Открыть видео">
+        <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-200/20 dark:border-gray-700/20">
+          ${posterUrl && !posterUrl.startsWith('data:') ? `<img src="${posterUrl}" alt="" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'"/>` : videoForPoster ? `<video class="w-full h-full object-cover pointer-events-none" muted playsinline preload="metadata"><source src="${videoForPoster}#t=0.1" type="video/mp4"/></video>` : ''}
+          <div class="absolute inset-0 grid place-items-center pointer-events-none">
+            <div class="w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+              <svg class="w-4 h-4 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </div>
+        </div>
+      </button>`;
+    } else if (prev.kind === 'photo' && prev.image_url) {
+      // Photo thumbnail - clickable to open modal
+      thumb = `<button type="button" class="shrink-0 nf-open-photo" data-id="${n.id}" data-detail-url="${link}" data-image-url="${prev.image_url}" aria-label="Открыть фото">
+        <img src="${prev.image_url}" alt="" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-gray-200/20 dark:border-gray-700/20 hover:opacity-80 transition" onerror="this.style.display='none'"/>
+      </button>`;
+    } else if (prev.image_url) {
+      // Generic image (job, etc.) - just link
+      thumb = `<a href="${link}" class="shrink-0">
+        <img src="${prev.image_url}" alt="" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-gray-200/20 dark:border-gray-700/20" onerror="this.style.display='none'"/>
+      </a>`;
+    }
+
+    const snippet = prev.text ? `<div class="mt-1 text-xs text-[var(--muted)] line-clamp-2">${prev.text}</div>` : '';
+    return `
+      <li class="relative px-4 sm:px-5 py-3 hover:bg-black/[.02] dark:hover:bg-white/5 transition">
+        <div class="flex items-start gap-3 sm:gap-4">
+          ${actorAvatar(actor)}
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-black/[.04] dark:bg-white/10">
+                ${iconForType(n.type)}
+              </span>
+              ${actorLink}
+              <a href="${link}" class="text-sm sm:text-base font-medium hover:text-primary transition line-clamp-2 notif-link" data-id="${n.id}">${msgText}</a>
+              ${!isRead ? '<span class="ml-1 w-2 h-2 rounded-full bg-primary inline-block"></span>' : ''}
+            </div>
+            ${snippet}
+            <div class="mt-1 text-xs text-[var(--muted)]">${fmtDate(n.created_at)}</div>
+          </div>
+          ${thumb}
+          <button class="btn btn-ghost px-3 py-1.5 text-xs mark-read-btn" data-id="${n.id}" title="{% trans 'Отметить прочитанным' %}">
+            {% trans "Прочитано" %}
+          </button>
+        </div>
+        ${!isRead ? '<span class="pointer-events-none absolute bottom-2 right-3 h-1.5 w-1.5 rounded-full bg-orange-500 ring-2 ring-[var(--bg)]"></span>' : ''}
+      </li>
+    `;
+  }
+
+  async function updateUnread(){
+    try{
+      const r = await fetch(UNREAD_URL, { credentials: 'same-origin' });
+      const j = await r.json();
+      if (j && j.ok) unreadEl.textContent = String(j.unread || 0);
+    }catch(_){}
+  }
+
+  async function loadPage(cursor){
+    if (loading) return;
+    loading = true;
+    try{
+      const url = new URL(LIST_URL, location.origin);
+      url.searchParams.set('limit', '20');
+      if (cursor) url.searchParams.set('cursor', String(cursor));
+      const r = await fetch(url.toString(), { credentials: 'same-origin' });
+      const j = await r.json();
+      if (!j || j.ok !== true) throw new Error('bad response');
+
+      const items = j.items || [];
+
+      let hasNew = false;
+      const newlyAdded = [];
+
+      if (!cursor) {
+        const currentIds = new Set();
+        for (const n of items) {
+          if (n && typeof n.id !== 'undefined') {
+            currentIds.add(n.id);
+            if (initialized && !knownIds.has(n.id)) {
+              hasNew = true;
+              newlyAdded.push(n);
+            }
+          }
+        }
+        knownIds = currentIds;
+        listEl.innerHTML = '';
+      } else {
+        for (const n of items) {
+          if (n && typeof n.id !== 'undefined' && !knownIds.has(n.id)) {
+            knownIds.add(n.id);
+          }
+        }
+      }
+
+      for (const n of items) {
+        listEl.insertAdjacentHTML('beforeend', renderItem(n));
+      }
+      nextCursor = j.next_cursor || null;
+
+      if (!cursor && items.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      loadMoreBtn.classList.toggle('hidden', !nextCursor);
+      attachItemHandlers();
+      updateUnread();
+
+      if (hasNew && newlyAdded.length){
+        console.log('New notifications detected:', newlyAdded.length);
+        playNotifSound();
+        for (const n of newlyAdded.slice(0, 3)) {
+          await showWebNotification(n);
+        }
+      }
+      initialized = true;
+    }catch(e){
+      // noop
+    }finally{
+      loading = false;
+    }
+  }
+
+  function attachItemHandlers(){
+    listEl.querySelectorAll('.notif-link').forEach(a=>{
+      a.addEventListener('click', async (e)=>{
+        const id = a.getAttribute('data-id');
+        if (id) {
+          try{
+            await fetch(MARK_URL, {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': getCSRFCookie(),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              credentials: 'same-origin',
+              body: new URLSearchParams({id})
+            });
+            updateUnread();
+          }catch(_){}
+        }
+      }, { once: true });
+    });
+
+    listEl.querySelectorAll('.mark-read-btn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+        btn.disabled = true;
+        try{
+          await fetch(MARK_URL, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCSRFCookie(),
+              'X-Requested-With': 'XMLHttpRequest',
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            credentials: 'same-origin',
+            body: new URLSearchParams({id})
+          });
+          await loadPage(null);
+        }catch(_){
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  // Real-time polling (работает без WebSocket)
+  let lastCheckTime = Date.now();
+
+  async function checkForNewNotifications(){
+    try{
+      const url = new URL(LIST_URL, location.origin);
+      url.searchParams.set('limit', '5');
+      const r = await fetch(url.toString(), { credentials: 'same-origin' });
+      const j = await r.json();
+      if (!j || j.ok !== true) return;
+
+      const items = j.items || [];
+      const newNotifications = [];
+
+      for (const n of items) {
+        if (n && typeof n.id !== 'undefined' && !knownIds.has(n.id)) {
+          const createdTime = new Date(n.created_at).getTime();
+          if (createdTime > lastCheckTime) {
+            newNotifications.push(n);
+            knownIds.add(n.id);
+          }
+        }
+      }
+
+      if (newNotifications.length > 0) {
+        console.log('🔔 New notifications:', newNotifications.length);
+
+        // Добавляем новые уведомления в начало списка
+        for (const n of newNotifications.reverse()) {
+          listEl.insertAdjacentHTML('afterbegin', renderItem(n));
+        }
+
+        attachItemHandlers();
+        updateUnread();
+
+        // Играем звук и показываем уведомления
+        playNotifSound();
+        for (const n of newNotifications.slice(0, 3)) {
+          await showWebNotification(n);
+        }
+      }
+
+      lastCheckTime = Date.now();
+      wsStatusEl.className = 'w-2 h-2 rounded-full bg-green-500 mr-2';
+      wsStatusEl.title = '{% trans "Активно" %}';
+    }catch(err){
+      console.error('Error checking notifications:', err);
+      wsStatusEl.className = 'w-2 h-2 rounded-full bg-orange-500 mr-2';
+      wsStatusEl.title = '{% trans "Ошибка" %}';
+    }
+  }
+
+  // Агрессивная разблокировка звука при любом взаимодействии
+  ['click', 'touchstart', 'keydown', 'mousemove', 'scroll'].forEach(evt => {
+    document.addEventListener(evt, unlockNotifSound, { once: true, passive: true });
+  });
+
+  setTimeout(() => {
+    unlockNotifSound();
+  }, 100);
+
+  loadMoreBtn.addEventListener('click', ()=>{ if (nextCursor) loadPage(nextCursor); });
+  refreshBtn.addEventListener('click', ()=> loadPage(null));
+  markAllBtn.addEventListener('click', async ()=>{
+    try{
+      markAllBtn.disabled = true;
+      await fetch(MARK_ALL_URL, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+      await loadPage(null);
+      await updateUnread();
+    }catch(_){
+    }finally{
+      markAllBtn.disabled = false;
+    }
+  });
+
+  // initial
+  (async function init(){
+    console.log('🚀 Initializing notifications...');
+
+    await unlockNotifSound();
+    await requestWebNotifPermissionOnce();
+
+    // Load first 30 notifications only
+    await loadPage(null);
+
+    // Запускаем проверку новых уведомлений каждые 2 секунды (реальное время)
+    setInterval(checkForNewNotifications, 2000);
+    wsStatusEl.className = 'w-2 h-2 rounded-full bg-green-500 mr-2';
+    wsStatusEl.title = '{% trans "Активно" %}';
+
+    console.log('✅ Notifications ready (polling mode)');
+    console.log('🔊 Sound status:', notifSoundUnlocked ? 'UNLOCKED' : 'LOCKED (click anywhere to unlock)');
+
+    if (!notifSoundUnlocked) {
+      console.warn('⚠️ Click anywhere on the page to enable notification sounds');
+    }
+  })();
+})();
+</script>
+
+<!-- Notifications: Media Modal -->
+<div id="nfMediaModal" class="fixed inset-0 z-[75] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nf-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-5xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="grid md:grid-cols-2 gap-0">
+      <div id="nfMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
+      <div class="flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+          <div class="font-semibold">{% trans "Комментарии" %}</div>
+          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-nf-close="1">✕</button>
+        </div>
+        <div id="nfComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('nfMediaModal');
+  const mediaEl = document.getElementById('nfMedia');
+  const commentsEl = document.getElementById('nfComments');
+
+  const MARK_URL = "{% url 'dashboard:api:notifications_mark_read' %}";
+
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; mediaEl.innerHTML=''; commentsEl.innerHTML=''; }
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.nfClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchDetail(url){
+    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
+    const html = await r.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  async function openVideo(detailUrl, videoUrl, poster){
+    openModal();
+    const posterAttr = poster ? ` poster="${poster}"` : '';
+    mediaEl.innerHTML = `<video class="max-w-full max-h-[75vh]"${posterAttr} controls playsinline><source src="${videoUrl||''}" type="video/mp4"/></video>`;
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments') || doc.querySelector('#comments, #commentList');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">{% trans "Комментарии недоступны" %}</div>';
+    }catch(_){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">{% trans "Ошибка загрузки комментариев" %}</div>';
+    }
+  }
+
+  async function openPhoto(detailUrl, imageUrl){
+    openModal();
+    mediaEl.innerHTML = `<img src="${imageUrl||''}" alt="" class="max-w-full max-h-[75vh] object-contain mx-auto"/>`;
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments') || doc.querySelector('#comments, #commentList');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">{% trans "Комментарии недоступны" %}</div>';
+    }catch(_){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">{% trans "Ошибка загрузки комментариев" %}</div>';
+    }
+  }
+
+  // Open modal when clicking video thumbnail in notification
+  document.addEventListener('click', async (e)=>{
+    const videoBtn = e.target.closest('.nf-open');
+    if (videoBtn) {
+      e.preventDefault(); e.stopPropagation();
+      const id = videoBtn.getAttribute('data-id');
+      const detail = videoBtn.getAttribute('data-detail-url') || '';
+      const vurl = videoBtn.getAttribute('data-video-url') || '';
+      const poster = videoBtn.getAttribute('data-poster-url') || '';
+
+      // mark single notif as read
+      if (id) {
+        try{
+          await fetch(MARK_URL, {
+            method:'POST',
+            headers:{
+              'X-CSRFToken': getCSRFCookie(),
+              'X-Requested-With':'XMLHttpRequest',
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            credentials:'same-origin',
+            body: new URLSearchParams({ id })
+          });
+        }catch(_){}
+      }
+      openVideo(detail, vurl, poster);
+      return;
+    }
+
+    // Open modal when clicking photo thumbnail in notification
+    const photoBtn = e.target.closest('.nf-open-photo');
+    if (photoBtn) {
+      e.preventDefault(); e.stopPropagation();
+      const id = photoBtn.getAttribute('data-id');
+      const detail = photoBtn.getAttribute('data-detail-url') || '';
+      const imageUrl = photoBtn.getAttribute('data-image-url') || '';
+
+      // mark single notif as read
+      if (id) {
+        try{
+          await fetch(MARK_URL, {
+            method:'POST',
+            headers:{
+              'X-CSRFToken': getCSRFCookie(),
+              'X-Requested-With':'XMLHttpRequest',
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            credentials:'same-origin',
+            body: new URLSearchParams({ id })
+          });
+        }catch(_){}
+      }
+      openPhoto(detail, imageUrl);
+      return;
+    }
+  });
+})();
+</script>
+{% endblock %}

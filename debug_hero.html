@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEBUG Hero Interactions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .debug-panel {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .hero-image-container {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .hero-visual {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            background: #2a2a2a;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+
+        .hero-media {
+            position: relative;
+            border-radius: inherit;
+            overflow: hidden;
+        }
+
+        .hero-motion-layer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            overflow: hidden;
+        }
+
+        .hero-zoom-layer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .hero-canvas-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            mix-blend-mode: multiply;
+            transition: opacity 0.4s ease;
+        }
+
+        .hero-noise-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-size: 260px 260px;
+            background-position: 0 0;
+            background-repeat: repeat;
+            mix-blend-mode: overlay;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .hero-floating-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid #555;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #01d1fb, #4facfe);
+            color: white;
+        }
+
+        /* Состояния активации */
+        .hero-visual.is-realtime-active .hero-noise-layer {
+            opacity: 0.22;
+        }
+
+        .hero-visual.is-canvas-active .hero-canvas-layer {
+            opacity: 0.9;
+        }
+
+        .hero-visual.is-canvas-active::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            box-shadow: inset 0 1.2px 0 rgba(255,255,255,.12), inset 0 22px 48px rgba(0,0,0,.24);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+
+        .hero-visual.is-canvas-active::before {
+            content: "";
+            position: absolute;
+            inset: 6%;
+            border-radius: inherit;
+            border: 1.2px solid rgba(255,255,255,.24);
+            mix-blend-mode: screen;
+            opacity: 0.9;
+            pointer-events: none;
+            transform: scale(0.996);
+        }
+
+        .hero-visual.is-upscale-active .hero-zoom-layer {
+            will-change: transform;
+            transform-origin: 50% 50%;
+        }
+
+        .btn[aria-pressed="true"] {
+            box-shadow: 0 0 0 2px rgba(1, 209, 251, 0.4);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-panel" id="debug">
+        <div>DEBUG: Загрузка страницы...</div>
+    </div>
+
+    <div class="hero-image-container" data-hero>
+        <div class="hero-visual" data-hero-card>
+            <div class="hero-media" data-hero-media>
+                <div class="hero-motion-layer" data-hero-motion>
+                    <div class="hero-zoom-layer" data-hero-zoom>
+                        <img class="hero-image"
+                             data-hero-image
+                             src="https://picsum.photos/600/400?random=1"
+                             alt="Тестовое изображение">
+                    </div>
+                    <canvas class="hero-canvas-layer" data-hero-canvas aria-hidden="true"></canvas>
+                    <div class="hero-noise-layer" data-hero-noise aria-hidden="true"></div>
+                </div>
+            </div>
+
+            <div class="hero-floating-controls" data-hero-controls>
+                <button type="button"
+                        class="btn btn-ghost"
+                        data-hero-action="realtime"
+                        aria-pressed="false">
+                    Realtime
+                </button>
+                <button type="button"
+                        class="btn btn-ghost"
+                        data-hero-action="canvas"
+                        aria-pressed="false">
+                    Canvas
+                </button>
+                <button type="button"
+                        class="btn btn-primary"
+                        data-hero-action="upscale"
+                        aria-pressed="false">
+                    Upscale ×4
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const debugEl = document.getElementById('debug');
+        
+        function log(message) {
+            console.log(message);
+            debugEl.innerHTML += '<div>' + message + '</div>';
+        }
+
+        log('DEBUG: Начало загрузки скриптов');
+        
+        // Проверка DOM элементов
+        document.addEventListener('DOMContentLoaded', function() {
+            log('DEBUG: DOM загружен');
+            
+            const heroElement = document.querySelector('[data-hero]');
+            log('DEBUG: Hero элемент найден: ' + !!heroElement);
+            
+            const buttons = document.querySelectorAll('[data-hero-action]');
+            log('DEBUG: Кнопок найдено: ' + buttons.length);
+            
+            buttons.forEach((btn, index) => {
+                const action = btn.getAttribute('data-hero-action');
+                log('DEBUG: Кнопка ' + (index + 1) + ': ' + action);
+                
+                btn.addEventListener('click', function() {
+                    log('DEBUG: Нажата кнопка: ' + action);
+                });
+            });
+        });
+
+        // Проверка загрузки hero-interactions.js
+        window.addEventListener('load', function() {
+            log('DEBUG: Страница полностью загружена');
+            
+            // Проверим, есть ли класс HeroInteractions
+            if (typeof HeroInteractions !== 'undefined') {
+                log('DEBUG: Класс HeroInteractions найден');
+            } else {
+                log('ERROR: Класс HeroInteractions НЕ найден!');
+            }
+            
+            // Проверим, есть ли инстанс на hero элементе
+            const heroElement = document.querySelector('[data-hero]');
+            if (heroElement && heroElement.heroInteractions) {
+                log('DEBUG: Инстанс HeroInteractions создан');
+            } else {
+                log('ERROR: Инстанс HeroInteractions НЕ создан!');
+            }
+        });
+    </script>
+    <script src="static/js/hero-interactions.js"></script>
+</body>
+</html>

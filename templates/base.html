@@ -1,4 +1,4 @@
-{% load static i18n %}
+﻿{% load static i18n %}
 <!doctype html>
 {% get_current_language as CUR_LANG %}
 <html lang="{{ CUR_LANG|default:'ru' }}" class="scroll-smooth" data-theme="dark">
@@ -9,27 +9,33 @@
   <meta name="format-detection" content="telephone=no,email=no,address=no">
   <meta name="color-scheme" content="dark light">
 
-  <title>{% block meta_title %}{% block title %}{% trans "AI Gallery — ИИ-галерея и генерация" %}{% endblock %}{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}{% trans "AI Gallery — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды." %}{% endblock %}">
+  <title>{% block meta_title %}{% block title %}{% trans "Pixera — ИИ-галерея и генерация" %}{% endblock %}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{% trans "Pixera — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды." %}{% endblock %}">
   <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
-  <meta name="robots" content="{% block robots %}index,follow,max-image-preview:large{% endblock %}">
+
+  <!-- БЛОКИРОВКА ИНДЕКСАЦИИ -->
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="bingbot" content="noindex, nofollow">
+  <meta name="yandex" content="noindex, nofollow">
+
   <meta id="themeColor" name="theme-color" content="#0B0E14">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
 
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="AI Gallery">
-  <meta property="og:title" content="{% block og_title %}{% trans "AI Gallery — генерация и галерея" %}{% endblock %}">
+  <meta property="og:site_name" content="Pixera">
+  <meta property="og:title" content="{% block og_title %}{% trans "Pixera — генерация и галерея" %}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{% trans "Минималистичный UI, плавные градиенты и качественная генерация изображений ИИ." %}{% endblock %}">
   <meta property="og:url" content="{{ request.build_absolute_uri }}">
   <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-default.jpg' %}{% endblock %}">
   <meta name="twitter:card" content="summary_large_image">
 
 
-  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
-  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
-  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
-  <link rel="manifest" href="{% static 'site.webmanifest' %}">
+  <link rel="icon" href="{% static 'img/favicon/favicon.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'img/favicon/favicon.ico' %}" sizes="any">
+  <link rel="apple-touch-icon" href="{% static 'img/favicon/apple-touch-icon.png' %}">
+  <link rel="manifest" href="{% static 'img/favicon/site.webmanifest' %}">
 
 
   <link rel="dns-prefetch" href="//api.runware.ai">
@@ -41,141 +47,84 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="{% static 'css/tailwind.min.css' %}">
+
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <link rel="stylesheet" href="{% static 'css/components.css' %}">
   <link rel="stylesheet" href="{% static 'css/gallery.css' %}">
+  <link rel="stylesheet" href="{% static 'css/checkbox-fix.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin-forms-dark.css' %}">
 
   {% block extra_css %}{% endblock %}
 
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        container: {
-          center: true,
-          padding: { DEFAULT: "0.75rem" },
-          screens: {
-            sm: "640px",
-            md: "768px",
-            lg: "1024px",
-            xl: "1120px",
-            "2xl": "1280px"
-          }
-        },
-        extend: {
-          screens: {
-            xs: '320px'
-          },
-          colors: {
-            primary: '#01D1FB',
-            accent: '#01D1FB',
-            darkbg: '#0B0E14',
-            lightbg: '#F7F8FA',
-            ink: '#0F172A',
-            mobilemenu: {
-              light: '#FFFFFF',
-              dark: '#1A1F2E'
-            }
-          },
-          boxShadow: {
-            soft: "0 8px 30px rgba(0,0,0,.18)",
-            ring: "0 0 0 2px rgba(1,209,251,.4)"
-          },
-          dropShadow: {
-            glow: "0 10px 25px rgba(1,209,251,.5)"
-          },
-          backdropBlur: {
-            xs: "2px"
-          },
-          fontSize: {
-            lg: ['1rem', { lineHeight: '1rem' }]
-          }
-        },
-        fontFamily: {
-          sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "Apple Color Emoji", "Segoe UI Emoji"]
-        }
-      },
-      darkMode: ["class", '[data-theme="dark"]']
+  <style>
+    /* Header visual polish and stability:
+       - Set a stable background with alpha using --bg-rgb
+       - Avoid runtime class flips (supports-[backdrop-filter]) that can cause flicker
+       - Keep blur for depth without affecting layout */
+    #site-header {
+      background-color: transparent !important; /* прозрачный фон самого header */
+      -webkit-backdrop-filter: none !important; /* без blur, чтобы оттенок не зависел от контента */
+      backdrop-filter: none !important;
+      will-change: auto;
+      position: relative; /* для псевдо-элемента */
     }
-  </script>
-
-
-  <style type="text/tailwindcss">
-    @layer base {
-      :root {
-        --bg: theme(colors.lightbg);
-        --bg-rgb: 247, 248, 250;
-        --text: theme(colors.ink);
-        --card: #ffffff;
-        --bord: #e5e7eb;
-        --muted: #475569;
-        --mobilemenu: #FFFFFF;
-      }
-      [data-theme="dark"] {
-        --bg: theme(colors.darkbg);
-        --bg-rgb: 11, 14, 20;
-        --text: rgb(255 255 255 / .9);
-        --card: rgb(255 255 255 / .04);
-        --bord: rgb(255 255 255 / .10);
-        --muted: rgb(255 255 255 / .65);
-        --mobilemenu: #13192c;
-      }
-      body {
-        @apply bg-[var(--bg)] text-[var(--text)] font-sans antialiased selection:bg-primary/30 selection:text-[var(--bg)];
-        height: 100%;
-        padding-top: 4rem;
-      }
-      @media (min-width: 1024px) {
-        body {
-          padding-top: 0;
-        }
-      }
-      html { height: 100%; }
+    /* Псевдо-фон: повторяет фон сайта (noise + радиальные градиенты + базовый цвет),
+       но закреплён за самим header и не зависит от контента под ним */
+    #site-header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E") repeat,
+        radial-gradient(ellipse at top, rgba(1,209,251,.25), transparent 60%),
+        radial-gradient(ellipse at bottom, rgba(236,72,153,.16), transparent 65%),
+        var(--bg);
+      background-blend-mode: normal;
     }
 
-    @layer components {
-      .btn {
-        @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:scale-[.98];
-      }
-      .btn-primary {
-        @apply bg-primary text-darkbg hover:bg-primary/90 shadow-soft;
-      }
-      .btn-ghost {
-        @apply bg-white/0 text-[var(--text)] hover:bg-black/[.04] dark:hover:bg-white/10 border border-[var(--bord)];
-      }
-      .badge {
-        @apply inline-flex items-center rounded-full border border-[var(--bord)] bg-black/[.03] dark:bg-white/5 px-2.5 py-1 text-xs font-medium;
-      }
-      .card {
-        @apply rounded-3xl border border-[var(--bord)] bg-[var(--card)] backdrop-blur-xs shadow-soft;
-      }
-      .field {
-        @apply w-full rounded-xl border border-[var(--bord)] bg-white/70 dark:bg-white/5 px-3.5 py-2.5 outline-none placeholder:text-slate-400 focus:border-primary/60 focus:ring-2 focus:ring-primary/30;
-      }
-      .pill {
-        @apply rounded-full bg-black/[.04] dark:bg-white/5 px-3 py-1 text-xs border border-[var(--bord)];
-      }
-      .nav-link {
-        @apply text-sm font-medium hover:text-black dark:hover:text-white text-ink/80 dark:text-white/70 transition;
-      }
-      .heading-xl {
-        @apply text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.05] tracking-tight;
-      }
-      .glassframe {
-      @apply ring-1 ring-black/5 dark:ring-white/10 bg-white/30 dark:bg-white/5;
-      }
+    /* Dark theme: replace red tint with brand blue in navbar */
+    html[data-theme="dark"] #site-header::before {
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E") repeat,
+        radial-gradient(ellipse at top, rgba(1,209,251,.25), transparent 60%),
+        radial-gradient(ellipse at bottom, rgba(1,209,251,.16), transparent 65%),
+        var(--bg);
+      background-blend-mode: normal;
     }
 
-    @layer utilities {
-      .grid-auto-fit { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-      .mask-fade { -webkit-mask: linear-gradient(to bottom, black 70%, transparent); mask: linear-gradient(to bottom, black 70%, transparent); }
-      .bg-noise {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+    /* Header divider refinement for dark theme:
+       - remove bright white bottom border
+       - keep a very subtle separation via inset shadow
+       Light theme keeps a soft dark divider. */
+    html[data-theme="dark"] #site-header {
+      border-bottom-color: transparent !important;
+      box-shadow: inset 0 -1px 0 0 rgba(255, 255, 255, 0.04);
+    }
+    html[data-theme="light"] #site-header {
+      border-bottom-color: rgba(0, 0, 0, 0.06);
+    }
+    @media (min-width: 1024px) {
+      html[data-theme="dark"] #site-header {
+        box-shadow: inset 0 -1px 0 0 rgba(255, 255, 255, 0.035);
       }
     }
   </style>
 
+  <!-- Mobile fallback to prevent first-paint overlap when header is fixed.
+       Ensures all pages start below the navbar even before JS sets --nav-h. -->
+  <style>
+    @media (max-width: 1023.98px) {
+      body {
+        padding-top: calc(var(--nav-h, 64px) + env(safe-area-inset-top, 0px));
+      }
+    }
+  </style>
 
   <script>
     (function () {
@@ -328,6 +277,8 @@
   })();
   </script>
 
+  <link rel="preload" as="image" href="{% static 'img/bg.webp' %}" type="image/webp" />
+  <link rel="preload" as="image" href="{% static 'img/bg.png' %}" />
   {% block head_extra %}{% endblock %}
 </head>
 <body>
@@ -344,37 +295,45 @@
   {% url 'pages:home' as home_href1 %}
   {% url 'home' as home_href2 %}
   {% url 'account_login' as account_login_url %}
-  {% url 'account_logout' as account_logout_url %}
   {% url 'account_signup' as account_signup_url %}
   {% url 'generate:new' as gen_url %}
+  {% url 'dashboard:notifications' as notifications_url %}
+  {% url 'dashboard:my_jobs' as my_jobs_url %}
 
 
-  <header id="site-header" class="fixed lg:sticky top-0 left-0 right-0 z-50 bg-[var(--bg)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg)]/60" role="banner">
-    <div class="container flex h-16 items-center justify-between">
+  <header id="site-header" class="fixed lg:sticky top-0 left-0 right-0 z-50 border-b border-[var(--bord)]/20" role="banner">
+    <div class="container flex h-16 items-center justify-between px-3 lg:px-4">
 
       <a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}"
-         rel="home" class="flex items-center gap-2" aria-label="{% trans 'На главную' %}">
-        <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-darkbg font-extrabold drop-shadow-glow">AI</span>
-        <span class="text-lg font-semibold">Gallery</span>
+         rel="home" class="flex items-center gap-2.5 group" aria-label="{% trans 'На главную' %}">
+        <img src="{% static 'img/logo.png' %}" alt="Pixera" class="h-8 w-auto transition-transform group-hover:scale-105" loading="eager">
+        <span class="text-lg font-semibold text-[var(--text)]">Pixera</span>
       </a>
 
 
-      <nav class="hidden lg:flex items-center gap-7" role="navigation" aria-label="{% trans 'Главное меню' %}">
-        <a class="nav-link" href="/">{% trans "Главная" %}</a>
-        <a class="nav-link" href="{% url 'gallery:index' %}">{% trans "Галерея" %}</a>
-        <a class="nav-link" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
-        <a class="nav-link" href="{% url 'generate:new' %}">{% trans "Генерация" %}</a>
-        <a class="nav-link" href="{% url 'blog:index' %}">{% trans "Блог" %}</a>
+      <nav class="hidden lg:flex items-center gap-6 xl:gap-7" role="navigation" aria-label="{% trans 'Главное меню' %}">
+        {% if request.user.is_authenticated %}
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'profile_short' request.user.username %}">{% trans "Мой профиль" %}</a>
+        {% else %}
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="/">{% trans "Главная" %}</a>
+        {% endif %}
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'gallery:index' %}">{% trans "Галерея" %}</a>
+        {% if not request.user.is_authenticated %}
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
+        {% endif %}
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'generate:new' %}">{% trans "Генерация" %}</a>
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'blog:index' %}">{% trans "Блог" %}</a>
         {% if request.user.is_staff %}
-        <a class="nav-link" href="{% url 'dashboard:slider:list' %}">{% trans "Примеры слайдера" %}</a>
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'dashboard:slider:list' %}">{% trans "Примеры слайдера" %}</a>
         {% endif %}
       </nav>
 
 
-      <div class="hidden lg:flex items-center gap-3">
+      <div class="hidden lg:flex items-center gap-2">
 
+        {% if not request.user.is_authenticated %}
         <details class="relative" id="langSwitch">
-          <summary class="btn btn-ghost cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
+          <summary class="btn btn-ghost p-2 rounded-2xl border-0 cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
             🌐
           </summary>
           <div class="absolute right-0 top-full mt-2 rounded-3xl border border-[var(--bord)] bg-white dark:bg-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50" id="langMenu" role="menu" aria-label="{% trans 'Выбрать язык' %}">
@@ -392,7 +351,7 @@
             </button>
             <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
               <img class="w-4 h-4 rounded" src="{% static 'img/flags/es.svg' %}" alt="Español">
-              <span class="text-sm">Español</span>
+              <span class="text-sm">Españол</span>
             </button>
             <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
               <img class="w-4 h-4 rounded" src="{% static 'img/flags/pt.svg' %}" alt="Português">
@@ -401,8 +360,7 @@
           </div>
         </details>
 
-
-        <button id="themeToggle" class="btn btn-ghost" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
+        <button id="themeToggle" class="btn btn-ghost p-2 rounded-2xl border-0" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
           <svg id="iconSun" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
@@ -412,27 +370,104 @@
           </svg>
           <span class="sr-only">{% trans "Тема" %}</span>
         </button>
-
+        {% endif %}
 
         {% if request.user.is_authenticated %}
-          <a href="{% url 'dashboard:index' %}" class="btn btn-ghost" id="cabinetBtn">{% trans "Кабинет" %}</a>
-          {% if account_logout_url %}<a href="{{ account_logout_url }}" class="btn btn-ghost">{% trans "Выйти" %}</a>{% endif %}
+          <a class="btn btn-ghost p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0 group"
+             href="{% url 'gallery:trending' %}" aria-label="{% trans 'Поиск и тренды' %}">
+            <svg class="w-5 h-5 text-[var(--text)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+              <path d="M8 11h6"></path>
+            </svg>
+          </a>
+
+          <button class="btn btn-ghost p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0 relative group"
+                  type="button" aria-label="{% trans 'Уведомления' %}" id="notifBtn" aria-haspopup="true" aria-expanded="false">
+            <svg class="w-5 h-5 text-[var(--text)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+            </svg>
+            <span id="notifDot" class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--bg)] hidden"></span>
+            <span id="notifTiny" class="absolute -top-1 -right-1 rounded-full bg-red-500 text-[10px] leading-none text-white px-1.5 py-0.5 font-bold shadow-sm hidden"></span>
+          </button>
+
+          <a href="{% url 'dashboard:index' %}" class="btn btn-ghost p-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0 group" id="cabinetBtn">
+            <span class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-full overflow-hidden ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
+                {% if user_profile and user_profile.avatar %}
+                  <img
+                    src="{{ user_profile.avatar.url }}"
+                    alt="{{ request.user.username }}"
+                    class="js-avatar-img w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                {% else %}
+                  <span class="js-avatar-fallback w-full h-full rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-sm">
+                    {{ request.user.first_name|first|default:request.user.username|first|upper }}
+                  </span>
+                {% endif %}
+              </span>
+              <span class="text-sm font-medium text-[var(--text)] group-hover:text-primary transition-colors max-w-[80px] truncate">{{ request.user.username }}</span>
+            </span>
+          </a>
+
+          {% if account_logout_url %}<a href="{{ account_logout_url }}" class="btn btn-ghost px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0 text-sm font-medium">{% trans "" %}</a>{% endif %}
         {% else %}
-          {% with genq=gen_url|add:'?drawer=1' %}
-            {% if account_login_url %}<a href="{{ account_login_url }}?next={{ genq|urlencode }}" class="btn btn-ghost" rel="nofollow">{% trans "Войти" %}</a>{% endif %}
-            {% if account_signup_url %}<a href="{{ account_signup_url }}?next={{ genq|urlencode }}" class="btn btn-primary" rel="nofollow">{% trans "Начать бесплатно" %}</a>{% endif %}
-          {% endwith %}
+            {% if account_login_url %}<a href="{{ account_login_url }}" class="btn btn-ghost p-2 rounded-2xl border-0" rel="nofollow">{% trans "Войти" %}</a>{% endif %}
+            {% if account_signup_url %}<a href="{{ account_signup_url }}" class="btn btn-primary p-2 rounded-2xl" rel="nofollow">{% trans "Начать бесплатно" %}</a>{% endif %}
         {% endif %}
       </div>
 
-
-  <div class="lg:hidden flex items-center gap-2 ml-auto">
+  <div class="lg:hidden flex items-center gap-1.5 ml-auto">
     {% if request.user.is_authenticated %}
-      <button class="btn btn-ghost" type="button" data-open-dashboard="1">{% trans "Кабинет" %}</button>
+      <a class="btn btn-ghost p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0"
+         href="{% url 'gallery:trending' %}" aria-label="{% trans 'Поиск и тренды' %}">
+        <svg class="w-5 h-5 text-[var(--text)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+          <path d="M8 11h6"></path>
+        </svg>
+      </a>
+
+      <button class="btn btn-ghost p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0 relative"
+              type="button" aria-label="{% trans 'Уведомления' %}" id="notifBtnM">
+        <svg class="w-5 h-5 text-[var(--text)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+        </svg>
+        <span id="notifDotM" class="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--bg)] hidden"></span>
+        <span id="notifTinyM" class="absolute -top-1 -right-1 rounded-full bg-red-500 text-[10px] leading-none text-white px-1.5 py-0.5 font-bold shadow-sm hidden"></span>
+      </button>
+
+      <button class="btn btn-ghost border-0 p-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" type="button" data-open-dashboard="1" aria-label="{% trans 'Открыть профиль' %}">
+        <span class="w-8 h-8 rounded-full overflow-hidden ring-2 ring-transparent hover:ring-primary/30 transition-all">
+          {% if user_profile and user_profile.avatar %}
+            <img
+              src="{{ user_profile.avatar.url }}"
+              alt="{{ request.user.username }}"
+              class="js-avatar-img w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          {% else %}
+            <span class="js-avatar-fallback w-full h-full rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-xs">
+              {{ request.user.first_name|first|default:request.user.username|first|upper }}
+            </span>
+          {% endif %}
+        </span>
+      </button>
     {% else %}
       <details class="relative" id="langSwitchMobile">
-        <summary class="btn btn-ghost p-2" aria-controls="langMenuMobile" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">🌐</summary>
-        <div class="absolute right-0 top-full mt-2 rounded-3xl border border-[var(--bord)] bg-white dark:bg-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50" id="langMenuMobile" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+        <summary class="btn btn-ghost p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0" aria-controls="langMenuMobile" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
+          <svg class="w-5 h-5 text-[var(--text)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </summary>
+        <div class="absolute right-0 top-full mt-2 rounded-2xl border border-[var(--bord)] bg-white dark:bg-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50" id="langMenuMobile" role="menu" aria-label="{% trans 'Выбрать язык' %}">
           <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
             <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
             <span class="text-sm">English</span>
@@ -455,68 +490,91 @@
           </button>
         </div>
       </details>
-      <button id="themeToggleMobile" class="btn btn-ghost p-2" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
-        <svg id="iconSunM" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
+      <button id="themeToggleMobile" class="btn btn-ghost p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
+        <svg id="iconSunM" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
         </svg>
-        <svg id="iconMoonM" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"></path>
+        <svg id="iconMoonM" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
         <span class="sr-only">{% trans "Тема" %}</span>
       </button>
 
     {% endif %}
-      <button id="menuBtn" class="btn btn-ghost p-2 relative" aria-controls="mobileMenu" aria-expanded="false" aria-label="{% trans 'Открыть меню' %}">
+      {% if not request.user.is_authenticated %}
+      <button id="menuBtn" class="btn btn-ghost p-2 relative rounded-2xl border border-[var(--bord)] bg-black/5 dark:bg-white/10"
+              aria-controls="mobileMenu" aria-expanded="false" aria-label="{% trans 'Открыть меню' %}">
         <svg class="h-6 w-6 menu-icon-open transition-all duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16"/>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16"/>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18h16"/>
         </svg>
         <svg class="h-6 w-6 menu-icon-close absolute inset-0 m-auto transition-all duration-300 opacity-0 scale-75" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M5.29289 5.29289C5.68342 4.90237 6.31658 4.90237 6.70711 5.29289L12 10.5858L17.2929 5.29289C17.6834 4.90237 18.3166 4.90237 18.7071 5.29289C19.0976 5.68342 19.0976 6.31658 18.7071 6.70711L13.4142 12L18.7071 17.2929C19.0976 17.6834 19.0976 18.3166 18.7071 18.7071C18.3166 19.0976 17.6834 19.0976 17.2929 18.7071L12 13.4142L6.70711 18.7071C6.31658 19.0976 5.68342 19.0976 5.29289 18.7071C4.90237 18.3166 4.90237 17.6834 5.29289 17.2929L10.5858 12L5.29289 6.70711C4.90237 6.31658 4.90237 5.68342 5.29289 5.29289Z"/>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M5.29289 5.29289C5.68342 4.90237 6.31658 4.90237 6.70711 5.29289L12 10.5858L17.2929 5.29289C17.6834 4.90237 18.3166 4.90237 18.7071 5.29289C19.0976 5.68342 19.0976 6.31658 18.7071 6.70711L13.4142 12L18.7071 17.2929C19.0976 17.6834 19.0976 18.3166 18.7071 18.7071C18.3166 19.0976 17.6834 19.0976 17.2929 18.7071L12 13.4142L6.70711 18.7071C6.31658 19.0976 5.68342 19.0976 5.29289 18.7071C4.90237 18.3166 4.90237 17.6834 5.29289 17.2929L10.5858 12L5.29289 6.70711C4.90237 6.31658 4.90237 5.6834 5.29289 5.29289Z"/>
         </svg>
       </button>
+      {% endif %}
   </div>
     </div>
 
 
-    <div id="mobileMenu" class="lg:hidden hidden bg-[var(--mobilemenu)] border-b border-[var(--bord)] shadow-soft">
+    <div id="mobileMenu" class="lg:hidden hidden bg-[var(--mobilemenu)] shadow-soft">
       <div class="container py-4 flex flex-col gap-1">
-        <a class="nav-link flex items-center gap-3" href="{% url 'gallery:index' %}">
-          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        <a class="nav-link flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'gallery:index' %}">
+          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
           </svg>
           {% trans "Галерея" %}
         </a>
-        <a class="nav-link flex items-center gap-3" href="{% url 'gallery:trending' %}">
-          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        {% if not request.user.is_authenticated %}
+        <a class="nav-link flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'gallery:trending' %}">
+          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
           </svg>
           {% trans "Тренды" %}
         </a>
-        <a class="nav-link flex items-center gap-3" href="{% url 'generate:new' %}">
-          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        {% endif %}
+        <a class="nav-link flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'generate:new' %}">
+          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
           </svg>
           {% trans "Генерация" %}
         </a>
-        <a class="nav-link flex items-center gap-3" href="{% url 'blog:index' %}">
-          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-          </svg>
-          {% trans "Блог" %}
-        </a>
+
         {% if request.user.is_authenticated %}
-          <a class="nav-link py-2" href="{% url 'dashboard:index' %}">{% trans "Личный кабинет" %}</a>
-          {% if account_logout_url %}<a class="nav-link py-2" href="{{ account_logout_url }}">{% trans "Выйти" %}</a>{% endif %}
+          <a class="nav-link flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'dashboard:index' %}">
+            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            {% trans "Личный кабинет" %}
+          </a>
+          {% if account_logout_url %}
+            <a class="nav-link flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{{ account_logout_url }}">
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              {% trans "Выйти" %}
+            </a>
+          {% endif %}
         {% else %}
-          {% with genq=gen_url|add:'?drawer=1' %}
-            <div class="mt-2 flex items-center gap-2">
-              {% if account_login_url %}<a class="btn btn-ghost w-full" href="{{ account_login_url }}?next={{ genq|urlencode }}">{% trans "Войти" %}</a>{% endif %}
-              {% if account_signup_url %}<a class="btn btn-primary w-full" href="{{ account_signup_url }}?next={{ genq|urlencode }}">{% trans "Регистрация" %}</a>{% endif %}
+            <div class="mt-2 flex flex-col gap-2 px-3">
+              {% if account_login_url %}<a class="btn btn-ghost w-full justify-center" href="{{ account_login_url }}">{% trans "Войти" %}</a>{% endif %}
+              {% if account_signup_url %}<a class="btn btn-primary w-full justify-center" href="{{ account_signup_url }}">{% trans "Регистрация" %}</a>{% endif %}
             </div>
-          {% endwith %}
         {% endif %}
       </div>
     </div>
@@ -540,7 +598,7 @@
       <div class="grid grid-auto-fit gap-6">
         <div>
           <div class="flex items-center gap-2">
-            <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-darkbg font-extrabold">AI</span>
+            <img src="{% static 'img/logo.png' %}" alt="Pixera" class="h-9 w-auto" loading="lazy">
             <span class="text-lg font-semibold">Gallery</span>
           </div>
           <p class="mt-3 text-sm text-[var(--muted)]">{% trans "Галерея и генерация ИИ-изображений. Адаптив до 320 px, тёмная/светлая тема." %}</p>
@@ -552,6 +610,7 @@
             <li><a href="{% url 'gallery:index' %}" class="hover:text-[var(--text)] transition">{% trans "Галерея" %}</a></li>
             <li><a href="{% url 'gallery:trending' %}" class="hover:text-[var(--text)] transition">{% trans "Тренды" %}</a></li>
             <li><a href="{% url 'generate:new' %}" class="hover:text-[var(--text)] transition">{% trans "Генерация" %}</a></li>
+            <li class="lg:hidden"><a href="{% url 'blog:index' %}" class="hover:text-[var(--text)] transition">{% trans "Блог" %}</a></li>
           </ul>
         </div>
         <div>
@@ -562,9 +621,18 @@
             <li><a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">{% trans "Политика конфиденциальности" %}</a></li>
           </ul>
         </div>
+        <div>
+          <h4 class="text-sm font-semibold">{% trans "Разработчикам" %}</h4>
+          <ul class="mt-3 space-y-2 text-sm text-[var(--muted)]">
+            <li><a href="{% url 'dashboard:api:documentation' %}" class="hover:text-[var(--text)] transition">{% trans "API Документация" %}</a></li>
+            {% if request.user.is_authenticated %}
+            <li><a href="{% url 'dashboard:api:dashboard' %}" class="hover:text-[var(--text)] transition">{% trans "API Управление" %}</a></li>
+            {% endif %}
+          </ul>
+        </div>
       </div>
       <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--bord)] pt-6 text-xs text-[var(--muted)]">
-        <span>© {% now "Y" %} AI Gallery — {% trans "все права защищены" %}.</span>
+        <span>© {% now "Y" %} Pixera — {% trans "все права защищены" %}.</span>
         <div class="flex items-center gap-4">
           <a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">Terms</a>
           <a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">Privacy</a>
@@ -588,7 +656,146 @@
   <script src="{% static 'js/language-switcher.js' %}"></script>
   <script src="{% static 'js/interactions.js' %}"></script>
   <script src="{% static 'js/trending.js' %}"></script>
+  <script src="{% static 'js/video-viewer.js' %}" defer></script>
+  <script>
+    (function(){
+      var notifHref = "{{ notifications_url|default:'/dashboard/notifications' }}";
+      var UNREAD_URL = "{% url 'dashboard:api:notifications_unread_count' %}";
+      var lastUnread = null;
+      var notifAudioCtx = null;
+      var notifSoundUnlocked = false;
 
+      function unlockNotifSound(){
+        if (notifSoundUnlocked) return;
+        try{
+          if (!notifAudioCtx) {
+            notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          var p = notifAudioCtx.resume();
+          if (p && typeof p.then === 'function') {
+            p.then(function(){ notifSoundUnlocked = true; }).catch(function(){});
+          } else {
+            notifSoundUnlocked = true;
+          }
+        }catch(_){}
+      }
+
+      function playBeep(){
+        try{
+          if (!notifAudioCtx) {
+            notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (notifAudioCtx.state === 'suspended') {
+            notifAudioCtx.resume().catch(function(){});
+          }
+          var ctx = notifAudioCtx;
+          var now = ctx.currentTime;
+
+          var osc1 = ctx.createOscillator();
+          var osc2 = ctx.createOscillator();
+          var gain = ctx.createGain();
+
+          osc1.type = 'sine';
+          osc2.type = 'sine';
+
+          // тот же "лунный" двухтональный звон, что и на странице уведомлений
+          osc1.frequency.setValueAtTime(880, now);
+          osc2.frequency.setValueAtTime(1320, now + 0.02);
+
+          gain.gain.setValueAtTime(0.0, now);
+          gain.gain.linearRampToValueAtTime(0.6, now + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc1.start(now);
+          osc2.start(now + 0.02);
+          osc1.stop(now + 0.9);
+          osc2.stop(now + 0.9);
+        }catch(_){}
+      }
+
+      function playNotifSound(){
+        if (!notifSoundUnlocked) return;
+        playBeep();
+      }
+
+      function wire(id){
+        var el = document.getElementById(id);
+        if(!el) return;
+        el.addEventListener('click', function(e){
+          e.preventDefault();
+          try { window.location.href = notifHref; } catch(_) { window.location.assign(notifHref); }
+        });
+      }
+      wire('notifBtn');
+      wire('notifBtnM');
+
+      function setBadge(count, dotEl, tinyEl){
+        if(!dotEl || !tinyEl) return;
+        if(count > 0){
+          dotEl.classList.remove('hidden');
+          tinyEl.classList.remove('hidden');
+          var n = Math.max(1, parseInt(count, 10) || 0);
+          tinyEl.textContent = '+' + (n > 99 ? '99' : String(n));
+        }else{
+          dotEl.classList.add('hidden');
+          tinyEl.classList.add('hidden');
+        }
+      }
+
+      async function refreshUnread(){
+        try{
+          const r = await fetch(UNREAD_URL, { credentials: 'same-origin' });
+          const j = await r.json();
+          const c = (j && j.ok) ? (parseInt(j.unread, 10) || 0) : 0;
+          setBadge(c, document.getElementById('notifDot'), document.getElementById('notifTiny'));
+          setBadge(c, document.getElementById('notifDotM'), document.getElementById('notifTinyM'));
+
+          if (lastUnread !== null && c > lastUnread) {
+            playNotifSound();
+          }
+          lastUnread = c;
+        }catch(_){
+          // ignore network errors
+        }
+      }
+
+      // initial + polling
+      document.addEventListener('click', unlockNotifSound, { once: true });
+      refreshUnread();
+      setInterval(refreshUnread, 30000);
+    })();
+  </script>
+
+  <script>
+    // Dynamic header offset: prevent navbar from overlapping first block on all pages.
+    (function () {
+      function updateNavOffset() {
+        try {
+          var h = document.getElementById('site-header');
+          if (!h) return;
+          var pos = getComputedStyle(h).position;
+          var needsOffset = pos === 'fixed';
+          var height = h.offsetHeight || 0;
+          document.documentElement.style.setProperty('--nav-h', needsOffset ? (height + 'px') : '0px');
+        } catch (_) {}
+      }
+      // Initial and reactive updates
+      updateNavOffset();
+      window.addEventListener('resize', updateNavOffset, { passive: true });
+      window.addEventListener('orientationchange', updateNavOffset);
+      // If Tailwind responsive classes switch position on breakpoint changes
+      window.matchMedia('(min-width: 1024px)').addEventListener('change', updateNavOffset);
+      // Recalculate after fonts/styles load which may affect header height
+      window.addEventListener('load', updateNavOffset);
+    })();
+  </script>
+
+  {% include "includes/video_viewer_modal.html" %}
+  {% include "includes/likers_modal.html" %}
   {% block extra_js %}{% endblock %}
 
   {% block scripts_extra %}{% endblock %}

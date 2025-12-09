@@ -16,7 +16,16 @@ db.sqlite3.bak
 # Environment
 .env
 .env.local
+.env.production
 *.env
+
+# Docker
+docker-compose.override.yml
+*.pid
+
+# Nginx
+nginx/logs/
+*.log
 
 # IDE
 .idea/
@@ -35,6 +44,10 @@ Thumbs.db
 # Node
 node_modules/
 package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # Temporary files
 *.bak
@@ -43,7 +56,10 @@ query
 local.polib.txt
 fix_jobs_route.py.bak
 
+# Backup files
+backup_*.sql
+
 # Sensitive data
 *.pem
 *.key
-*.cert
+*.certnul

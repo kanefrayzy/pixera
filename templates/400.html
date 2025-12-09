@@ -1,0 +1,82 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Неверный запрос — Pixera{% endblock %}
+{% block meta_description %}Получен неверный запрос. Проверьте корректность данных и повторите попытку.{% endblock %}
+{% block robots %}noindex,follow{% endblock %}
+{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{% endblock %}
+
+{% block hero %}{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4">
+  <div class="max-w-2xl w-full text-center">
+    <div class="mb-8 relative">
+      <div class="w-32 h-32 mx-auto relative">
+        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 animate-pulse"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-6xl font-bold text-blue-500 opacity-80">400</span>
+        </div>
+
+        <div class="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-blue-500/30 animate-bounce" style="animation-delay: 0.1s;"></div>
+        <div class="absolute -bottom-2 -left-2 w-6 h-6 rounded-full bg-purple-500/30 animate-bounce" style="animation-delay: 0.3s;"></div>
+        <div class="absolute top-1/2 -right-4 w-4 h-4 rounded-full bg-indigo-500/30 animate-bounce" style="animation-delay: 0.5s;"></div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-4xl sm:text-5xl font-bold mb-4">
+          Неверный запрос
+        </h1>
+        <p class="text-xl text-[var(--muted)] max-w-lg mx-auto">
+          Запрос содержит неверные данные или неправильно сформирован
+        </p>
+      </div>
+
+      <div class="card p-6 max-w-md mx-auto">
+        <h2 class="font-semibold mb-4 text-left">Что можно сделать:</h2>
+        <ul class="space-y-3 text-left">
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'pages:home' %}">
+              Вернуться на главную
+            </a>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span>Проверить корректность данных</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'pages:contact' %}">
+              Сообщить о проблеме
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <a
+          href="{% url 'pages:home' %}"
+          class="btn-primary px-6 py-3 rounded-lg font-medium transition-all hover:scale-105"
+        >
+          На главную
+        </a>
+        <button
+          onclick="history.back()"
+          class="btn-secondary px-6 py-3 rounded-lg font-medium transition-all hover:scale-105"
+        >
+          Назад
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

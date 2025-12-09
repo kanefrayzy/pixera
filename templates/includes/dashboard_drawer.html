@@ -1,4 +1,4 @@
-{% load i18n %}
+﻿{% load i18n %}
 {% load static %}
 <div class="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm z-40 opacity-0 pointer-events-none transition-opacity duration-300" id="dbBackdrop" hidden></div>
 
@@ -13,15 +13,23 @@
 >
   <div class="h-full bg-[var(--bg)] border-l border-[var(--bord)] shadow-2xl overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
 
-    <div class="flex items-center justify-between p-4 border-b border-[var(--bord)]">
-      <div class="flex items-center gap-2" id="dbDrawerTitle">
-        <div class="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
-          <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 12C14.21 12 16 10.21 16 8S14.21 4 12 4 8 5.79 8 8 9.79 12 12 12M12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"/>
-          </svg>
-        </div>
-        <span class="font-semibold">{% trans "Профиль" %}</span>
-      </div>
+    <div class="relative flex items-center justify-between p-4 border-b border-[var(--bord)] min-h-[64px] sm:min-h-[72px]">
+      <div id="dbDrawerTitle" class="sr-only">{% trans "Профиль" %}</div>
+
+      <a href="/profile-{{ request.user.username }}" class="absolute left-1/2 -translate-x-1/2 inline-flex items-center justify-center" aria-label="{% trans 'Мой профиль' %}">
+        <span class="relative inline-flex items-center justify-center">
+          <img
+            src="{% if user_profile and user_profile.avatar %}{{ user_profile.avatar.url }}{% else %}#{% endif %}"
+            alt="{{ request.user.username }}"
+            class="js-avatar-img {% if not user_profile or not user_profile.avatar %}hidden{% endif %} w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover ring-2 ring-[var(--bord)] bg-white/50 dark:bg-white/5 shadow-md"
+            loading="lazy"
+            decoding="async"
+          />
+          <span class="js-avatar-fallback {% if user_profile and user_profile.avatar %}hidden{% endif %} w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-base ring-2 ring-[var(--bord)] shadow-md">
+            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+          </span>
+        </span>
+      </a>
 
       <button
           class="w-8 h-8 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center transition focus:outline-none focus:ring-0 focus:border-none"
@@ -36,17 +44,13 @@
     </div>
 
     <div class="p-4 border-b border-[var(--bord)]">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-lg">
-          {{ request.user.first_name|first|default:request.user.username|first|upper }}
-        </div>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 w-full">
         <div class="flex-1 min-w-0">
-          <div class="font-semibold truncate">
-            {{ request.user.get_full_name|default:request.user.username }}
-          </div>
-          <div class="text-sm text-[var(--muted)]">{{ request.user.email }}</div>
+          
         </div>
       </div>
+
+
 
       <div class="card p-4" aria-live="polite">
         <div class="flex items-center gap-3 mb-3">
@@ -59,13 +63,20 @@
             <div class="text-sm text-[var(--muted)]">{% trans "Мой баланс" %}</div>
             {% if request.user.is_staff %}
               <div class="font-bold">{% trans "Безлимит" %}</div>
+              <button
+                type="button"
+                id="adminTopupOpen"
+                class="btn btn-primary w-full text-sm mt-2"
+                aria-haspopup="dialog"
+                aria-controls="adminTopupModal"
+              >
+                {% trans "Пополнить" %}
+              </button>
             {% else %}
-              <div class="font-bold">
-                {{ wallet.balance|default:0 }} <span class="text-sm text-[var(--muted)]">TOK</span>
+              <div class="font-bold" id="dbBalanceBlock">
+                <span id="dbBalanceValue">{{ wallet.balance|default:0 }}</span> <span class="text-sm text-[var(--muted)]">TOK</span>
               </div>
-              <div class="text-xs text-[var(--muted)]">
-                ≈ {% widthratio wallet.balance|default:0 10 1 %} обработок
-              </div>
+
             {% endif %}
           </div>
         </div>
@@ -80,46 +91,93 @@
         {% endif %}
       </div>
 
-      <div class="flex gap-2 mt-3 lg:hidden">
-        <details class="relative flex-1" id="langSwitchDrawer">
-          <summary class="btn btn-ghost text-sm w-full" aria-controls="langMenuDrawer" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">🌐</summary>
-          <div class="absolute left-0 bottom-full mb-2 rounded-3xl border border-[var(--bord)] bg-white dark:bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50" id="langMenuDrawer" role="menu" aria-label="{% trans 'Выбрать язык' %}">
-            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
-              <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
-              <span class="text-sm">English</span>
-            </button>
-            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
-              <img class="w-4 h-4 rounded" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
-              <span class="text-sm">{% trans "Русский" %}</span>
-            </button>
-            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
-              <img class="w-4 h-4 rounded" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
-              <span class="text-sm">Deutsch</span>
-            </button>
-            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
-              <img class="w-4 h-4 rounded" src="{% static 'img/flags/es.svg' %}" alt="Español">
-              <span class="text-sm">Español</span>
-            </button>
-            <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
-              <img class="w-4 h-4 rounded" src="{% static 'img/flags/pt.svg' %}" alt="Português">
-              <span class="text-sm">Português</span>
-            </button>
-          </div>
-        </details>
+      <!-- Language + Theme controls under balance -->
+      <section class="mt-4 sm:mt-5 mb-4 sm:mb-6">
+        <div class="grid grid-cols-2 gap-2">
+          <!-- Language -->
+          <details class="relative" id="langSwitchDrawer">
+            <summary class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] text-xl leading-none flex items-center justify-center"
+                     aria-controls="langMenuDrawer" aria-haspopup="menu" aria-expanded="false"
+                     aria-label="{% trans 'Выбрать язык' %}">
+              <span aria-hidden="true">🌐</span>
+            </summary>
+            <div class="absolute left-0 bottom-full mb-2 rounded-3xl border border-[var(--bord)] bg-white dark:bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50"
+                 id="langMenuDrawer" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
+                <span class="text-sm">English</span>
+              </button>
+              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
+                <span class="text-sm">{% trans "Русский" %}</span>
+              </button>
+              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
+                <span class="text-sm">Deutsch</span>
+              </button>
+              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded" src="{% static 'img/flags/es.svg' %}" alt="Español">
+                <span class="text-sm">Español</span>
+              </button>
+              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded" src="{% static 'img/flags/pt.svg' %}" alt="Português">
+                <span class="text-sm">Português</span>
+              </button>
+            </div>
+          </details>
+          <!-- Theme -->
+          <button id="themeToggleDrawer"
+                  class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] flex items-center justify-center"
+                  type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
+            <svg id="iconSunD" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
+            </svg>
+            <svg id="iconMoonD" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
 
-        <button id="themeToggleDrawer" class="btn btn-ghost text-sm flex-1" type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
-          <svg id="iconSunD" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
-          </svg>
-          <svg id="iconMoonD" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"></path>
-          </svg>
-        </button>
-      </div>
+      <!-- Profile Privacy Toggle -->
+      <section class="mb-4 sm:mb-6">
+        <div class="w-full rounded-2xl border border-[var(--bord)] bg-white/40 dark:bg-white/5 p-3 sm:p-4">
+          <label class="flex items-center justify-between cursor-pointer group">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <svg id="privacyIconDrawer" class="w-5 h-5 text-primary transition-all" viewBox="0 0 24 24" fill="currentColor">
+                  {% if user_profile.is_private %}
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                  {% else %}
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h2c0-1.66 1.34-3 3-3s3 1.34 3 3v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
+                  {% endif %}
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs sm:text-sm font-semibold text-[var(--text)] leading-tight mb-0.5">
+                  {% trans "Тип аккаунта" %}
+                </div>
+                <div id="privacyStatusDrawer" class="text-[10px] sm:text-xs text-[var(--muted)] leading-tight">
+                  {% if user_profile.is_private %}{% trans "Закрытый аккаунт" %}{% else %}{% trans "Открытый аккаунт" %}{% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="relative flex-shrink-0">
+              <input type="checkbox"
+                     id="privacyToggleDrawer"
+                     class="sr-only peer"
+                     {% if user_profile.is_private %}checked{% endif %}>
+              <div class="w-11 h-6 sm:w-12 sm:h-7 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-primary transition-all duration-300 peer-focus:ring-2 peer-focus:ring-primary/50"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full shadow-md transition-all duration-300 peer-checked:translate-x-5 peer-checked:sm:translate-x-6"></div>
+            </div>
+          </label>
+        </div>
+      </section>
     </div>
 
     <nav class="p-4 space-y-1" aria-label="{% trans 'Меню профиля' %}">
+
 
       <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'gallery:index' %}">
         <div class="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center group-hover:bg-violet-500/25 transition">
@@ -163,8 +221,21 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
         </div>
-        <span class="font-medium">{% trans "Сгенерировать фото" %}</span>
+        <span class="font-medium">{% trans "Генерация" %}</span>
         <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <!-- Saved (bookmarks) -->
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'dashboard:saved' %}">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition">
+          <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Сохранённое" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
       </a>
@@ -210,3 +281,468 @@
     </div>
   </div>
 </aside>
+
+<!-- Drawer: avatar upload/delete disabled; edit avatar only on profile page -->
+
+<!-- Admin Top-up Modal (UI/UX only) -->
+<div
+  id="adminTopupModal"
+  class="fixed inset-0 z-[60] hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="adminTopupTitle"
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+  <!-- Dialog -->
+  <div
+    class="relative mx-auto my-6 w-[92vw] max-w-md rounded-2xl border border-[var(--bord)] bg-[var(--bg-card)] shadow-2xl"
+  >
+    <div class="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--bord)]">
+      <h3 id="adminTopupTitle" class="text-base sm:text-lg font-semibold">
+        {% trans "Пополнить токены пользователю" %}
+      </h3>
+      <button id="adminTopupClose" type="button" class="w-9 h-9 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="adminTopupForm" class="p-4 sm:p-5 space-y-3" data-admin-topup-url="/dashboard/api/admin/topup/">
+      {% csrf_token %}
+      <!-- Username -->
+      <div>
+        <label for="admUser" class="block text-sm font-medium mb-1">{% trans "Имя пользователя" %}</label>
+        <div class="relative">
+          <input
+            id="admUser"
+            name="username"
+            type="text"
+            class="field w-full pr-9"
+            placeholder="{% trans 'username' %}"
+            autocomplete="off"
+            required
+          />
+          <svg class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
+          </svg>
+        </div>
+        <p class="mt-1 text-[10px] sm:text-xs text-[var(--muted)]">
+          {% trans "Введите username. Поиск выполняется на стороне сервера (UI-слой, логика уже в бекенде)." %}
+        </p>
+      </div>
+
+      <!-- Amount -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label for="admAmount" class="block text-sm font-medium mb-1">{% trans "Количество токенов" %}</label>
+          <input
+            id="admAmount"
+            name="amount"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            step="1"
+            class="field w-full"
+            placeholder="500"
+            required
+          />
+        </div>
+        <div>
+          <label for="admReason" class="block text-sm font-medium mb-1">{% trans "Причина (опц.)" %}</label>
+          <input
+            id="admReason"
+            name="reason"
+            type="text"
+            class="field w-full"
+            placeholder="{% trans 'например: бонус, компенсация' %}"
+          />
+        </div>
+      </div>
+
+      <!-- Hints -->
+      <div class="rounded-xl border border-[var(--bord)] bg-black/[.03] dark:bg-white/[.03] p-3">
+        <ul class="list-disc ml-5 space-y-1 text-[10px] sm:text-xs text-[var(--muted)]">
+          <li>{% trans "Только для администраторов. Операция фиксируется в журнале." %}</li>
+          <li>{% trans "Поддерживается тёмная и светлая тема, интерфейс адаптивен до 320px." %}</li>
+        </ul>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-1">
+        <button type="submit" class="btn btn-primary flex-1">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          {% trans "Пополнить" %}
+        </button>
+        <button type="button" id="adminTopupCancel" class="btn btn-ghost flex-1">{% trans "Отмена" %}</button>
+      </div>
+      <div id="admTopupMsg" class="text-[10px] sm:text-xs text-[var(--muted)]"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Drawer Follow Modal -->
+<div id="drFollowModal" class="modal hidden fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
+  <div class="modal-backdrop absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm" onclick="Modal.close('drFollowModal')"></div>
+  <div class="relative w-full max-w-[min(95vw,420px)] rounded-2xl bg-[var(--bg)] border-2 border-[var(--bord)] shadow-2xl overflow-hidden max-h-[min(90vh,650px)] flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-4 border-b-2 border-[var(--bord)] flex-shrink-0 bg-gradient-to-b from-black/[.02] dark:from-white/[.02] to-transparent">
+      <h3 id="drFollowModalTitle" class="text-base sm:text-lg font-bold text-[var(--text)]"></h3>
+      <button type="button" class="btn btn-ghost p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all flex-shrink-0 active:scale-95" onclick="Modal.close('drFollowModal')" aria-label="Close">
+        <svg class="w-5 h-5 text-[var(--muted)] hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Tabs (only for followers/following) -->
+    <nav id="drFollowTabs" class="flex justify-center p-3 border-b border-[var(--bord)] flex-shrink-0 hidden">
+      <div class="inline-flex rounded-xl bg-black/5 dark:bg-white/5 p-1 gap-1 w-full max-w-xs">
+        <button id="drTabFollowers" type="button" class="flex-1 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-all">
+          Подписчики
+        </button>
+        <button id="drTabFollowing" type="button" class="flex-1 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-all">
+          Подписки
+        </button>
+      </div>
+    </nav>
+
+    <!-- Body -->
+    <div id="drFollowModalBody" class="overflow-y-auto flex-1 min-h-0" style="max-height: calc(min(90vh,650px) - 130px);">
+      <div class="text-[var(--muted)] text-sm py-12 text-center">
+        <div class="inline-flex items-center gap-2">
+          <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Загрузка...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const isStaff = {{ request.user.is_staff|yesno:"true,false" }};
+  // Live update wallet balance in drawer (avoid stale 0 on first render)
+  (function(){
+    if (!isStaff) {
+      try {
+        const valEl = document.getElementById('dbBalanceValue');
+        if (valEl) {
+          fetch('{% url "dashboard:api:wallet_info" %}', { headers: { 'X-Requested-With': 'fetch' }})
+            .then(r => r.json()).then(j => {
+              if (j && (j.ok !== false) && typeof j.balance !== 'undefined') {
+                valEl.textContent = j.balance;
+              }
+            }).catch(()=>{});
+        }
+      } catch(e) {}
+    }
+  })();
+  if (isStaff) {
+    const openBtn = document.getElementById('adminTopupOpen');
+    const modal = document.getElementById('adminTopupModal');
+    const closeBtn = document.getElementById('adminTopupClose');
+    const cancelBtn = document.getElementById('adminTopupCancel');
+    const form = document.getElementById('adminTopupForm');
+    const msg = document.getElementById('admTopupMsg');
+
+    function open() {
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        try { document.getElementById('admUser').focus(); } catch(e) {}
+      }, 10);
+    }
+    function close() {
+      if (!modal) return;
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+      msg.textContent = '';
+    }
+
+    openBtn?.addEventListener('click', open);
+    closeBtn?.addEventListener('click', close);
+    cancelBtn?.addEventListener('click', close);
+    modal?.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) close(); });
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      const fd = new FormData(form);
+      const username = (fd.get('username') || '').toString().trim();
+      const amount = parseInt((fd.get('amount') || '0').toString(), 10) || 0;
+      const reason = (fd.get('reason') || '').toString().trim();
+      if (!username || amount <= 0) {
+        msg.textContent = '{{ _("Укажите username и положительную сумму токенов") }}';
+        return;
+      }
+
+      const url = form.dataset.adminTopupUrl || '/dashboard/api/admin/topup/';
+      try {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'fetch', 'X-CSRFToken': (document.querySelector("[name=csrfmiddlewaretoken]")||{}).value || '' },
+          body: fd
+        });
+        const j = await r.json().catch(()=>({}));
+        if (r.ok && (j.ok !== false)) {
+          msg.className = 'text-[10px] sm:text-xs text-emerald-500';
+          msg.textContent = '{{ _("Успешно пополнено") }}';
+          setTimeout(close, 900);
+        } else {
+          msg.className = 'text-[10px] sm:text-xs text-red-500';
+          msg.textContent = (j.error || 'Ошибка пополнения. Проверьте эндпоинт.');
+        }
+      } catch (err) {
+        msg.className = 'text-[10px] sm:text-xs text-red-500';
+        msg.textContent = 'Эндпоинт недоступен. UI готов, подключите серверный маршрут /dashboard/api/admin/topup/.';
+      }
+    });
+  }
+
+  // Drawer Follow Modal Logic
+  const currentUser = "{{ request.user.username }}";
+  const elFollowers = document.getElementById('drBtnFollowers');
+  const elFollowing = document.getElementById('drBtnFollowing');
+  const elPosts = document.getElementById('drBtnPosts');
+  const modalId = 'drFollowModal';
+  const titleEl = document.getElementById('drFollowModalTitle');
+  const bodyEl = document.getElementById('drFollowModalBody');
+  const tabsEl = document.getElementById('drFollowTabs');
+  const urls = {
+    followers: "{% url 'dashboard:api:follow_list_followers' %}",
+    following: "{% url 'dashboard:api:follow_list_following' %}",
+    recs: "{% url 'dashboard:api:follow_recommendations' %}?limit=5",
+    myJobs: "{% url 'dashboard:my_jobs' %}?only=published"
+  };
+
+  function renderUsers(users){
+    if (!users || !users.length){
+      return '<div class="text-sm text-[var(--muted)] py-12 text-center">Список пуст</div>';
+    }
+    return '<ul class="divide-y divide-[var(--bord)]">' + users.map(u => `
+      <li class="py-2.5 px-3 flex items-center gap-2.5 hover:bg-black/[.03] dark:hover:bg-white/[.03] transition-colors">
+        ${u.avatar_url ?
+          `<img src="${u.avatar_url}" alt="" class="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-[var(--bord)]">` :
+          `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-blue-500/20 flex-shrink-0 ring-2 ring-[var(--bord)] flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary/40" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>`
+        }
+        <div class="min-w-0 flex-1">
+          <a href="/dashboard/profile/${encodeURIComponent(u.username)}" class="font-semibold text-[var(--text)] truncate hover:underline block text-sm leading-tight">${u.name || u.username}</a>
+          <div class="text-xs text-[var(--muted)] truncate mt-0.5">@${u.username}</div>
+        </div>
+        <button class="btn ${u.is_following ? 'btn-ghost' : 'btn-primary'} text-xs font-semibold whitespace-nowrap px-3 py-1.5 flex-shrink-0 min-w-[80px] rounded-lg" data-follow-toggle="1" data-username="${u.username}">
+          ${u.is_following ? 'Отписаться' : 'Подписаться'}
+        </button>
+      </li>`).join('') + '</ul>';
+  }
+
+  function renderRecs(recs){
+    if (!recs || !recs.length) return '';
+    return `
+      <div class="mt-2 pt-3 border-t-2 border-[var(--bord)] bg-gradient-to-b from-black/[.01] dark:from-white/[.01] to-transparent">
+        <div class="flex items-center gap-2 mb-2 px-3">
+          <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <div class="text-xs sm:text-sm font-bold text-[var(--text)]">Рекомендации</div>
+        </div>
+        <ul class="divide-y divide-[var(--bord)]">
+          ${recs.map(u => `
+            <li class="py-2.5 px-3 flex items-center gap-2.5 hover:bg-black/[.03] dark:hover:bg-white/[.03] transition-colors">
+              ${u.avatar_url ?
+                `<img src="${u.avatar_url}" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-2 ring-[var(--bord)]">` :
+                `<div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-blue-500/20 flex-shrink-0 ring-2 ring-[var(--bord)] flex items-center justify-center">
+                  <svg class="w-4 h-4 text-primary/40" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>`
+              }
+              <div class="min-w-0 flex-1">
+                <a href="/dashboard/profile/${encodeURIComponent(u.username)}" class="font-semibold text-[var(--text)] truncate hover:underline block text-xs sm:text-sm leading-tight">${u.name || u.username}</a>
+                <div class="text-xs text-[var(--muted)] truncate mt-0.5">@${u.username}</div>
+              </div>
+              <button class="btn btn-primary text-xs font-semibold whitespace-nowrap px-3 py-1.5 flex-shrink-0 min-w-[80px] rounded-lg" data-follow-toggle="1" data-username="${u.username}">
+                Подписаться
+              </button>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  function setActiveTab(kind){
+    const f1 = document.getElementById('drTabFollowers');
+    const f2 = document.getElementById('drTabFollowing');
+    const activeCls = ['bg-black/[.08]','dark:bg-white/10','text-[var(--text)]','shadow-sm'];
+    const reset = (el)=>{ if(!el) return; el.classList.remove(...activeCls); };
+    const make = (el)=>{ if(!el) return; el.classList.add(...activeCls); };
+    reset(f1); reset(f2);
+    if (kind === 'followers') make(f1); else make(f2);
+  }
+
+  async function loadFollowList(kind){
+    titleEl.textContent = kind === 'followers' ? 'Подписчики' : 'Подписки';
+    tabsEl.classList.remove('hidden');
+    bodyEl.innerHTML = '<div class="py-8 text-center text-sm text-[var(--muted)]">Загрузка...</div>';
+    try{
+      const res = await fetch(urls[kind], { headers: { 'X-Requested-With': 'fetch' }});
+      const data = await res.json();
+      if (data && data.ok){
+        bodyEl.innerHTML = renderUsers(data.users);
+      } else {
+        bodyEl.innerHTML = '<div class="py-8 text-center text-sm text-red-500">Ошибка загрузки</div>';
+      }
+    } catch(e){
+      bodyEl.innerHTML = '<div class="py-8 text-center text-sm text-red-500">Ошибка сети</div>';
+    }
+
+    try {
+      const recRes = await fetch(urls.recs, { headers: { 'X-Requested-With': 'fetch' }});
+      const recData = await recRes.json().catch(()=>null);
+      if (recData && recData.ok && Array.isArray(recData.users) && recData.users.length) {
+        bodyEl.insertAdjacentHTML('beforeend', renderRecs(recData.users));
+      }
+    } catch(e) { /* ignore */ }
+
+    bodyEl.onclick = async function(ev) {
+      const btn = ev.target.closest('[data-follow-toggle="1"]');
+      if (!btn) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const username = btn.getAttribute('data-username');
+      if (!username) return;
+
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      try {
+        const fd = new FormData();
+        fd.append('username', username);
+        const csrf = (document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/) || [])[1] || '';
+        const res = await fetch('/dashboard/api/follow/toggle/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'fetch' },
+          body: fd
+        });
+        const j = await res.json();
+        if (j && j.ok) {
+          const nowFollowing = !!j.following;
+          btn.textContent = nowFollowing ? 'Отписаться' : 'Подписаться';
+          btn.classList.toggle('btn-primary', !nowFollowing);
+          btn.classList.toggle('btn-ghost', nowFollowing);
+
+          // Instagram logic: NEVER remove from list, just change button state
+          // This matches Instagram's behavior in both tabs
+
+          const cRes = await fetch(`/dashboard/api/follow/${encodeURIComponent(currentUser)}/counters/`, {
+            headers: { 'X-Requested-With': 'fetch' }
+          });
+          const c = await cRes.json();
+          if (c && c.ok) {
+            const dF = document.getElementById('drFollowers');
+            const dFg = document.getElementById('drFollowing');
+            const dP = document.getElementById('drPosts');
+            if (dF) dF.textContent = c.followers;
+            if (dFg) dFg.textContent = c.following;
+            if (dP) dP.textContent = c.posts;
+          }
+        } else {
+          btn.textContent = originalText;
+        }
+      } catch (e) {
+        btn.textContent = originalText;
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  }
+
+  async function loadPosts(){
+    titleEl.textContent = 'Мои публикации';
+    tabsEl.classList.add('hidden');
+    bodyEl.innerHTML = '<div class="py-8 text-center text-sm text-[var(--muted)]">Загрузка...</div>';
+
+    // Redirect to my-jobs with filter
+    window.location.href = urls.myJobs;
+  }
+
+  async function openModal(kind){
+    if (kind === 'posts') {
+      loadPosts();
+      return;
+    }
+
+    setActiveTab(kind);
+    await loadFollowList(kind);
+
+    const f1 = document.getElementById('drTabFollowers');
+    const f2 = document.getElementById('drTabFollowing');
+    if (f1) f1.onclick = async () => { setActiveTab('followers'); await loadFollowList('followers'); };
+    if (f2) f2.onclick = async () => { setActiveTab('following'); await loadFollowList('following'); };
+
+    if (typeof Modal !== 'undefined') {
+      Modal.open(modalId);
+    }
+  }
+
+  elFollowers?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openModal('followers'); });
+  elFollowing?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openModal('following'); });
+  elPosts?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openModal('posts'); });
+})();
+
+// Privacy Toggle Handler
+(function(){
+  const checkbox = document.getElementById('privacyToggleDrawer');
+  const statusText = document.getElementById('privacyStatusDrawer');
+  const icon = document.getElementById('privacyIconDrawer');
+
+  if(!checkbox) return;
+
+  checkbox.addEventListener('change', async function(){
+    const isPrivate = this.checked;
+    const originalChecked = this.checked;
+
+    try {
+      const csrf = (document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/) || [])[1] || '';
+      const res = await fetch('{% url "dashboard:toggle_profile_privacy" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrf,
+          'X-Requested-With': 'fetch'
+        }
+      });
+
+      const data = await res.json();
+      if(data && data.success){
+        if(statusText) statusText.textContent = data.is_private ? '{% trans "Закрытый аккаунт" %}' : '{% trans "Открытый аккаунт" %}';
+        if(icon){
+          if(data.is_private){
+            icon.innerHTML = '<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>';
+          } else {
+            icon.innerHTML = '<path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h2c0-1.66 1.34-3 3-3s3 1.34 3 3v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>';
+          }
+        }
+      } else {
+        this.checked = !originalChecked;
+      }
+    } catch(e){
+      this.checked = !originalChecked;
+    }
+  });
+})();
+</script>

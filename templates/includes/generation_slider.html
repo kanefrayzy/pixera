@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 
 <!-- Generation Slider Component -->
 <div class="generation-slider" id="generationSlider">
@@ -30,37 +30,45 @@
 </div>
 
 <script>
-(async function() {
-  try {
-    // Загружаем данные
-    const response = await fetch('{% static "data/slider_examples.json" %}');
-    if (!response.ok) throw new Error('Failed to load slider data');
+(function() {
+  const DATA_URL = '{% static "data/slider_examples.json" %}';
+  const container = document.getElementById('sliderContainer');
+  const indicators = document.getElementById('sliderIndicators');
+  const LS_KEY = 'image_slider_examples_v2';
 
-    const sliderData = await response.json();
-    const container = document.getElementById('sliderContainer');
-    const indicators = document.getElementById('sliderIndicators');
-
-    // Очищаем loading state
+  function buildSlides(data){
+    if (!container || !indicators) return;
     container.innerHTML = '';
-
-    // Генерируем слайды
-    sliderData.forEach((slide, index) => {
+    indicators.innerHTML = '';
+    const arr = Array.isArray(data) ? data : [];
+    if (!arr.length){
+      container.innerHTML = `
+        <div class="slide active flex items-center justify-center aspect-[4/5] bg-gray-100 dark:bg-gray-800 rounded-2xl sm:rounded-3xl">
+          <div class="text-center">
+            <div class="w-8 h-8 mx-auto mb-2 rounded-full bg-gradient-to-r from-primary to-blue-500"></div>
+            <p class="text-sm text-[var(--muted)]">Нет примеров</p>
+          </div>
+        </div>`;
+      return;
+    }
+    arr.forEach((slide, index) => {
       const slideEl = document.createElement('div');
       slideEl.className = `slide ${index === 0 ? 'active' : ''}`;
       slideEl.dataset.slide = index;
+      const img = (slide.image || '').replace(/"/g,'"');
+      const alt = (slide.alt || slide.title || 'AI Generation').replace(/"/g,'"');
       slideEl.innerHTML = `
         <img class="slide-image w-full rounded-2xl sm:rounded-3xl object-cover aspect-[4/5]"
-             src="${slide.image}"
-             alt="${slide.alt}"
+             src="${img}"
+             alt="${alt}"
              loading="${index === 0 ? 'eager' : 'lazy'}"
-             onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 500%22&gt;&lt;rect width=%22400%22 height=%22500%22 fill=%22%23e5e7eb%22/&gt;&lt;text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2216%22&gt;AI Generation&lt;/text&gt;&lt;/svg&gt;';">
+             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 500%22><rect width=%22400%22 height=%22500%22 fill=%22%23e5e7eb%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2216%22>AI Generation</text></svg>';">
         <div class="slide-info">
           <div class="card p-2 sm:p-3 backdrop-blur-sm bg-white/90 dark:bg-black/90">
-            <div class="text-xs sm:text-sm font-medium mb-1">${slide.title}</div>
-            <div class="text-xs text-[var(--muted)]">${slide.description}</div>
+            <div class="text-xs sm:text-sm font-medium mb-1">${slide.title || ''}</div>
+            <div class="text-xs text-[var(--muted)]">${slide.description || ''}</div>
           </div>
-        </div>
-      `;
+        </div>`;
       container.appendChild(slideEl);
 
       const indicator = document.createElement('button');
@@ -70,29 +78,41 @@
       indicators.appendChild(indicator);
     });
 
-    window.sliderExamples = sliderData;
-
+    window.sliderExamples = arr;
     document.dispatchEvent(new CustomEvent('sliderDataLoaded', {
-      detail: { data: sliderData, totalSlides: sliderData.length }
+      detail: { data: arr, totalSlides: arr.length }
     }));
+    if (typeof initSlider === 'function') { initSlider(); }
+  }
 
-    if (typeof initSlider === 'function') {
-      initSlider();
+  // 0) Server-preloaded (fastest)
+  try {
+    const pre = window.sliderExamplesPreloaded;
+    if (Array.isArray(pre) && pre.length) {
+      buildSlides(pre);
+      try { localStorage.setItem(LS_KEY, JSON.stringify(pre)); } catch(_){}
+      return;
     }
+  } catch(_){}
 
-  } catch (error) {
-    console.error('Error loading slider:', error);
-    document.getElementById('sliderContainer').innerHTML = `
-      <div class="slide active flex items-center justify-center aspect-[4/5] bg-red-50 dark:bg-red-900/20 rounded-2xl sm:rounded-3xl">
-        <div class="text-center p-4">
-          <svg class="w-12 h-12 text-red-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-          </svg>
-          <p class="text-sm text-red-600 dark:text-red-400 font-medium">Ошибка загрузки примеров</p>
-          <p class="text-xs text-[var(--muted)] mt-1">Проверьте путь к slider_examples.json</p>
-        </div>
-      </div>
-    `;
+  // 1) LocalStorage cache
+  try {
+    const cached = localStorage.getItem(LS_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      if (Array.isArray(data) && data.length) {
+        buildSlides(data);
+      }
+    }
+  } catch(_){}
+
+  // 2) Без сетевого запроса: только админские данные (preloaded) и локальный кэш
+  try {
+    if (!Array.isArray(window.sliderExamples) || !window.sliderExamples.length) {
+      buildSlides([]);
+    }
+  } catch(_) {
+    buildSlides([]);
   }
 })();
 </script>

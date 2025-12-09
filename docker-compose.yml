@@ -1,18 +1,119 @@
+version: '3.8'
+
 services:
-  mysql:
+  # MySQL Database
+  db:
     image: mysql:8.0
+    container_name: pixera_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ai_gallery
-      MYSQL_USER: ai_user
-      MYSQL_PASSWORD: ai_password
-      MYSQL_ROOT_PASSWORD: rootpass
-    command: ["--default-authentication-plugin=mysql_native_password",
-              "--character-set-server=utf8mb4",
-              "--collation-server=utf8mb4_0900_ai_ci"]
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pixera}
+      MYSQL_USER: ${MYSQL_USER:-pixera_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-changeme}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootchangeme}
+    volumes:
+      - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis (для Celery и кеша)
+  redis:
+    image: redis:7-alpine
+    container_name: pixera_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
     volumes:
-      - mysqldata:/var/lib/mysql
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Django Web App
+  web:
+    build: .
+    container_name: pixera_web
+    restart: unless-stopped
+    command: gunicorn ai_gallery.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=ai_gallery.settings
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Celery Worker
+  celery:
+    build: .
+    container_name: pixera_celery
+    restart: unless-stopped
+    command: celery -A ai_gallery worker -l info
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DJANGO_SETTINGS_MODULE=ai_gallery.settings
+
+  # Celery Beat (планировщик задач)
+  celery-beat:
+    build: .
+    container_name: pixera_celery_beat
+    restart: unless-stopped
+    command: celery -A ai_gallery beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DJANGO_SETTINGS_MODULE=ai_gallery.settings
+
+  # Nginx (с блокировкой индексации)
+  nginx:
+    image: nginx:alpine
+    container_name: pixera_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      - web
+
 volumes:
-  mysqldata:
+  mysql_data:
+  redis_data:
+  static_volume:
+  media_volume:

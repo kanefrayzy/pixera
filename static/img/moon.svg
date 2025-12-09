@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" fill="none">
+  <!-- colors:
+       base      #b18afd
+       mid       #bda1fc
+       light     #d2befe
+       dark      #7856ed
+       brighter  #9d76fa
+  -->
+
+  <defs>
+    <clipPath id="moonClip">
+      <circle cx="250" cy="250" r="230"/>
+    </clipPath>
+  </defs>
+
+  <!-- base moon -->
+  <circle cx="250" cy="250" r="230" fill="#b18afd"/>
+
+  <!-- soft large highlights/shadows -->
+  <g clip-path="url(#moonClip)">
+    <!-- left big glow -->
+    <ellipse cx="150" cy="250" rx="190" ry="210" fill="#d2befe" opacity="0.55"/>
+    <!-- inner left softer blob -->
+    <ellipse cx="210" cy="255" rx="155" ry="185" fill="#bda1fc" opacity="0.50"/>
+
+    <!-- right big soft patch -->
+    <ellipse cx="320" cy="230" rx="200" ry="225" fill="#bda1fc" opacity="0.35"/>
+    <!-- lower-right softer veil -->
+    <ellipse cx="300" cy="330" rx="210" ry="185" fill="#d2befe" opacity="0.25"/>
+
+    <!-- subtle top cap -->
+    <ellipse cx="260" cy="95" rx="115" ry="70" fill="#d2befe" opacity="0.35"/>
+  </g>
+
+  <!-- craters (positions scaled from the reference) -->
+  <g clip-path="url(#moonClip)">
+    <!-- big top-left crater -->
+    <ellipse cx="144.4" cy="119.9" rx="48" ry="50" fill="#9d76fa"/>
+    <ellipse cx="144.4" cy="119.9" rx="42" ry="44" fill="#bda1fc"/>
+    <ellipse cx="144.4" cy="119.9" rx="34" ry="36" fill="#9d76fa" opacity="0.6"/>
+
+    <!-- top-mid crater -->
+    <ellipse cx="326.9" cy="115.8" rx="34" ry="19" fill="#9d76fa"/>
+    <ellipse cx="326.9" cy="115.8" rx="28" ry="15" fill="#bda1fc"/>
+
+    <!-- mid-left crater -->
+    <ellipse cx="89.6" cy="219.3" rx="22" ry="30" fill="#9d76fa"/>
+    <ellipse cx="89.6" cy="219.3" rx="16" ry="22" fill="#bda1fc"/>
+
+    <!-- left-mid small -->
+    <ellipse cx="213.0" cy="167.7" rx="16" ry="23" fill="#9d76fa"/>
+    <ellipse cx="213.0" cy="167.7" rx="11" ry="16" fill="#bda1fc"/>
+
+    <!-- center-right crater -->
+    <ellipse cx="398.4" cy="200.1" rx="22" ry="23" fill="#9d76fa"/>
+    <ellipse cx="398.4" cy="200.1" rx="16" ry="17" fill="#bda1fc"/>
+    <ellipse cx="398.4" cy="200.1" rx="23" ry="24" fill="none" stroke="#7856ed" stroke-width="6"/>
+
+    <!-- right-mid crater -->
+    <ellipse cx="398.4" cy="283.2" rx="18" ry="19" fill="#9d76fa"/>
+    <ellipse cx="398.4" cy="283.2" rx="13" ry="13" fill="#bda1fc"/>
+    <ellipse cx="398.4" cy="283.2" rx="19" ry="20" fill="none" stroke="#7856ed" stroke-width="6"/>
+
+    <!-- right-lower crater -->
+    <ellipse cx="404.9" cy="341.0" rx="16" ry="24" fill="#9d76fa"/>
+    <ellipse cx="404.9" cy="341.0" rx="11" ry="17" fill="#bda1fc"/>
+    <ellipse cx="404.9" cy="341.0" rx="16" ry="24" fill="none" stroke="#7856ed" stroke-width="6"/>
+
+    <!-- bottom-mid crater -->
+    <ellipse cx="279.8" cy="376.1" rx="19" ry="20" fill="#9d76fa"/>
+    <ellipse cx="279.8" cy="376.1" rx="14" ry="14" fill="#bda1fc"/>
+    <ellipse cx="279.8" cy="376.1" rx="20" ry="21" fill="none" stroke="#7856ed" stroke-width="6"/>
+
+    <!-- left-lower crater -->
+    <ellipse cx="162.5" cy="367.1" rx="28" ry="18" fill="#9d76fa"/>
+    <ellipse cx="162.5" cy="367.1" rx="20" ry="13" fill="#bda1fc"/>
+    <ellipse cx="162.5" cy="367.1" rx="28" ry="18" fill="none" stroke="#7856ed" stroke-width="6"/>
+
+    <!-- center crater -->
+    <ellipse cx="280.2" cy="284.4" rx="30" ry="16" fill="#9d76fa"/>
+    <ellipse cx="280.2" cy="284.4" rx="22" ry="11" fill="#bda1fc"/>
+
+    <!-- bottom smear crater -->
+    <ellipse cx="240.9" cy="429.6" rx="26" ry="12" fill="#9d76fa"/>
+    <ellipse cx="240.9" cy="429.6" rx="19" ry="8" fill="#bda1fc"/>
+
+    <!-- very bottom oval -->
+    <ellipse cx="240" cy="462" rx="35" ry="12" fill="#9d76fa" opacity="0.9"/>
+    <ellipse cx="240" cy="462" rx="26" ry="8" fill="#bda1fc" opacity="0.9"/>
+
+    <!-- tiny dots -->
+    <circle cx="305" cy="70" r="7" fill="#9d76fa"/>
+    <circle cx="360" cy="90" r="5" fill="#9d76fa"/>
+    <circle cx="420" cy="110" r="6" fill="#9d76fa"/>
+    <circle cx="450" cy="160" r="4" fill="#9d76fa"/>
+    <circle cx="470" cy="175" r="6" fill="#9d76fa"/>
+    <circle cx="430" cy="250" r="5" fill="#9d76fa"/>
+    <circle cx="460" cy="260" r="4" fill="#9d76fa"/>
+    <circle cx="470" cy="300" r="6" fill="#9d76fa"/>
+    <circle cx="455" cy="430" r="5" fill="#9d76fa"/>
+    <circle cx="420" cy="450" r="4" fill="#9d76fa"/>
+    <circle cx="130" cy="470" r="4" fill="#9d76fa"/>
+    <circle cx="110" cy="420" r="6" fill="#9d76fa"/>
+    <circle cx="150" cy="430" r="4" fill="#9d76fa"/>
+    <circle cx="95" cy="300" r="5" fill="#9d76fa"/>
+    <circle cx="120" cy="310" r="3.5" fill="#9d76fa"/>
+  </g>
+
+  <!-- outer subtle rim -->
+  <circle cx="250" cy="250" r="230" fill="none" stroke="#7856ed" stroke-width="10" opacity="0.9"/>
+
+  <!-- little 4-point star -->
+  <g transform="translate(350 350)">
+    <path d="M0-18 L3-3 L18 0 L3 3 L0 18 L-3 3 L-18 0 L-3-3 Z" fill="#ffffff"/>
+    <path d="M0-10 L2-2 L10 0 L2 2 L0 10 L-2 2 L-10 0 L-2-2 Z" fill="#ffffff" opacity="0.9"/>
+  </g>
+</svg>

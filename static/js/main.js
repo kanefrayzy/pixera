@@ -52,12 +52,11 @@ const LoadingManager = {
 const Toast = {
   show: (message, type = 'info', duration = 3000) => {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 z-50 p-4 rounded-xl border backdrop-blur-sm transition-all duration-300 max-w-sm ${
-      type === 'success' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200' :
+    toast.className = `fixed top-4 right-4 z-50 p-4 rounded-xl border backdrop-blur-sm transition-all duration-300 max-w-sm ${type === 'success' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200' :
       type === 'error' ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200' :
-      type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200' :
-      'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200'
-    }`;
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200' :
+          'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200'
+      }`;
 
     toast.textContent = message;
     document.body.appendChild(toast);
@@ -157,8 +156,126 @@ const Modal = {
   }
 };
 
+const AvatarUI = {
+  update: (url) => {
+    const imgs = document.querySelectorAll('.js-avatar-img');
+    const fallbacks = document.querySelectorAll('.js-avatar-fallback');
+    const hasOnly = document.querySelectorAll('.js-has-avatar-only');
+    const noOnly = document.querySelectorAll('.js-no-avatar-only');
+
+    if (url) {
+      imgs.forEach(img => {
+        try {
+          if (img.src !== url) img.src = url;
+          img.classList.remove('hidden');
+        } catch (_) { }
+      });
+      fallbacks.forEach(el => el.classList.add('hidden'));
+      hasOnly.forEach(el => el.classList.remove('hidden'));
+      noOnly.forEach(el => el.classList.add('hidden'));
+    } else {
+      imgs.forEach(img => {
+        try {
+          img.src = '';
+          img.classList.add('hidden');
+        } catch (_) { }
+      });
+      fallbacks.forEach(el => el.classList.remove('hidden'));
+      hasOnly.forEach(el => el.classList.add('hidden'));
+      noOnly.forEach(el => el.classList.remove('hidden'));
+    }
+  }
+};
+
+/* Follow UI: toggle follow/unfollow with live counters update */
+const FollowUI = {
+  init() {
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-follow-toggle="1"]');
+      if (!btn) return;
+      e.preventDefault();
+      const username = btn.dataset.username || '';
+      if (!username) return;
+      await FollowUI.toggle(username, btn);
+    });
+  },
+  async toggle(username, btnEl) {
+    try {
+      const formData = new FormData();
+      formData.append('username', username);
+      const res = await fetch('/dashboard/api/follow/toggle/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+          'X-Requested-With': 'fetch'
+        },
+        body: formData
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        const following = !!data.following;
+        if (btnEl) {
+          btnEl.classList.toggle('btn-primary', !following);
+          btnEl.classList.toggle('btn-ghost', following);
+          btnEl.setAttribute('aria-pressed', String(following));
+          btnEl.textContent = following ? 'Отписаться' : 'Подписаться';
+        }
+        await FollowUI.refresh(username);
+      } else {
+        Toast.show((data && data.error) || 'Ошибка подписки', 'error');
+      }
+    } catch (err) {
+      console.error('follow toggle error', err);
+      Toast.show('Ошибка сети', 'error');
+    }
+  },
+  async refresh(username) {
+    try {
+      const res = await fetch(`/dashboard/api/follow/${encodeURIComponent(username)}/counters/`, {
+        headers: { 'X-Requested-With': 'fetch' }
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        const elF = document.getElementById('pfFollowers');
+        const elFg = document.getElementById('pfFollowing');
+        const elP = document.getElementById('pfPosts');
+        if (elF) elF.textContent = data.followers;
+        if (elFg) elFg.textContent = data.following;
+        if (elP) elP.textContent = data.posts;
+
+        // cabinet header counters (if visible)
+        const cabF = document.getElementById('cabFollowers');
+        const cabFg = document.getElementById('cabFollowing');
+        const cabP = document.getElementById('cabPosts');
+        if (cabF) cabF.textContent = data.followers;
+        if (cabFg) cabFg.textContent = data.following;
+        if (cabP) cabP.textContent = data.posts;
+
+        // drawer counters
+        const drF = document.getElementById('drFollowers');
+        const drFg = document.getElementById('drFollowing');
+        const drP = document.getElementById('drPosts');
+        if (drF) drF.textContent = data.followers;
+        if (drFg) drFg.textContent = data.following;
+        if (drP) drP.textContent = data.posts;
+
+        // dashboard index counters
+        const dF = document.getElementById('dashFollowers');
+        const dFg = document.getElementById('dashFollowing');
+        const dP = document.getElementById('dashPosts');
+        if (dF) dF.textContent = data.followers;
+        if (dFg) dFg.textContent = data.following;
+        if (dP) dP.textContent = data.posts;
+      }
+    } catch (err) {
+      console.warn('follow counters refresh failed', err);
+    }
+  }
+};
+
 // Initialize common functionality
 document.addEventListener('DOMContentLoaded', () => {
+  FollowUI.init();
   // Initialize lazy loading
   LazyLoader.init();
 
@@ -186,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Dashboard Drawer init (migrated from template)
-  (function initDashboardDrawer(){
+  (function initDashboardDrawer() {
     const drawer = document.getElementById('dashboardDrawer');
     const backdrop = document.getElementById('dbBackdrop');
     const closeBtn = document.getElementById('dbDrawerClose');
@@ -231,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
           window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
         }
       }
-    }    function checkIsOpen() {
+    } function checkIsOpen() {
       return isOpen && !drawer.hasAttribute('hidden');
     }
 
@@ -278,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       drawer.addEventListener('keydown', trapFocus);
-    }    function close() {
+    } function close() {
       if (isAnimating || !isOpen) {
         console.log('Drawer: already closing or closed');
         return;
@@ -312,12 +429,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lastActive && document.body.contains(lastActive)) {
           try {
             lastActive.focus();
-          } catch(e) {
+          } catch (e) {
             console.warn('Could not restore focus:', e);
           }
         }
       }, 350);
-    }    function toggle() {
+    } function toggle() {
       if (isAnimating) {
         console.log('Drawer: animation in progress, ignoring toggle');
         return;
@@ -373,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
       toggle();
     });
 
-    function handleResize(){
+    function handleResize() {
       if (window.innerWidth >= 768 && checkIsOpen()) {
         lockScroll(false);
         close();
@@ -382,48 +499,48 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', handleResize);
 
     // Touch события для свайпа
-    let startX=0, startY=0, currentX=0, currentY=0, isDragging=false, isSwiping=false;
+    let startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false, isSwiping = false;
 
-    drawer.addEventListener('touchstart',(e)=>{
+    drawer.addEventListener('touchstart', (e) => {
       if (isAnimating) return;
-      const t=e.touches[0];
-      startX=t.clientX; startY=t.clientY; currentX=startX; currentY=startY;
-      isDragging=true; isSwiping=false;
-    },{passive:true});
+      const t = e.touches[0];
+      startX = t.clientX; startY = t.clientY; currentX = startX; currentY = startY;
+      isDragging = true; isSwiping = false;
+    }, { passive: true });
 
-    drawer.addEventListener('touchmove',(e)=>{
-      if(!isDragging || isAnimating) return;
-      const t=e.touches[0];
-      currentX=t.clientX; currentY=t.clientY;
-      const dx=currentX-startX; const dy=currentY-startY;
-      if(!isSwiping){
-        if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>10){
-          isSwiping=true; // распознаём горизонтальный жест
+    drawer.addEventListener('touchmove', (e) => {
+      if (!isDragging || isAnimating) return;
+      const t = e.touches[0];
+      currentX = t.clientX; currentY = t.clientY;
+      const dx = currentX - startX; const dy = currentY - startY;
+      if (!isSwiping) {
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+          isSwiping = true; // распознаём горизонтальный жест
         } else {
           return; // вертикальный скролл — не мешаем
         }
       }
-      if(dx>0){
-        const p=Math.min(dx/drawer.offsetWidth,1);
-        drawer.style.transform=`translateX(${p*100}%)`;
-        backdrop.style.opacity=(1-p).toString();
+      if (dx > 0) {
+        const p = Math.min(dx / drawer.offsetWidth, 1);
+        drawer.style.transform = `translateX(${p * 100}%)`;
+        backdrop.style.opacity = (1 - p).toString();
       }
-    },{passive:true});
+    }, { passive: true });
 
-    drawer.addEventListener('touchend',()=>{
-      if(!isDragging) return;
-      const dx=currentX-startX;
-      isDragging=false;
-      const th=drawer.offsetWidth*0.3;
-      if(isSwiping && dx>th){
+    drawer.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      const dx = currentX - startX;
+      isDragging = false;
+      const th = drawer.offsetWidth * 0.3;
+      if (isSwiping && dx > th) {
         close();
       } else if (isSwiping) {
         // Возвращаем в исходное положение
-        drawer.style.transform='translateX(0)';
-        backdrop.style.opacity='1';
+        drawer.style.transform = 'translateX(0)';
+        backdrop.style.opacity = '1';
       }
-      isSwiping=false;
-    },{passive:true});
+      isSwiping = false;
+    }, { passive: true });
   })();
 
   // Enhance form submissions
@@ -448,7 +565,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await response.json();
 
         if (result.success) {
+          // Если это действия с аватаром — обновляем UI без перезагрузки
+          if (Object.prototype.hasOwnProperty.call(result, 'avatar_url')) {
+            AvatarUI.update(result.avatar_url || '');
+          }
+
           Toast.show(result.message || 'Операция выполнена успешно', 'success');
+
+          // Для прочих форм поддерживаем возможный redirect
           if (result.redirect) {
             window.location.href = result.redirect;
           }
@@ -505,7 +629,7 @@ const ThemeManager = {
 
   setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem('theme', theme); } catch(_) {}
+    try { localStorage.setItem('theme', theme); } catch (_) { }
 
     this.themeToggle?.setAttribute('aria-pressed', String(theme === 'dark'));
     this.themeToggleM?.setAttribute('aria-pressed', String(theme === 'dark'));
@@ -633,7 +757,7 @@ const DashboardIntegration = {
         };
         setTimeout(checkDrawer, 100);
       }
-    } catch(e) {}
+    } catch (e) { }
   }
 };
 
@@ -643,3 +767,61 @@ document.addEventListener('DOMContentLoaded', () => {
   HeaderScrollEffect.init();
   DashboardIntegration.init();
 });
+
+// Global Save (bookmark) toggle — works across gallery/trending/saved
+(function () {
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.save-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+      const j = await res.json().catch(() => null);
+      if (!res.ok || !j || j.ok !== true) throw new Error('save failed');
+
+      const isSaved = !!j.saved;
+      const icon = btn.querySelector('svg');
+
+      // state
+      btn.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
+      btn.classList.toggle('text-emerald-500', isSaved);
+      btn.classList.toggle('text-[var(--muted)]', !isSaved);
+      if (icon) icon.setAttribute('fill', isSaved ? 'currentColor' : 'none');
+
+      // optional counter
+      if (countEl && typeof j.count === 'number') {
+        countEl.textContent = j.count;
+      }
+
+      // optional removal (used on Saved page) when unsaving
+      if (!isSaved && btn.dataset.removeCard === '1') {
+        const card = btn.closest('.card') || btn.closest('article');
+        if (card && card.parentElement) card.remove();
+      }
+    } catch (err) {
+      console.warn('Save toggle failed:', err);
+      Toast?.show?.('Не удалось сохранить', 'error', 2000);
+    } finally {
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();

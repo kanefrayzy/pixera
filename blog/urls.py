@@ -1,5 +1,6 @@
 # FILE: blog/urls.py
 from django.urls import path, register_converter
+from django.views.generic import RedirectView
 from . import views
 
 app_name = "blog"
@@ -23,10 +24,15 @@ urlpatterns = [
     path("", views.index, name="index"),
 
     # создание — важно объявлять до slug-маршрута
-    path("new/", views.PostCreateView.as_view(), name="create"),
+    path("new", views.PostCreateView.as_view(), name="create"),
 
     # детальная / редактирование / удаление — Unicode-slug
-    path("<uslug:slug>/", views.detail, name="detail"),
-    path("<uslug:slug>/edit/", views.PostUpdateView.as_view(), name="edit"),
+    path("<uslug:slug>", views.detail, name="detail"),
+    path("<uslug:slug>/edit", views.PostUpdateView.as_view(), name="edit"),
+
+    # Legacy redirects
+    path("new/", RedirectView.as_view(pattern_name="blog:create", permanent=True)),
+    path("<uslug:slug>/", RedirectView.as_view(pattern_name="blog:detail", permanent=True)),
+    path("<uslug:slug>/edit/", RedirectView.as_view(pattern_name="blog:edit", permanent=True)),
     path("<uslug:slug>/delete/", views.PostDeleteView.as_view(), name="delete"),
 ]

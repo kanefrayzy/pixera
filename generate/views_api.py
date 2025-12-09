@@ -3,11 +3,14 @@ from __future__ import annotations
 from django.views.decorators.http import require_GET
 import json
 from typing import Any, Dict
+import os
+import requests
 from urllib.parse import quote as urlquote
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
+from django.db.models import Q
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -17,12 +20,21 @@ from django.http import (
 )
 from django.shortcuts import get_object_or_404
 from django.urls import NoReverseMatch, reverse
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.core.cache import cache
+from django.utils import timezone
+import io
+from PIL import Image
+import tempfile
+import subprocess
+import shutil
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from dashboard.models import Wallet
-from .models import FreeGrant, GenerationJob, Suggestion, SuggestionCategory, AbuseCluster
+from .models import FreeGrant, GenerationJob, Suggestion, SuggestionCategory, AbuseCluster, ReferenceImage
 from .tasks import run_generation_async  # submit в очередь
 
 # утилиты из views (не дублируем)
@@ -208,21 +220,43 @@ def api_submit(request: HttpRequest) -> JsonResponse:
         if pattern in prompt_lower:
             return _err("Недопустимое содержимое в промпте")
 
-    # Переводим промпт на английский если нужно
-    try:
-        translated_prompt = translate_prompt_if_needed(prompt)
-        # Сохраняем оригинальный промпт для отображения пользователю
-        original_prompt = prompt
-        prompt = translated_prompt
-            
-    except Exception as e:
-        # В случае ошибки перевода, используем оригинальный промпт
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Ошибка перевода промпта: {e}")
+    # Переводим промпт на английский если нужно (учитываем флаг с клиента)
+    auto_translate_raw = request.POST.get("auto_translate", "1")
+    auto_translate = str(auto_translate_raw).strip().lower() in ("1", "true", "on", "yes")
+    if auto_translate:
+        try:
+            translated_prompt = translate_prompt_if_needed(prompt)
+            # Сохраняем оригинальный промпт для отображения пользователю
+            original_prompt = prompt
+            prompt = translated_prompt
+        except Exception as e:
+            # В случае ошибки перевода, используем оригинальный промпт
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Ошибка перевода промпта: {e}")
+            original_prompt = prompt
+    else:
+        # Автоперевод выключен клиентом — используем исходный промпт
         original_prompt = prompt
 
-    cost = _token_cost()
+    # Необязательный выбор модели с фронта
+    model_id_in = (request.POST.get("model_id") or "").strip()
+
+    # Читаем количество результатов (по умолчанию 1)
+    number_results = 1
+    try:
+        nr = int(request.POST.get("number_results") or "1")
+        number_results = max(1, min(20, nr))  # Ограничиваем 1-20
+    except (ValueError, TypeError):
+        number_results = 1
+
+    # Переменная стоимости: 15 TOK для FLUX/Seedream, иначе глобальный токен-кост
+    special_model = (model_id_in or "").strip().lower() in {"bfl:2@2", "bytedance:5@0"}
+    base_cost = 15 if special_model else _token_cost()
+
+    # Умножаем базовую цену на количество результатов
+    cost = base_cost * number_results
+
     is_staff_user = request.user.is_authenticated and (
         request.user.is_staff or request.user.is_superuser
     )
@@ -269,18 +303,63 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 w.save(update_fields=["balance"])
                 tokens_spent = cost
 
-        job = GenerationJob.objects.create(
-            user=request.user,
-            guest_session_key="",
-            guest_gid="",
-            guest_fp="",
-            cluster=cluster,
-            prompt=prompt,
-            original_prompt=original_prompt,
-            status=GenerationJob.Status.PENDING,
-            error="",
-            tokens_spent=tokens_spent,
-        )
+        job_kwargs = {
+            "user": request.user,
+            "guest_session_key": "",
+            "guest_gid": "",
+            "guest_fp": "",
+            "cluster": cluster,
+            "prompt": prompt,
+            "original_prompt": original_prompt,
+            "status": GenerationJob.Status.PENDING,
+            "error": "",
+            "tokens_spent": tokens_spent,
+        }
+        if model_id_in:
+            job_kwargs["model_id"] = model_id_in
+        job = GenerationJob.objects.create(**job_kwargs)
+
+        # Save reference images if any (up to 5 images)
+        try:
+            reference_images = request.FILES.getlist('reference_images')
+            for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
+                ReferenceImage.objects.create(
+                    job=job,
+                    image=ref_img,
+                    order=idx
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to save reference images: {e}", exc_info=True)
+
+        # Face Retouch (runware:108@22): persist uploaded reference image for special processing
+        try:
+            model_effective = (job.model_id or model_id_in or "").strip().lower()
+            if model_effective == "runware:108@22" and "reference_image" in request.FILES:
+                ref_file = request.FILES["reference_image"]
+                if getattr(ref_file, "size", 0) > 15 * 1024 * 1024:
+                    return JsonResponse({"ok": False, "error": "Слишком большой файл для ретуши (макс 15MB)"}, status=400)
+                save_path = default_storage.save(f"retouch_refs/{ref_file.name}", ref_file)
+                ref_url = request.build_absolute_uri(default_storage.url(save_path))
+                payload = job.provider_payload or {}
+                if not isinstance(payload, dict):
+                    payload = {}
+                payload.update({
+                    "retouch_ref_url": ref_url,
+                    "retouch_ref_path": save_path,
+                    "cfg_scale": (request.POST.get("cfg_scale") or "4"),
+                    "scheduler": (request.POST.get("scheduler") or "FlowMatchEulerDiscreteScheduler"),
+                    "acceleration": (request.POST.get("acceleration") or "medium"),
+                    "retouch_ratio": (request.POST.get("retouch_ratio") or ""),
+                    "retouch_width": (request.POST.get("retouch_width") or ""),
+                    "retouch_height": (request.POST.get("retouch_height") or ""),
+                    "number_results": (request.POST.get("number_results") or ""),
+                })
+                job.provider_payload = payload
+                job.save(update_fields=["provider_payload"])
+        except Exception as _e:
+            import logging
+            logging.getLogger(__name__).error(f"Face Retouch payload prepare error: {_e}", exc_info=True)
 
     # --- гость ----------------------------------------------------------------
     else:
@@ -300,21 +379,6 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             # если что-то пошло не так — не даём обойти лимит: ведём себя как «исчерпан»
             return JsonResponse({"redirect": _tariffs_url()})
 
-        # 1) Пробуем списать 1 «обработку» из кластера (атомарно)
-        spent_jobs = 0
-        try:
-            with transaction.atomic():
-                # повторно читаем кластер «под замком»
-                c = AbuseCluster.objects.select_for_update().get(pk=cluster.pk)
-                left_jobs = max(0, int(c.guest_jobs_limit) - int(c.guest_jobs_used))
-                if left_jobs <= 0:
-                    return JsonResponse({"redirect": _tariffs_url()})
-                c.guest_jobs_used = int(c.guest_jobs_used) + 1
-                c.save(update_fields=["guest_jobs_used", "updated_at"])
-                spent_jobs = 1
-        except Exception:
-            # консервативно: если не получилось — считаем лимит недоступным → редирект
-            return JsonResponse({"redirect": _tariffs_url()})
 
         # 2) Теперь резервируем токены FreeGrant (если cost==0, всё равно допускаем)
         if cost <= 0:
@@ -324,30 +388,38 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             g = FreeGrant.objects.select_for_update().get(pk=grant.pk)
             left = max(0, int(g.total) - int(g.consumed))
             if left < cost:
-                # Нет токенов — вернём «обратный» шаг по кластеру (мягкий откат)
-                try:
-                    c = AbuseCluster.objects.select_for_update().get(pk=cluster.pk)
-                    if spent_jobs > 0 and c.guest_jobs_used > 0:
-                        c.guest_jobs_used = int(c.guest_jobs_used) - 1
-                        c.save(update_fields=["guest_jobs_used", "updated_at"])
-                except Exception:
-                    pass
                 return JsonResponse({"redirect": _tariffs_url()})
             g.consumed = int(g.consumed) + cost
             g.save(update_fields=["consumed"])
 
-        job = GenerationJob.objects.create(
-            user=None,
-            guest_session_key=request.session.session_key,
-            guest_gid=grant.gid,
-            guest_fp=grant.fp,
-            cluster=cluster,
-            prompt=prompt,
-            original_prompt=original_prompt,
-            status=GenerationJob.Status.PENDING,
-            error="",
-            tokens_spent=cost,
-        )
+        job_kwargs = {
+            "user": None,
+            "guest_session_key": request.session.session_key,
+            "guest_gid": grant.gid,
+            "guest_fp": grant.fp,
+            "cluster": cluster,
+            "prompt": prompt,
+            "original_prompt": original_prompt,
+            "status": GenerationJob.Status.PENDING,
+            "error": "",
+            "tokens_spent": cost,
+        }
+        if model_id_in:
+            job_kwargs["model_id"] = model_id_in
+        job = GenerationJob.objects.create(**job_kwargs)
+
+        # Save reference images if any (for guests)
+        try:
+            reference_images = request.FILES.getlist('reference_images')
+            for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
+                ReferenceImage.objects.create(
+                    job=job,
+                    image=ref_img,
+                    order=idx
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to save reference images (guest): {e}", exc_info=True)
 
     # Публикуем задачу в очередь Celery (или выполняем синхронно — см. helper)
     queue_name = getattr(settings, "CELERY_QUEUE_SUBMIT", "runware_submit")
@@ -378,6 +450,28 @@ def api_submit(request: HttpRequest) -> JsonResponse:
 
 def api_status(request: HttpRequest, job_id: int) -> JsonResponse:
     job = get_object_or_404(GenerationJob, pk=job_id)
+
+    # Enforce per-user/per-guest visibility
+    owner_ok = False
+    try:
+        if job.user_id:
+            owner_ok = (request.user.is_authenticated and request.user.id == job.user_id)
+        else:
+            try:
+                _ensure_session_key(request)
+            except Exception:
+                pass
+            sk = request.session.session_key or ""
+            gid = request.COOKIES.get("gid", "")
+            fp = _hard_fingerprint(request)
+            owner_ok = (job.guest_session_key == sk) or (job.guest_gid == gid) or (job.guest_fp == fp)
+    except Exception:
+        owner_ok = False
+
+    if not owner_ok:
+        # Hide existence of foreign jobs
+        return JsonResponse({"ok": False, "error": "not found"}, status=404)
+
     resp: Dict[str, Any] = {
         "id": job.id,
         "done": job.status == GenerationJob.Status.DONE,
@@ -393,6 +487,258 @@ def api_status(request: HttpRequest, job_id: int) -> JsonResponse:
     else:
         resp["image"] = None
     return JsonResponse(resp)
+
+
+@require_POST
+def job_persist(request: HttpRequest, pk: int) -> JsonResponse:
+    """
+    Mark a GenerationJob as 'persisted' so it appears in My Jobs/Profile.
+    - Allowed for owner (user) or the same guest (session_key/gid/fp).
+    - If the requester is authenticated and the job has no user yet, attach it to the user.
+    """
+    job = get_object_or_404(GenerationJob, pk=pk)
+
+    # Owner/guest-ownership check (same rules as api_status)
+    owner_ok = False
+    try:
+        if job.user_id:
+            owner_ok = (request.user.is_authenticated and request.user.id == job.user_id)
+        else:
+            try:
+                _ensure_session_key(request)
+            except Exception:
+                pass
+            sk = request.session.session_key or ""
+            gid = request.COOKIES.get("gid", "")
+            fp = _hard_fingerprint(request)
+            owner_ok = (job.guest_session_key == sk) or (job.guest_gid == gid) or (job.guest_fp == fp)
+    except Exception:
+        owner_ok = False
+
+    if not owner_ok:
+        # Hide existence of foreign jobs
+        return JsonResponse({"ok": False, "error": "not found"}, status=404)
+
+    updates = []
+
+    # Attach to user if authenticated and current job is guest-owned
+    if request.user.is_authenticated and not job.user_id:
+        job.user_id = request.user.id
+        updates.extend(["user"])
+        # clear guest markers for cleanliness
+        if job.guest_session_key:
+            job.guest_session_key = ""
+            updates.append("guest_session_key")
+        if job.guest_gid:
+            job.guest_gid = ""
+            updates.append("guest_gid")
+        if job.guest_fp:
+            job.guest_fp = ""
+            updates.append("guest_fp")
+
+    if not getattr(job, "persisted", False):
+        job.persisted = True
+        updates.append("persisted")
+
+    if updates:
+        try:
+            job.save(update_fields=updates)
+        except Exception:
+            # fallback to full save in rare cases (e.g., different backends)
+            job.save()
+
+    # Prepare compressed, persisted asset and immediate download link
+    download_url: str | None = None
+    download_name: str | None = None
+    content_type: str | None = None
+
+    try:
+        # Ensure peristent folders by date
+        now = timezone.now()
+        img_dir = f"persist/images/{now:%Y/%m}/"
+        vid_dir = f"persist/videos/{now:%Y/%m}/"
+
+        if (job.generation_type or "image") == "image":
+            # 1) Obtain source bytes
+            src_bytes: bytes | None = None
+            # Prefer local stored result image
+            if getattr(job, "result_image", None) and getattr(job.result_image, "name", ""):
+                try:
+                    with default_storage.open(job.result_image.name, "rb") as f:
+                        src_bytes = f.read()
+                except Exception:
+                    src_bytes = None
+            # Try in-memory cache as fallback (see tasks._img_key)
+            if src_bytes is None:
+                try:
+                    cached = cache.get(f"genimg:{job.pk}")
+                    if isinstance(cached, (bytes, bytearray)):
+                        src_bytes = bytes(cached)
+                except Exception:
+                    src_bytes = None
+            # As a last resort try external cached-url then download
+            if src_bytes is None:
+                try:
+                    cached_url = cache.get(f"genimgurl:{job.pk}")
+                    if cached_url:
+                        r = requests.get(cached_url, timeout=20)
+                        if r.ok and r.content:
+                            src_bytes = r.content
+                except Exception:
+                    pass
+
+            if src_bytes:
+                # 2) Compress to WEBP (max compression with reasonable quality)
+                try:
+                    im = Image.open(io.BytesIO(src_bytes))
+                    if im.mode not in ("RGB", "L"):
+                        im = im.convert("RGB")
+                    # Optional downscale very large to 2048px max side
+                    try:
+                        w, h = im.size
+                        max_side = 2048
+                        if max(w, h) > max_side:
+                            if w >= h:
+                                nw = max_side
+                                nh = max(1, int(h * (max_side / float(w))))
+                            else:
+                                nh = max_side
+                                nw = max(1, int(w * (max_side / float(h))))
+                            im = im.resize((int(nw), int(nh)), Image.LANCZOS)
+                    except Exception:
+                        pass
+                    buf = io.BytesIO()
+                    # q=75 is a good "max compression" compromise; method=6 for best effort
+                    im.save(buf, format="WEBP", quality=75, method=6)
+                    buf.seek(0)
+                    fname = f"{img_dir}job_{job.pk}.webp"
+                    default_storage.save(fname, ContentFile(buf.read()))
+                    # Ensure job points to durable persisted file
+                    try:
+                        job.result_image.name = fname
+                        job.save(update_fields=["result_image"])
+                    except Exception:
+                        pass
+                    download_url = default_storage.url(fname)
+                    download_name = f"image_{job.pk}.webp"
+                    content_type = "image/webp"
+                except Exception:
+                    # Fallback: store original as-is
+                    try:
+                        fname = f"{img_dir}job_{job.pk}.jpg"
+                        default_storage.save(fname, ContentFile(src_bytes))
+                        # Ensure job points to durable persisted file
+                        try:
+                            job.result_image.name = fname
+                            job.save(update_fields=["result_image"])
+                        except Exception:
+                            pass
+                        download_url = default_storage.url(fname)
+                        download_name = f"image_{job.pk}.jpg"
+                        content_type = "image/jpeg"
+                    except Exception:
+                        pass
+
+        else:
+            # VIDEO: download, compress with ffmpeg if available, persist to media
+            src_url = (job.result_video_url or "").strip()
+            tmp_in = None
+            tmp_out = None
+            try:
+                if not src_url:
+                    raise RuntimeError("empty video url")
+                # Download to temp file
+                r = requests.get(src_url, timeout=40, stream=True)
+                r.raise_for_status()
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as fin:
+                    for chunk in r.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            fin.write(chunk)
+                    tmp_in = fin.name
+                # Prepare output temp file
+                tmp_out = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+                # Detect ffmpeg binary
+                ffmpeg_bin = shutil.which("ffmpeg") or os.getenv("FFMPEG_BIN", "ffmpeg")
+                # Run compression: H.264 CRF 28, faststart, keep audio AAC 128k
+                try:
+                    subprocess.run(
+                        [
+                            ffmpeg_bin,
+                            "-y",
+                            "-i",
+                            tmp_in,
+                            "-c:v",
+                            "libx264",
+                            "-preset",
+                            "veryfast",
+                            "-crf",
+                            "28",
+                            "-movflags",
+                            "+faststart",
+                            "-c:a",
+                            "aac",
+                            "-b:a",
+                            "128k",
+                            tmp_out,
+                        ],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        check=True,
+                    )
+                    # Persist compressed
+                    with open(tmp_out, "rb") as f:
+                        fname = f"{vid_dir}job_{job.pk}.mp4"
+                        default_storage.save(fname, ContentFile(f.read()))
+                    persisted_url = default_storage.url(fname)
+                    download_url = persisted_url
+                    download_name = f"video_{job.pk}.mp4"
+                    content_type = "video/mp4"
+                    # Optionally update job to local URL for durability
+                    try:
+                        job.result_video_url = persisted_url
+                        job.save(update_fields=["result_video_url"])
+                    except Exception:
+                        pass
+                except Exception:
+                    # Fallback: store original (uncompressed) to media
+                    if tmp_in and os.path.exists(tmp_in):
+                        with open(tmp_in, "rb") as f:
+                            fname = f"{vid_dir}job_{job.pk}.mp4"
+                            default_storage.save(fname, ContentFile(f.read()))
+                        persisted_url = default_storage.url(fname)
+                        download_url = persisted_url
+                        download_name = f"video_{job.pk}.mp4"
+                        content_type = "video/mp4"
+                        try:
+                            job.result_video_url = persisted_url
+                            job.save(update_fields=["result_video_url"])
+                        except Exception:
+                            pass
+            finally:
+                # Cleanup temp files
+                try:
+                    if tmp_in and os.path.exists(tmp_in):
+                        os.unlink(tmp_in)
+                except Exception:
+                    pass
+                try:
+                    if tmp_out and os.path.exists(tmp_out):
+                        os.unlink(tmp_out)
+                except Exception:
+                    pass
+    except Exception:
+        # Silently ignore compression errors; user still gets redirect
+        download_url = download_url or None
+
+    try:
+        my_jobs_url = reverse("dashboard:my_jobs")
+    except NoReverseMatch:
+        my_jobs_url = "/dashboard/my-jobs"
+
+    payload = {"ok": True, "persisted": True, "redirect": my_jobs_url}
+    if download_url:
+        payload.update({"download_url": download_url, "filename": download_name, "content_type": content_type})
+    return JsonResponse(payload)
 
 
 # =============================================================================
@@ -594,24 +940,8 @@ def guest_balance(request: HttpRequest) -> JsonResponse:
     if not grant:
         return _ok(tokens=None, gens_left=None, found=False)
 
-    # Проверяем состояние AbuseCluster перед отображением токенов
-    try:
-        cluster = AbuseCluster.ensure_for(
-            fp=hard_fp,
-            gid=_guest_cookie_id(request) or None,
-            ip_hash=_ip_hash(request) or None,
-            ua_hash=_ua_hash(request) or None,
-            create_if_missing=False
-        )
-        # Если кластер существует и лимит исчерпан, показываем 0 токенов
-        if cluster and cluster.jobs_left <= 0:
-            return _ok(tokens=0, gens_left=0, found=True)
-    except AbuseCluster.DoesNotExist:
-        # Кластер не найден (новый пользователь), показываем токены из гранта
-        pass
-    except Exception:
-        # При любой ошибке показываем токены из гранта
-        pass
+    # Переход на модель "только токены": без учёта лимита обработок на кластер
+    # (анти-абуз идентификаторы сохраняем в другом месте; здесь показываем только баланс)
 
     # Рассчитываем количество обработок из токенов
     tokens_left = int(grant.left)
@@ -619,3 +949,192 @@ def guest_balance(request: HttpRequest) -> JsonResponse:
     gens_left = (tokens_left // cost) if cost > 0 else 0
 
     return _ok(tokens=tokens_left, gens_left=gens_left, found=True)
+
+
+@require_POST
+def prompt_ai(request: HttpRequest) -> JsonResponse:
+    """
+    Generate a professional image/video prompt from a short idea using X.AI Grok.
+    Body (JSON): { "idea": "text", "mode": "image" | "video" }
+    Returns: { "ok": true, "text": "..." } or { "ok": false, "error": "..." }
+    """
+    try:
+        data = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        return JsonResponse({"ok": False, "error": "bad json"}, status=400)
+
+    idea = (data.get("idea") or "").strip()
+    mode = (data.get("mode") or "image").strip().lower()
+    if not idea:
+        return JsonResponse({"ok": False, "error": "empty idea"}, status=400)
+
+    # Translate idea to English if needed (same logic as main prompt path)
+    try:
+        idea_en = translate_prompt_if_needed(idea)
+    except Exception:
+        idea_en = idea
+
+    api_key = os.getenv("GROK_API_KEY") or ""
+    if not api_key:
+        return JsonResponse({"ok": False, "error": "server not configured"}, status=500)
+
+    # System instruction: always convert short idea into a single professional prompt
+    is_video = (mode == "video")
+    system_prompt = (
+        "You are a prompt engineering assistant. Convert the user's short idea into a single, concise, professional prompt for "
+        + ("video" if is_video else "image")
+        + " generation. Write in English only. Include subject, composition, style, lighting, and "
+        + ("cinematography and camera movement cues" if is_video else "camera/lens hints if useful")
+        + ". Prefer comma-separated tags. Avoid meta text, explanations, or quotes. Output only the prompt."
+    )
+
+    payload = {
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": idea_en},
+        ],
+        "model": "grok-4-fast-reasoning",
+        "stream": False,
+        "temperature": 0
+    }
+
+    try:
+        resp = requests.post(
+            "https://api.x.ai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=30,
+        )
+    except requests.RequestException:
+        return JsonResponse({"ok": False, "error": "network error"}, status=502)
+
+    try:
+        j = resp.json()
+    except Exception:
+        return JsonResponse({"ok": False, "error": "bad response"}, status=502)
+
+    if resp.status_code >= 400:
+        err_msg = ""
+        if isinstance(j, dict):
+            err = j.get("error")
+            if isinstance(err, dict):
+                err_msg = err.get("message") or ""
+            elif isinstance(err, str):
+                err_msg = err
+        eml = (err_msg or "").lower()
+        # Strict model policy: only grok-4-fast-reasoning, no fallbacks, no local stubs
+        if resp.status_code == 402 or "credit" in eml or "credits" in eml or "balance" in eml:
+            return JsonResponse({"ok": False, "error": "no_credits"}, status=402)
+        return JsonResponse({"ok": False, "error": err_msg or "upstream error"}, status=resp.status_code)
+
+    text = ""
+    try:
+        choices = j.get("choices") or []
+        if choices:
+            message = choices[0].get("message") or {}
+            text = (message.get("content") or "").strip()
+    except Exception:
+        text = ""
+
+    if not text:
+        return JsonResponse({"ok": False, "error": "empty completion"}, status=502)
+
+    return JsonResponse({"ok": True, "text": text})
+
+@require_GET
+def api_last_pending(request: HttpRequest) -> JsonResponse:
+    """
+    Вернуть последний незавершённый (PENDING/RUNNING) job генерации изображений
+    для текущего пользователя или гостя (session_key/gid/fp).
+    ВАЖНО: Используется только для восстановления после перезагрузки страницы.
+    """
+    try:
+        qs = GenerationJob.objects.filter(
+            generation_type='image',
+            status__in=[GenerationJob.Status.PENDING, GenerationJob.Status.RUNNING],
+        )
+        if request.user.is_authenticated:
+            qs = qs.filter(user=request.user)
+        else:
+            # Совпадение по гостевым идентификаторам
+            try:
+                _ensure_session_key(request)
+            except Exception:
+                pass
+            sk = request.session.session_key or ''
+            gid = request.COOKIES.get("gid", "")
+            # Жёсткий fp — как в api_submit/_ensure_grant
+            fp = _hard_fingerprint(request)
+            qs = qs.filter(Q(guest_session_key=sk) | Q(guest_gid=gid) | Q(guest_fp=fp))
+
+        job = qs.order_by('-created_at').first()
+        if job:
+            return JsonResponse({"success": True, "job_id": job.id, "status": "found"})
+        return JsonResponse({"success": True, "job_id": None, "status": "none"})
+    except Exception as e:
+        # Не падаем — просто нет восстановления
+        return JsonResponse({"success": False, "error": "internal"}, status=500)
+
+
+@require_GET
+def api_completed_jobs(request: HttpRequest) -> JsonResponse:
+    """
+    Вернуть список ТОЛЬКО завершённых (DONE) генераций для текущего пользователя/гостя.
+    Используется для отображения в очереди - показываем только готовые результаты.
+    """
+    try:
+        # Фильтруем только завершенные задачи
+        qs = GenerationJob.objects.filter(
+            status=GenerationJob.Status.DONE,
+        ).filter(
+            (Q(result_image__isnull=False) & ~Q(result_image__exact='')) |
+            (Q(result_video_url__isnull=False) & ~Q(result_video_url__exact=''))
+        )
+
+        # Дополнительная фильтрация по типу медиа, если указано ?type=image|video
+        req_type = (request.GET.get('type') or '').strip().lower()
+        if req_type in ('image', 'video'):
+            qs = qs.filter(generation_type=req_type)
+
+        if request.user.is_authenticated:
+            qs = qs.filter(user=request.user)
+        else:
+            # Совпадение по гостевым идентификаторам
+            try:
+                _ensure_session_key(request)
+            except Exception:
+                pass
+            sk = request.session.session_key or ''
+            gid = request.COOKIES.get("gid", "")
+            fp = _hard_fingerprint(request)
+            qs = qs.filter(Q(guest_session_key=sk) | Q(guest_gid=gid) | Q(guest_fp=fp))
+
+        # Берем последние 24 завершенных задачи
+        jobs = qs.order_by('-created_at')[:24]
+
+        results = []
+        for job in jobs:
+            item = {
+                'job_id': job.id,
+                'status': 'done',
+                'generation_type': job.generation_type or 'image',
+                'created_at': job.created_at.isoformat() if job.created_at else None,
+            }
+
+            # Добавляем URL результата
+            if job.generation_type == 'video' and job.result_video_url:
+                item['video_url'] = job.result_video_url
+            elif job.result_image:
+                try:
+                    item['image_url'] = job.result_image.url
+                except Exception:
+                    pass
+
+            results.append(item)
+
+        return JsonResponse({"success": True, "jobs": results})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": "internal"}, status=500)

@@ -1,0 +1,631 @@
+/* Showcase Gallery Styles */
+
+/* Showcase Card Container */
+.showcase-card {
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Оптимизация отключена для ровной карточки без "выезда" */
+  content-visibility: visible;
+  /* contain-intrinsic-size removed to keep card height flat */
+}
+
+.showcase-card:hover {
+  transform: none;
+}
+
+/* Image Slider Container */
+.showcase-slider {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--card-bg, #fff);
+}
+
+.showcase-slider-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.showcase-slider-image {
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+  /* Легкий скелетон-фон до загрузки реального изображения */
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Navigation Arrows */
+.showcase-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 1;
+  visibility: visible;
+}
+
+.showcase-card:hover .showcase-nav {
+  opacity: 1;
+  visibility: visible;
+}
+
+.showcase-nav:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.showcase-nav:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.showcase-nav-prev {
+  left: 8px;
+}
+
+.showcase-nav-next {
+  right: 8px;
+}
+
+.showcase-nav svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
+/* Dots Indicator */
+.showcase-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.showcase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.showcase-dot:hover {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(1.2);
+}
+
+.showcase-dot.active {
+  background: white;
+  width: 20px;
+  border-radius: 3px;
+}
+
+/* Category Badge */
+.showcase-category {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+/* Card Content */
+.showcase-content {
+  padding: 16px;
+  background: var(--card, #fff);
+  border-radius: 0 0 1rem 1rem;
+  border-top: 1px solid var(--bord);
+}
+
+.showcase-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  color: var(--text, #000);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Prompt header inside card */
+.showcase-prompt-header{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin: .125rem 0 .5rem 0;
+  color: var(--muted, #6b7280);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.showcase-prompt-header svg{
+  width:14px;
+  height:14px;
+  color: var(--primary, #6366f1);
+  flex:0 0 auto;
+  background: rgba(99,102,241,.12);
+  border: 1px solid rgba(99,102,241,.25);
+  padding: 2px;
+  border-radius: 6px;
+}
+
+/* Prompt box (looks like result field with copy icon) */
+.showcase-prompt-box{
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: #000; /* строгий чёрный фон как в макете */
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 12px 14px; /* симметричные отступы без кнопки копирования */
+  min-height: 56px;   /* ровная высота */
+}
+[data-theme="dark"] .showcase-prompt-box{
+  background: #000;
+  border-color: rgba(255,255,255,.12);
+}
+
+/* Use the inner prompt as content only (no inner box styles) */
+.showcase-prompt-box .showcase-prompt{
+  margin: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  min-height: auto;
+  color: #ffffff;
+  -webkit-line-clamp: 3;
+}
+.showcase-prompt-box .showcase-prompt:hover{
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Remove inner grey border/gradient/shadow from nested prompt */
+.showcase-prompt-box .showcase-prompt{ box-shadow: none; }
+.showcase-prompt-box .showcase-prompt:not(.expanded){ -webkit-mask-image: none; mask-image: none; }
+.showcase-prompt-box .showcase-prompt:not(.expanded)::after{ content: none; }
+
+/* Copy button (top-right) */
+.showcase-prompt-copy{
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted, #6b7280);
+  background: rgba(0,0,0,.04);
+  border: 1px solid var(--bord, rgba(0,0,0,.12));
+  transition: all .2s ease;
+}
+[data-theme="dark"] .showcase-prompt-copy{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.12);
+  color: rgba(255,255,255,.75);
+}
+.showcase-prompt-copy:hover{
+  background: rgba(99,102,241,.10);
+  color: var(--primary, #6366f1);
+  transform: translateY(-1px);
+}
+.showcase-prompt-copy:active{
+  transform: translateY(0);
+}
+.showcase-prompt-copy svg{
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+/* Copied state */
+.showcase-prompt-copy.copied{
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Hover ring for the box */
+.showcase-prompt-box:hover{
+  border-color: rgba(255,255,255,.12);
+  box-shadow: none; /* без изменения размера/подсветки — остаётся ровно */
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px){
+  .showcase-prompt-header{ font-size: 11px; }
+  .showcase-prompt-header svg{ width: 11px; height: 11px; padding: 1px; border-radius: 5px; }
+  .showcase-prompt-box{ padding: 8px 12px; border-radius: 10px; }
+  .showcase-prompt-copy{ width: 24px; height: 24px; border-radius: 6px; }
+  .showcase-prompt-copy svg{ width: 12px; height: 12px; }
+  .showcase-prompt-box .showcase-prompt{ -webkit-line-clamp: 2; }
+}
+
+/* Extra-narrow phones (<=320px) */
+@media (max-width: 320px){
+  .showcase-prompt-box{ padding: 8px 10px; min-height: 48px; }
+  .showcase-prompt-box .showcase-prompt{ font-size: 11px; -webkit-line-clamp: 2; }
+}
+
+.showcase-prompt {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted, #6b7280);
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--bg-2, rgba(0,0,0,.03));
+  border: 1px solid var(--bord, rgba(0,0,0,.06));
+  border-radius: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 56px; /* ровная сетка карточек */
+  position: relative;
+  cursor: pointer;
+  transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+[data-theme="dark"] .showcase-prompt {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.14);
+  color: rgba(255,255,255,.78);
+}
+.showcase-prompt:hover {
+  background: var(--bg-3, rgba(0,0,0,.045));
+  border-color: var(--bord, rgba(0,0,0,.1));
+}
+[data-theme="dark"] .showcase-prompt:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.18);
+}
+/* плавная маска снизу вместо грубых многоточий */
+.showcase-prompt:not(.expanded) {
+          mask-image: linear-gradient(to bottom, #000 78%, rgba(0,0,0,0));
+}
+
+.showcase-prompt.expanded {
+  -webkit-line-clamp: unset;
+  height: auto;
+  max-height: 220px;
+  overflow-y: auto;
+          mask-image: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary, #6366f1) transparent;
+}
+.showcase-prompt.expanded::-webkit-scrollbar {
+  width: 8px;
+}
+.showcase-prompt.expanded::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary, #6366f1), #8b5cf6);
+  border-radius: 8px;
+}
+.showcase-prompt.expanded::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.showcase-prompt:not(.expanded)::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 28px;
+  border-radius: 0 0 10px 10px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,.06));
+}
+[data-theme="dark"] .showcase-prompt:not(.expanded)::after {
+  background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(255,255,255,.10));
+}
+
+[data-theme="dark"] .showcase-prompt {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.showcase-use-btn {
+  width: 100%;
+  padding: 8px 16px;
+  background: var(--primary, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.showcase-use-btn:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.showcase-use-btn:active {
+  transform: translateY(0);
+}
+
+.showcase-use-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Filter Animation */
+.showcase-item {
+  animation: fadeIn 0.5s ease;
+}
+
+.showcase-item.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Loading State */
+.showcase-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+  border-radius: 1rem;
+}
+
+.showcase-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+
+/* Extra Small Devices (320px - 479px) */
+@media (max-width: 479px) {
+  .showcase-slider-image {
+    aspect-ratio: 4/5;
+  }
+
+  .showcase-content {
+    padding: 12px;
+  }
+
+  .showcase-title {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .showcase-prompt {
+    font-size: 11px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    -webkit-line-clamp: 2;
+  }
+
+  .showcase-use-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .showcase-nav {
+    width: 28px;
+    height: 28px;
+  }
+
+  .showcase-nav svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .showcase-category {
+    font-size: 9px;
+    padding: 3px 8px;
+  }
+
+  .showcase-dots {
+    bottom: 8px;
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .showcase-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .showcase-dot.active {
+    width: 16px;
+  }
+}
+
+/* Small Devices (480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .showcase-slider-image {
+    aspect-ratio: 3/4;
+  }
+
+  .showcase-content {
+    padding: 14px;
+  }
+
+  .showcase-title {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .showcase-prompt {
+    font-size: 11px;
+    padding: 9px 11px;
+    margin-bottom: 13px;
+  }
+}
+
+/* Medium Devices (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .showcase-content {
+    padding: 16px;
+  }
+
+  .showcase-title {
+    font-size: 14px;
+  }
+
+  .showcase-nav {
+    width: 36px;
+    height: 36px;
+  }
+
+  .showcase-nav svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Large Devices (1024px+) */
+@media (min-width: 1024px) {
+  .showcase-content {
+    padding: 18px;
+  }
+
+  .showcase-title {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+
+  .showcase-prompt {
+    font-size: 12px;
+    padding: 11px 13px;
+    margin-bottom: 15px;
+  }
+
+  .showcase-use-btn {
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+
+  .showcase-nav {
+    width: 40px;
+    height: 40px;
+  }
+
+  .showcase-nav svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .showcase-nav {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .showcase-card:hover {
+    transform: none;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .showcase-category {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .showcase-dots {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Accessibility */
+.showcase-nav:focus-visible,
+.showcase-dot:focus-visible,
+.showcase-use-btn:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .showcase-card,
+  .showcase-slider-track,
+  .showcase-nav,
+  .showcase-dot,
+  .showcase-use-btn {
+    transition: none;
+  }
+
+  .showcase-item {
+    animation: none;
+  }
+}

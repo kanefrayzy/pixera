@@ -1,0 +1,724 @@
+﻿{% load static %}
+
+<!-- Категории промптов для видео -->
+<div id="videoPromptCats" class="prompt-categories-section">
+  <div class="section-header">
+    <h2 class="section-title">Категории подсказок</h2>
+    <p class="section-subtitle">Выберите категорию для быстрого старта</p>
+  </div>
+
+  {% if request.user.is_staff %}
+  <!-- Admin: Create Video Prompt Category -->
+  <div class="pc-admin-create">
+    <div class="pc-admin-grid">
+      <form id="vpcForm" method="post" action="/generate/api/video/categories/create/" enctype="multipart/form-data" onsubmit="return window.__vpcSubmit && window.__vpcSubmit(event)" style="display:contents">
+        {% csrf_token %}
+        <input type="text" id="vpcName" name="name" class="field" placeholder="Название категории" maxlength="100" required>
+        <input type="text" id="vpcDesc" name="description" class="field" placeholder="Описание (необязательно)">
+        <input type="number" id="vpcOrder" name="order" class="field" placeholder="Порядок" value="0">
+        <select id="vpcMode" name="mode" class="field">
+          <option value="i2v">Image-to-Video</option>
+          <option value="t2v" selected>Text-to-Video</option>
+        </select>
+        <label class="pc-inline">
+          <input type="checkbox" id="vpcActive" name="is_active" checked>
+          <span>Активна</span>
+        </label>
+        <label class="pc-file">
+          <input type="file" id="vpcImage" name="image" accept="image/*">
+          <span>Изображение</span>
+        </label>
+        <button class="btn btn-primary" id="vpcCreateBtn" type="submit">+ Категория</button>
+      </form>
+    </div>
+    <div class="text-xs text-[var(--muted)] mt-2">Картинка используется как обложка карточки категории.</div>
+    <div id="vpcStatus" class="text-xs mt-2"></div>
+  </div>
+  {% endif %}
+
+  <!-- Categories Container (loaded via JS) -->
+  <div id="videoCategoriesContainer">
+    <p class="text-center text-muted">Загрузка категорий...</p>
+  </div>
+</div>
+
+<!-- Showcase Section -->
+<div id="videoShowcaseSection" class="mt-6">
+  <div class="section-header">
+    <h2 class="section-title">Примеры результатов</h2>
+    <p class="section-subtitle">Вдохновляйтесь работами других пользователей</p>
+  </div>
+
+  <!-- Server-rendered showcase (no dynamic fetching) -->
+  <div id="videoShowcaseGrid" class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mt-6">
+    {% for v in showcase_videos %}
+      <div class="showcase-item">
+        <div class="showcase-media">
+          <video
+            class="showcase-video w-full h-full object-cover"
+            src="{{ v.video_url }}"
+            {% if v.thumbnail %}poster="{{ v.thumbnail.url }}"{% elif v.thumbnail_url %}poster="{{ v.thumbnail_url }}"{% endif %}
+            preload="metadata"
+            controls
+            playsinline
+            title="{{ v.title }}"
+          ></video>
+        </div>
+        <div class="showcase-content">
+          {% if v.title %}<h3 class="showcase-title">{{ v.title }}</h3>{% endif %}
+          {% if v.prompt %}
+            <div class="showcase-prompt-header" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 13h5M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"></path>
+              </svg>
+              <span>Промпт</span>
+            </div>
+            <div class="showcase-prompt-box">
+              <p class="showcase-prompt">{{ v.prompt }}</p>
+            </div>
+            <button class="showcase-use-btn" data-prompt="{{ v.prompt|escapejs }}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              <span>Использовать промпт</span>
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-center text-muted col-span-full">Пока нет видео-примеров</p>
+    {% endfor %}
+  </div>
+
+  {% if video_showcase_page.paginator.num_pages > 1 %}
+  <nav class="flex items-center justify-center mt-8" aria-label="Пагинация видео-примеров">
+    <div class="flex items-center gap-1 flex-wrap justify-center">
+      {% if video_showcase_page.has_previous %}
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?video_showcase_page=1{% if active_video_scat %}&video_scat={{ active_video_scat }}{% endif %}#videoShowcaseSection" aria-label="Первая">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+          </svg>
+          <span class="hidden sm:inline">Первая</span>
+        </a>
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?video_showcase_page={{ video_showcase_page.previous_page_number }}{% if active_video_scat %}&video_scat={{ active_video_scat }}{% endif %}#videoShowcaseSection" aria-label="Назад">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          <span class="hidden sm:inline">Назад</span>
+        </a>
+      {% endif %}
+
+      {% with total=video_showcase_page.paginator.num_pages current=video_showcase_page.number %}
+        {% for i in video_showcase_page.paginator.page_range %}
+          {% if i == 1 or i == total or i >= current|add:"-2" and i <= current|add:"2" %}
+            {% if i == current %}
+              <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">{{ i }}</span>
+            {% else %}
+              <a class="btn btn-ghost px-3 py-2 text-sm" href="?video_showcase_page={{ i }}{% if active_video_scat %}&video_scat={{ active_video_scat }}{% endif %}#videoShowcaseSection">{{ i }}</a>
+            {% endif %}
+          {% elif i == 2 and current > 4 %}
+            <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+          {% elif i == total|add:"-1" and current < total|add:"-3" %}
+            <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+          {% endif %}
+        {% endfor %}
+      {% endwith %}
+
+      {% if video_showcase_page.has_next %}
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?video_showcase_page={{ video_showcase_page.next_page_number }}{% if active_video_scat %}&video_scat={{ active_video_scat }}{% endif %}#videoShowcaseSection" aria-label="Вперёд">
+          <span class="hidden sm:inline">Вперёд</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?video_showcase_page={{ video_showcase_page.paginator.num_pages }}{% if active_video_scat %}&video_scat={{ active_video_scat }}{% endif %}#videoShowcaseSection" aria-label="Последняя">
+          <span class="hidden sm:inline">Последняя</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+          </svg>
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+  {% endif %}
+
+  <script>
+  // Lightweight binding for "Использовать промпт" buttons (no dynamic fetch)
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('#videoShowcaseSection .showcase-use-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var prompt = this.getAttribute('data-prompt') || '';
+        var field = document.getElementById('video-prompt');
+        if (field) {
+          field.value = prompt;
+          try { field.focus(); } catch(_) {}
+        }
+        var self = this, html = self.innerHTML;
+        self.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Добавлено!</span>';
+        self.classList.add('success');
+        setTimeout(function(){ self.innerHTML = html; self.classList.remove('success'); }, 2000);
+      });
+    });
+  });
+  </script>
+</div>
+
+<!-- Why Choose Us (Video) -->
+<div class="card p-6 mt-6">
+  <h2 class="text-lg font-semibold mb-6">Почему именно мы</h2>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L4 21l1.5-6L2 10l6-.75L12 3l2 6.25 6 .75-3.5 5 1.5 6z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Фотореализм без «мыла»</h3>
+      <p class="text-sm text-[var(--muted)]">Подбор моделей и параметров под задачу: портреты, предметка, интерьер, арт-стили.</p>
+    </div>
+
+    <div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Честная стоимость</h3>
+      <p class="text-sm text-[var(--muted)]">Прозрачные токены: 1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK. Без скрытых платежей.</p>
+    </div>
+
+    <div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Кеш и прямые ссылки</h3>
+      <p class="text-sm text-[var(--muted)]">Файлы доступны по прямому URL. Если CDN уходит в 5xx — отдаём внешний URL.</p>
+    </div>
+
+    <div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Гостевой бонус</h3>
+      <p class="text-sm text-[var(--muted)]">Гости получают {{ GUEST_INITIAL_TOKENS|default:30 }} TOK. Остаток безопасно «доезжает» до аккаунта.</p>
+    </div>
+
+    <div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Защита от NSFW</h3>
+      <p class="text-sm text-[var(--muted)]">Фильтрация по настройке, чтобы проект был дружелюбным к публике.</p>
+    </div>
+
+    <div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary mb-4">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <h3 class="font-semibold mb-2">Стабильная очередь</h3>
+      <p class="text-sm text-[var(--muted)]">Асинхронный провайдер + резервный поллинг, чтобы заказы не «зависали».</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Video Prompts -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="videoPromptCategoryModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-[var(--bord)] shadow-2xl animate-modal-in">
+    <div class="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--bord)] p-4 sm:p-6 flex items-center justify-between z-10">
+      <h3 class="text-lg sm:text-xl font-bold" id="videoModalCategoryTitle">Промпты видео</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" id="closeVideoPromptModal" aria-label="Закрыть">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-88px)] custom-scrollbar" id="videoModalPromptsContainer">
+      <div class="text-center text-[var(--muted)] py-8">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+{% if request.user.is_staff %}
+<!-- Edit Video Category Modal -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="vpcEditModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-xl w-full overflow-hidden border border-[var(--bord)] shadow-2xl">
+    <div class="p-4 sm:p-6 border-b border-[var(--bord)] flex items-center justify-between">
+      <h3 class="text-lg font-bold">Редактирование категории</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)]" id="vpcEditClose" type="button">✕</button>
+    </div>
+    <div class="p-4 sm:p-6 space-y-3">
+      <input type="hidden" id="vpcEditId">
+      <input id="vpcEditName" class="field w-full" type="text" placeholder="Название">
+      <textarea id="vpcEditDesc" class="field w-full" rows="3" placeholder="Описание"></textarea>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="vpcEditOrder" class="field" type="number" placeholder="Порядок">
+        <label class="pc-inline"><input id="vpcEditActive" type="checkbox"><span>Активна</span></label>
+      </div>
+      <label class="pc-file w-full">
+        <input type="file" id="vpcEditImage" accept="image/*">
+        <span>Заменить изображение</span>
+      </label>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button class="btn btn-ghost" id="vpcEditCancel" type="button">Отмена</button>
+        <button class="btn btn-primary" id="vpcEditSave" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+/* ===== Стили из prompts.html для видео ===== */
+.prompt-categories-section {
+  width: 100%;
+}
+
+#videoPromptCats {
+  scroll-margin-top: clamp(56px, 8vh, 96px);
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text, #ffffff);
+  margin: 0 0 0.25rem 0;
+}
+
+.section-subtitle {
+  font-size: 0.875rem;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  margin: 0;
+}
+
+.pc-admin-create {
+  margin: 1rem 0 1.25rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--bord);
+  border-radius: 0.75rem;
+  background: rgba(0,0,0,.03);
+}
+html[data-theme="light"] .pc-admin-create { background: rgba(0,0,0,.02); }
+.pc-admin-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 2fr 3fr 1fr 1fr auto auto auto;
+}
+.pc-inline { display: inline-flex; align-items: center; gap: .5rem; padding: .5rem .75rem; border:1px dashed var(--bord); border-radius:.5rem; }
+.pc-file { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border:1px dashed var(--bord); border-radius:.5rem; cursor:pointer; }
+.pc-file input[type="file"]{ display:none; }
+
+.categories-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.categories-grid-full {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.category-card-compact {
+  position: relative;
+  cursor: pointer;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+
+.category-card-compact:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+}
+
+.category-image-wrapper-compact {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.category-image-compact {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.category-card-compact:hover .category-image-compact {
+  transform: scale(1.1);
+}
+
+.category-overlay-compact {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%);
+  z-index: 1;
+  transition: background 0.3s ease;
+}
+
+.category-card-compact:hover .category-overlay-compact {
+  background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.9) 100%);
+}
+
+.category-name-compact {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.875rem 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  z-index: 2;
+  margin: 0;
+  text-shadow:
+    0 2px 8px rgba(0,0,0,0.9),
+    0 1px 3px rgba(0,0,0,0.8),
+    -1px -1px 0 rgba(0,0,0,0.5),
+    1px -1px 0 rgba(0,0,0,0.5),
+    -1px 1px 0 rgba(0,0,0,0.5),
+    1px 1px 0 rgba(0,0,0,0.5);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+.pc-card-actions{
+  position:absolute; top:6px; right:6px; z-index:3; display:flex; gap:6px;
+}
+.pc-btn{ background:rgba(0,0,0,.6); color:#fff; border:1px solid rgba(255,255,255,.25); width:28px; height:28px; line-height:26px; text-align:center; border-radius:8px; cursor:pointer; font-weight:700; }
+.pc-btn:hover{ background:rgba(0,0,0,.8); }
+
+.category-show-all {
+  background: transparent;
+}
+
+.category-show-all .category-image-wrapper-compact {
+  background: var(--primary);
+  position: relative;
+  isolation: isolate;
+}
+
+.show-all-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  z-index: 1;
+}
+
+.show-all-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #ffffff;
+  transition: transform 0.3s ease;
+}
+
+.category-show-all .category-image-wrapper-compact::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(0,0,0,.18), rgba(0,0,0,.28));
+  z-index: 0;
+}
+
+html[data-theme="light"] .category-show-all .category-image-wrapper-compact::before {
+  background: linear-gradient(135deg, rgba(0,0,0,.22), rgba(0,0,0,.35));
+}
+
+.category-show-all:hover .show-all-icon {
+  transform: translateY(4px);
+}
+
+.show-all-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.show-all-count {
+  font-size: 0.6875rem;
+  color: rgba(255,255,255,0.8);
+}
+
+/* Showcase стили */
+.showcase-item {
+  background: var(--bg-card);
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--bord);
+  transition: all 0.3s ease;
+}
+
+.showcase-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.showcase-media {
+  position: relative;
+  aspect-ratio: 3/4; /* match image showcase card size */
+  background: var(--bord);
+  overflow: hidden;
+}
+
+.showcase-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.video-play-btn:hover {
+  background: rgba(0,0,0,0.9);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.video-play-btn svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+  margin-left: 4px;
+}
+
+.showcase-content {
+  padding: 1rem;
+}
+
+.showcase-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+/* use global styles from static/css/showcase.css for prompt header */
+.showcase-prompt-header { }
+
+/* use global styles from static/css/showcase.css for prompt header icon */
+.showcase-prompt-header svg { }
+
+/* use global styles from static/css/showcase.css for prompt box */
+.showcase-prompt-box { }
+
+/* use global styles from static/css/showcase.css for prompt text */
+.showcase-prompt { }
+
+.showcase-use-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.showcase-use-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.showcase-use-btn.success {
+  background: #10b981;
+}
+
+.showcase-use-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Modal стили */
+#videoPromptCategoryModal.active {
+  display: flex;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 10px;
+  border: 2px solid var(--bg-card, #1e293b);
+}
+
+.prompt-item-modal {
+  background: var(--bg-2, #11121a);
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 14px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.prompt-item-modal:hover {
+  background: var(--bg-3, #151625);
+  border-color: #6366f1;
+  transform: translateX(8px);
+}
+
+html[data-theme="light"] .section-title {
+  color: #0f1419;
+}
+
+html[data-theme="light"] .section-subtitle {
+  color: #6b7280;
+}
+
+html[data-theme="light"] .showcase-item:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* Адаптив */
+@media (max-width: 1024px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .pc-admin-grid { grid-template-columns: 2fr 3fr 1fr 1fr auto auto auto; }
+}
+
+@media (max-width: 768px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.625rem;
+  }
+  .pc-admin-grid { grid-template-columns: 1fr 1fr 1fr auto; }
+
+  .category-name-compact {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.75rem;
+    padding: 0.625rem 0.375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    gap: 0.375rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.6875rem;
+    padding: 0.5rem 0.25rem;
+    letter-spacing: 0;
+  }
+
+  .section-title {
+    font-size: 1rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.8125rem;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#allVideoCategoriesSection:not(.hidden) {
+  animation: fadeIn 0.3s ease-out;
+}
+/* Mobile ratio to mirror image showcase (4/5 on small screens) */
+@media (max-width: 479px) {
+  .showcase-media { aspect-ratio: 4/5; }
+}
+</style>

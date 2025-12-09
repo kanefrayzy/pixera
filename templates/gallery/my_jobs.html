@@ -1,8 +1,9 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% load generate_extras %}
 
-{% block title %}Мои обработки — AI Gallery{% endblock %}
+{% block title %}Мои обработки — Pixera{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/my_jobs.css' %}">
@@ -13,19 +14,881 @@
 {% endblock %}
 
 {% block content %}
+<!-- Ensure CSRF cookie is set for AJAX likes/comments -->
+<form style="display:none">{% csrf_token %}</form>
+
+{% if profile_header %}
+<section class="relative py-4 sm:py-6 mt-4">
+  <div class="container">
+    <div class="card p-4 sm:p-5">
+      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
+        <span class="relative inline-flex items-center shrink-0 group">
+          {% if target_profile and target_profile.avatar %}
+            <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="js-avatar-img w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-2 ring-[var(--bord)]" loading="lazy" decoding="async">
+            <span class="js-avatar-fallback hidden w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-lg sm:text-xl ring-2 ring-[var(--bord)]">
+              {{ target.first_name|first|default:target.username|first|upper }}
+            </span>
+          {% else %}
+            <img src="" alt="{{ target.username }}" class="js-avatar-img hidden w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-2 ring-[var(--bord)]" loading="lazy" decoding="async">
+            <span class="js-avatar-fallback w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-lg sm:text-xl ring-2 ring-[var(--bord)]">
+              {{ target.first_name|first|default:target.username|first|upper }}
+            </span>
+          {% endif %}
+
+          {% if is_self %}
+          <!-- Hover overlay: refresh icon directly on avatar -->
+          <form action="{% url 'dashboard:avatar_upload' %}" method="post" enctype="multipart/form-data" data-ajax data-avatar-upload class="absolute inset-0 z-0 grid place-items-center js-has-avatar-only pointer-events-none" style="background-color: rgba(0, 0, 0, 0);">
+            {% csrf_token %}
+            <label class="pointer-events-auto w-9 h-9 sm:w-10 sm:h-10 rounded-full grid place-items-center ring-1 ring-[var(--bord)]
+                           bg-black text-white dark:bg-white dark:text-[var(--bg)]
+                           opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition" title="Обновить аватар">
+              <input id="avatar_file_input" type="file" name="avatar" accept="image/png,image/jpeg,image/jpg,image/webp" class="sr-only" data-avatar-file>
+              <!-- circular arrows icon -->
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.5 7.5A8.5 8.5 0 0012 3.5c-4.694 0-8.5 3.806-8.5 8.5"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.5 3.5v4h-4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.5 16.5A8.5 8.5 0 0012 20.5c4.694 0 8.5-3.806 8.5-8.5"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.5 20.5v-4h4"></path>
+              </svg>
+            </label>
+          </form>
+
+          <!-- Delete avatar button (owner; hidden when no avatar) -->
+          <form action="{% url 'dashboard:avatar_delete' %}" method="post" class="absolute -bottom-1 -right-1 z-20" data-avatar-actions {% if not target_profile or not target_profile.avatar %}style="display:none"{% endif %}>
+            {% csrf_token %}
+            <button type="submit" class="w-7 h-7 rounded-full grid place-items-center bg-red-600 text-white ring-2 ring-[var(--bg)] hover:bg-red-700 transition" title="Удалить аватар" data-avatar-btn>
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </form>
+          <!-- Plus label always present; hidden when avatar exists -->
+          <label for="avatar_file_input" class="w-7 h-7 rounded-full grid place-items-center bg-primary text-white ring-2 ring-[var(--bg)] hover:bg-primary/90 transition absolute -bottom-1 -right-1 z-20 cursor-pointer" title="Добавить аватар" data-avatar-plus {% if target_profile and target_profile.avatar %}style="display:none"{% endif %}>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14"/>
+            </svg>
+          </label>
+          {% endif %}
+        </span>
+
+        <div class="flex-1 min-w-0 text-center sm:text-left w-full sm:w-auto">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+            <div class="flex items-center justify-center sm:justify-start gap-2">
+              <h1 class="text-lg sm:text-xl font-bold text-[var(--text)] truncate">{{ target.first_name|default:target.username }}</h1>
+              {% if is_self %}
+              <!-- Icon-only edit name button -->
+              <button
+                id="btnEditUsername"
+                type="button"
+                class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-[var(--bord)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-black/5 dark:hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-primary/40 flex-shrink-0"
+                title="Сменить имя"
+                aria-label="Сменить имя"
+              >
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M4 20h4l10.536-10.536a2.5 2.5 0 00-3.536-3.536L4 16v4z"/>
+                </svg>
+              </button>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if is_self %}
+          <div class="flex items-center justify-center sm:justify-start gap-2 text-sm mt-1 flex-wrap">
+            <span id="pfEmail" class="text-[var(--muted)] break-all">{{ request.user.email }}</span>
+            <!-- Icon-only edit email button -->
+            <button
+              id="btnEditEmail"
+              type="button"
+              class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-[var(--bord)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-black/5 dark:hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-primary/40 flex-shrink-0"
+              title="Сменить email"
+              aria-label="Сменить email"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M4 20h4l10.536-10.536a2.5 2.5 0 00-3.536-3.536L4 16v4z"/>
+              </svg>
+            </button>
+          </div>
+          {% else %}
+          <div class="flex items-center justify-center sm:justify-start gap-2 text-sm mt-0.5">
+            <span class="text-[var(--muted)]">@<span id="pfUsername">{{ target.username }}</span></span>
+          </div>
+          {% endif %}
+
+
+
+          <div class="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 mt-3">
+            <a id="pfBtnFollowers" href="#followers" onclick="window.__pfOpen && window.__pfOpen('followers')" class="relative z-[200] pointer-events-auto text-center hover:opacity-80 transition focus:outline-none cursor-pointer select-none" aria-label="Подписчики">
+              <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="pfFollowers">{{ followers }}</div>
+              <div class="text-xs text-[var(--muted)] leading-tight mt-0.5">Подписчики</div>
+            </a>
+            <a id="pfBtnFollowing" href="#following" onclick="window.__pfOpen && window.__pfOpen('following')" class="relative z-[200] pointer-events-auto text-center hover:opacity-80 transition focus:outline-none cursor-pointer select-none" aria-label="Подписки">
+              <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="pfFollowing">{{ following }}</div>
+              <div class="text-xs text-[var(--muted)] leading-tight mt-0.5">Подписки</div>
+            </a>
+            <div class="text-center">
+              <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="pfPosts">{{ posts }}</div>
+              <div class="text-xs text-[var(--muted)] leading-tight mt-0.5">Публикации</div>
+            </div>
+          </div>
+
+          <div class="mt-3 sm:mt-4">
+            {% if not is_self %}
+              <button type="button"
+                      id="followBtn"
+                      data-username="{{ target.username }}"
+                      data-follow-toggle="1"
+                      class="btn {% if is_following %}btn-ghost{% else %}btn-primary{% endif %} text-sm px-6 py-2 font-semibold rounded-xl"
+                      onclick="try{ if(window.__pfToggleFollow){ window.__pfToggleFollow(this); } }catch(e){} return false;">
+                {% if is_following %}Отписаться{% else %}Подписаться{% endif %}
+              </button>
+              <!-- Fallback form for follow toggle -->
+              <form id="pfFollowFallbackForm" method="post" action="{% url 'dashboard:api:follow_toggle' %}" class="hidden">
+                {% csrf_token %}
+                <input type="hidden" name="username" value="{{ target.username }}">
+              </form>
+            {% endif %}
+          </div>
+    </div>
+  </div>
+</section>
+
+  <!-- Account Modals: Change Email / Username (owner only) -->
+  {% if is_self %}
+  <!-- Change Email Modal -->
+  <div id="chgEmailModal" class="fixed inset-0 z-[95] hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-modal-close="chgEmailModal"></div>
+    <div class="relative mx-auto my-6 w-[92vw] max-w-md rounded-2xl border border-[var(--bord)] bg-[var(--bg-card)] shadow-2xl">
+      <div class="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--bord)]">
+        <h3 class="text-base sm:text-lg font-semibold">Сменить email</h3>
+        <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-modal-close="chgEmailModal">✕</button>
+      </div>
+      <form id="chgEmailForm" class="p-4 sm:p-5 space-y-3" action="{% url 'dashboard:api:account_change_email' %}">
+        {% csrf_token %}
+        <label class="block text-sm font-medium" for="chgEmailInput">Новый email</label>
+        <input id="chgEmailInput" name="email" type="email" class="field w-full" placeholder="you@example.com" autocomplete="email" required>
+        <p class="text-xs text-[var(--muted)]">Мы используем email для уведомлений и входа. Указывайте действующий адрес.</p>
+        <div id="chgEmailMsg" class="text-xs"></div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="btn btn-primary flex-1">Сохранить</button>
+          <button type="button" class="btn btn-ghost flex-1" data-modal-close="chgEmailModal">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Username Modal -->
+  <div id="chgUsernameModal" class="fixed inset-0 z-[95] hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-modal-close="chgUsernameModal"></div>
+    <div class="relative mx-auto my-6 w-[92vw] max-w-md rounded-2xl border border-[var(--bord)] bg-[var(--bg-card)] shadow-2xl">
+      <div class="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--bord)]">
+        <h3 class="text-base sm:text-lg font-semibold">Сменить имя пользователя</h3>
+        <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-modal-close="chgUsernameModal">✕</button>
+      </div>
+      <form id="chgUsernameForm" class="p-4 sm:p-5 space-y-3" action="{% url 'dashboard:api:account_change_username' %}">
+        {% csrf_token %}
+        <label class="block text-sm font-medium" for="chgUsernameInput">Новый username</label>
+        <input id="chgUsernameInput" name="username" type="text" class="field w-full" placeholder="например: my_name" pattern="[a-z0-9_-]{3,30}" minlength="3" maxlength="30" required>
+        <p class="text-xs text-[var(--muted)]">Допускаются: латинские буквы a–z, цифры 0–9, символы «_» и «-». Длина 3–30.</p>
+        <div id="chgUsernameMsg" class="text-xs"></div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="btn btn-primary flex-1">Сохранить</button>
+          <button type="button" class="btn btn-ghost flex-1" data-modal-close="chgUsernameModal">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    function getCSRFCookie(){
+      const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return input && input.value ? input.value : '';
+    }
+    function openModal(id){ const m=document.getElementById(id); if(!m) return; m.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+    function closeModal(id){ const m=document.getElementById(id); if(!m) return; m.classList.add('hidden'); document.body.style.overflow=''; const msg=m.querySelector('#chgEmailMsg, #chgUsernameMsg'); if(msg) msg.textContent=''; }
+
+    // Openers
+    document.getElementById('btnEditEmail')?.addEventListener('click', ()=> openModal('chgEmailModal'));
+    const u1=document.getElementById('btnEditUsername'); const u2=document.getElementById('btnEditUsername2');
+    u1?.addEventListener('click', ()=> openModal('chgUsernameModal'));
+    u2?.addEventListener('click', ()=> openModal('chgUsernameModal'));
+
+    // Closers
+    document.addEventListener('click', (e)=>{
+      const c = e.target.closest('[data-modal-close]');
+      if (!c) return;
+      const id = c.getAttribute('data-modal-close');
+      if (id) closeModal(id);
+    });
+
+    // Submit Email
+    const fE = document.getElementById('chgEmailForm');
+    fE?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const msg = document.getElementById('chgEmailMsg');
+      msg.className='text-xs text-[var(--muted)]'; msg.textContent = 'Сохраняем...';
+      try{
+        const fd = new FormData(fE);
+        const r = await fetch(fE.action || '/dashboard/api/account/change-email/', {
+          method:'POST',
+          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'},
+          body: fd,
+          credentials:'same-origin'
+        });
+        const j = await r.json().catch(()=>null);
+        if (r.ok && j && j.ok){
+          const el = document.getElementById('pfEmail');
+          if (el) el.textContent = j.email || fd.get('email');
+          msg.className='text-xs text-emerald-500'; msg.textContent = 'Email обновлён';
+          setTimeout(()=> closeModal('chgEmailModal'), 700);
+        } else {
+          msg.className='text-xs text-red-500';
+          msg.textContent = (j && j.error) ? j.error : 'Ошибка';
+        }
+      }catch(_){
+        msg.className='text-xs text-red-500'; msg.textContent='Сетевая ошибка';
+      }
+    });
+
+    // Submit Username
+    const fU = document.getElementById('chgUsernameForm');
+    fU?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const msg = document.getElementById('chgUsernameMsg');
+      msg.className='text-xs text-[var(--muted)]'; msg.textContent='Сохраняем...';
+      try{
+        const fd = new FormData(fU);
+        const r = await fetch(fU.action || '/dashboard/api/account/change-username/', {
+          method:'POST',
+          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'},
+          body: fd,
+          credentials:'same-origin'
+        });
+        const j = await r.json().catch(()=>null);
+        if (r.ok && j && j.ok){
+          const u = j.username || fd.get('username');
+          const el = document.getElementById('pfUsername'); if (el) el.textContent = u;
+          msg.className='text-xs text-emerald-500'; msg.textContent='Имя обновлено';
+          // Меняем URL профиля
+          const redir = j.redirect || ('/profile-' + encodeURIComponent(u));
+          setTimeout(()=>{ window.location.assign(redir); }, 500);
+        } else {
+          msg.className='text-xs text-red-500';
+          msg.textContent = (j && j.error) ? j.error : 'Ошибка';
+        }
+      }catch(_){
+        msg.className='text-xs text-red-500'; msg.textContent='Сетевая ошибка';
+      }
+    });
+  })();
+  </script>
+  {% endif %}
+
+  <!-- Avatar Crop Modal (owner only; opened when selecting an image) -->
+  {% if is_self %}
+  <div id="avatarCropModal" class="fixed inset-0 z-[90] hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-avatar-close="1"></div>
+    <div class="relative mx-auto my-6 w-[95vw] max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+        <h3 class="font-semibold">Обрезка аватара</h3>
+        <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-avatar-close="1">✕</button>
+      </div>
+      <div class="p-4">
+        <!-- Crop area -->
+        <div class="w-full max-w-[420px] mx-auto">
+          <div class="relative mx-auto aspect-square rounded-2xl overflow-hidden bg-black/5 dark:bg-white/10 border border-[var(--bord)]">
+            <canvas id="avatarCropCanvas" class="w-full h-full block"></canvas>
+            <!-- Dim outside circle to match original circular crop -->
+            <div class="pointer-events-none absolute inset-0" style="background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 46%);"></div>
+            <!-- Circular guide -->
+            <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div class="w-[90%] h-[90%] rounded-full ring-2 ring-white/60"></div>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="mt-4 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-ghost px-3 py-1.5" data-zoom-out aria-label="Уменьшить">−</button>
+              <input id="avatarZoom" type="range" min="10" max="300" value="100" class="w-40 h-1.5 rounded-full accent-[var(--primary)] bg-black/10 dark:bg-white/10 outline-none cursor-pointer" aria-label="Масштаб">
+              <button type="button" class="btn btn-ghost px-3 py-1.5" data-zoom-in aria-label="Увеличить">+</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-ghost" data-avatar-close="1">Отмена</button>
+              <button type="button" class="btn btn-primary" id="avatarSaveBtn">Сохранить</button>
+            </div>
+          </div>
+
+          <p class="text-xs text-[var(--muted)] mt-3">
+            Подсказка: перетаскивайте изображение для позиционирования. Колесо мыши или ползунок — масштаб.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <script>
+  (function(){
+    {% if is_self %}
+    const modal = document.getElementById('avatarCropModal');
+    const canvas = document.getElementById('avatarCropCanvas');
+    const zoomRange = document.getElementById('avatarZoom');
+    const saveBtn = document.getElementById('avatarSaveBtn');
+    const imgEl = document.querySelector('.js-avatar-img');
+    const fallbackEl = document.querySelector('.js-avatar-fallback');
+    const fileInput = document.querySelector('[data-avatar-file]');
+    const plusLabel = document.querySelector('[data-avatar-plus]');
+
+    let ctx, img = new Image(), imgLoaded = false;
+    let scale = 1, minScale = 1, maxScale = 3;
+    let offsetX = 0, offsetY = 0;
+    let isDragging = false, lastX = 0, lastY = 0;
+    let naturalW = 0, naturalH = 0;
+
+    function getCSRFCookie(){
+      const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return input && input.value ? input.value : '';
+    }
+
+    function openModal(){ if(!modal) return; modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+    function closeModal(){ if(!modal) return; modal.classList.add('hidden'); document.body.style.overflow=''; }
+
+    function resizeCanvas(){
+      if (!canvas) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = Math.max(300, Math.floor(rect.width));
+      canvas.height = canvas.width; // square
+      ctx = canvas.getContext('2d', { alpha: true });
+      draw();
+    }
+
+    function fitImage(){
+      if (!imgLoaded) return;
+      const cw = canvas.width, ch = canvas.height;
+      // fit to circular guide (≈90% of canvas)
+      const d = Math.min(cw, ch) * 0.9;
+      const s = Math.max(d / naturalW, d / naturalH);
+      minScale = s;
+      // ensure current scale at least min
+      scale = Math.max(scale, minScale);
+      // center offsets (image centered under guide)
+      offsetX = (cw - naturalW * scale) / 2;
+      offsetY = (ch - naturalH * scale) / 2;
+      // zoom slider reflect scale (in percent relative to minScale baseline)
+      syncZoomRange();
+      draw();
+    }
+
+    function syncZoomRange(){
+      if (!zoomRange) return;
+      const pct = Math.round((scale / minScale) * 100);
+      zoomRange.value = Math.max(10, Math.min(300, pct));
+    }
+
+    function applyZoomFromRange(){
+      if (!imgLoaded) return;
+      const pct = Number(zoomRange.value) || 100;
+      const newScale = Math.max(minScale * (pct/100), minScale);
+      zoomTo(newScale);
+    }
+
+    function zoomTo(newScale, anchorX, anchorY){
+      if (!imgLoaded) return;
+      const cw = canvas.width, ch = canvas.height;
+      const prevScale = scale;
+      scale = Math.max(minScale, Math.min(maxScale, newScale));
+
+      // Zoom towards anchor (default center)
+      const ax = (typeof anchorX === 'number') ? anchorX : cw/2;
+      const ay = (typeof anchorY === 'number') ? anchorY : ch/2;
+
+      // Convert anchor point to image space based on previous scale
+      const imgX = (ax - offsetX) / prevScale;
+      const imgY = (ay - offsetY) / prevScale;
+
+      // Recompute offsets so that (imgX, imgY) stays under anchor
+      offsetX = ax - imgX * scale;
+      offsetY = ay - imgY * scale;
+
+      // Constrain movement so we don't show empty outside the image
+      constrainOffsets();
+      syncZoomRange();
+      draw();
+    }
+
+    function constrainOffsets(){
+      const cw = canvas.width, ch = canvas.height;
+      const w = naturalW * scale, h = naturalH * scale;
+      // Ensure the image covers the square; allow small overflow but prevent gaps
+      if (w >= cw){
+        const minX = cw - w; const maxX = 0;
+        if (offsetX < minX) offsetX = minX;
+        if (offsetX > maxX) offsetX = maxX;
+      } else {
+        // if image is narrower than canvas, center
+        offsetX = (cw - w) / 2;
+      }
+      if (h >= ch){
+        const minY = ch - h; const maxY = 0;
+        if (offsetY < minY) offsetY = minY;
+        if (offsetY > maxY) offsetY = maxY;
+      } else {
+        offsetY = (ch - h) / 2;
+      }
+    }
+
+    function draw(){
+      if (!ctx || !imgLoaded) { if(ctx){ ctx.clearRect(0,0,canvas.width,canvas.height);} return; }
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, naturalW, naturalH, offsetX, offsetY, naturalW*scale, naturalH*scale);
+      ctx.restore();
+    }
+
+    function bindCanvasDrag(){
+      if (!canvas) return;
+      canvas.onmousedown = (e)=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; };
+      canvas.onmouseup = ()=>{ isDragging=false; };
+      canvas.onmouseleave = ()=>{ isDragging=false; };
+      canvas.onmousemove = (e)=>{
+        if (!isDragging || !imgLoaded) return;
+        const dx = e.clientX - lastX, dy = e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+        offsetX += dx; offsetY += dy;
+        constrainOffsets(); draw();
+      };
+      // touch
+      canvas.addEventListener('touchstart', (e)=>{
+        if (!e.touches.length) return;
+        isDragging = true;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+      }, { passive:true });
+      canvas.addEventListener('touchmove', (e)=>{
+        if (!isDragging || !e.touches.length) return;
+        const dx = e.touches[0].clientX - lastX;
+        const dy = e.touches[0].clientY - lastY;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+        offsetX += dx; offsetY += dy;
+        constrainOffsets(); draw();
+      }, { passive:true });
+      canvas.addEventListener('touchend', ()=>{ isDragging=false; }, { passive:true });
+      // wheel zoom
+      canvas.addEventListener('wheel', (e)=>{
+        if (!imgLoaded) return;
+        e.preventDefault();
+        const delta = e.deltaY;
+        const factor = (delta > 0) ? 0.9 : 1.1;
+        zoomTo(scale * factor, e.offsetX, e.offsetY);
+      }, { passive:false });
+    }
+
+    function initControls(){
+      window.addEventListener('resize', resizeCanvas);
+      if (zoomRange){
+        zoomRange.addEventListener('input', applyZoomFromRange);
+      }
+      const zi = document.querySelector('[data-zoom-in]');
+      const zo = document.querySelector('[data-zoom-out]');
+      zi && zi.addEventListener('click', ()=> zoomTo(scale * 1.1));
+      zo && zo.addEventListener('click', ()=> zoomTo(scale * 0.9));
+      // close buttons
+      document.addEventListener('click', (e)=>{
+        const c = e.target.closest('[data-avatar-close="1"]');
+        if (!c) return;
+        e.preventDefault();
+        closeModal();
+      });
+      // save
+      saveBtn && saveBtn.addEventListener('click', async ()=>{
+        if (!canvas) return;
+        try{
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+          if (!blob) return;
+          const fd = new FormData();
+          fd.append('avatar', blob, 'avatar.jpg');
+          const r = await fetch("{% url 'dashboard:avatar_upload' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest' },
+            body: fd,
+            credentials: 'same-origin'
+          });
+          const j = await r.json().catch(()=>null);
+          if (r.ok && j && j.success){
+            // update UI
+            const url = (j.avatar_url || '').split('?')[0];
+            document.querySelectorAll('.js-avatar-img').forEach(el => {
+              el.src = url ? (url + '?v=' + Date.now()) : '';
+              el.classList.toggle('hidden', !url);
+            });
+            document.querySelectorAll('.js-avatar-fallback').forEach(el => {
+              el.classList.toggle('hidden', !!url);
+            });
+            // Show delete form and hide the "+" label
+            const delForm = document.querySelector('[data-avatar-actions]');
+            if (delForm) delForm.style.display = '';
+            const plus = document.querySelector('[data-avatar-plus]');
+            if (plus) plus.style.display = 'none';
+            // Fallback hard refresh if browser cache prevents immediate update
+            const anyVisible = Array.from(document.querySelectorAll('.js-avatar-img')).some(el => el.src && !el.classList.contains('hidden'));
+            if (!anyVisible) { try { setTimeout(()=>location.reload(), 300); } catch(_) {} }
+            closeModal();
+          }
+        }catch(_){}
+      });
+    }
+
+    function loadImageFile(file){
+      return new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onload = ()=> resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    fileInput && fileInput.addEventListener('change', async (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try{
+        const dataUrl = await loadImageFile(f);
+        img = new Image();
+        img.onload = ()=>{
+          imgLoaded = true;
+          naturalW = img.naturalWidth || img.width;
+          naturalH = img.naturalHeight || img.height;
+          openModal();
+          resizeCanvas();
+          scale = 1; offsetX = 0; offsetY = 0;
+          fitImage();
+        };
+        img.onerror = ()=>{ imgLoaded = false; };
+        img.src = dataUrl;
+      }catch(_){}
+      // reset input so same file re-triggers
+      e.target.value = '';
+    });
+
+    // Delegated handler for avatar button (delete/add)
+    document.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('[data-avatar-btn]');
+      if (!btn) return;
+      e.preventDefault(); e.stopPropagation();
+      const state = btn.getAttribute('data-state') || 'delete';
+      if (state === 'add'){
+        // Open file chooser for adding new avatar
+        if (fileInput) fileInput.click();
+        return;
+      }
+      // Delete current avatar
+      try{
+        const delForm = document.querySelector('[data-avatar-actions]');
+        const fd = delForm ? new FormData(delForm) : new FormData();
+        const r = await fetch("{% url 'dashboard:avatar_delete' %}", {
+          method:'POST',
+          headers:{ 'X-Requested-With':'fetch' },
+          credentials:'same-origin',
+          body: fd
+        });
+        const j = await r.json().catch(()=>null);
+        // Accept JSON success or any OK (HTML/204) as success to match server behavior
+        if (r.ok && (!j || j.success)){
+          document.querySelectorAll('.js-avatar-img').forEach(el => { el.src=''; el.classList.add('hidden'); });
+          document.querySelectorAll('.js-avatar-fallback').forEach(el => el.classList.remove('hidden'));
+          // Show "+" label and hide delete form
+          const plus = document.querySelector('[data-avatar-plus]');
+          if (plus) plus.style.display = '';
+          if (delForm) delForm.style.display = 'none';
+        } else if (delForm) {
+          // Fallback: regular POST form submit (in case fetch blocked/CSRF mismatch)
+          if (delForm.requestSubmit) delForm.requestSubmit(); else delForm.submit();
+        }
+      }catch(_){
+        // Network/JS error fallback
+        const delForm = document.querySelector('[data-avatar-actions]');
+        if (delForm){ if (delForm.requestSubmit) delForm.requestSubmit(); else delForm.submit(); }
+      }
+    });
+
+    // init once
+    if (canvas){ bindCanvasDrag(); }
+    initControls();
+    {% endif %}
+  })();
+  </script>
+
+  <!-- Follow Modal for Profile Header -->
+  <div id="pfFollowModal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="modal-backdrop absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm" onclick="Modal.close('pfFollowModal')"></div>
+    <div class="relative pf-follow-modal-panel w-full max-w-[min(95vw,480px)] rounded-2xl bg-[var(--bg)] border-2 border-[var(--bord)] shadow-2xl overflow-hidden max-h-[min(90vh,680px)] flex flex-col">
+      <div class="flex items-center justify-between p-4 sm:p-5 border-b-2 border-[var(--bord)] flex-shrink-0 bg-gradient-to-b from-black/[.02] dark:from-white/[.02] to-transparent">
+        <h3 id="pfFollowModalTitle" class="text-base sm:text-lg md:text-xl font-bold text-[var(--text)]"></h3>
+        <button type="button" class="btn btn-ghost p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all flex-shrink-0 active:scale-95" onclick="Modal.close('pfFollowModal')" aria-label="Close">✕</button>
+      </div>
+      <nav class="flex justify-center p-3 sm:p-4 border-b border-[var(--bord)] flex-shrink-0">
+        <div class="inline-flex rounded-xl bg-black/5 dark:bg-white/5 p-1 gap-1 w-full max-w-sm">
+          <button id="pfTabFollowers" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-all">Подписчики</button>
+          <button id="pfTabFollowing" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-all">Подписки</button>
+        </div>
+      </nav>
+      <!-- Search Bar inside follow modal -->
+      <div class="px-3 sm:px-4 py-3 border-b border-[var(--bord)] flex-shrink-0">
+        <div class="relative">
+          <input
+            type="text"
+            id="pfFollowSearch"
+            placeholder="Поиск по нику..."
+            class="w-full px-3 sm:px-4 py-2 sm:py-2.5 pl-9 sm:pl-10 pr-9 sm:pr-10 rounded-xl border border-[var(--bord)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-sm sm:text-base"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <!-- Search Icon -->
+          <svg class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[var(--muted)] pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <!-- Clear Button -->
+          <button
+            type="button"
+            id="pfSearchClear"
+            class="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[var(--muted)]/20 hover:bg-[var(--muted)]/30 flex items-center justify-center transition-all opacity-0 pointer-events-none"
+            aria-label="Очистить поиск"
+          >
+            <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <!-- Search Results Counter -->
+        <div id="pfSearchResults" class="mt-2 text-xs sm:text-sm text-[var(--muted)] text-center hidden">
+          <span id="pfSearchCount">0</span> результатов
+        </div>
+      </div>
+      <div id="pfFollowModalBody" class="overflow-y-auto flex-1 min-h-0 px-3 sm:px-4 py-2" style="max-height: calc(min(90vh,680px) - 150px);"></div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    // Polyfill Modal
+    if (typeof window.Modal === 'undefined') {
+      window.Modal = {
+        open: (id) => { const m=document.getElementById(id); if(!m) return; m.classList.remove('hidden'); document.body.style.overflow='hidden'; },
+        close: (id) => { const m=document.getElementById(id); if(!m) return; m.classList.add('hidden'); document.body.style.overflow=''; }
+      };
+    }
+    const targetUsername = "{{ target.username|default_if_none:'' }}";
+    const pageOwnerUsername = (targetUsername || "{{ request.user.username|default_if_none:'' }}");
+    const pageOwnerAvatar = "{% if profile_header and target_profile and target_profile.avatar %}{{ target_profile.avatar.url }}{% elif request.user.is_authenticated and request.user.profile and request.user.profile.avatar %}{{ request.user.profile.avatar.url }}{% else %}{% endif %}";
+    const modalId = 'pfFollowModal';
+    const titleEl = document.getElementById('pfFollowModalTitle');
+    const bodyEl = document.getElementById('pfFollowModalBody');
+    const urls = {
+      followers: "{% url 'dashboard:api:follow_list_followers' %}?username=" + encodeURIComponent(targetUsername||''),
+      following: "{% url 'dashboard:api:follow_list_following' %}?username=" + encodeURIComponent(targetUsername||''),
+      recs: "{% url 'dashboard:api:follow_recommendations' %}?limit=5"
+    };
+
+    // Search controls inside follow modal
+    const searchInput = document.getElementById('pfFollowSearch');
+    const searchClear = document.getElementById('pfSearchClear');
+    const searchResults = document.getElementById('pfSearchResults');
+    const searchCount = document.getElementById('pfSearchCount');
+
+    function normalizeText(text) {
+      return (text || '').toLowerCase().trim();
+    }
+
+    function filterFollowUsers(query) {
+      if (!bodyEl) return;
+      const normalizedQuery = normalizeText(query);
+      let visibleCount = 0;
+
+      bodyEl.querySelectorAll('li').forEach(li => {
+        // Display name (e.g. "Galyna")
+        const nameEl = li.querySelector('.font-medium');
+        const name = normalizeText(nameEl ? nameEl.textContent : '');
+
+        // Username line (e.g. "@Galyna")
+        const usernameLineEl = li.querySelector('.text-xs');
+        const usernameLine = normalizeText(usernameLineEl ? usernameLineEl.textContent : '');
+        const plainUsername = usernameLine.startsWith('@') ? usernameLine.slice(1) : usernameLine;
+
+        const haystack = (name + ' ' + plainUsername).trim();
+        const matches = !normalizedQuery || haystack.includes(normalizedQuery);
+
+        li.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+      });
+
+      if (!normalizedQuery) {
+        if (searchResults) searchResults.classList.add('hidden');
+      } else {
+        if (searchResults) searchResults.classList.remove('hidden');
+        if (searchCount) searchCount.textContent = String(visibleCount);
+      }
+    }
+    function renderUsers(users){
+      if(!users || !users.length) return '<div class="text-sm text-[var(--muted)] py-6 text-center">Список пуст</div>';
+      return '<ul class="divide-y divide-[var(--bord)]">' + users.map(u => `
+        <li class="py-3 flex items-center gap-3">
+          <img src="${u.avatar_url||''}" alt="" class="w-9 h-9 rounded-full object-cover ${u.avatar_url?'':'hidden'}">
+          <div class="${u.avatar_url?'hidden':''} w-9 h-9 rounded-full grid place-items-center bg-[var(--bord)]">
+            <svg class="w-5 h-5 text-primary/40" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <a href="/profile-${encodeURIComponent(u.username)}" class="font-medium truncate hover:underline">${u.name||u.username}</a>
+            <div class="text-xs text-[var(--muted)]">@${u.username}</div>
+          </div>
+          <button class="btn ${u.is_following ? 'btn-ghost':'btn-primary'} text-xs whitespace-nowrap" data-follow-toggle="1" data-username="${u.username}">${u.is_following ? 'Отписаться':'Подписаться'}</button>
+        </li>`).join('') + '</ul>';
+    }
+    function renderRecommendations(recs){
+      if(!recs || !recs.length) return '';
+      return '<div class="mt-4 pt-3 border-t border-[var(--bord)]"><div class="text-sm font-semibold mb-2">Рекомендации</div><ul class="divide-y divide-[var(--bord)]">' +
+        recs.map(u => `
+          <li class="py-3 flex items-center gap-3">
+            <img src="${u.avatar_url||''}" alt="" class="w-9 h-9 rounded-full object-cover ${u.avatar_url?'':'hidden'}">
+            <div class="${u.avatar_url?'hidden':''} w-9 h-9 rounded-full grid place-items-center bg-[var(--bord)]">
+              <svg class="w-5 h-5 text-primary/40" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <a href="/profile-${encodeURIComponent(u.username)}" class="font-medium truncate hover:underline">${u.name||u.username}</a>
+              <div class="text-xs text-[var(--muted)]">@${u.username}</div>
+            </div>
+            <button class="btn btn-primary text-xs whitespace-nowrap" data-follow-toggle="1" data-username="${u.username}">Подписаться</button>
+          </li>`).join('') + '</ul></div>';
+    }
+    function setActiveTab(kind){
+      const f1=document.getElementById('pfTabFollowers'); const f2=document.getElementById('pfTabFollowing');
+      const cls=['bg-black/[.06]','dark:bg-white/10','text-[var(--text)]','shadow']; [f1,f2].forEach(el => el && el.classList.remove(...cls));
+      (kind==='followers'?f1:f2)?.classList.add(...cls);
+    }
+    async function resJson(r){ try{ return await r.json(); }catch(_){ return null; } }
+    async function loadList(kind){
+      titleEl.textContent = (kind==='followers') ? 'Подписчики' : 'Подписки';
+      bodyEl.innerHTML = '';
+      try{
+        const res = await fetch(kind==='followers'?urls.followers:urls.following, { headers:{'X-Requested-With':'fetch'} });
+        const j = await resJson(res);
+        bodyEl.innerHTML = (j && j.ok) ? renderUsers(j.users) : '<div class="py-6 text-center text-sm text-red-500">Ошибка загрузки</div>';
+      }catch(_){
+        bodyEl.innerHTML = '<div class="py-6 text-center text-sm text-red-500">Ошибка сети</div>';
+      }
+      try{
+        const r2 = await fetch(urls.recs, { headers:{'X-Requested-With':'fetch'}});
+        const j2 = await resJson(r2);
+        if (j2 && j2.ok && Array.isArray(j2.users) && j2.users.length){
+          bodyEl.insertAdjacentHTML('beforeend', renderRecommendations(j2.users));
+        }
+      }catch(_){}
+      // wire follow toggles in body
+      bodyEl.onclick = async function(ev){
+        const btn = ev.target.closest('[data-follow-toggle="1"]'); if(!btn) return;
+        ev.preventDefault(); ev.stopPropagation();
+        const username = btn.getAttribute('data-username'); if (!username) return;
+        try{
+          const fd=new FormData(); fd.append('username', username);
+          const csrf=(document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/)||[])[1]||'';
+          const r=await fetch("{% url 'dashboard:api:follow_toggle' %}", { method:'POST', headers:{'X-CSRFToken': csrf,'X-Requested-With':'fetch'}, body: fd });
+          const j=await resJson(r);
+          if (j && j.ok){ const following=!!j.following; btn.textContent = following?'Отписаться':'Подписаться'; btn.classList.toggle('btn-primary', !following); btn.classList.toggle('btn-ghost', following); }
+        }catch(_){}
+      };
+
+      // сброс фильтра после каждой загрузки списка
+      if (searchInput) {
+        searchInput.value = '';
+        if (searchClear) {
+          searchClear.classList.add('opacity-0','pointer-events-none');
+          searchClear.classList.remove('opacity-100','pointer-events-auto');
+        }
+        if (searchResults) searchResults.classList.add('hidden');
+        // показать все элементы
+        bodyEl.querySelectorAll('li').forEach(li => { li.style.display = ''; });
+      }
+    }
+    async function openModal(kind){
+      setActiveTab(kind);
+      titleEl.textContent = (kind === 'followers') ? 'Подписчики' : 'Подписки';
+      bodyEl.innerHTML = '';
+      Modal.open(modalId);
+      await loadList(kind);
+      const t1 = document.getElementById('pfTabFollowers');
+      const t2 = document.getElementById('pfTabFollowing');
+      if (t1) t1.onclick = async () => { setActiveTab('followers'); titleEl.textContent = 'Подписчики'; await loadList('followers'); };
+      if (t2) t2.onclick = async () => { setActiveTab('following'); titleEl.textContent = 'Подписки'; await loadList('following'); };
+    }
+
+    // Search bindings
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value || '';
+        if (searchClear) {
+          if (query.length) {
+            searchClear.classList.remove('opacity-0','pointer-events-none');
+            searchClear.classList.add('opacity-100','pointer-events-auto');
+          } else {
+            searchClear.classList.add('opacity-0','pointer-events-none');
+            searchClear.classList.remove('opacity-100','pointer-events-auto');
+          }
+        }
+        filterFollowUsers(query);
+      });
+
+      if (searchClear) {
+        searchClear.addEventListener('click', () => {
+          searchInput.value = '';
+          searchClear.classList.add('opacity-0','pointer-events-none');
+          searchClear.classList.remove('opacity-100','pointer-events-auto');
+          filterFollowUsers('');
+          searchInput.focus();
+        });
+      }
+    }
+
+    // export
+    window.__pfOpen = (kind)=> openModal(kind);
+    // direct listeners
+    const elF = document.getElementById('pfBtnFollowers'); const elFg = document.getElementById('pfBtnFollowing');
+    elF?.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); openModal('followers'); });
+    elFg?.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); openModal('following'); });
+    // capture fallback
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest && e.target.closest('#pfBtnFollowers, #pfBtnFollowing'); if (!btn) return;
+      e.preventDefault(); e.stopPropagation(); openModal(btn.id==='pfBtnFollowers'?'followers':'following');
+    }, true);
+    // hash open
+    try{
+      if (location.hash==='#followers' || location.hash==='#following'){
+        const kind = location.hash.slice(1); setTimeout(()=>openModal(kind), 0); history.replaceState(null, '', location.pathname + location.search);
+      }
+    }catch(_){}
+  })();
+  </script>
+{% endif %}
+
 <div class="max-w-7xl mx-auto space-y-8">
 
   <!-- Header -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
       <h1 class="text-3xl font-bold">Мои обработки</h1>
-      <p class="text-[var(--muted)] mt-2">История ваших созданных изображений</p>
+      <p class="text-[var(--muted)] mt-2">История ваших созданных изображений и видео</p>
     </div>
 
     <div class="flex items-center gap-3">
       <a class="btn btn-ghost" href="{% url 'gallery:index' %}">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"/>
         </svg>
         Галерея
       </a>
@@ -38,8 +901,289 @@
     </div>
   </div>
 
-  <!-- Jobs Grid -->
+  <!-- Media Type Tabs -->
+  {% if show_only_published %}
+  <div class="media-tabs-wrapper rounded-xl bg-[var(--bord)] p-1 gap-1 w-full mb-6 grid grid-cols-2 xs:grid-cols-3 min-[700px]:inline-flex min-[700px]:w-auto">
+    <button class="media-tab active w-full flex-1 min-[700px]:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium"
+            data-tab="published" aria-controls="published-grid">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 5h18M3 12h18M3 19h18"/>
+      </svg>
+      <span class="hidden xs:inline">Опубликованные</span>
+      <span id="published-total" class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ published_total|default:0 }}</span>
+    </button>
+  </div>
+  {% else %}
+  <div class="media-tabs-wrapper rounded-xl bg-[var(--bord)] p-1 gap-1 w-full mb-6 grid grid-cols-2 xs:grid-cols-3 min-[700px]:inline-flex min-[700px]:w-auto">
+    <button class="media-tab active w-full flex-1 min-[700px]:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium"
+            data-tab="photos">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      <span class="hidden xs:inline">Фото</span>
+      <span class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ photos_total }}</span>
+    </button>
+    <button class="media-tab w-full flex-1 min-[700px]:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium"
+            data-tab="videos">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      <span class="hidden xs:inline">Видео</span>
+      <span class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ videos_total }}</span>
+    </button>
+    <button class="media-tab w-full flex-1 min-[700px]:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium"
+            data-tab="published" aria-controls="published-grid">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 5h18M3 12h18M3 19h18"/>
+      </svg>
+      <span class="hidden xs:inline">Опубликованные</span>
+      <span id="published-total" class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ published_total|default:0 }}</span>
+    </button>
+  </div>
+  {% endif %}
+
+  <!-- Published Grid (loaded via API) -->
+  <div id="published-grid" class="media-content {% if show_only_published %}{% else %}hidden{% endif %}">
+    <div id="published-grid-inner" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% if show_only_published %}
+        {% for v in pub_videos %}
+          <article class="group cursor-pointer js-open-video"
+                   data-detail-url="{{ v.get_absolute_url }}"
+                   data-video-url="{{ v.video_url }}"
+                   data-poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}">
+            <div class="card overflow-hidden">
+              <div class="relative">
+                <video class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02] cursor-pointer"
+                       {% if v.thumbnail %}poster="{{ v.thumbnail.url }}"{% endif %}
+                       preload="metadata"
+                       muted
+                       loop
+                       playsinline>
+                  {% if v.video_url %}<source src="{{ v.video_url }}" type="video/mp4">{% endif %}
+                </video>
+
+                <!-- Play/Pause overlay -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-auto video-play-overlay transition-opacity duration-200">
+                  <div class="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 dark:bg-white/20 text-white dark:text-[var(--bg)] backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/80 ring-2 ring-white/20">
+                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 pause-icon hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path></svg>
+                  </div>
+                </div>
+
+                <!-- Open button -->
+                <a class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20"
+                   href="{{ v.get_absolute_url }}"
+                   onclick="event.stopPropagation();"
+                   title="Открыть">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                </a>
+
+                <!-- Sound Toggle + Volume -->
+                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                  <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                    <svg class="icon-vol-on w-4 h-4 xs:w-5 xs:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                      <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                    </svg>
+                    <svg class="icon-vol-off w-4 h-4 xs:w-5 xs:h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M18 8l-6 6"></path>
+                      <path d="M12 8l6 6"></path>
+                    </svg>
+                  </button>
+                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                </div>
+
+                <!-- Top-right overlays (model + views) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  {% with job=v.source_job %}
+                  {% if job %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                  <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                    </svg>
+                    <span>{{ v.view_count|default:0 }}</span>
+                  </div>
+                </div>
+
+
+              </div>
+
+              <div class="p-4">
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ v.title|default_if_none:'' }}</h3>
+
+                <div class="flex items-center gap-2 mb-3">
+                  {% if target_profile and target_profile.avatar %}
+                    <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% endif %}
+                  <a href="/profile-{{ target.username }}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal" aria-label="@{{ target.username }}">
+                    @{{ target.username }}
+                  </a>
+                </div>
+
+                <!-- Interactions row -->
+                <div class="flex items-center justify-between gap-2 mb-3 text-sm">
+                  <!-- Like -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if liked_video_ids and v.id in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-video-id="{{ v.id }}"
+                          data-url="{% url 'gallery:video_like' v.id %}"
+data-count-target="video-like-count-{{ v.id }}"
+                          aria-pressed="{% if liked_video_ids and v.id in liked_video_ids %}true{% else %}false{% endif %}"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if liked_video_ids and v.id in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+<span id="video-like-count-{{ v.id }}" class="text-sm font-medium">{{ v.likes_count|default:0 }}</span>
+<span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="{{ v.likes_count|default:0 }}" data-url="{% url 'gallery:video_likers' v.id %}" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+                  <!-- Comments -->
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="{{ v.get_absolute_url }}#comments"
+                     data-open-comments="1"
+                     title="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm font-medium">{{ v.comments_count|default:0 }}</span>
+                  </a>
+
+                  <!-- Save -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if saved_video_ids and v.id in saved_video_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'gallery:video_save' v.id %}"
+data-count-target="video-save-count-{{ v.id }}"
+                          aria-pressed="{% if saved_video_ids and v.id in saved_video_ids %}true{% else %}false{% endif %}"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if saved_video_ids and v.id in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+<span id="video-save-count-{{ v.id }}" class="text-sm font-medium">{{ v.saves_count|default:0 }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+
+        {% for p in pub_photos %}
+          <article class="group cursor-pointer js-open-photo"
+                   data-detail-url="{{ p.get_absolute_url }}"
+                   data-media-url="{% if p.image %}{{ p.image.url }}{% endif %}"
+                   data-title="{{ p.title|default_if_none:'' }}">
+            <div class="card overflow-hidden">
+              <div class="relative">
+                {% if p.image %}
+                <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
+                     src="{{ p.image.url }}"
+                     alt="{{ p.title|default_if_none:'' }}"
+                     loading="lazy">
+                <a class="absolute inset-0 cursor-zoom-in" href="{{ p.get_absolute_url }}" aria-label="Открыть"></a>
+                <!-- Top-right overlays (model + views) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  {% with job=p.source_job %}
+                  {% if job and job.video_model %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                  {% elif job and job.model_id %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                  <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                    </svg>
+                    <span>{{ p.view_count|default:0 }}</span>
+                  </div>
+                </div>
+                {% endif %}
+
+
+              </div>
+
+              <div class="p-4">
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ p.title|default_if_none:'' }}</h3>
+
+                <div class="flex items-center gap-2 mb-3">
+                  {% if target_profile and target_profile.avatar %}
+                    <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% endif %}
+                  <a href="/profile-{{ target.username }}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal" aria-label="@{{ target.username }}">
+                    @{{ target.username }}
+                  </a>
+                </div>
+
+                <!-- Interactions row -->
+                <div class="flex items-center justify-between gap-2 mb-3 text-sm">
+                  <!-- Like -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if liked_photo_ids and p.id in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-photo-id="{{ p.id }}"
+                          data-url="{% url 'gallery:photo_like' p.id %}"
+data-count-target="like-count-{{ p.id }}"
+                          aria-pressed="{% if liked_photo_ids and p.id in liked_photo_ids %}true{% else %}false{% endif %}"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if liked_photo_ids and p.id in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+<span id="like-count-{{ p.id }}" class="text-sm font-medium">{{ p.likes_count|default:0 }}</span>
+<span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="{{ p.likes_count|default:0 }}" data-url="{% url 'gallery:photo_likers' p.id %}" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+                  <!-- Comments -->
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="{{ p.get_absolute_url }}#comments"
+                     data-open-comments="1"
+                     title="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm font-medium">{{ p.comments_count|default:0 }}</span>
+                  </a>
+
+                  <!-- Save -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if saved_photo_ids and p.id in saved_photo_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'gallery:photo_save' p.id %}"
+data-count-target="save-count-{{ p.id }}"
+                          aria-pressed="{% if saved_photo_ids and p.id in saved_photo_ids %}true{% else %}false{% endif %}"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if saved_photo_ids and p.id in saved_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+<span id="save-count-{{ p.id }}" class="text-sm font-medium">{{ p.saves_count|default:0 }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      {% endif %}
+    </div>
+    <div id="published-empty" class="hidden card p-12 text-center">
+      <h2 class="text-xl font-semibold mb-3">Пока нет опубликованных</h2>
+      <p class="text-[var(--muted)]">Здесь будут ваши опубликованные фото и видео</p>
+    </div>
+  </div>
+
+  {% if not show_only_published %}
+  <!-- Photos Grid -->
   {% if jobs_cards %}
+    <div id="photos-grid" class="media-content">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" itemscope itemtype="https://schema.org/ImageGallery">
       {% for c in jobs_cards %}
         {% with j=c.obj %}
@@ -53,27 +1197,35 @@
           {% url 'gallery:photo_detail' c.pub.id as pub_detail_url %}
         {% endif %}
 
-        <article class="group cursor-pointer"
+        {% if not c.pub %}
+        <article class="group cursor-pointer js-open-job"
                  itemprop="associatedMedia"
                  itemscope
                  itemtype="https://schema.org/ImageObject"
-                 onclick="window.location.href='{{ open_href }}'">
+                 data-detail-url="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ pub_detail_url|default:open_href }}{% endif %}">
 
           <div class="card overflow-hidden">
             <!-- Image/Thumbnail -->
             <div class="relative">
               {% if j.result_image %}
-                <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]"
-                     src="{{ img_src }}"
+              <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]"
+                     src="{% if profile_header and j.result_image %}{{ j.result_image.url }}{% else %}{{ img_src }}{% endif %}"
                      alt="{{ j.prompt|default:'Результат генерации'|truncatechars:120 }}"
                      loading="lazy"
                      itemprop="contentUrl">
+                {% if profile_header %}
+                <div class="absolute inset-0 cursor-zoom-in" data-open-media="1" aria-label="Открыть"></div>
+                {% else %}
+                <a class="absolute inset-0 cursor-zoom-in" href="{{ open_href }}" aria-label="Открыть"></a>
+                {% endif %}
+
+
 
                 <!-- Overlay Controls -->
-                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300">
-                  <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none">
+                  <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
                     <a class="w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition"
-                       href="{{ img_src }}"
+                       href="{% if profile_header and j.result_image %}{{ j.result_image.url }}{% else %}{{ img_src }}{% endif %}"
                        target="_blank"
                        rel="noopener"
                        onclick="event.stopPropagation();"
@@ -83,6 +1235,9 @@
                       </svg>
                     </a>
 
+
+
+                    {% if can_manage_jobs %}
                     <a class="w-8 h-8 rounded-lg bg-red-500/80 text-white hover:bg-red-600 flex items-center justify-center transition"
                        href="{{ del_confirm }}?next={{ request.get_full_path|urlencode }}"
                        onclick="event.stopPropagation();"
@@ -92,8 +1247,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                       </svg>
                     </a>
+                    {% endif %}
                   </div>
-                </div>
+                  </div>
 
                 <!-- Published Badge -->
                 {% if c.pub %}
@@ -116,12 +1272,23 @@
                   </div>
                 {% endif %}
 
+                {% if can_manage_jobs and not c.pub and hidden_job_ids and j.id in hidden_job_ids %}
+                  {% if not my_profile_is_private %}
+                    {% if not profile_header or not target_profile or not target_profile.is_private %}
+                    <div class="absolute top-3 left-3" data-hide-badge="1">
+                      <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">Скрыто</div>
+                    </div>
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+
                 <!-- Time Badge -->
                 <div class="absolute bottom-3 right-3">
                   <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ j.created_at|date:'c' }}">
                     {{ j.created_at|date:"d.m.Y H:i" }}
                   </time>
                 </div>
+
               {% else %}
                 <!-- Empty State -->
                 <div class="w-full aspect-square bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center">
@@ -138,23 +1305,55 @@
             <!-- Card Content -->
             <div class="p-4">
 
+              <!-- Meta: created time only -->
+              <!-- Title -->
+              <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
+                {% if c.pub %}
+                  {{ c.pub.title|default:"Без названия" }}
+                {% else %}
+                  {{ j.prompt|default:"Без названия" }}
+                {% endif %}
+              </h3>
 
-              <!-- Gallery Stats (if published) -->
-              {% if c.pub %}
-                <div class="flex items-center gap-4 mb-3 text-sm">
-                  <a class="flex items-center gap-1 text-[var(--muted)] hover:text-red-500 transition"
-                     href="{{ pub_detail_url }}"
-                     onclick="event.stopPropagation();"
-                     title="Лайки">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <!-- Author (avatar + username) -->
+              <div class="flex items-center gap-2 mb-3">
+                {% if profile_header and target_profile and target_profile.avatar %}
+                  <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                {% elif request.user.is_authenticated and request.user.profile and request.user.profile.avatar %}
+                  <img src="{{ request.user.profile.avatar.url }}" alt="{{ request.user.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                {% else %}
+                  <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                    {% if profile_header %}{{ target.username|default:"U"|slice:":1"|upper }}{% else %}{{ request.user.username|default:"U"|slice:":1"|upper }}{% endif %}
+                  </span>
+                {% endif %}
+                <a href="{% if profile_header %}/profile-{{ target.username }}{% else %}/profile-{{ request.user.username }}{% endif %}"
+                   class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                   aria-label="@{% if profile_header %}{{ target.username }}{% else %}{{ request.user.username }}{% endif %}">
+                  @{% if profile_header %}{{ target.username }}{% else %}{{ request.user.username }}{% endif %}
+                </a>
+              </div>
+
+              <!-- Interactions row (как в галерее) — для всех работ -->
+                <div class="flex items-center justify-between gap-2 mb-3 text-sm">
+                {% if c.pub %}
+                  <!-- Published: gallery photo like -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if c.pub.id in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-photo-id="{{ c.pub.id }}"
+                          data-url="{% url 'gallery:photo_like' c.pub.id %}"
+                          data-count-target="mj-like-count-{{ c.pub.id }}"
+                          aria-pressed="{% if c.pub.id in liked_photo_ids %}true{% else %}false{% endif %}"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pub.id in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
-                    <span>{{ c.pub.likes|default:0 }}</span>
-                  </a>
+                    <span id="mj-like-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.likes|default:0 }}</span>
+                    <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-url="{% url 'gallery:photo_likers' c.pub.id %}" aria-label="Кто лайкнул">…</span>
+                  </button>
 
                   <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
                      href="{{ pub_detail_url }}#commentList"
-                     onclick="event.stopPropagation();"
+                     data-open-comments="1"
                      title="Комментарии">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -162,14 +1361,89 @@
                     <span>{{ c.pub.comments|default:0 }}</span>
                   </a>
 
+                  <!-- Save -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if saved_photo_ids and c.pub.id in saved_photo_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'gallery:photo_save' c.pub.id %}"
+                          data-count-target="mj-save-count-{{ c.pub.id }}"
+                          aria-pressed="{% if saved_photo_ids and c.pub.id in saved_photo_ids %}true{% else %}false{% endif %}"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if saved_photo_ids and c.pub.id in saved_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                    <span id="mj-save-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.saves|default:0 }}</span>
+                  </button>
+
                   <div class="flex items-center gap-1 text-[var(--muted)]" title="Просмотры">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 06 0z"/>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                     <span>{{ c.pub.views|default:0 }}</span>
                   </div>
-                </div>
+                {% else %}
+                  <!-- Unpublished: job-level like and comment counters -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if c.job_liked %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'generate:job_like' j.id %}"
+                          data-count-target="mj-job-like-count-{{ j.id }}"
+                          aria-pressed="{% if c.job_liked %}true{% else %}false{% endif %}"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.job_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <span id="mj-job-like-count-{{ j.id }}" class="text-sm font-medium">{{ c.job_like_count|default:0 }}</span>
+                    <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-url="{% url 'generate:job_likers' j.id %}" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+                  <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
+                     href="{{ open_href }}#comments"
+                     data-open-comments="1"
+                     title="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span>{{ c.job_comment_count|default:0 }}</span>
+                  </a>
+
+                  <!-- Save (job-level, available for unpublished too) -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if saved_job_ids and j.id in saved_job_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'generate:job_save' j.id %}"
+                          data-count-target="mj-job-save-count-{{ j.id }}"
+                          aria-pressed="{% if saved_job_ids and j.id in saved_job_ids %}true{% else %}false{% endif %}"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if saved_job_ids and j.id in saved_job_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                    <span id="mj-job-save-count-{{ j.id }}" class="text-sm font-medium">{{ c.job_save_count|default:0 }}</span>
+                  </button>
+                {% endif %}
+              </div>
+
+                {% if can_manage_jobs and not show_only_published and not c.pub and not my_profile_is_private %}
+              {% if profile_header and target_profile and target_profile.is_private %}
+              {% else %}
+              <div class="mt-2">
+                <button type="button"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition hide-toggle"
+                        data-job-id="{{ j.id }}"
+                        data-hidden="{% if hidden_job_ids and j.id in hidden_job_ids %}1{% else %}0{% endif %}"
+                        data-url="{% url 'dashboard:api:job_toggle_hidden' j.id %}">
+                  <div class="flex items-center gap-2 text-sm">
+                    <span data-hide-dot class="inline-flex w-2.5 h-2.5 rounded-full {% if hidden_job_ids and j.id in hidden_job_ids %}bg-red-500{% else %}bg-emerald-500{% endif %}"></span>
+                    <span data-hide-label="" class="font-medium">
+                      {% if hidden_job_ids and j.id in hidden_job_ids %}Скрыто{% else %}Не скрыто{% endif %}
+                    </span>
+                  </div>
+                  <span class="relative inline-flex items-center">
+                    <span class="sr-only">Toggle hidden</span>
+                    <span class="w-10 h-6 bg-gray-300 dark:bg-gray-600 rounded-full transition-all pointer-events-none"></span>
+                    <span data-hide-knob class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all {% if hidden_job_ids and j.id in hidden_job_ids %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
+                  </span>
+                </button>
+              </div>
+              {% endif %}
               {% endif %}
 
               <!-- Action Button -->
@@ -196,6 +1470,7 @@
                       Ожидает модерации
                     </button>
                   {% else %}
+                    {% if can_manage_jobs %}
                     <a class="btn btn-primary w-full text-sm"
                        href="{{ share_href }}"
                        onclick="event.stopPropagation();">
@@ -204,6 +1479,7 @@
                       </svg>
                       Поделиться в галерее
                     </a>
+                    {% endif %}
                   {% endif %}
                 {% else %}
                   <button class="btn btn-ghost w-full text-sm opacity-50 cursor-not-allowed"
@@ -220,66 +1496,18 @@
             </div>
           </div>
         </article>
+        {% endif %}
 
         {% endwith %}
         {% endwith %}
       {% endfor %}
     </div>
 
-    <!-- Pagination -->
-    {% if page_obj and paginator %}
-      <nav class="flex items-center justify-center" aria-label="Пагинация">
-        <div class="flex items-center gap-1">
-          {% if page_obj.has_previous %}
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page=1" aria-label="Первая">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
-              </svg>
-              Первая
-            </a>
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.previous_page_number }}" aria-label="Назад">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-              </svg>
-              Назад
-            </a>
-          {% endif %}
+      <!-- Пагинация удалена: используем клиентскую кнопку «Показать ещё» -->
 
-          {% with total=paginator.num_pages current=page_obj.number %}
-            {% for i in paginator.page_range %}
-              {% if i == 1 or i == total or i >= current|add:"-2" and i <= current|add:"2" %}
-                {% if i == current %}
-                  <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">{{ i }}</span>
-                {% else %}
-                  <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ i }}">{{ i }}</a>
-                {% endif %}
-              {% elif i == 2 and current > 4 %}
-                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
-              {% elif i == total|add:"-1" and current < total|add:"-3" %}
-                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
-              {% endif %}
-            {% endfor %}
-          {% endwith %}
-
-          {% if page_obj.has_next %}
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.next_page_number }}" aria-label="Вперёд">
-              Вперёд
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </a>
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ paginator.num_pages }}" aria-label="Последняя">
-              Последняя
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
-              </svg>
-            </a>
-          {% endif %}
-        </div>
-      </nav>
-    {% endif %}
-
+    </div>
   {% else %}
+    <div id="photos-grid" class="media-content">
     <!-- Empty State -->
     <div class="card p-12 text-center">
       <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -308,7 +1536,2200 @@
         </a>
       </div>
     </div>
+    </div>
   {% endif %}
+
+  {% endif %}
+  <!-- Videos Grid -->
+  {% if not show_only_published %}
+  {% if videos_cards %}
+    <div id="videos-grid" class="media-content hidden">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for c in videos_cards %}
+        {% with j=c.obj %}
+        {% url 'gallery:share_video_from_job' j.pk as share_video_href %}
+        {% url 'generate:job_confirm_delete' j.pk as del_confirm %}
+        {% with slug=j.prompt|safe_slugify|default:"image" %}{% url 'generate:job_detail' j.pk slug as job_detail_url %}{% endwith %}
+        {% url 'generate:job_detail_no_slug' j.pk as job_detail_noslug %}
+        {% if c.pub %}
+          {% url 'gallery:video_detail' c.pub.id as pub_video_url %}
+        {% endif %}
+
+          {% if not c.pub %}
+          <article class="group js-open-job" data-detail-url="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{% if c.pub %}{{ pub_video_url }}{% else %}{{ job_detail_noslug }}{% endif %}{% endif %}" data-video-url="{{ j.result_video_url }}" data-poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}">
+            <div class="card overflow-hidden">
+              <!-- Video Preview -->
+              <div class="relative">
+                {% if j.result_video_url %}
+                <video class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02] cursor-pointer"
+                       poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}"
+                       preload="metadata"
+                       muted
+                       loop
+                       playsinline>
+                  <source src="{{ j.result_video_url }}" type="video/mp4">
+                </video>
+
+                <!-- Play/Pause overlay -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-auto video-play-overlay transition-opacity duration-200">
+                  <div class="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 dark:bg-white/20 text-white dark:text-[var(--bg)] backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/80 ring-2 ring-white/20">
+                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Open button with modal -->
+                <button type="button" class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20 js-open-video-modal"
+                   data-video-url="{{ j.result_video_url }}"
+                   data-detail-url="{{ job_detail_noslug }}"
+                   onclick="event.stopPropagation();"
+                   title="Открыть">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                </button>
+
+                <!-- Sound Toggle + Volume -->
+                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                  <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                    <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                      <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                    </svg>
+                    <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M18 8l-6 6"></path>
+                      <path d="M12 8l6 6"></path>
+                    </svg>
+                  </button>
+                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                </div>
+
+                <!-- Model badge (no views for unpublished) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  {% with mdl=j|model_display %}
+                  {% if mdl %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ mdl }}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                </div>
+
+
+
+                <!-- Controls Overlay -->
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none">
+                  <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
+                    {% if can_manage_jobs %}
+                    <a class="w-8 h-8 rounded-lg bg-red-500/80 text-white hover:bg-red-600 flex items-center justify-center transition"
+                       href="{{ del_confirm }}?next={{ request.get_full_path|urlencode }}"
+                       onclick="event.stopPropagation();"
+                       title="Удалить"
+                       aria-label="Удалить">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </a>
+                    {% endif %}
+                  </div>
+                  </div>
+
+                <!-- Published Badge -->
+                {% if c.pub %}
+                  <div class="absolute top-3 left-3">
+                    <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/90 text-white text-xs font-medium">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 6l-11 11-5-5 1.5-1.5 3.5 3.5 9.5-9.5z"/>
+                      </svg>
+                      Опубликовано
+                    </div>
+                  </div>
+                {% elif j.status == 'PENDING_MODERATION' %}
+                  <div class="absolute top-3 left-3">
+                    <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500/90 text-white text-xs font-medium">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      Ожидает модерации
+                    </div>
+                  </div>
+                {% endif %}
+
+                {% if can_manage_jobs and not c.pub and hidden_job_ids and j.id in hidden_job_ids %}
+                  {% if not my_profile_is_private %}
+                    {% if not profile_header or not target_profile or not target_profile.is_private %}
+                    <div class="absolute top-3 left-3" data-hide-badge="1">
+                      <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">Скрыто</div>
+                    </div>
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+
+                <!-- Time Badge -->
+                <div class="absolute bottom-3 right-3">
+                  <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ j.created_at|date:'c' }}">
+                    {{ j.created_at|date:"d.m.Y H:i" }}
+                  </time>
+                </div>
+
+                {% endif %}
+              </div>
+
+              <!-- Card Content -->
+              <div class="p-4">
+                <!-- Meta: created time only -->
+
+
+                <!-- Title -->
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
+                  {% if c.pub %}
+                    {{ c.pub.title|default:"Без названия" }}
+                  {% else %}
+                    {{ j.prompt|default:"Без названия" }}
+                  {% endif %}
+                </h3>
+
+                <!-- Author (avatar + username) -->
+                <div class="flex items-center gap-2 mb-3">
+                  {% if profile_header and target_profile and target_profile.avatar %}
+                    <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% elif request.user.is_authenticated and request.user.profile and request.user.profile.avatar %}
+                    <img src="{{ request.user.profile.avatar.url }}" alt="{{ request.user.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {% if profile_header %}{{ target.username|default:"U"|slice:":1"|upper }}{% else %}{{ request.user.username|default:"U"|slice:":1"|upper }}{% endif %}
+                    </span>
+                  {% endif %}
+                  <a href="{% if profile_header %}/profile-{{ target.username }}{% else %}/profile-{{ request.user.username }}{% endif %}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                     aria-label="@{% if profile_header %}{{ target.username }}{% else %}{{ request.user.username }}{% endif %}">
+                    @{% if profile_header %}{{ target.username }}{% else %}{{ request.user.username }}{% endif %}
+                  </a>
+                </div>
+
+                <!-- Interactions row (как в галерее) — для всех видео -->
+                <div class="flex items-center justify-between gap-2 mb-3 text-sm">
+                  {% if c.pub %}
+                    <button type="button"
+                            class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if c.pub.id in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-video-id="{{ c.pub.id }}"
+                            data-url="{% url 'gallery:video_like' c.pub.id %}"
+                            data-count-target="mj-video-like-count-{{ c.pub.id }}"
+                            aria-pressed="{% if c.pub.id in liked_video_ids %}true{% else %}false{% endif %}"
+                            aria-label="Лайк">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pub.id in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                      </svg>
+                      <span id="mj-video-like-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.likes|default:0 }}</span>
+                      <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-url="{% url 'gallery:video_likers' c.pub.id %}" aria-label="Кто лайкнул">…</span>
+                    </button>
+
+                    <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
+                       href="{{ pub_video_url }}#comments"
+                       data-open-comments="1"
+                       title="Комментарии">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      <span>{{ c.pub.comments|default:0 }}</span>
+                    </a>
+
+                    <!-- Save -->
+                    <button type="button"
+                            class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if saved_video_ids and c.pub.id in saved_video_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-url="{% url 'gallery:video_save' c.pub.id %}"
+                            data-count-target="mj-video-save-count-{{ c.pub.id }}"
+                            aria-pressed="{% if saved_video_ids and c.pub.id in saved_video_ids %}true{% else %}false{% endif %}"
+                            aria-label="Сохранить">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if saved_video_ids and c.pub.id in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                      <span id="mj-video-save-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.saves|default:0 }}</span>
+                    </button>
+                  {% else %}
+                    <button type="button"
+                            class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if c.job_liked %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-url="{% url 'generate:job_like' j.id %}"
+                            data-count-target="mj-job-like-count-{{ j.id }}"
+                            aria-pressed="{% if c.job_liked %}true{% else %}false{% endif %}"
+                            aria-label="Лайк">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.job_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                      </svg>
+                      <span id="mj-job-like-count-{{ j.id }}" class="text-sm font-medium">{{ c.job_like_count|default:0 }}</span>
+                      <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-url="{% url 'generate:job_likers' j.id %}" aria-label="Кто лайкнул">…</span>
+                    </button>
+
+                    <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
+                       href="{% if c.pub %}{{ pub_video_url }}{% else %}{{ job_detail_url }}{% endif %}#comments"
+                       data-open-comments="1"
+                       title="Комментарии">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      <span>{{ c.job_comment_count|default:0 }}</span>
+                    </a>
+
+                    <!-- Save (job-level, available for unpublished too) -->
+                    <button type="button"
+                            class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if video_saved_job_ids and j.id in video_saved_job_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-url="{% url 'generate:job_save' j.id %}"
+                            data-count-target="mj-video-job-save-count-{{ j.id }}"
+                            aria-pressed="{% if video_saved_job_ids and j.id in video_saved_job_ids %}true{% else %}false{% endif %}"
+                            aria-label="Сохранить">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if video_saved_job_ids and j.id in video_saved_job_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                      <span id="mj-video-job-save-count-{{ j.id }}" class="text-sm font-medium">{{ c.job_save_count|default:0 }}</span>
+                    </button>
+                  {% endif %}
+                </div>
+
+                {% if can_manage_jobs and not show_only_published and not c.pub %}
+                  {% if not my_profile_is_private %}
+                  <!-- Hide/Show Toggle -->
+                  <button type="button" class="w-full flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition hide-toggle"
+                          data-job-id="{{ j.id }}"
+                          data-hidden="{% if hidden_job_ids and j.id in hidden_job_ids %}1{% else %}0{% endif %}"
+                          data-url="{% url 'dashboard:api:job_toggle_hidden' j.id %}">
+                    <div class="flex items-center gap-2 text-sm min-w-0">
+                      <span data-hide-dot class="inline-flex w-2.5 h-2.5 rounded-full {% if hidden_job_ids and j.id in hidden_job_ids %}bg-red-500{% else %}bg-emerald-500{% endif %}"></span>
+                      <span data-hide-label="" class="font-medium">
+                        {% if hidden_job_ids and j.id in hidden_job_ids %}Скрыто{% else %}Не скрыто{% endif %}
+                      </span>
+                    </div>
+                    <span class="relative inline-flex items-center shrink-0">
+                      <span class="sr-only">Toggle hidden</span>
+                      <span class="w-10 h-6 bg-gray-300 dark:bg-gray-600 rounded-full transition-all pointer-events-none"></span>
+                      <span data-hide-knob class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all {% if hidden_job_ids and j.id in hidden_job_ids %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
+                    </span>
+                  </button>
+                  {% endif %}
+
+                  <!-- Share Button -->
+                  <a class="btn btn-primary w-full text-sm flex items-center justify-center gap-2"
+                     href="{{ share_video_href }}"
+                     onclick="event.stopPropagation();">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                    Поделиться в галерее
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+          {% endif %}
+
+        {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div id="videos-grid" class="media-content hidden">
+      <div class="card p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold mb-3">Пока нет видео</h2>
+        <p class="text-[var(--muted)] mb-8 max-w-md mx-auto">
+          Создайте первое видео с помощью ИИ
+        </p>
+        <a class="btn btn-primary" href="{% url 'generate:new' %}?type=video">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Создать первое видео
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+ </div>
+
+ <style>
+/* Follow modal responsive layout */
+.pf-follow-modal-panel {
+  max-width: min(95vw, 480px);
+}
+
+@media (max-width: 480px) {
+  #pfFollowModal {
+    align-items: flex-start;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+  }
+  .pf-follow-modal-panel {
+    border-radius: 1.125rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .pf-follow-modal-panel .flex.items-center.justify-between.p-4,
+  .pf-follow-modal-panel .flex.items-center.justify-between.p-4.sm\:p-5 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .pf-follow-modal-panel nav {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  #pfFollowSearch {
+    font-size: 0.8125rem;
+  }
+}
+
+/* Media tabs - modern toggle style */
+.media-tab {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--muted);
+  background: transparent;
+  position: relative;
+}
+
+/* Responsive wrapper for media tabs (photos / videos / published) */
+.media-tabs-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 0.25rem;
+}
+
+/* Base: tabs are fluid and can shrink */
+.media-tabs-wrapper .media-tab {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Small screens (≈phones, incl. 320px): 2 tabs in first row, "Опубликованные" moves to next row */
+@media (max-width: 480px) {
+  .media-tabs-wrapper .media-tab {
+    flex: 1 1 calc(50% - 0.125rem);
+  }
+  .media-tabs-wrapper .media-tab[data-tab="published"] {
+    flex-basis: 100%;
+  }
+}
+
+/* Wider screens: keep all three tabs in a single row, equally visible */
+@media (min-width: 640px) {
+  .media-tabs-wrapper {
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+  .media-tabs-wrapper .media-tab {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.media-tab.active {
+  color: var(--fg);
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="dark"] .media-tab.active {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.media-tab:hover:not(.active) {
+  color: var(--fg);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="dark"] .media-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.media-tab .media-count {
+  transition: all 0.2s ease;
+}
+
+.media-tab.active .media-count {
+  background: rgba(var(--primary-rgb), 0.15) !important;
+  color: var(--primary);
+}
+
+:root[data-theme="dark"] .media-tab.active .media-count {
+  background: rgba(var(--primary-rgb), 0.2) !important;
+}
+
+/* Video overlay */
+.video-play-overlay {
+  transition: opacity 0.2s ease;
+}
+
+video:not([controls]):hover + .video-play-overlay {
+  opacity: 1;
+}
+
+/* Responsive breakpoint for xs */
+@media (min-width: 475px) {
+  .xs\:inline {
+    display: inline !important;
+  }
+  .xs\:px-4 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+</style>
+
+{% if profile_header %}
+<script>
+(function(){
+  function getCSRF(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return (input && input.value) ? input.value : '';
+  }
+
+  async function toggleFollow(btn){
+    const username = btn && btn.getAttribute('data-username');
+    if (!username) return;
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    try{
+      const token = getCSRF();
+      const fd = new FormData();
+      fd.append('username', username);
+      fd.append('csrfmiddlewaretoken', token);
+      const res = await fetch("{% url 'dashboard:api:follow_toggle' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': token,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: fd
+      });
+      const ct = res.headers.get('Content-Type') || '';
+      let j = null;
+      if (ct.includes('application/json')) {
+        j = await res.json().catch(()=>null);
+      }
+      if (!res.ok || !j || j.ok !== true) {
+        const ff = document.getElementById('pfFollowFallbackForm');
+        if (ff) {
+          const inp = ff.querySelector('input[name="username"]');
+          if (inp) inp.value = username;
+          if (ff.requestSubmit) ff.requestSubmit(); else ff.submit();
+        }
+        return;
+      }
+      const nowFollowing = !!j.following;
+      btn.classList.toggle('btn-primary', !nowFollowing);
+      btn.classList.toggle('btn-ghost', nowFollowing);
+      btn.textContent = nowFollowing ? 'Отписаться' : 'Подписаться';
+      btn.setAttribute('aria-pressed', nowFollowing ? 'true' : 'false');
+
+      const cnt = document.getElementById('pfFollowers');
+      const newCount = (typeof j.followers_count === 'number') ? j.followers_count : (typeof j.followers === 'number' ? j.followers : null);
+      if (cnt && newCount !== null) cnt.textContent = String(newCount);
+    }catch(_){
+      // ignore
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  }
+
+  // Define inline fallback callable
+  if (!window.__pfToggleFollow) {
+    window.__pfToggleFollow = function(button){ return toggleFollow(button); };
+  }
+
+  // Capture-phase delegate and bubble fallback
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('[data-follow-toggle="1"]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFollow(btn);
+  }, true);
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('[data-follow-toggle="1"]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFollow(btn);
+  });
+})();
+</script>
+{% endif %}
+
+<script>
+(function() {
+  // Tab switching + Published tab lazy loading
+  const ONLY_PUBLISHED = {{ show_only_published|yesno:"true,false" }};
+  const tabs = document.querySelectorAll('.media-tab');
+  const contents = document.querySelectorAll('.media-content');
+
+  // Глушим все видео (во всех вкладках), чтобы звук не оставался при переключении
+  function pauseAllVideos() {
+    try {
+      document.querySelectorAll('#photos-grid video, #videos-grid video, #published-grid-inner video').forEach(function(v){
+        try {
+          v.pause();
+          v.muted = true;
+        } catch(_) {}
+      });
+    } catch(_) {}
+  }
+
+  const publishedGrid = document.getElementById('published-grid-inner');
+  const publishedEmpty = document.getElementById('published-empty');
+  const publishedTotalEl = document.getElementById('published-total');
+  const CAN_MANAGE = {{ can_manage_jobs|yesno:"true,false" }};
+  const IS_PRIVATE = {% if profile_header and target_profile %}{{ target_profile.is_private|yesno:"true,false" }}{% else %}false{% endif %};
+
+  // Initial like/save sets for published items (to colorize buttons 1:1 with user state)
+  const INIT_LIKED_PHOTOS = new Set([{% for i in liked_photo_ids %}{{ i }}{% if not forloop.last %},{% endif %}{% endfor %}]);
+  const INIT_LIKED_VIDEOS = new Set([{% for i in liked_video_ids %}{{ i }}{% if not forloop.last %},{% endif %}{% endfor %}]);
+  const INIT_SAVED_PHOTOS = new Set([{% if saved_photo_ids %}{% for i in saved_photo_ids %}{{ i }}{% if not forloop.last %},{% endif %}{% endfor %}{% endif %}]);
+  const INIT_SAVED_VIDEOS = new Set([{% if saved_video_ids %}{% for i in saved_video_ids %}{{ i }}{% if not forloop.last %},{% endif %}{% endfor %}{% endif %}]);
+  let publishedLoaded = false;
+  let publishedLoading = false;
+
+  // Context menus for Published cards (three dots) + copy link
+  const __openMenus = new Set();
+  function __closeAllMenus(exceptId){
+    document.querySelectorAll('[data-menu]').forEach(m=>{
+      if (!exceptId || m.id !== exceptId){ m.classList.add('hidden'); __openMenus.delete(m.id); }
+    });
+  }
+  document.addEventListener('click', (e)=>{
+    // Toggle menu
+    const t = e.target.closest('[data-menu-toggle]');
+    if (t){
+      e.preventDefault(); e.stopPropagation();
+      const id = t.getAttribute('data-menu-toggle');
+      if (!id) return;
+      const panel = document.getElementById(id);
+      if (!panel) return;
+      const isOpen = !panel.classList.contains('hidden');
+      __closeAllMenus(isOpen ? null : id);
+      panel.classList.toggle('hidden', isOpen);
+      if (isOpen) __openMenus.delete(id); else __openMenus.add(id);
+      return;
+    }
+    // Close menus when clicking outside
+    if (!e.target.closest('[data-menu]')){
+      __closeAllMenus();
+    }
+    // Copy link
+    const cp = e.target.closest('.js-copy-link');
+    if (cp){
+      e.preventDefault(); e.stopPropagation();
+      const url = cp.getAttribute('data-url') || '';
+      if (!url) return;
+      try{
+        navigator.clipboard.writeText(url);
+        cp.textContent = 'Скопировано';
+        setTimeout(()=>{ try{ cp.textContent = 'Скопировать ссылку'; }catch(_){} }, 1200);
+      }catch(_){}
+    }
+  });
+
+  const targetUsername = "{{ target.username|default_if_none:'' }}";
+
+  const pageOwnerUsername = (targetUsername || "{{ request.user.username|default_if_none:'' }}");
+  const pageOwnerAvatar = "{% if profile_header and target_profile and target_profile.avatar %}{{ target_profile.avatar.url }}{% elif request.user.is_authenticated and request.user.profile and request.user.profile.avatar %}{{ request.user.profile.avatar.url }}{% else %}{% endif %}";
+
+  function renderPublished(items){
+    if (!Array.isArray(items)) items = [];
+    if (!items.length){
+      if (publishedEmpty) publishedEmpty.classList.remove('hidden');
+      if (publishedGrid) publishedGrid.innerHTML = '';
+      return;
+    }
+    if (publishedEmpty) publishedEmpty.classList.add('hidden');
+
+    function formatDate(iso){
+      try{
+        if (!iso) return "";
+        const d = new Date(iso);
+      const dd = String(d.getDate()).padStart(2,"0");
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const yyyy = d.getFullYear();
+      const hh = String(d.getHours()).padStart(2,"0");
+      const min = String(d.getMinutes()).padStart(2,"0");
+      return `${dd}.${mm}.${yyyy} ${hh}:${min}`;
+      }catch(_){ return ""; }
+    }
+
+    const html = items.map(it => {
+      const type = it.type === 'video' ? 'video' : 'photo';
+      const id = Number(it.id || 0);
+      const durl = it.detail_url || '';
+      const title = String(it.title || '').replace(/"/g, '"');
+      const likes = Number(it.likes_count ?? it.likes ?? 0);
+      const comments = Number(it.comments_count ?? it.comments ?? 0);
+      const views = Number(it.view_count ?? it.views ?? it.views_count ?? 0);
+      const saves = Number(it.saves_count ?? it.saves ?? 0);
+      const jobId = Number(it.job_id || 0);
+      const hidden = !!it.hidden;
+      const canHide = (CAN_MANAGE && !ONLY_PUBLISHED && !IS_PRIVATE);
+      const menuId = `pub-menu-${type}-${id}`;
+
+      if (type === 'video'){
+        const poster = it.media_url || '';
+        // Используем прямой video_url (обычно локальный /media/...), а stream_url оставляем как запасной вариант
+        const vurl = it.video_url || it.stream_url || '';
+        const createdLabel = formatDate(it.created || it.created_at);
+        const modelLabel = (it.model_display || it.model || it.job_model || it.source_model || "").toString().trim();
+        return `
+          <article class="group cursor-pointer js-open-video"
+                   data-detail-url="${durl}"
+                   data-video-url="${vurl}"
+                   data-poster="${poster}">
+            <div class="card overflow-hidden">
+              <div class="relative">
+                <video class="w-full aspect-[4/5] object-cover cursor-pointer transition-all duration-300 group-hover:scale-[1.02]"
+                       ${poster ? `poster="${poster}"` : ''}
+                       preload="metadata"
+                       muted
+                       loop
+                       playsinline webkit-playsinline x5-playsinline
+                       src="${vurl}">
+                </video>
+
+                <!-- Play/Pause overlay -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-auto video-play-overlay transition-opacity duration-200">
+                  <div class="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 dark:bg-white/20 text-white dark:text-[var(--bg)] backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/80 ring-2 ring-white/20">
+                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Open button -->
+                <a class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20"
+                   href="${durl}"
+                   onclick="event.stopPropagation();"
+                   title="Открыть">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                </a>
+
+                <!-- Sound Toggle + Volume -->
+                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                  <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                    <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                      <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                    </svg>
+                    <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M18 8l-6 6"></path>
+                      <path d="M12 8l6 6"></path>
+                    </svg>
+                  </button>
+                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                </div>
+
+                <!-- Top-right overlays (model + views) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  ${modelLabel ? `<div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">${modelLabel}</div>` : ''}
+                  <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                    </svg>
+                    <span>${views}</span>
+                  </div>
+                </div>
+
+
+
+              </div>
+
+              <div class="p-4">
+
+
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
+                  ${title || ""}
+                </h3>
+
+                <div class="flex items-center gap-2 mb-3">
+                  ${pageOwnerAvatar ? `<img src="${pageOwnerAvatar}" alt="${pageOwnerUsername}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">` : `<span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">${(pageOwnerUsername||'U').slice(0,1).toUpperCase()}</span>`}
+                  <a href="/profile-${encodeURIComponent(pageOwnerUsername)}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal" aria-label="@${pageOwnerUsername}">
+                    @${pageOwnerUsername}
+                  </a>
+                </div>
+
+                <!-- Interactions row -->
+                <div class="flex items-center justify-between gap-2 mb-3 text-sm">
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle text-[var(--muted)]"
+                          data-video-id="${id}"
+                          data-url="/gallery/video/${id}/like"
+data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-' + id}"
+                          aria-pressed="false"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+<span id="${type === 'video' ? 'video-like-count-' + id : 'like-count-' + id}" class="text-sm font-medium">${likes}</span>
+<span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="${likes}" data-url="/gallery/video/${id}/likers" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="${durl}#comments"
+                     data-open-comments="1"
+                     title="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm font-medium">${comments}</span>
+                  </a>
+
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle text-[var(--muted)]"
+                          data-video-id="${id}"
+                          data-url="/gallery/video/${id}/save"
+                          data-count-target="pub-save-count-${type}-${id}"
+                          aria-pressed="false"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                    <span id="pub-save-count-${type}-${id}" class="text-sm font-medium">${saves}</span>
+                  </button>
+
+                </div>
+
+                <!-- hide-toggle removed for published items -->
+
+                <div class="pt-3 border-t border-[var(--bord)]">
+                  <a class="btn btn-ghost w-full text-sm"
+                     href="${durl}"
+                     onclick="event.stopPropagation();">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Открыть в галерее
+                  </a>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      } else {
+        const src = it.media_url || '';
+        const createdLabel = formatDate(it.created || it.created_at);
+        const modelLabel = (it.model_display || it.model || it.job_model || it.source_model || "").toString().trim();
+        return `
+          <article class="group cursor-pointer js-open-photo"
+                   data-detail-url="${durl}"
+                   data-media-url="${src}"
+                   data-title="${title}">
+            <div class="card overflow-hidden">
+              <div class="relative">
+                <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]" src="${src}" alt="${title}" loading="lazy">
+                <a class="absolute inset-0 cursor-zoom-in" href="${durl}" aria-label="Открыть"></a>
+                <!-- Top-right overlays (model + views) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  ${modelLabel ? `<div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">${modelLabel}</div>` : ''}
+                  <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                    </svg>
+                    <span>${views}</span>
+                  </div>
+                </div>
+
+
+              </div>
+
+              <div class="p-4">
+
+
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
+                  ${title || ""}
+                </h3>
+
+                <div class="flex items-center gap-2 mb-3">
+                  ${pageOwnerAvatar ? `<img src="${pageOwnerAvatar}" alt="${pageOwnerUsername}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">` : `<span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">${(pageOwnerUsername||'U').slice(0,1).toUpperCase()}</span>`}
+                  <a href="/profile-${encodeURIComponent(pageOwnerUsername)}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal" aria-label="@${pageOwnerUsername}">
+                    @${pageOwnerUsername}
+                  </a>
+                </div>
+
+                <!-- Interactions row -->
+                <div class="flex items-center justify-between gap-2 mb-3 text-sm">
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle text-[var(--muted)]"
+                          data-photo-id="${id}"
+                          data-url="/gallery/photo/${id}/like"
+                          data-count-target="pub-like-count-${type}-${id}"
+                          aria-pressed="false"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <span id="pub-like-count-${type}-${id}" class="text-sm font-medium">${likes}</span>
+<span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="${likes}" data-url="/gallery/photo/${id}/likers" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="${durl}#comments"
+                     data-open-comments="1"
+                     title="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm font-medium">${comments}</span>
+                  </a>
+
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle text-[var(--muted)]"
+                          data-photo-id="${id}"
+                          data-url="/gallery/photo/${id}/save"
+                          data-count-target="pub-save-count-${type}-${id}"
+                          aria-pressed="false"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                    <span id="pub-save-count-${type}-${id}" class="text-sm font-medium">${saves}</span>
+                  </button>
+
+                </div>
+
+                <!-- hide-toggle removed for published items -->
+
+                <div class="pt-3 border-t border-[var(--bord)]">
+                  <a class="btn btn-ghost w-full text-sm"
+                     href="${durl}"
+                     onclick="event.stopPropagation();">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Открыть в галерее
+                  </a>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }
+    }).join('');
+
+    if (publishedGrid) {
+      publishedGrid.innerHTML = html;
+      // Apply initial like/save states (red heart if liked, green bookmark if saved)
+      (function(){
+        try{
+          // Likes
+          publishedGrid.querySelectorAll('.like-toggle').forEach(function(btn){
+            var svg = btn.querySelector('svg');
+            var vid = btn.getAttribute('data-video-id');
+            var pid = btn.getAttribute('data-photo-id');
+            var liked = false;
+            if (vid) liked = INIT_LIKED_VIDEOS.has(Number(vid));
+            else if (pid) liked = INIT_LIKED_PHOTOS.has(Number(pid));
+            btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+            if (liked){
+              btn.classList.add('text-red-500');
+              btn.classList.remove('text-[var(--muted)]');
+              if (svg) svg.setAttribute('fill', 'currentColor');
+            } else {
+              btn.classList.remove('text-red-500');
+              btn.classList.add('text-[var(--muted)]');
+              if (svg) svg.setAttribute('fill', 'none');
+            }
+          });
+
+          // Saves
+          publishedGrid.querySelectorAll('.save-toggle').forEach(function(btn){
+            var svg = btn.querySelector('svg');
+            var vid = btn.getAttribute('data-video-id');
+            var pid = btn.getAttribute('data-photo-id');
+            var saved = false;
+            if (vid) saved = INIT_SAVED_VIDEOS.has(Number(vid));
+            else if (pid) saved = INIT_SAVED_PHOTOS.has(Number(pid));
+            btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+            if (saved){
+              btn.classList.add('text-emerald-500');
+              btn.classList.remove('text-[var(--muted)]');
+              if (svg) svg.setAttribute('fill', 'currentColor');
+            } else {
+              btn.classList.remove('text-emerald-500');
+              btn.classList.add('text-[var(--muted)]');
+              if (svg) svg.setAttribute('fill', 'none');
+            }
+          });
+        }catch(_){}
+      })();
+      try { document.dispatchEvent(new CustomEvent('reinit-video-sound', { detail: { root: publishedGrid } })); } catch(e) {}
+      // Hide bottom "Открыть в галерее" buttons for Published cards to match gallery behavior
+      try {
+        publishedGrid.querySelectorAll('a.btn.btn-ghost.w-full.text-sm').forEach(function(a){
+          if (((a.textContent || '').trim()).indexOf('Открыть в галерее') !== -1) {
+            var wrap = a.closest('div');
+            if (wrap) wrap.classList.add('hidden');
+          }
+        });
+      } catch(e) {}
+
+      // "Показать ещё" для опубликованных (20 карточек за клик)
+      (function(){
+        // удалить предыдущую кнопку, если перерисовываем
+        var prev = document.getElementById('btnMorePublished');
+        if (prev && prev.parentElement) { try { prev.parentElement.remove(); } catch(_) {} }
+        var cards = Array.from(publishedGrid.querySelectorAll('article'));
+        var BATCH = 20;
+        if (!cards.length || cards.length <= BATCH) return;
+        var shown = BATCH;
+        cards.forEach(function(el, i){ el.classList.toggle('hidden', i >= shown); });
+        var wrap = document.createElement('div');
+        wrap.className = 'col-span-full mt-6 text-center';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = 'btnMorePublished';
+        btn.className = 'btn btn-outline w-full sm:w-auto';
+        btn.textContent = 'Показать ещё';
+        btn.addEventListener('click', function(){
+          shown += BATCH;
+          cards.forEach(function(el, i){ el.classList.toggle('hidden', i >= shown); });
+          if (shown >= cards.length) btn.classList.add('hidden');
+        });
+        wrap.appendChild(btn);
+        // разместим под сеткой
+        var parent = publishedGrid.parentElement || publishedGrid;
+        parent.appendChild(wrap);
+      })();
+    }
+  }
+
+  async function loadPublished(){
+    if (publishedLoaded || publishedLoading) return;
+    publishedLoading = true;
+    if (publishedGrid) {
+      publishedGrid.innerHTML = `
+        <div class="col-span-full py-16 text-center text-sm text-[var(--muted)]">
+          Загрузка...
+        </div>`;
+    }
+    try{
+      const params = new URLSearchParams();
+      if (targetUsername) params.set('username', targetUsername);
+      params.set('limit', '120');
+
+      // Use server-generated URL to avoid i18n/prefix issues; try multiple fallbacks
+      const publishedApiUrl = "{% url 'dashboard:api:profile_published_feed' %}";
+      const candidates = [
+        publishedApiUrl,
+        (publishedApiUrl.startsWith('http') ? publishedApiUrl : (location.origin + publishedApiUrl)),
+        "/dashboard/api/profile/published/"
+      ];
+      let res = null, j = null, ok = false, lastStatus = 0;
+      for (const base of candidates) {
+        try {
+          res = await fetch(`${base}?${params.toString()}`, { headers:{'X-Requested-With':'fetch'}, credentials:'same-origin' });
+          lastStatus = res.status || 0;
+          j = await res.json().catch(()=>null);
+          const okJson = !!j && (j.ok === true || Array.isArray(j.items) || typeof j.count === 'number');
+          if (res.ok && okJson) { ok = true; break; }
+        } catch (e) {
+          // network error, try next candidate
+          lastStatus = 0;
+          continue;
+        }
+      }
+      if (ok){
+        if (publishedTotalEl) publishedTotalEl.textContent = String(j.count || 0);
+        renderPublished(j.items || []);
+        publishedLoaded = true;
+      } else {
+        if (publishedGrid){
+          console.error("Published feed load failed", { status: lastStatus, response: j });
+          publishedGrid.innerHTML = `<div class="col-span-full py-16 text-center text-sm text-red-500">${lastStatus ? 'Ошибка загрузки' : 'Ошибка сети'}</div>`;
+        }
+      }
+    }catch(_){
+      if (publishedGrid){
+        publishedGrid.innerHTML = `<div class="col-span-full py-16 text-center text-sm text-red-500">Ошибка сети</div>`;
+      }
+    }finally{
+      publishedLoading = false;
+    }
+  }
+
+  if (ONLY_PUBLISHED) {
+    try { document.getElementById('published-grid').classList.remove('hidden'); } catch(e){}
+    // Fire immediately and also schedule redundant triggers to guarantee load
+    loadPublished();
+    // Next tick (in case script executed before full DOM is ready)
+    setTimeout(() => { if (!publishedLoaded && !publishedLoading) loadPublished(); }, 0);
+    // On window load (last resort)
+    (function(){
+      function once() {
+        if (!publishedLoaded && !publishedLoading) loadPublished();
+        try { window.removeEventListener('load', once); } catch(_) {}
+      }
+      window.addEventListener('load', once);
+    })();
+  }
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+
+      // При переключении вкладки сразу глушим все возможные видео
+      pauseAllVideos();
+
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      contents.forEach(content => {
+        if (content.id === `${targetTab}-grid`) {
+          content.classList.remove('hidden');
+        } else {
+          content.classList.add('hidden');
+        }
+      });
+
+      if (targetTab === 'published') {
+        loadPublished();
+      }
+
+      try {
+        localStorage.setItem('my_jobs_active_tab', targetTab);
+      } catch(e) {}
+    });
+  });
+
+  // Check URL parameter for tab
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+
+  if (tabParam) {
+    // URL parameter takes priority
+    const tabEl = document.querySelector(`.media-tab[data-tab="${tabParam}"]`);
+    if (tabEl) {
+      tabEl.click();
+    }
+  } else {
+    // Restore last tab from localStorage
+    try {
+      const savedTab = localStorage.getItem('my_jobs_active_tab');
+      if (savedTab) {
+        const savedTabEl = document.querySelector(`.media-tab[data-tab="${savedTab}"]`);
+        if (savedTabEl) savedTabEl.click();
+      }
+    } catch(e) {}
+  }
+
+  // Video interactions for published grid: play/pause with overlay + pause others
+  (function(){
+    const CONTAINER = '#published-grid-inner';
+    function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
+    function setPlaying(card, playing){
+      if (!card) return;
+      card.classList.toggle('playing', !!playing);
+      const overlay = card.querySelector('.video-play-overlay');
+      if (overlay){
+        const playI = overlay.querySelector('.play-icon');
+        const pauseI = overlay.querySelector('.pause-icon');
+        if (playI && pauseI){
+          playI.classList.toggle('hidden', !!playing);
+          pauseI.classList.toggle('hidden', !playing);
+        }
+        overlay.style.opacity = playing ? '0' : '1';
+      }
+    }
+    function pauseAll(except){
+      document.querySelectorAll(CONTAINER + ' video').forEach(v=>{
+        if (v !== except){
+          try { v.pause(); } catch(_){}
+          setPlaying(findCard(v), false);
+        }
+      });
+    }
+    // Allow modal handler to decide; do not stop propagation here to keep play/pause working.
+    // Click on video toggles playback
+    document.addEventListener('click', (e)=>{
+      const video = e.target.closest(CONTAINER + ' video');
+      if (!video || video.hasAttribute('controls')) return;
+      const card = findCard(video);
+      if (video.paused){
+        pauseAll(video);
+        video.play().catch(()=>{});
+        setPlaying(card, true);
+      } else {
+        video.pause();
+        setPlaying(card, false);
+      }
+    });
+    // Click on overlay toggles playback
+    document.addEventListener('click', (e)=>{
+      const ov = e.target.closest(CONTAINER + ' .video-play-overlay');
+      if (!ov) return;
+      const card = findCard(ov);
+      const video = card && card.querySelector('video');
+      if (!video || video.hasAttribute('controls')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (video.paused){
+        pauseAll(video);
+        video.play().catch(()=>{});
+        setPlaying(card, true);
+      } else {
+        video.pause();
+        setPlaying(card, false);
+      }
+    });
+    // Sync state on native events
+    document.querySelectorAll(CONTAINER + ' video').forEach(video=>{
+      video.addEventListener('ended', ()=> setPlaying(findCard(video), false));
+      video.addEventListener('play',  ()=> setPlaying(findCard(video), true));
+      video.addEventListener('pause', ()=> setPlaying(findCard(video), false));
+    });
+  })();
+})();
+</script>
+
+<script>
+// Video interactions for videos-grid: play/pause overlay and click to play
+(function(){
+  const CONTAINER = '#videos-grid';
+  function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
+  function setPlaying(card, playing){
+    if (!card) return;
+    card.classList.toggle('playing', !!playing);
+    const overlay = card.querySelector('.video-play-overlay');
+    if (overlay){
+      const playI = overlay.querySelector('.play-icon');
+      const pauseI = overlay.querySelector('.pause-icon');
+      if (playI && pauseI){
+        playI.classList.toggle('hidden', !!playing);
+        pauseI.classList.toggle('hidden', !playing);
+      }
+      overlay.style.opacity = playing ? '0' : '1';
+    }
+  }
+  function pauseAll(except){
+    document.querySelectorAll(CONTAINER + ' video').forEach(v=>{
+      if (v !== except){
+        try { v.pause(); } catch(_){}
+        setPlaying(findCard(v), false);
+      }
+    });
+  }
+  // Allow modal handler to decide; do not stop propagation here to keep play/pause working.
+  // Toggle by clicking on the video
+  document.addEventListener('click', (e)=>{
+    const video = e.target.closest(CONTAINER + ' video');
+    if (!video || video.hasAttribute('controls')) return;
+    const card = findCard(video);
+    e.preventDefault();
+    if (video.paused){
+      pauseAll(video);
+      video.play().catch(()=>{});
+      setPlaying(card, true);
+    } else {
+      video.pause();
+      setPlaying(card, false);
+    }
+  });
+  // Toggle by clicking overlay (play icon)
+  document.addEventListener('click', (e)=>{
+    const ov = e.target.closest(CONTAINER + ' .video-play-overlay');
+    if (!ov) return;
+    const card = findCard(ov);
+    const video = card && card.querySelector('video');
+    if (!video || video.hasAttribute('controls')) return;
+    e.preventDefault(); e.stopPropagation();
+    if (video.paused){
+      pauseAll(video);
+      video.play().catch(()=>{});
+      setPlaying(card, true);
+    } else {
+      video.pause();
+      setPlaying(card, false);
+    }
+  });
+  // Sync icons on native events
+  document.querySelectorAll(CONTAINER + ' video').forEach(video=>{
+    video.addEventListener('ended', ()=> setPlaying(findCard(video), false));
+    video.addEventListener('play',  ()=> setPlaying(findCard(video), true));
+    video.addEventListener('pause', ()=> setPlaying(findCard(video), false));
+  });
+})();
+</script>
+
+<script>
+(function(){
+  // Sound toggle + Volume slider for My Jobs videos
+  const VOL_KEY = 'gallery_video_volume_pct';
+
+  function findCard(el){
+    return el.closest('article') || el.closest('.group') || el.parentElement;
+  }
+  function hasAudio(video){
+    if (!video) return false;
+    try {
+      if (typeof video.mozHasAudio !== 'undefined') return !!video.mozHasAudio;            // Firefox
+      if (video.audioTracks && video.audioTracks.length) return true;                      // Some browsers
+      if (typeof video.webkitAudioDecodedByteCount !== 'undefined') {                      // Safari heuristic
+        return video.webkitAudioDecodedByteCount > 0;
+      }
+      if (typeof video.captureStream === 'function') {
+        try {
+          const s = video.captureStream();
+          if (s && s.getAudioTracks) return s.getAudioTracks().length > 0;
+        } catch(_) {}
+      }
+    } catch(_) {}
+    return false;
+  }
+  function getSavedVol(){ try{ const v = localStorage.getItem(VOL_KEY); const n = Number(v); return isFinite(n) ? Math.max(0, Math.min(100, n)) : null; }catch(_){ return null; } }
+  function setSavedVol(p){ try{ localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, p)))); }catch(_){ } }
+
+  function markBtnState(btn, video){
+    const disabled = video ? !hasAudio(video) : true;
+    btn.dataset.disabled = disabled ? '1' : '0';
+    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    btn.title = disabled ? 'Нет аудио' : '';
+    btn.classList.toggle('opacity-60', disabled);
+    btn.classList.toggle('cursor-not-allowed', disabled);
+    const onI = btn.querySelector('.icon-vol-on');
+    const offI = btn.querySelector('.icon-vol-off');
+    if (disabled){
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+    } else if (onI && offI) {
+      const muted = !!video?.muted;
+      onI.classList.toggle('hidden', muted);
+      offI.classList.toggle('hidden', !muted);
+    }
+    // Slider visibility
+    const card = findCard(btn);
+    const slider = card && card.querySelector('.vid-vol');
+    if (slider){
+      slider.classList.toggle('hidden', disabled);
+      slider.disabled = !!disabled;
+    }
+  }
+  function updateSoundBtn(btn, muted){
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){
+      const onI = btn.querySelector('.icon-vol-on');
+      const offI = btn.querySelector('.icon-vol-off');
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+      btn.setAttribute('aria-label', 'Нет аудио');
+      return;
+    }
+    const onI = btn.querySelector('.icon-vol-on');
+    const offI = btn.querySelector('.icon-vol-off');
+    if (onI && offI){
+      onI.classList.toggle('hidden', muted);
+      offI.classList.toggle('hidden', !muted);
+    }
+    btn.setAttribute('aria-label', muted ? 'Включить звук' : 'Выключить звук');
+  }
+  function syncSliderFromVideo(card, video){
+    const slider = card && card.querySelector('.vid-vol');
+    if (!slider || !video) return;
+    const pct = Math.round((video.muted ? 0 : (video.volume || 0)) * 100);
+    slider.value = isFinite(pct) ? pct : 0;
+  }
+  function wireVideoRecalc(btn, video){
+    if (!video) return;
+    video.addEventListener('loadedmetadata', ()=> markBtnState(btn, video));
+    video.addEventListener('play', ()=> markBtnState(btn, video));
+  }
+  function bindSlider(btn, card, video){
+    const slider = card && card.querySelector('.vid-vol');
+    if (!slider) return;
+    slider.addEventListener('input', ()=>{
+      const pct = Math.max(0, Math.min(100, Number(slider.value)||0));
+      setSavedVol(pct);
+      if (video){
+        video.volume = pct/100;
+        video.muted = pct === 0;
+        if (!video.muted){
+          try { video.play(); } catch(_){}
+        }
+        updateSoundBtn(btn, video.muted);
+      }
+    });
+  }
+  function initSoundButtons(root){
+    const scope = root && (typeof root === 'string' ? document.querySelector(root) : root) || document;
+    if (!scope) return;
+    scope.querySelectorAll('.vid-snd-btn:not([data-wired="1"])').forEach(btn=>{
+      btn.setAttribute('data-wired','1');
+      const card = findCard(btn);
+      const video = card && card.querySelector('video');
+      const slider = card && card.querySelector('.vid-vol');
+      // apply saved volume
+      const saved = getSavedVol();
+      if (video && saved !== null){
+        video.volume = saved/100;
+        if (saved > 0) video.muted = false;
+      }
+      markBtnState(btn, video);
+      updateSoundBtn(btn, !video ? true : !!video.muted);
+      if (slider){
+        slider.value = saved !== null ? saved : Math.round((video?.volume || 0.6)*100);
+      }
+      bindSlider(btn, card, video);
+      wireVideoRecalc(btn, video);
+    });
+  }
+
+  // Re-init on published grid render
+  document.addEventListener('reinit-video-sound', (e)=>{
+    const root = (e && e.detail && e.detail.root) ? e.detail.root : document;
+    initSoundButtons(root);
+  });
+
+  // Prevent clicks on disabled sound buttons (capture)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.vid-snd-btn');
+    if (btn && btn.dataset.disabled === '1'){
+      e.preventDefault(); e.stopPropagation();
+    }
+  }, true);
+
+  // Delegated click for sound toggle (ensure playback with sound on unmute)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.vid-snd-btn');
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){ e.preventDefault(); e.stopPropagation(); return; }
+    e.preventDefault(); e.stopPropagation();
+    const card = findCard(btn);
+    const video = card && card.querySelector('video');
+    if (!video) return;
+
+    if (video.muted){
+      const slider = card && card.querySelector('.vid-vol');
+      let pct = Number(slider?.value);
+      if (!isFinite(pct) || pct === 0){
+        pct = getSavedVol();
+        if (pct === null || pct === 0) pct = 60;
+        if (slider) slider.value = pct;
+        setSavedVol(pct);
+      }
+      video.volume = pct/100;
+      video.muted = false;
+      try { video.play(); } catch(_){}
+    } else {
+      video.muted = true;
+    }
+    updateSoundBtn(btn, video.muted);
+    syncSliderFromVideo(card, video);
+  });
+
+  // Init on load
+  initSoundButtons(document);
+})();
+</script>
+
+<!-- My Jobs: Media Modal (Instagram-like) -->
+<div id="pfMediaModal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-pf-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="grid md:grid-cols-2 gap-0">
+      <!-- Media -->
+      <div id="pfModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
+      <!-- Right pane -->
+      <div class="flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+          <div class="flex items-center gap-2">
+            <button id="pfModalLikeBtn" type="button" class="btn btn-ghost px-3 py-1.5 like-toggle" data-url="" data-count-target="pfModalLikeCount" aria-pressed="false">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span id="pfModalLikeCount" class="text-sm font-medium">0</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-pf-close="1">✕</button>
+        </div>
+        <div id="pfModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
+<script>
+// Like toggle (shared)
+(function(){
+  function getCSRFCookie(){
+    // Try cookie first
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    // Fallback to meta tag (many templates include it)
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    // Fallback to hidden input rendered on this page
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return "";
+  }
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.like-toggle');
+    if(!btn) return;
+    // Если клик по счётчику лайков (открыть список лайкнувших) — не триггерим toggle
+    if (e.target.closest('[data-open-likers]')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    if(btn.disabled || btn.dataset.loading==='1') return;
+    btn.dataset.loading='1'; btn.disabled=true;
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+    try{
+      const r = await fetch(url, {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+        credentials:'same-origin'
+      });
+      const j = await r.json().catch(()=>null);
+      if(!r.ok || !j || j.ok!==true) throw new Error('like failed');
+      const heart = btn.querySelector('svg');
+      const isLiked = !!j.liked;
+      btn.setAttribute('aria-pressed', isLiked ? 'true':'false');
+      if(isLiked){ btn.classList.add('text-red-500'); btn.classList.remove('text-[var(--muted)]'); heart.setAttribute('fill','currentColor'); }
+      else { btn.classList.remove('text-red-500'); btn.classList.add('text-[var(--muted)]'); heart.setAttribute('fill','none'); }
+      if(countEl && typeof j.count==='number') countEl.textContent = j.count;
+    }catch(err){ console.warn('Like failed:', err); }
+    finally{ delete btn.dataset.loading; btn.disabled=false; }
+  });
+})();
+
+// Modal handlers (photo/video)
+(function(){
+  const modal = document.getElementById('pfMediaModal');
+  const mediaEl = document.getElementById('pfModalMedia');
+  const commentsEl = document.getElementById('pfModalComments');
+  const likeBtn = document.getElementById('pfModalLikeBtn');
+  const likeCountEl = document.getElementById('pfModalLikeCount');
+  let currentDetailUrl = '';
+
+  function getCSRFCookie(){
+    // Try cookie first
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    // Fallback to meta tag
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    // Fallback to hidden input on page
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); }
+
+  modal?.addEventListener('click', (e)=>{ if (e.target.dataset.pfClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchDetail(url){
+    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
+    const html = await r.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  async function openPhoto(detailUrl, mediaUrl, title){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<img class="max-w-full max-h-[75vh] object-contain" alt="'+(title||'')+'" src="'+mediaUrl+'"/>';
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments') || doc.getElementById('commentList') || doc.querySelector('#comments, #commentList');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#photo-like-count, #video-like-count, #job-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+      // Focus comment field and ensure comments are visible
+      const ta = commentsEl.querySelector('textarea[name="text"]');
+      if (ta){ setTimeout(()=>{ try{ ta.focus(); }catch(_){} }, 50); }
+      const list = commentsEl.querySelector('#commentList');
+      if (list){ commentsEl.scrollTop = 0; }
+      bindDynamicHandlers();
+    }catch(e){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  async function openVideo(detailUrl, videoUrl, poster){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline><source src="'+videoUrl+'" type="video/mp4"></video>';
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments') || doc.getElementById('commentList') || doc.querySelector('#comments, #commentList');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#video-like-count, #photo-like-count, #job-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+      // Focus comment field and ensure comments are visible
+      const ta = commentsEl.querySelector('textarea[name="text"]');
+      if (ta){ setTimeout(()=>{ try{ ta.focus(); }catch(_){} }, 50); }
+      const list = commentsEl.querySelector('#commentList');
+      if (list){ commentsEl.scrollTop = 0; }
+      bindDynamicHandlers();
+    }catch(e){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  likeBtn?.addEventListener('click', async ()=>{
+    const url = likeBtn.dataset.url;
+    if (!url) return;
+    try{
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+        credentials:'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (res.ok && j && j.ok){
+        likeBtn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+        likeBtn.querySelector('svg').setAttribute('fill', j.liked ? 'currentColor':'none');
+        if (typeof j.count === 'number') likeCountEl.textContent = j.count;
+      }
+    }catch(_){}
+  });
+
+  function bindDynamicHandlers(){
+    // Like comment
+    commentsEl.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('.js-like-comment');
+      if (!btn) return;
+      e.preventDefault();
+      try{
+        const res = await fetch(btn.dataset.url, {
+          method:'POST',
+          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+          credentials:'same-origin'
+        });
+        const j = await res.json().catch(()=>null);
+        if (res.ok && j && j.ok){
+          const id = btn.dataset.countId;
+          const el = id && document.getElementById(id);
+          if (el && typeof j.count === 'number') el.textContent = j.count;
+          const heart = btn.querySelector('svg');
+          btn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+          heart && heart.setAttribute('fill', j.liked ? 'currentColor':'none');
+          btn.classList.toggle('text-red-500', !!j.liked);
+          btn.classList.toggle('text-[var(--muted)]', !j.liked);
+        }
+      }catch(_){}
+    });
+
+    // Submit comment/reply via AJAX
+    commentsEl.querySelectorAll('form[data-comment-form]').forEach(form=>{
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const fd = new FormData(form);
+        try{
+          const res = await fetch(form.action, {
+            method:'POST',
+            headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+            body: fd,
+            credentials:'same-origin'
+          });
+          const j = await res.json().catch(()=>null);
+          if (res.ok && j && j.ok){
+            const doc = await fetchDetail(currentDetailUrl);
+            const c = doc.getElementById('comments');
+            commentsEl.innerHTML = c ? c.innerHTML : commentsEl.innerHTML;
+            bindDynamicHandlers();
+          }
+        }catch(_){}
+      }, { once:true });
+    });
+  }
+
+  // Delegated click handling for my_jobs cards
+  document.addEventListener('click', (e)=>{
+    // КРИТИЧНО: Блокируем модалку при клике на интерактивные элементы (v2)
+    const target = e.target;
+
+    // Проверяем сам элемент и его родителей
+    if (target.closest('.like-toggle') ||
+        target.closest('.save-toggle') ||
+        target.closest('[data-open-comments]') ||
+        target.closest('[data-open-likers]') ||
+        target.closest('.hide-toggle') ||
+        target.closest('.vid-snd-btn') ||
+        target.closest('.vid-vol') ||
+        target.classList.contains('like-toggle') ||
+        target.classList.contains('save-toggle')) {
+      return; // Полностью блокируем
+    }
+
+    // If click is on play overlay or the video itself, do not open modal
+    if (e.target.closest('.video-play-overlay') || (e.target.tagName === 'VIDEO' && e.target.closest('.group'))) {
+      return;
+    }
+
+    // Open comments (explicit)
+    const cm = e.target.closest('[data-open-comments]');
+    if (cm){
+      e.preventDefault();
+      const card = cm.closest('.js-open-job') || cm.closest('.js-open-photo') || cm.closest('.js-open-video');
+      if (card){
+        const href = card.getAttribute('data-detail-url') || '';
+        const vsrc = card.getAttribute('data-video-url');
+        if (vsrc){
+          const poster = card.getAttribute('data-poster') || '';
+          openVideo(href, vsrc, poster);
+        }else{
+          const img = card.querySelector('img');
+          const src = img && img.getAttribute('src');
+          openPhoto(href, src || '', img && img.getAttribute('alt') || '');
+        }
+      }
+      return;
+    }
+
+    // Generic job opener (photo or video)
+    const ja = (opener && opener.closest('.js-open-job')) || e.target.closest('.js-open-job');
+    if (ja){
+      e.preventDefault();
+      const href = ja.getAttribute('data-detail-url') || '';
+      // If video-url attribute present, treat as video
+      const vsrc = ja.getAttribute('data-video-url');
+      if (vsrc){
+        const poster = ja.getAttribute('data-poster') || '';
+        openVideo(href, vsrc, poster);
+      } else {
+        const img = ja.querySelector('img');
+        const src = img && img.getAttribute('src');
+        openPhoto(href, src || '', img && img.getAttribute('alt') || '');
+      }
+      return;
+    }
+
+    // Photos
+    const pa = (opener && opener.closest('.js-open-photo')) || e.target.closest('.js-open-photo');
+    if (pa){
+      e.preventDefault();
+      const href = pa.getAttribute('data-detail-url') || '';
+      const img = pa.querySelector('img');
+      const src = img && img.getAttribute('src');
+      openPhoto(href, src || '', img && img.getAttribute('alt') || '');
+      return;
+    }
+    // Videos
+    const va = (opener && opener.closest('.js-open-video')) || e.target.closest('.js-open-video');
+    if (va){
+      e.preventDefault();
+      const href = va.getAttribute('data-detail-url') || '';
+      const vsrc = va.getAttribute('data-video-url') || '';
+      const poster = va.getAttribute('data-poster') || '';
+      openVideo(href, vsrc, poster);
+      return;
+    }
+  });
+})();
+</script>
+
+<script>
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return "";
+  }
+
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.save-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try{
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('save failed');
+
+      // Update button state
+      const icon = btn.querySelector('svg');
+      const isSaved = !!j.saved;
+
+      btn.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
+
+      if (isSaved) {
+        btn.classList.add('text-emerald-500');
+        btn.classList.remove('text-[var(--muted)]');
+        icon.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-emerald-500');
+        btn.classList.add('text-[var(--muted)]');
+        icon.setAttribute('fill', 'none');
+      }
+
+      if (countEl && typeof j.count === 'number'){
+        countEl.textContent = j.count;
+      }
+    }catch(err){
+      console.warn('Save failed:', err);
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+<script>
+// Hide/Show (скрыть/показать) работу владельца на my-jobs и в профиле
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+
+  function ensureHiddenBadge(container){
+    // container — .relative
+    {% if profile_header and target_profile and target_profile.is_private %}
+    // Private account: do not show "Скрыто" badge over media
+    return null;
+    {% endif %}
+    {% if my_profile_is_private %}
+    // My-jobs page: do not show "Скрыто" badge when account is private
+    return null;
+    {% endif %}
+    let b = container.querySelector('[data-hide-badge="1"]');
+    if (!b){
+      b = document.createElement('div');
+      b.setAttribute('data-hide-badge', '1');
+      b.className = 'absolute top-3 left-3';
+      b.innerHTML = '<div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">Скрыто</div>';
+      container.appendChild(b);
+    }
+    return b;
+  }
+
+  function removeHiddenBadge(container){
+    const b = container.querySelector('[data-hide-badge="1"]');
+    if (b) b.remove();
+  }
+
+function setBtnIcon(btn, hidden){
+  // Common state
+  btn.dataset.hidden = hidden ? '1' : '0';
+  btn.title = hidden ? 'Показать' : 'Скрыть';
+
+  // Bottom-row control requires knob
+  const dot = btn.querySelector('[data-hide-dot]');
+  const label = btn.querySelector('[data-hide-label]');
+  const knob = btn.querySelector('[data-hide-knob]');
+  if (dot && label && knob) {
+    // update dot color
+    dot.classList.toggle('bg-red-500', !!hidden);
+    dot.classList.toggle('bg-emerald-500', !hidden);
+    // update label
+    label.textContent = hidden ? 'Скрыто' : 'Не скрыто';
+    // update knob translate
+    knob.classList.toggle('translate-x-5', !!hidden);
+    knob.classList.toggle('translate-x-0', !hidden);
+    return;
+  }
+
+  // Fallback for old overlay eye button if present
+  btn.innerHTML = hidden
+    ? '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-5-9-7a13.418 13.418 0 012.257-3.272M6.18 6.18C7.86 5.116 9.86 5 12 5c5 0 9 5 9 7a13.36 13.36 0 01-3.093 3.989M3 3l18 18M9.88 9.88A3 3 0 0012 15a3 3 0 002.12-.88"/></svg>'
+    : '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3" /></svg>';
+}
+
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.hide-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (btn.disabled || btn.dataset.loading === '1') return;
+
+    const url = btn.dataset.url;
+    const card = btn.closest('article');
+    const rel = card ? card.querySelector('.relative') : null;
+
+    try{
+      btn.dataset.loading = '1';
+      btn.disabled = true;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFCookie(), 'X-Requested-With': 'fetch' },
+        credentials: 'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (!res.ok || !j || j.ok !== true) throw new Error((j && j.error) || 'toggle failed');
+
+      const hidden = !!j.hidden;
+      setBtnIcon(btn, hidden);
+      if (rel){
+        if (hidden) ensureHiddenBadge(rel); else removeHiddenBadge(rel);
+      }
+    }catch(err){
+      console.warn('hide-toggle failed:', err);
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+<!-- Likers Modal -->
+<div id="likersModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
+  <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="font-semibold">Оценили</h3>
+      <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('likersModal');
+  const body = document.getElementById('likersBody');
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; body.innerHTML=''; }
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.likersClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchLikers(url){
+    try{
+      const res = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' });
+      const j = await res.json();
+      if (!res.ok || !j || j.ok === false) throw new Error('bad response');
+      const arr = Array.isArray(j.likers) ? j.likers : [];
+      if (!arr.length){
+        body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Пока нет лайков</div>';
+        return;
+      }
+      body.innerHTML = arr.map(item => {
+        const avatar = item.avatar ? `<img src="${item.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${item.username}">`
+                                   : `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white grid place-items-center font-bold">${(item.name||item.username||'?').slice(0,1).toUpperCase()}</div>`;
+        const btnLabel = item.is_following ? 'Отписаться' : 'Подписаться';
+        const btnClass = item.is_following ? 'btn-ghost' : 'btn-primary';
+        return `
+          <div class="flex items-center justify-between p-3 sm:p-4">
+            <div class="flex items-center gap-3 min-w-0">
+              ${avatar}
+              <div class="min-w-0">
+                <div class="font-medium truncate">${(item.name||'')}</div>
+                <div class="text-xs text-[var(--muted)] truncate">@${item.username}</div>
+              </div>
+            </div>
+            <button class="btn ${btnClass} text-xs px-3 py-1.5 js-follow-toggle" data-username="${item.username}">${btnLabel}</button>
+          </div>
+        `;
+      }).join('');
+    }catch(_){
+      body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  // Follow toggle inside likers modal
+  body.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.js-follow-toggle');
+    if (!btn) return;
+    e.preventDefault();
+    const username = btn.getAttribute('data-username');
+    try{
+      const fd = new FormData();
+      fd.append('username', username);
+      const res = await fetch("{% url 'dashboard:api:follow_toggle' %}", {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'},
+        body: fd,
+        credentials:'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (res.ok && j && j.ok !== false){
+        const following = !!j.following;
+        btn.textContent = following ? 'Отписаться' : 'Подписаться';
+        btn.classList.toggle('btn-primary', !following);
+        btn.classList.toggle('btn-ghost', following);
+      }
+    }catch(_){}
+  });
+
+  // Open on click on like counts (stop like-toggle bubbling)
+  document.addEventListener('click', (e)=>{
+    const el = e.target.closest('[data-open-likers]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    const url = el.getAttribute('data-url');
+    if (!url) return;
+    body.innerHTML = '';
+    openModal();
+    fetchLikers(url);
+  });
+})();
+</script>
+
+<script>
+// "Показать ещё" для вкладок Фото/Видео (по 20 за клик), адаптивно и с поддержкой тёмной темы
+(function(){
+  function setupShowMore(rootSelector, batch){
+    var root = document.querySelector(rootSelector);
+    if (!root) return;
+    var grid = root.querySelector('.grid');
+    if (!grid) return;
+    var cards = Array.from(grid.querySelectorAll('article'));
+    var BATCH = Number(batch) || 20;
+    if (cards.length <= BATCH) return;
+    var shown = BATCH;
+    cards.forEach(function(el, i){ el.classList.toggle('hidden', i >= shown); });
+    var wrap = document.createElement('div');
+    wrap.className = 'mt-6 text-center';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-outline w-full sm:w-auto';
+    btn.textContent = 'Показать ещё';
+    btn.addEventListener('click', function(){
+      shown += BATCH;
+      cards.forEach(function(el, i){ el.classList.toggle('hidden', i >= shown); });
+      if (shown >= cards.length) btn.classList.add('hidden');
+    });
+    wrap.appendChild(btn);
+    root.appendChild(wrap);
+  }
+  // Инициализация для вкладок
+  setupShowMore('#photos-grid', 20);
+  setupShowMore('#videos-grid', 20);
+})();
+
+// Enhanced sync counts from gallery endpoints (includes guest likes) for both published and jobs cards
+(function syncAllCounts(rootSelector){
+  rootSelector = rootSelector || document;
+  function json(r){ try { return r.json(); } catch(_){ return null; } }
+  function setCount(el, val){
+    if (!el) return;
+    if (typeof val === 'number' || (typeof val === 'string' && val.trim() !== '')){
+      el.textContent = String(val);
+    }
+  }
+  function deriveLikersUrl(btn){
+    // Prefer explicit span[data-open-likers]
+    var likerSpan = btn.querySelector('[data-open-likers][data-url]');
+    if (likerSpan) return likerSpan.getAttribute('data-url');
+    // Fallback: infer from like url and id
+    var likeUrl = btn.getAttribute('data-url') || '';
+    var vid = btn.getAttribute('data-video-id') || '';
+    var pid = btn.getAttribute('data-photo-id') || '';
+    if (vid) return '/gallery/video/' + vid + '/likers';
+    if (pid) return '/gallery/photo/' + pid + '/likers';
+    if (likeUrl.indexOf('/gallery/photo/') !== -1) return likeUrl.replace(/\/like.*/, '/likers');
+    if (likeUrl.indexOf('/gallery/video/') !== -1) return likeUrl.replace(/\/like.*/, '/likers');
+    // Handle job-level likes
+    if (likeUrl.indexOf('/generate/job/') !== -1) return likeUrl.replace(/\/like.*/, '/likers');
+    return '';
+  }
+  function deriveSaversUrl(btn){
+    // Try to infer from save url
+    var saveUrl = btn.getAttribute('data-url') || '';
+    var vid = (btn.closest('button.save-toggle') && (btn.closest('button.save-toggle').getAttribute('data-url')||'').match(/\/gallery\/video\/(\d+)\/save/)) || null;
+    var pid = (btn.closest('button.save-toggle') && (btn.closest('button.save-toggle').getAttribute('data-url')||'').match(/\/gallery\/photo\/(\d+)\/save/)) || null;
+    var jid = (btn.closest('button.save-toggle') && (btn.closest('button.save-toggle').getAttribute('data-url')||'').match(/\/generate\/job\/(\d+)\/save/)) || null;
+    if (saveUrl.indexOf('/gallery/photo/') !== -1) return saveUrl.replace(/\/save.*/, '/savers');
+    if (saveUrl.indexOf('/gallery/video/') !== -1) return saveUrl.replace(/\/save.*/, '/savers');
+    if (saveUrl.indexOf('/generate/job/') !== -1) return saveUrl.replace(/\/save.*/, '/savers');
+    if (pid && pid[1]) return '/gallery/photo/' + pid[1] + '/savers';
+    if (vid && vid[1]) return '/gallery/video/' + vid[1] + '/savers';
+    if (jid && jid[1]) return '/generate/job/' + jid[1] + '/savers';
+    return '';
+  }
+
+  try{
+    // Likes sync - handle all like buttons including job-level
+    var likeBtns = rootSelector.querySelectorAll('.like-toggle');
+    likeBtns.forEach(function(btn){
+      var url = deriveLikersUrl(btn);
+      var countId = btn.getAttribute('data-count-target');
+      var countEl = countId ? document.getElementById(countId) : (btn.querySelector('span[id]') || null);
+      if (!url || !countEl) return;
+      fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' })
+        .then(json)
+        .then(function(j){
+          if (!j) return;
+          var arr = Array.isArray(j.likers) ? j.likers : (Array.isArray(j.users) ? j.users : null);
+          if (arr) setCount(countEl, arr.length);
+          else if (typeof j.count === 'number') setCount(countEl, j.count);
+        })
+        .catch(function(){});
+    });
+
+    // Saves sync - handle all save buttons including job-level
+    var saveBtns = rootSelector.querySelectorAll('.save-toggle');
+    saveBtns.forEach(function(btn){
+      var url = deriveSaversUrl(btn);
+      var countId = btn.getAttribute('data-count-target');
+      var countEl = countId ? document.getElementById(countId) : (btn.querySelector('span[id]') || null);
+      if (!url || !countEl) return;
+      fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' })
+        .then(json)
+        .then(function(j){
+          if (!j) return;
+          var arr = Array.isArray(j.savers) ? j.savers : (Array.isArray(j.users) ? j.users : null);
+          if (arr) setCount(countEl, arr.length);
+          else if (typeof j.count === 'number') setCount(countEl, j.count);
+        })
+        .catch(function(){});
+    });
+  }catch(_){}
+
+  // Auto-sync on page load for all grids
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function(){
+      try {
+        // Do not resync published grid: keep JSON counts identical to gallery index
+        syncAllCounts('#photos-grid');
+        syncAllCounts('#videos-grid');
+      } catch(e) {}
+    });
+  }
+
+  // Export for manual calls
+  if (typeof window !== 'undefined') {
+    window.syncAllCounts = syncAllCounts;
+  }
+})();
+</script>
+
+<!-- Video Actions Modal -->
+<div id="videoActionsModal" class="fixed inset-0 z-[85] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-video-actions-close="1"></div>
+  <div class="relative mx-auto my-8 w-[95vw] max-w-md rounded-2xl bg-[var(--bg-card)] border border-[var(--bord)] shadow-2xl">
+    <div class="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-[var(--bord)]">
+      <h3 class="text-base sm:text-lg font-semibold">Действия с видео</h3>
+      <button class="btn btn-ghost px-3 py-1.5" data-video-actions-close="1" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="p-4 sm:p-5 space-y-3">
+      <a id="videoActionsView" href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition" target="_blank">
+        <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+        </svg>
+        <div class="flex-1">
+          <div class="font-medium text-sm">Открыть детали</div>
+          <div class="text-xs text-[var(--muted)]">Посмотреть полную информацию</div>
+        </div>
+      </a>
+      <a id="videoActionsDownload" href="#" download class="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition">
+        <svg class="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <div class="flex-1">
+          <div class="font-medium text-sm">Скачать видео</div>
+          <div class="text-xs text-[var(--muted)]">Сохранить на устройство</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Video Actions Modal Handler
+(function(){
+  const modal = document.getElementById('videoActionsModal');
+  const viewLink = document.getElementById('videoActionsView');
+  const downloadLink = document.getElementById('videoActionsDownload');
+
+  function openModal(){ if(modal) { modal.classList.remove('hidden'); document.body.style.overflow='hidden'; } }
+  function closeModal(){ if(modal) { modal.classList.add('hidden'); document.body.style.overflow=''; } }
+
+  modal?.addEventListener('click', (e)=>{ if (e.target.dataset.videoActionsClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && modal && !modal.classList.contains('hidden')) closeModal(); });
+
+  // Handle clicks on .js-open-video-modal buttons
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.js-open-video-modal');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const videoUrl = btn.getAttribute('data-video-url') || '';
+    const detailUrl = btn.getAttribute('data-detail-url') || '';
+
+    if (viewLink) viewLink.href = detailUrl;
+    if (downloadLink) downloadLink.href = videoUrl;
+
+    openModal();
+  });
+})();
+</script>
+
+{% endif %}
 {% endblock %}

@@ -7,9 +7,16 @@ app_name = "dashboard"
 
 urlpatterns = [
     # Кабинет
-    path("", views.index, name="index"),
+    path("", RedirectView.as_view(pattern_name="pages:home", permanent=True), name="index"),
+    path("profile/<str:username>", RedirectView.as_view(pattern_name="profile_short", permanent=True), name="profile"),
+    path("me", views.me, name="me"),
     path("my-jobs", views.my_jobs, name="my_jobs"),
+    path("saved", views.saved, name="saved"),
     path("tips", views.tips, name="tips"),
+
+    # Уведомления
+    path("notifications", views.notifications_page, name="notifications"),
+    path("publication-deleted", views.publication_deleted, name="publication_deleted"),
 
     # Баланс и пополнение
     path("balance", views.balance, name="balance"),
@@ -23,6 +30,14 @@ urlpatterns = [
     # Управление примерами слайдера
     path("slider-examples/", include("gallery.urls_slider", namespace="slider")),
 
+    # Аватар
+    path("avatar/upload", views.avatar_upload, name="avatar_upload"),
+    path("avatar/delete", views.avatar_delete, name="avatar_delete"),
+    path("profile/privacy/toggle", views.toggle_profile_privacy, name="toggle_profile_privacy"),
+
+    # API управление
+    path("api/", include("dashboard.urls_api", namespace="api")),
+
     # Сервисные алиасы (совместимость с реверсами в коде)
     path(
         "billing",
@@ -34,4 +49,6 @@ urlpatterns = [
         RedirectView.as_view(pattern_name="account_change_password", permanent=False),
         name="change_password",
     ),
+
+    # Legacy redirects
 ]

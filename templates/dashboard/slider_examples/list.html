@@ -1,5 +1,6 @@
-{% extends "dashboard/layout.html" %}
+﻿{% extends "dashboard/layout.html" %}
 {% load static %}
+{% block dashboard_header %}{% endblock %}
 
 {% block title %}Управление примерами слайдера{% endblock %}
 
@@ -19,6 +20,13 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
         Добавить пример
+      </a>
+      <a href="{% url 'dashboard:slider:video_create' %}" class="btn btn-primary">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Добавить видео
       </a>
       <!-- <a href="{% url 'dashboard:slider:import' %}" class="btn btn-ghost">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -77,7 +85,13 @@
     </div>
   </div>
 
+  <!-- Media tabs -->
+  <div class="flex gap-2 mb-4 border-b border-[var(--bord)]">
+    <button type="button" class="sx-tab active px-4 py-2 -mb-px border-b-2 border-transparent text-sm font-medium" data-tab="photos">Фото</button>
+    <button type="button" class="sx-tab px-4 py-2 -mb-px border-b-2 border-transparent text-sm font-medium" data-tab="videos">Видео</button>
+  </div>
   <!-- Examples Grid -->
+  <div id="photo-grid">
   <div id="examples-container" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for example in page_obj %}
     <div class="group" data-example-id="{{ example.pk }}" data-order="{{ example.order }}">
@@ -226,6 +240,164 @@
     </div>
     {% endfor %}
   </div>
+</div>
+
+<!-- Video Grid -->
+<div id="video-grid" class="hidden">
+  <div id="videos-container" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for v in vpage_obj %}
+    <div class="group" data-video-id="{{ v.pk }}" data-order="{{ v.order }}">
+      <div class="card overflow-hidden h-full flex flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 border-b border-[var(--bord)]">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="drag-handle-video cursor-grab active:cursor-grabbing text-[var(--muted)] hover:text-[var(--text)] transition">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+              </svg>
+            </div>
+            <strong class="truncate">{{ v.title }}</strong>
+          </div>
+          <div class="flex items-center gap-1">
+            <a href="{% url 'dashboard:slider:video_preview' v.pk %}"
+               class="w-8 h-8 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 flex items-center justify-center transition"
+               title="Предпросмотр">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </a>
+            <a href="{% url 'dashboard:slider:video_edit' v.pk %}"
+               class="w-8 h-8 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 flex items-center justify-center transition"
+               title="Редактировать">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </a>
+            <a href="{% url 'dashboard:slider:video_delete' v.pk %}"
+               class="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 flex items-center justify-center transition"
+               title="Удалить">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Video -->
+        <div class="relative overflow-hidden">
+          <video class="w-full h-48 object-cover transition duration-300 group-hover:scale-[1.02]"
+                 src="{{ v.video_src }}"
+                 {% if v.thumbnail %}poster="{{ v.thumbnail.url }}"{% endif %}
+                 preload="metadata"
+                 controls
+                 playsinline
+                 muted
+                 title="{{ v.title|default:'Видео пример' }}">
+          </video>
+
+          <!-- Status Badge -->
+          <div class="absolute top-3 right-3">
+            <div class="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium {% if v.is_active %}bg-green-500/90 text-white{% else %}bg-gray-500/90 text-white{% endif %}">
+              <div class="w-1.5 h-1.5 bg-current rounded-full"></div>
+              {% if v.is_active %}Активен{% else %}Неактивен{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-4 flex-1 flex flex-col">
+          <p class="text-sm text-[var(--muted)] mb-4">{{ v.prompt|truncatechars:80 }}</p>
+
+          <!-- Metadata -->
+          <div class="grid grid-cols-2 gap-3 text-xs mb-4">
+            <div>
+              <span class="text-[var(--muted)]">Режим:</span>
+              <span class="font-medium uppercase">{{ v.mode|default:"t2v" }}</span>
+            </div>
+            <div>
+              <span class="text-[var(--muted)]">Порядок:</span>
+              <span class="font-medium">{{ v.order }}</span>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <button type="button"
+                  class="btn {% if v.is_active %}btn-ghost{% else %}btn-primary{% endif %} w-full text-sm toggle-video-active-btn mt-auto"
+                  data-video-id="{{ v.pk }}"
+                  data-is-active="{{ v.is_active|yesno:'true,false' }}">
+            {% if v.is_active %}
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Деактивировать
+            {% else %}
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Активировать
+            {% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full">
+      <div class="card p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">Видео-примеры не найдены</h3>
+        <p class="text-[var(--muted)] mb-2 max-w-md mx-auto">Создайте примеры в блоке «Примеры видео (админ)» на странице генерации или через API</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if vpage_obj.has_other_pages %}
+  <nav aria-label="Навигация по страницам (видео)" class="flex items-center justify-center mt-4">
+    <div class="flex items-center gap-1">
+      {% if vpage_obj.has_previous %}
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?vpage=1">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+          </svg>
+          Первая
+        </a>
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?vpage={{ vpage_obj.previous_page_number }}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Назад
+        </a>
+      {% endif %}
+
+      <span class="btn btn-primary px-3 py-2 text-sm">
+        Страница {{ vpage_obj.number }} из {{ vpage_obj.paginator.num_pages }}
+      </span>
+
+      {% if vpage_obj.has_next %}
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?vpage={{ vpage_obj.next_page_number }}">
+          Вперёд
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a class="btn btn-ghost px-3 py-2 text-sm" href="?vpage={{ vpage_obj.paginator.num_pages }}">
+          Последняя
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+          </svg>
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+  {% endif %}
+</div>
 
   <!-- Pagination -->
   {% if page_obj.has_other_pages %}
@@ -280,7 +452,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Drag & Drop Sorting
+  // Drag & Drop Sorting (Photos)
   const container = document.getElementById('examples-container');
   if (container) {
     new Sortable(container, {
@@ -321,11 +493,51 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Toggle Active Status
+  // Drag & Drop Sorting (Videos)
+  const vContainer = document.getElementById('videos-container');
+  if (vContainer) {
+    new Sortable(vContainer, {
+      handle: '.drag-handle-video',
+      animation: 150,
+      ghostClass: 'opacity-40',
+      onEnd: function(evt) {
+        const orders = [];
+        vContainer.querySelectorAll('[data-video-id]').forEach((item, index) => {
+          orders.push({
+            id: parseInt(item.dataset.videoId),
+            order: index
+          });
+        });
+
+        // Save order via AJAX
+        fetch('{% url "dashboard:slider:video_reorder" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({ orders: orders })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showAlert('success', data.message || 'Порядок успешно сохранён (видео)');
+          } else {
+            showAlert('error', data.message || 'Ошибка при сохранении порядка (видео)');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showAlert('error', 'Ошибка при сохранении порядка (видео)');
+        });
+      }
+    });
+  }
+
+  // Toggle Active Status (Photos)
   document.querySelectorAll('.toggle-active-btn').forEach(button => {
     button.addEventListener('click', function() {
       const exampleId = this.dataset.exampleId;
-      const isActive = this.dataset.isActive === 'true';
 
       fetch(`{% url "dashboard:slider:toggle_active" 0 %}`.replace('0', exampleId), {
         method: 'POST',
@@ -348,7 +560,33 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   });
-});
+
+  // Toggle Active Status (Videos)
+  document.querySelectorAll('.toggle-video-active-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      const videoId = this.dataset.videoId;
+
+      fetch(`{% url "dashboard:slider:video_toggle_active" 0 %}`.replace('0', videoId), {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showAlert('success', 'Статус видео успешно изменён');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showAlert('error', 'Ошибка при изменении статуса видео');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Ошибка при изменении статуса видео');
+      });
+    });
+  });
 
 function showAlert(type, message) {
   const alertContainer = document.getElementById('alert-container');
@@ -390,6 +628,23 @@ function closeAlert(alertId) {
     setTimeout(() => alert.remove(), 300);
   }
 }
+</script>
+
+<script>
+(function(){
+  const tabs = document.querySelectorAll('.sx-tab');
+  const photo = document.getElementById('photo-grid');
+  const video = document.getElementById('video-grid');
+  if (tabs.length && photo && video){
+    tabs.forEach(t => t.addEventListener('click', function(){
+      tabs.forEach(x => x.classList.remove('active'));
+      this.classList.add('active');
+      const isVideo = this.dataset.tab === 'videos';
+      photo.classList.toggle('hidden', isVideo);
+      video.classList.toggle('hidden', !isVideo);
+    }));
+  }
+})();
 </script>
 
 {% endblock %}

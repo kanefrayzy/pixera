@@ -14,6 +14,8 @@ urlpatterns = [
 
     # Тренды — каноничный URL без слэша
     path("trending", views.trending, name="trending"),
+    # Тренды видео
+    path("trending/videos", views_video.trending_videos, name="trending_videos"),
     # HTML-фрагмент для главной: подгрузка сетки «Тренд/Новые» без перехода
     path("trending/snippet", views.trending_snippet, name="trending_snippet"),
     # Алиас на русский
@@ -21,12 +23,15 @@ urlpatterns = [
 
     # Legacy redirects
     path("trending/", RedirectView.as_view(pattern_name="gallery:trending", permanent=True)),
+    path("trending/videos/", RedirectView.as_view(pattern_name="gallery:trending_videos", permanent=True)),
     path("populyarnoe/", RedirectView.as_view(pattern_name="gallery:trending", permanent=True)),
     path("trending/snippet/", RedirectView.as_view(pattern_name="gallery:trending_snippet", permanent=True)),
 
     # Фото и действия
     path("photo/<int:pk>", views.photo_detail,  name="photo_detail"),
     path("photo/<int:pk>/like",    views.photo_like,    name="photo_like"),
+    path("photo/<int:pk>/save",    views.photo_save_toggle,    name="photo_save"),
+    path("photo/<int:pk>/likers",  views.photo_likers,  name="photo_likers"),
     path("photo/<int:pk>/comment", views.photo_comment, name="photo_comment"),
 
     # Комментарии: лайк и ответ
@@ -49,8 +54,14 @@ urlpatterns = [
     path("moderation/<int:pk>/reject",   views.moderation_reject,   name="moderation_reject"),
 
     # Видео и действия
-    path("video/<int:pk>", views_video.video_detail, name="video_detail"),
+    # Legacy: поддержка старых ссылок вида /video/<slug> -> редирект на новый /<slug>
+    path("video/<slug:slug>", RedirectView.as_view(pattern_name="gallery:slug_detail", permanent=True)),
+    # Legacy: поддержка старых ссылок вида /video/4 -> редирект на slug
+    path("video/<int:pk>", views_video.video_detail_by_pk, name="video_detail_by_pk"),
+    path("video/<int:pk>/stream", views_video.video_stream, name="video_stream"),
     path("video/<int:pk>/like", views_video.video_like, name="video_like"),
+    path("video/<int:pk>/save", views_video.video_save_toggle, name="video_save"),
+    path("video/<int:pk>/likers", views_video.video_likers, name="video_likers"),
     path("video/<int:pk>/comment", views_video.video_comment, name="video_comment"),
 
     # Комментарии к видео
@@ -86,4 +97,12 @@ urlpatterns = [
     path("admin/category/add/", RedirectView.as_view(pattern_name="gallery:admin_category_add", permanent=True)),
     path("admin/public/add/",                   views.admin_public_add,    name="admin_public_add"),
     path("admin/public/<int:pk>/delete/",       views.admin_public_delete, name="admin_public_delete"),
+
+    # SEO-friendly URLs с категорией (добавлены перед общим slug-роутом)
+    path("<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_photo_detail"),
+    path("<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_video_detail"),
+
+    # Человекопонятный SLUG-роут без префикса для видео (и потенциально для других сущностей, если понадобится)
+    # ВАЖНО: держим в самом конце, чтобы не перекрывать остальные маршруты.
+    path("<slug:slug>", views.slug_detail, name="slug_detail"),
 ]

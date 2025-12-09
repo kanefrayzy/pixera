@@ -4,12 +4,14 @@ from django.db import models, transaction
 from django.db.models import Max
 from django.conf import settings
 from django.core.files.storage import default_storage
+from PIL import Image
 
 
 class SliderExample(models.Model):
     """Модель для управления примерами слайдера из JSON файла"""
 
-    json_id = models.IntegerField(help_text="ID в JSON файле", blank=True, null=True, db_index=True)
+    json_id = models.IntegerField(
+        help_text="ID в JSON файле", blank=True, null=True, db_index=True)
     title = models.CharField(max_length=200, verbose_name="Заголовок")
     prompt = models.TextField(verbose_name="Промт")
     image = models.ImageField(
@@ -20,7 +22,8 @@ class SliderExample(models.Model):
         null=True
     )
     description = models.CharField(max_length=500, verbose_name="Описание")
-    alt = models.CharField(max_length=200, verbose_name="Alt текст для изображения")
+    alt = models.CharField(
+        max_length=200, verbose_name="Alt текст для изображения")
 
     # Настройки генерации
     steps = models.IntegerField(default=28, verbose_name="Количество шагов")
@@ -33,10 +36,12 @@ class SliderExample(models.Model):
         help_text="Введите число или 'auto' для случайного"
     )
 
-    order = models.PositiveIntegerField(default=0, verbose_name="Порядок отображения")
+    order = models.PositiveIntegerField(
+        default=0, verbose_name="Порядок отображения")
     is_active = models.BooleanField(default=True, verbose_name="Активен")
 
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Создано")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
 
     class Meta:
@@ -108,7 +113,8 @@ class SliderExample(models.Model):
         json_path = cls.get_json_file_path()
 
         try:
-            examples = cls.objects.filter(is_active=True).order_by('order', 'json_id')
+            examples = cls.objects.filter(
+                is_active=True).order_by('order', 'json_id')
             data = []
 
             for example in examples:
@@ -157,15 +163,56 @@ class SliderExample(models.Model):
             )['json_id__max']
             self.json_id = (max_id or -1) + 1
 
+        # Сначала сохраняем как есть, чтобы получить путь к файлу
         super().save(*args, **kwargs)
 
-        # Автоматически экспортируем в JSON после сохранения
-        if not kwargs.get('skip_export', False):
-            self.export_to_json()
+        # Максимально сжать изображение (WebP, ширина до 960px)
+        try:
+            if self.image and getattr(self.image, "name", ""):
+                try:
+                    in_path = default_storage.path(self.image.name)
+                except Exception:
+                    in_path = None
 
-    def delete(self, *args, **kwargs):
-        super().delete(*args, **kwargs)
+                if in_path and os.path.exists(in_path):
+                    # Подготовим выходной путь
+                    base, _ = os.path.splitext(in_path)
+                    out_path = base + "_cmp.webp"
 
-        # Автоматически экспортируем в JSON после удаления
+                    # Открываем и конвертим
+                    with Image.open(in_path) as im:
+                        # Конвертируем в RGB (без альфы) для совместимости
+                        if im.mode not in ("RGB", "L"):
+                            im = im.convert("RGB")
+
+                        # Ресайз по ширине до 960px (без увеличения)
+                        w, h = im.size
+                        max_w = 960
+                        if w > max_w:
+                            new_h = int(h * (max_w / float(w)))
+                            im = im.resize((max_w, new_h), Image.LANCZOS)
+
+                        # Сохранение в WebP с сильным сжатием
+                        im.save(out_path, "WEBP", quality=70, method=6, optimize=True)
+
+                    # Заменяем файл в поле image на сжатый
+                    media_root = getattr(settings, "MEDIA_ROOT", "")
+                    rel = os.path.relpath(out_path, media_root) if media_root and os.path.isabs(out_path) else out_path
+                    rel = rel.replace("\\", "/")
+
+                    if rel and rel != self.image.name:
+                        self.image.name = rel
+                        super(SliderExample, self).save(update_fields=["image"])
+                        try:
+                            # Удаляем исходник (без падения, если не удастся)
+                            if os.path.exists(in_path):
+                                os.remove(in_path)
+                        except Exception:
+                            pass
+        except Exception:
+            # Тихо игнорируем проблемы с Pillow/файловой системой
+            pass
+
+        # Экспортируем JSON после сохранения и возможной компрессии
         if not kwargs.get('skip_export', False):
             SliderExample.export_to_json()

@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 {% load generate_extras %}
 
-{% block title %}Ваша обработка — AI Gallery{% endblock %}
+{% block title %}Ваша обработка — Pixera{% endblock %}
 
 {# ── SEO / Social ── #}
 {% block head_extra %}
@@ -47,14 +47,21 @@
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
       <div class="flex-1 min-w-0">
         <h1 class="text-2xl sm:text-3xl font-bold mb-3" itemprop="name">Ваша обработка</h1>
-        {% if job.prompt %}
-          <div class="p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]" itemprop="description">
-            <div class="text-sm text-[var(--muted)] mb-1">Промпт:</div>
-            <div class="break-words" title="{{ job.prompt }}">
-              {{ job.prompt|truncatechars:200 }}
-            </div>
+        {% with p=job.original_prompt|default:job.prompt|default:'' %}
+        {% if p %}
+          <div class="relative p-4 rounded-2xl border border-white/10 dark:border-white/10 bg-black text-white shadow-sm" itemprop="description">
+            <div class="text-xs uppercase tracking-wide text-white/60 mb-1">Промпт</div>
+            <pre class="whitespace-pre-wrap break-words font-medium text-sm leading-relaxed pr-10" title="{{ p }}">{{ p }}</pre>
+            <button type="button"
+                    class="absolute top-2 right-2 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition"
+                    data-prompt="{{ p|escapejs }}"
+                    aria-label="Копировать промпт"
+                    onclick="try{navigator.clipboard&&navigator.clipboard.writeText(this.dataset.prompt);}catch(_){}this.classList.add('ring-2','ring-white/60');setTimeout(()=>this.classList.remove('ring-2','ring-white/60'),700)">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            </button>
           </div>
         {% endif %}
+        {% endwith %}
       </div>
 
       <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -75,11 +82,22 @@
   <!-- Main Content -->
   <div class="grid lg:grid-cols-3 gap-8">
 
-    <!-- Image Section -->
+    <!-- Image/Video Section -->
     <div class="lg:col-span-2">
       <div class="card overflow-hidden">
         <figure class="relative">
-          {% if image_url %}
+          {% if job.generation_type == 'video' and job.result_video_url %}
+            {# Video generation #}
+            <video id="resultVideo"
+                   class="w-full aspect-square object-cover transition-all duration-500"
+                   controls
+                   preload="metadata"
+                   playsinline>
+              <source src="{{ job.result_video_url }}" type="video/mp4">
+              Ваш браузер не поддерживает видео.
+            </video>
+          {% elif image_url %}
+            {# Image generation with URL #}
             <img id="resultImg"
                  class="w-full aspect-square object-cover transition-all duration-500 blur-sm"
                  src="{{ image_url }}"
@@ -87,6 +105,7 @@
                  loading="eager"
                  decoding="async">
           {% else %}
+            {# Image generation without URL #}
             <img id="resultImg"
                  class="w-full aspect-square object-cover transition-all duration-500 blur-sm"
                  src="{% url 'generate:job_image' pk=job.pk slug=job.prompt|safe_slugify %}"
@@ -94,6 +113,13 @@
                  loading="eager"
                  decoding="async">
           {% endif %}
+
+          <!-- Model Badge -->
+          <div class="absolute top-3 left-3">
+            <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+              {{ job|model_display }}
+            </div>
+          </div>
 
           <!-- Loading Overlay -->
           <div id="loadingOverlay" class="absolute inset-0 bg-black/20 flex items-center justify-center">
@@ -125,26 +151,50 @@
       <div class="card p-6">
         <h3 class="font-semibold mb-4">Действия</h3>
         <div class="space-y-3">
-          <a id="openLink"
-             class="btn btn-primary w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}"
-             href="{{ image_url|default:'#' }}"
-             {% if not image_url %}aria-disabled="true"{% endif %}
-             target="_blank"
-             rel="nofollow noopener">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-            </svg>
-            Открыть изображение
-          </a>
+          {% if job.generation_type == 'video' and job.result_video_url %}
+            {# Video actions #}
+            <a id="openLink"
+               class="btn btn-primary w-full"
+               href="{{ job.result_video_url }}"
+               target="_blank"
+               rel="nofollow noopener">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              Открыть видео
+            </a>
 
-          <button id="downloadBtn"
-                  class="btn btn-ghost w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}"
-                  {% if not image_url %}disabled{% endif %}>
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Скачать
-          </button>
+            <a href="{{ job.result_video_url }}"
+               download="ai-video-{{ job.id }}.mp4"
+               class="btn btn-ghost w-full">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Скачать видео
+            </a>
+          {% else %}
+            {# Image actions #}
+            <a id="openLink"
+               class="btn btn-primary w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}"
+               href="{{ image_url|default:'#' }}"
+               {% if not image_url %}aria-disabled="true"{% endif %}
+               target="_blank"
+               rel="nofollow noopener">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              Открыть изображение
+            </a>
+
+            <button id="downloadBtn"
+                    class="btn btn-ghost w-full {% if not image_url %}opacity-50 pointer-events-none{% endif %}"
+                    {% if not image_url %}disabled{% endif %}>
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Скачать
+            </button>
+          {% endif %}
 
           <a class="btn btn-ghost w-full" href="{% url 'generate:new' %}">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -180,7 +230,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-[var(--muted)]">Модель:</span>
-            <span>Stable Diffusion</span>
+            <span>{{ job|model_display|default:"" }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[var(--muted)]">Размер:</span>
@@ -196,6 +246,119 @@
       </div>
     </div>
   </div>
+  <!-- Job Comments -->
+  <div id="comments" class="mt-8">
+    <div class="card p-6">
+      {% with p=job.original_prompt|default:job.prompt|default:'' %}
+      {% if p %}
+      <div class="mb-4 rounded-xl border border-white/10 dark:border-white/10 bg-black text-white shadow-sm">
+        <div class="relative px-3 py-2 sm:px-4 sm:py-3">
+          <div class="text-xs uppercase tracking-wide text-white/60 mb-1">Промпт</div>
+          <pre class="whitespace-pre-wrap break-words font-medium text-sm leading-relaxed pr-10">{{ p }}</pre>
+          <button type="button"
+                  class="absolute top-2 right-2 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition js-copy-prompt"
+                  data-prompt="{{ p|escapejs }}"
+                  aria-label="Копировать промпт"
+                  onclick="try{navigator.clipboard&&navigator.clipboard.writeText(this.dataset.prompt);}catch(_){}this.classList.add('ring-2','ring-white/60');setTimeout(()=>this.classList.remove('ring-2','ring-white/60'),700)">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          </button>
+        </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold">Комментарии</h3>
+        <button type="button"
+                class="btn btn-ghost px-3 py-1.5 like-toggle"
+                data-url="{% url 'generate:job_like' job.id %}"
+                aria-pressed="{{ job_liked|yesno:'true,false' }}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if job_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+          </svg>
+          <span id="job-like-count" class="text-sm font-medium">{{ job_like_count }}</span>
+        </button>
+      </div>
+
+      {% if request.user.is_authenticated %}
+      <form method="post" action="{% url 'generate:job_comment' job.id %}" data-comment-form class="flex gap-2 mb-6">
+        {% csrf_token %}
+        <input type="text" name="text" class="field flex-1" placeholder="Напишите комментарий…" autocomplete="off">
+        <button class="btn btn-primary" type="submit">Отправить</button>
+      </form>
+      {% else %}
+        <div class="text-sm text-[var(--muted)] mb-4">Войдите, чтобы оставить комментарий.</div>
+      {% endif %}
+
+      <div class="space-y-4" id="commentList">
+        {% for c in comments %}
+        <div id="c{{ c.id }}" class="p-3 rounded-xl border border-[var(--bord)]">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              {% if c.user and c.user.profile and c.user.profile.avatar %}
+                <img src="{{ c.user.profile.avatar.url }}" alt="{{ c.user.username }}" class="w-7 h-7 rounded-full object-cover">
+              {% else %}
+                <div class="w-7 h-7 rounded-full bg-[var(--bord)] flex items-center justify-center text-xs text-[var(--muted)]">?</div>
+              {% endif %}
+              <div class="text-sm font-medium">{{ c.user.username|default:"Гость" }}</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button class="js-like-comment text-[var(--muted)] hover:text-red-500 transition"
+                      data-url="{% url 'generate:job_comment_like' c.id %}"
+                      data-count-id="jc-like-{{ c.id }}"
+                      aria-pressed="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.id in liked_comment_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                <span id="jc-like-{{ c.id }}" class="text-xs">{{ c.likes_count }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="mt-2">{{ c.text|linebreaksbr }}</div>
+
+          {% if c.replies.all %}
+          <div class="mt-3 pl-4 border-l border-[var(--bord)] space-y-3">
+            {% for r in c.replies.all %}
+            <div id="c{{ r.id }}" class="text-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                {% if r.user and r.user.profile and r.user.profile.avatar %}
+                  <img src="{{ r.user.profile.avatar.url }}" alt="{{ r.user.username }}" class="w-6 h-6 rounded-full object-cover">
+                {% else %}
+                  <div class="w-6 h-6 rounded-full bg-[var(--bord)] flex items-center justify-center text-[10px] text-[var(--muted)]">?</div>
+                {% endif %}
+                <div class="font-medium">{{ r.user.username|default:"Гость" }}</div>
+              </div>
+              <button class="js-like-comment text-[var(--muted)] hover:text-red-500 transition"
+                        data-url="{% url 'generate:job_comment_like' r.id %}"
+                        data-count-id="jc-like-{{ r.id }}"
+                        aria-pressed="{% if r.id in liked_comment_ids %}true{% else %}false{% endif %}">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if r.id in liked_comment_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  <span id="jc-like-{{ r.id }}" class="text-xs">{{ r.likes_count }}</span>
+                </button>
+              </div>
+              <div class="mt-1">{{ r.text|linebreaksbr }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if request.user.is_authenticated %}
+          <form method="post" action="{% url 'generate:job_comment_reply' c.id %}" data-comment-form class="mt-3 flex gap-2">
+            {% csrf_token %}
+            <input type="text" name="text" class="field flex-1" placeholder="Ответить…" autocomplete="off">
+            <button class="btn btn-ghost" type="submit">Ответить</button>
+          </form>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-sm text-[var(--muted)]">Пока нет комментариев.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -228,17 +391,45 @@
     "Совет: стиль фотографии — \"RAW photo\", \"HDR\", \"film grain\", \"Portra 400\"."
   ];
 
-  // Image load handling
-  imgEl.addEventListener('load', () => {
-    imgEl.classList.remove('blur-sm');
+  // Video load handling
+  const videoEl = document.getElementById('resultVideo');
+  if (videoEl) {
+    videoEl.addEventListener('loadedmetadata', () => {
+      loadingOverlay.style.display = 'none';
+      const dimensions = `${videoEl.videoWidth}×${videoEl.videoHeight}`;
+      document.getElementById('imageDimensions').textContent = dimensions;
+      const dimensionsInfo = document.getElementById('dimensionsInfo');
+      if (dimensionsInfo) dimensionsInfo.textContent = dimensions;
+    });
+    // Hide loading overlay immediately for video
     loadingOverlay.style.display = 'none';
+  }
 
-    // Update dimensions info
-    const dimensions = `${imgEl.naturalWidth}×${imgEl.naturalHeight}`;
-    document.getElementById('imageDimensions').textContent = dimensions;
-    const dimensionsInfo = document.getElementById('dimensionsInfo');
-    if (dimensionsInfo) dimensionsInfo.textContent = dimensions;
-  });
+  // Image load handling
+  if (imgEl) {
+    imgEl.addEventListener('load', () => {
+      imgEl.classList.remove('blur-sm');
+      loadingOverlay.style.display = 'none';
+
+      // Update dimensions info
+      const dimensions = `${imgEl.naturalWidth}×${imgEl.naturalHeight}`;
+      document.getElementById('imageDimensions').textContent = dimensions;
+      const dimensionsInfo = document.getElementById('dimensionsInfo');
+      if (dimensionsInfo) dimensionsInfo.textContent = dimensions;
+    });
+  }
+
+  // If result image is already available and loaded from cache, finalize immediately
+  if (IMG_URL && imgEl.complete && imgEl.naturalWidth > 0) {
+    try {
+      imgEl.classList.remove('blur-sm');
+      loadingOverlay.style.display = 'none';
+      const dimensions = `${imgEl.naturalWidth}×${imgEl.naturalHeight}`;
+      document.getElementById('imageDimensions').textContent = dimensions;
+      const dimensionsInfo = document.getElementById('dimensionsInfo');
+      if (dimensionsInfo) dimensionsInfo.textContent = dimensions;
+    } catch(_) {}
+  }
 
   // Download functionality
   downloadBtn.addEventListener('click', async () => {
@@ -405,6 +596,9 @@
     stop = true;
     cancelAnimationFrame(raf);
     clearInterval(tipTimer);
+
+    // Ensure overlay is hidden and image is unblurred when already complete
+    try { loadingOverlay.style.display = 'none'; imgEl.classList.remove('blur-sm'); } catch(_) {}
 
     openLnk.classList.remove('opacity-50', 'pointer-events-none');
     downloadBtn.classList.remove('opacity-50', 'pointer-events-none');

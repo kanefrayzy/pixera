@@ -1,0 +1,170 @@
+﻿{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}Статистика API — Pixera{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-3">
+            <a href="{% url 'dashboard:api:dashboard' %}" class="btn btn-ghost p-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <h1 class="text-3xl sm:text-4xl font-bold">Статистика использования API</h1>
+        </div>
+        <p class="text-[var(--muted)] text-sm sm:text-base">
+            Детальная статистика по каждому токену
+        </p>
+    </div>
+
+    {% if token_stats %}
+        {% for stat in token_stats %}
+        <div class="card p-6 sm:p-8 mb-6">
+            <!-- Заголовок токена -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-[var(--bord)]">
+                <div>
+                    <h2 class="text-xl font-bold mb-2">{{ stat.token.name }}</h2>
+                    <div class="flex flex-wrap gap-3 text-sm text-[var(--muted)]">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Создан: {{ stat.token.created_at|date:"d.m.Y" }}
+                        </span>
+                        {% if stat.token.last_used_at %}
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Последнее использование: {{ stat.token.last_used_at|date:"d.m.Y H:i" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    {% if stat.token.is_active %}
+                        <span class="badge bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+                            Активен
+                        </span>
+                    {% else %}
+                        <span class="badge bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20">
+                            Неактивен
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="text-center p-4 rounded-xl bg-black/[.02] dark:bg-white/[.02]">
+                    <div class="text-2xl font-bold">{{ stat.token.total_requests }}</div>
+                    <div class="text-xs text-[var(--muted)] mt-1">Всего запросов</div>
+                </div>
+                <div class="text-center p-4 rounded-xl bg-black/[.02] dark:bg-white/[.02]">
+                    <div class="text-2xl font-bold">{{ stat.token.total_generations }}</div>
+                    <div class="text-xs text-[var(--muted)] mt-1">Генераций</div>
+                </div>
+                <div class="text-center p-4 rounded-xl bg-black/[.02] dark:bg-white/[.02]">
+                    <div class="text-2xl font-bold">${{ stat.total_cost|floatformat:2 }}</div>
+                    <div class="text-xs text-[var(--muted)] mt-1">Всего потрачено</div>
+                </div>
+                <div class="text-center p-4 rounded-xl bg-black/[.02] dark:bg-white/[.02]">
+                    <div class="text-2xl font-bold">{{ stat.recent_logs|length }}</div>
+                    <div class="text-xs text-[var(--muted)] mt-1">Последних логов</div>
+                </div>
+            </div>
+
+            <!-- Последние запросы -->
+            {% if stat.recent_logs %}
+            <div>
+                <h3 class="font-semibold mb-4">Последние запросы</h3>
+                <div class="overflow-x-auto -mx-6 sm:-mx-8">
+                    <div class="inline-block min-w-full align-middle px-6 sm:px-8">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-[var(--bord)]">
+                                    <th class="text-left py-3 font-medium">Дата</th>
+                                    <th class="text-left py-3 font-medium">Endpoint</th>
+                                    <th class="text-left py-3 font-medium hidden sm:table-cell">Метод</th>
+                                    <th class="text-left py-3 font-medium hidden md:table-cell">IP</th>
+                                    <th class="text-center py-3 font-medium">Статус</th>
+                                    <th class="text-right py-3 font-medium">Стоимость</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-[var(--muted)]">
+                                {% for log in stat.recent_logs %}
+                                <tr class="border-b border-[var(--bord)] hover:bg-black/[.02] dark:hover:bg-white/[.02]">
+                                    <td class="py-3">
+                                        <div>{{ log.created_at|date:"d.m.Y" }}</div>
+                                        <div class="text-xs">{{ log.created_at|date:"H:i:s" }}</div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="max-w-xs truncate font-mono text-xs">
+                                            {{ log.endpoint }}
+                                        </div>
+                                    </td>
+                                    <td class="py-3 hidden sm:table-cell">
+                                        <span class="badge text-xs">{{ log.method }}</span>
+                                    </td>
+                                    <td class="py-3 hidden md:table-cell">
+                                        <span class="font-mono text-xs">{{ log.ip_address|default:"—" }}</span>
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        {% if log.status_code >= 200 and log.status_code < 300 %}
+                                            <span class="badge bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 text-xs">
+                                                {{ log.status_code }}
+                                            </span>
+                                        {% elif log.status_code >= 400 and log.status_code < 500 %}
+                                            <span class="badge bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 text-xs">
+                                                {{ log.status_code }}
+                                            </span>
+                                        {% elif log.status_code >= 500 %}
+                                            <span class="badge bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 text-xs">
+                                                {{ log.status_code }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge text-xs">{{ log.status_code }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 text-right font-medium">
+                                        ${{ log.cost|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="w-12 h-12 mx-auto text-[var(--muted)] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="text-sm text-[var(--muted)]">
+                    Нет записей об использовании этого токена
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card p-12 text-center">
+            <svg class="w-16 h-16 mx-auto text-[var(--muted)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <h3 class="text-lg font-semibold mb-2">Нет данных для отображения</h3>
+            <p class="text-sm text-[var(--muted)] mb-4">
+                Создайте токен и начните использовать API для просмотра статистики
+            </p>
+            <a href="{% url 'dashboard:api:dashboard' %}" class="btn btn-primary">
+                Создать токен
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

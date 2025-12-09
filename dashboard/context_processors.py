@@ -91,3 +91,46 @@ def wallet_context(request):
         "price_per_gen": price,
         "gens_left": gens_left,
     }
+
+
+def user_profile(request):
+    """
+    Гарантированно добавляет в контекст профиль пользователя (для аватарки).
+    Безопасно создаёт профиль при первом обращении.
+    """
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        return {"user_profile": None}
+    try:
+        from .models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user)
+    except Exception:
+        profile = None
+    return {"user_profile": profile}
+
+
+def follow_stats(request):
+    """
+    Добавляет в контекст счётчики подписчиков/подписок/публикаций для текущего пользователя.
+    Публикации считаем как все завершенные работы (GenerationJob.DONE).
+    """
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        return {}
+
+    try:
+        from .models import Follow
+        followers = Follow.objects.filter(following=user).count()
+        following = Follow.objects.filter(follower=user).count()
+    except Exception:
+        followers = 0
+        following = 0
+
+    posts = 0
+    try:
+        from generate.models import GenerationJob
+        posts = GenerationJob.objects.filter(user=user, status=GenerationJob.Status.DONE).filter(persisted=True).count()
+    except Exception:
+        pass
+
+    return {"follow_stats": {"followers": followers, "following": following, "posts": posts}}

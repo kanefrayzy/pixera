@@ -1,7 +1,7 @@
 ﻿from django import forms
 from django.utils.html import strip_tags
 import re
-from .models import Category
+from .models import VideoCategory, Category
 
 BANNED_WORDS = {
     "script", "javascript", "onload", "onclick", "onerror", "alert", "eval",
@@ -41,16 +41,52 @@ class ShareFromJobForm(forms.Form):
     categories = forms.ModelMultipleChoiceField(
         label="Категории",
         required=False,
-        queryset=Category.objects.none(),  # зададим в __init__
+        queryset=VideoCategory.objects.none(),  # зададим в __init__
         widget=forms.SelectMultiple(attrs={"class": "input", "size": "6"}),
         help_text="Выберите одну или несколько категорий (создаёт админ).",
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["categories"].queryset = Category.objects.all()
+        # Вариант для ВИДЕО
+        self.fields["categories"].queryset = VideoCategory.objects.all()
 
     # Только «привести в порядок» строки
+    def clean_title(self):
+        title = (self.cleaned_data.get("title") or "").strip()
+        return clean_text_content(title)[:140]
+
+    def clean_caption(self):
+        caption = (self.cleaned_data.get("caption") or "").strip()
+        return clean_text_content(caption)[:240]
+
+
+class SharePhotoFromJobForm(forms.Form):
+    title = forms.CharField(
+        label="Заголовок",
+        max_length=140,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "Заголовок (опционально)"}),
+    )
+    caption = forms.CharField(
+        label="Подпись",
+        max_length=240,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "Подпись (опционально)"}),
+    )
+    categories = forms.ModelMultipleChoiceField(
+        label="Категории (фото)",
+        required=False,
+        queryset=Category.objects.none(),  # зададим в __init__
+        widget=forms.SelectMultiple(attrs={"class": "input", "size": "6"}),
+        help_text="Выберите одну или несколько категорий для фото.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Вариант для ФОТО
+        self.fields["categories"].queryset = Category.objects.all()
+
     def clean_title(self):
         title = (self.cleaned_data.get("title") or "").strip()
         return clean_text_content(title)[:140]

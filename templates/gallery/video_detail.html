@@ -1,0 +1,688 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ video.title|default:"AI видео" }} — Pixera{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block extra_meta %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+  {% url 'gallery:video_delete' video.pk as delete_url %}
+
+  <div class="grid lg:grid-cols-3 gap-8">
+
+    <!-- Main Video Section -->
+    <div class="lg:col-span-2 space-y-6">
+
+      <!-- Header -->
+      <div class="flex flex-wrap items-center gap-3">
+        {% if video.category %}
+          <a class="pill bg-primary/15 text-primary border-primary/30 hover:bg-primary/25 transition"
+             href="{% url 'gallery:index' %}?cat={{ video.category.slug|urlencode }}">
+            #{{ video.category.name }}
+          </a>
+        {% else %}
+          <span class="pill opacity-70">Без категории</span>
+        {% endif %}
+
+        <!-- Admin Controls -->
+        {% if request.user.is_staff %}
+          <div class="flex gap-2 ml-auto">
+            <a class="btn btn-ghost px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+               href="{{ delete_url }}?next={{ request.get_full_path|urlencode }}"
+               title="Удалить"
+               aria-label="Удалить">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+      <h1 class="text-2xl sm:text-3xl font-bold line-clamp-2 sm:line-clamp-none">{{ video.title|default:"AI видео" }}</h1>
+
+      <!-- Video Container -->
+      <div class="relative">
+        <div class="card overflow-hidden">
+          <div class="media-frame bg-black">
+            <video class="max-w-full max-h-[80vh] w-auto h-auto"
+                   controls
+                   controlslist="nodownload"
+                   preload="metadata"
+                   playsinline webkit-playsinline x5-playsinline
+                   {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %}>
+              <source src="{% if video.video_url %}{{ video.video_url }}{% else %}{% url 'gallery:video_stream' video.pk %}{% endif %}" type="video/mp4">
+              Ваш браузер не поддерживает видео.
+            </video>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="card p-4">
+        <div class="flex flex-wrap items-center gap-4 justify-between">
+          <div class="flex flex-wrap items-center gap-4">
+            <!-- Like Button -->
+            <button class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if liked %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                    data-url="{% url 'gallery:video_like' video.pk %}"
+                    data-count-target="video-like-count"
+                    aria-pressed="{% if liked %}true{% else %}false{% endif %}"
+                    title="Лайк"
+                    type="button">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="{% if liked %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span id="video-like-count" class="font-medium">{{ video.likes_count|default:0 }}</span>
+              <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-url="{% url 'gallery:video_likers' video.pk %}" aria-label="Кто лайкнул">…</span>
+            </button>
+
+            <!-- Comments Count -->
+            <div class="flex items-center gap-2 text-[var(--muted)]">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+              <span id="video-comments-count" class="font-medium">{{ video.comments_count|default:0 }}</span>
+            </div>
+
+            <!-- Views Count -->
+            <div class="flex items-center gap-2 text-[var(--muted)]">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              <span class="font-medium">{{ video.view_count|default:0 }}</span>
+            </div>
+          </div>
+
+          <!-- Share Button -->
+          <button class="btn btn-ghost w-full sm:w-auto" onclick="navigator.share ? navigator.share({title: '{{ video.title|escapejs }}', url: window.location.href}) : navigator.clipboard.writeText(window.location.href).then(() => alert('Ссылка скопирована!'))">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+            Поделиться
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6 lg:space-y-6 sm:space-y-4">
+
+      <!-- Video Info -->
+      {% if video.caption %}
+        <div class="card p-6">
+          <h3 class="font-semibold mb-3">Описание</h3>
+          <p class="text-[var(--muted)] leading-relaxed">{{ video.caption }}</p>
+        </div>
+      {% endif %}
+
+      <!-- Technical Details -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-4">Детали</h3>
+        <div class="space-y-3 text-sm">
+
+          <div class="flex justify-between">
+            <span class="text-[var(--muted)]">Формат:</span>
+            <span class="font-medium">MP4</span>
+          </div>
+
+          <div class="flex justify-between">
+            <span class="text-[var(--muted)]">Генератор:</span>
+            <span class="font-medium">Pixera</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Videos -->
+      <div class="card p-6">
+        <h3 class="font-semibold mb-4">Похожие видео</h3>
+        {% if related_videos %}
+          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            {% for rv in related_videos|slice:":4" %}
+              {% url 'gallery:video_detail' rv.pk as rurl %}
+              <a class="block group rounded-xl overflow-hidden border border-[var(--bord)] relative" href="{{ rurl }}" title="{{ rv.title|default:'Видео' }}">
+                {% if rv.thumbnail %}
+                  <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.03]"
+                       src="{{ rv.thumbnail.url }}"
+                       alt="{{ rv.title|default:'Видео' }}"
+                       loading="lazy">
+                {% else %}
+                  <video class="w-full aspect-square object-cover"
+                         src="{% url 'gallery:video_stream' rv.pk %}"
+                         preload="metadata" playsinline webkit-playsinline x5-playsinline
+                         muted></video>
+                {% endif %}
+                <!-- Play icon overlay -->
+                <div class="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div class="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-[var(--muted)] text-sm">Нет похожих видео</div>
+        {% endif %}
+        <a class="btn btn-ghost w-full mt-4" href="{% url 'gallery:index' %}">
+          Посмотреть все
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comments Section -->
+  <div class="card p-6 sm:p-8" id="comments">
+    {% with p=video.source_job.original_prompt|default:video.source_job.prompt|default:'' %}
+    {% if p %}
+      <div class="mb-4 rounded-xl border border-white/10 dark:border-white/10 bg-black text-white shadow-sm">
+        <div class="relative px-3 py-2 sm:px-4 sm:py-3">
+          <div class="text-xs uppercase tracking-wide text-white/60 mb-1">Промпт</div>
+          <pre class="whitespace-pre-wrap break-words font-medium text-sm leading-relaxed pr-10">{{ p }}</pre>
+          <button type="button"
+                  class="absolute top-2 right-2 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition js-copy-prompt"
+                  data-prompt="{{ p|escapejs }}"
+                  aria-label="Копировать промпт"
+                  onclick="try{navigator.clipboard&&navigator.clipboard.writeText(this.dataset.prompt);}catch(_){}this.classList.add('ring-2','ring-white/60');setTimeout(()=>this.classList.remove('ring-2','ring-white/60'),700)">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          </button>
+        </div>
+      </div>
+    {% endif %}
+    {% endwith %}
+    <h2 class="text-xl font-semibold mb-6">
+      Комментарии
+      <span class="text-[var(--muted)] font-normal">
+        ({{ video.comments_count|default:0 }})
+      </span>
+    </h2>
+
+    <!-- Comment Form -->
+    {% if request.user.is_authenticated %}
+      <form method="post"
+            action="{% url 'gallery:video_comment' video.pk %}"
+            class="mb-8"
+            id="videoCommentForm"
+            data-comment-form="root">
+        {% csrf_token %}
+        <div class="flex flex-col sm:flex-row gap-4">
+          {% if user_profile and user_profile.avatar %}
+            <img src="{{ user_profile.avatar.url }}" alt="{{ request.user.username }}" class="w-10 h-10 rounded-2xl object-cover flex-shrink-0">
+          {% elif request.user.is_authenticated and request.user.profile and request.user.profile.avatar %}
+            <img src="{{ request.user.profile.avatar.url }}" alt="{{ request.user.username }}" class="w-10 h-10 rounded-2xl object-cover flex-shrink-0">
+          {% else %}
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+              {{ request.user.first_name|first|default:request.user.username|first|upper }}
+            </div>
+          {% endif %}
+          <div class="flex-1">
+            <textarea name="text"
+                      class="field min-h-28 sm:min-h-24 resize-none mb-3"
+                      placeholder="Напишите комментарий..."
+                      maxlength="1000"
+                      required></textarea>
+            <button class="btn btn-primary w-full sm:w-auto" type="submit">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+              Отправить
+            </button>
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <div class="card p-4 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 mb-8">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+          </svg>
+          <div class="text-sm">
+            <span class="font-medium text-blue-800 dark:text-blue-200">Войдите, чтобы комментировать</span>
+            <p class="text-blue-700 dark:text-blue-300 mt-1">
+              <a href="{% url 'account_login' %}" class="underline hover:no-underline">Войти</a> или
+              <a href="{% url 'account_signup' %}" class="underline hover:no-underline">создать аккаунт</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Comments List -->
+    <div class="space-y-6" id="commentList">
+      {% for c in comments %}
+        <article class="comment-item" id="c{{ c.pk }}">
+          <div class="flex gap-4">
+            <!-- Avatar -->
+            {% if c.user and c.user.profile and c.user.profile.avatar %}
+              <img src="{{ c.user.profile.avatar.url }}" alt="{{ c.user.get_full_name|default:c.user.username }}" class="w-10 h-10 rounded-2xl object-cover flex-shrink-0">
+            {% else %}
+              <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {{ c.user.first_name|first|default:c.user.username|first|upper }}
+              </div>
+            {% endif %}
+
+            <div class="flex-1 min-w-0">
+              <!-- Comment Header -->
+              <div class="flex items-center gap-2 mb-2">
+                <span class="font-medium">{{ c.user.get_full_name|default:c.user.username }}</span>
+                <span class="text-xs text-[var(--muted)]">•</span>
+                <time datetime="{{ c.created_at|date:'c' }}" class="text-xs text-[var(--muted)]">
+                  {{ c.created_at|date:'d.m.Y H:i' }}
+                </time>
+              </div>
+
+              <!-- Comment Body -->
+              <div class="mb-3 leading-relaxed comment-text">{{ c.text }}</div>
+
+              <!-- Comment Actions -->
+              <div class="flex flex-wrap items-center gap-3">
+                <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment {% if c.pk in liked_comment_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %} hover:text-red-500"
+                        data-url="{% url 'gallery:video_comment_like' c.pk %}"
+                        data-count-id="clc-{{ c.pk }}"
+                        type="button"
+                        aria-pressed="{% if c.pk in liked_comment_ids %}true{% else %}false{% endif %}"
+                        aria-label="Лайк комментарию">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pk in liked_comment_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  <span id="clc-{{ c.pk }}" class="text-sm">{{ c.likes_count|default:0 }}</span>
+                </button>
+
+                {% if request.user.is_authenticated %}
+                  <button class="text-sm text-[var(--muted)] hover:text-[var(--text)] transition js-reply-toggle"
+                          type="button"
+                          data-target="reply-{{ c.pk }}"
+                          onclick="(function(btn){var id=btn.getAttribute('data-target');var f=document.getElementById(id);if(!f)return;var h=f.classList.contains('hidden');f.classList.toggle('hidden', !h);if(h){var ta=f.querySelector('textarea');if(ta){setTimeout(function(){ta.focus();},100);}}})(this)">
+                    Ответить
+                  </button>
+                {% endif %}
+              </div>
+
+              <!-- Reply Form -->
+              {% if request.user.is_authenticated %}
+                <form id="reply-{{ c.pk }}"
+                      class="mt-4 hidden"
+                      method="post"
+                      action="{% url 'gallery:video_comment_reply' c.pk %}"
+                      data-comment-form="reply">
+                  {% csrf_token %}
+                  <div class="flex flex-col sm:flex-row gap-3">
+                    {% if user_profile and user_profile.avatar %}
+                      <img src="{{ user_profile.avatar.url }}" alt="{{ request.user.username }}" class="w-8 h-8 rounded-xl object-cover flex-shrink-0">
+                    {% elif request.user.is_authenticated and request.user.profile and request.user.profile.avatar %}
+                      <img src="{{ request.user.profile.avatar.url }}" alt="{{ request.user.username }}" class="w-8 h-8 rounded-xl object-cover flex-shrink-0">
+                    {% else %}
+                      <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                        {{ request.user.first_name|first|default:request.user.username|first|upper }}
+                      </div>
+                    {% endif %}
+                    <div class="flex-1">
+                      <textarea name="text"
+                                class="field min-h-24 sm:min-h-20 resize-none mb-2 text-sm"
+                                placeholder="Ваш ответ..."
+                                maxlength="1000"
+                                required></textarea>
+                      <div class="flex flex-wrap gap-2">
+                        <button class="btn btn-primary text-sm py-1.5 w-full sm:w-auto" type="submit">Отправить</button>
+                        <button class="btn btn-ghost text-sm py-1.5 w-full sm:w-auto" type="button" onclick="this.closest('form').classList.add('hidden')">Отмена</button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              {% endif %}
+
+              <!-- Replies -->
+              {% if c.replies.all %}
+                <div class="mt-4 pl-3 sm:pl-4 border-l-2 border-[var(--bord)] space-y-4">
+                  {% for r in c.replies.all %}
+                    {% if r.is_visible %}
+                      <div id="c{{ r.pk }}" class="flex gap-3">
+                        {% if r.user and r.user.profile and r.user.profile.avatar %}
+                          <img src="{{ r.user.profile.avatar.url }}" alt="{{ r.user.get_full_name|default:r.user.username }}" class="w-8 h-8 rounded-xl object-cover flex-shrink-0">
+                        {% else %}
+                          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                            {{ r.user.first_name|first|default:r.user.username|first|upper }}
+                          </div>
+                        {% endif %}
+
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium text-sm">{{ r.user.get_full_name|default:r.user.username }}</span>
+                            <span class="text-xs text-[var(--muted)]">•</span>
+                            <time datetime="{{ r.created_at|date:'c' }}" class="text-xs text-[var(--muted)]">
+                              {{ r.created_at|date:'d.m.Y H:i' }}
+                            </time>
+                          </div>
+
+                          <div class="text-sm leading-relaxed mb-2 comment-text">{{ r.text }}</div>
+
+                          <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-black/[.04] dark:hover:bg-white/10 transition js-like-comment {% if r.pk in liked_comment_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %} hover:text-red-500"
+                                  data-url="{% url 'gallery:video_comment_like' r.pk %}"
+                                  data-count-id="clc-{{ r.pk }}"
+                                  type="button"
+                                  aria-pressed="{% if r.pk in liked_comment_ids %}true{% else %}false{% endif %}"
+                                  aria-label="Лайк ответу">
+                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="{% if r.pk in liked_comment_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                            <span id="clc-{{ r.pk }}" class="text-xs">{{ r.likes_count|default:0 }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="text-center py-8">
+          <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+          </svg>
+          <h3 class="font-medium mb-2">Пока нет комментариев</h3>
+          <p class="text-[var(--muted)] mb-4">Станьте первым, кто оставит комментарий к этому видео</p>
+          {% if request.user.is_authenticated %}
+            <button class="btn btn-primary" onclick="document.querySelector('textarea[name=text]')?.focus()">
+              Написать комментарий
+            </button>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  // Like toggle functionality
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.like-toggle');
+    if (!btn) return;
+    // If click on the numeric count under the heart, open likers modal, do not toggle like
+    if (e.target.closest('[data-open-likers]')) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('like failed');
+
+      // Update button state
+      const heart = btn.querySelector('svg');
+      const isLiked = !!j.liked;
+
+      btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+
+      if (isLiked) {
+        btn.classList.add('text-red-500');
+        btn.classList.remove('text-[var(--muted)]');
+        heart.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-red-500');
+        btn.classList.add('text-[var(--muted)]');
+        heart.setAttribute('fill', 'none');
+      }
+
+      if (countEl && typeof j.count === 'number') {
+        countEl.textContent = j.count;
+      }
+    } catch (err) {
+      console.warn('Like failed:', err);
+    } finally {
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+
+  // Comment like functionality
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.js-like-comment');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    try {
+      const response = await fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data || data.ok !== true) {
+        throw new Error('Comment like failed');
+      }
+
+      // Update like count
+      const countId = btn.dataset.countId;
+      const countEl = countId && document.getElementById(countId);
+      if (countEl && typeof data.count === 'number') {
+        countEl.textContent = data.count;
+      }
+
+      // Update button state
+      const heart = btn.querySelector('svg');
+      const isLiked = !!data.liked;
+
+      btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+
+      if (isLiked) {
+        btn.classList.add('text-red-500');
+        btn.classList.remove('text-[var(--muted)]');
+        heart.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-red-500');
+        btn.classList.add('text-[var(--muted)]');
+        heart.setAttribute('fill', 'none');
+      }
+
+    } catch (err) {
+      console.warn('Comment like failed:', err);
+    } finally {
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+<style>
+/* Smooth transitions for like buttons */
+.like-toggle,
+.js-like-comment {
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.like-toggle:active,
+.js-like-comment:active {
+  transform: scale(0.95);
+}
+
+/* Comment avatars gradient variety */
+.comment-item:nth-child(1) .w-10.h-10 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.comment-item:nth-child(2) .w-10.h-10 {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.comment-item:nth-child(3) .w-10.h-10 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.comment-item:nth-child(4) .w-10.h-10 {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.comment-item:nth-child(5) .w-10.h-10 {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Center and contain video within a consistent frame */
+.media-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.media-frame video {
+  max-width: 100%;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+}
+</style>
+
+<!-- Likers Modal -->
+<div id="likersModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
+  <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="font-semibold">Оценили</h3>
+      <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">
+      <div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('likersModal');
+  const body = document.getElementById('likersBody');
+  const CURRENT_USER = "{{ request.user.username|default:''|escapejs }}";
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; body.innerHTML=''; }
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.likersClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchLikers(url){
+    try{
+      const res = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' });
+      const j = await res.json();
+      if (!res.ok || !j || j.ok === false) throw new Error('bad response');
+      const arr = Array.isArray(j.likers) ? j.likers : [];
+      if (!arr.length){
+        body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Пока нет лайков</div>';
+        return;
+      }
+      body.innerHTML = arr.map(item => {
+        const avatar = item.avatar ? `<img src="${item.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${item.username}">`
+                                   : `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white grid place-items-center font-bold">${(item.name||item.username||'?').slice(0,1).toUpperCase()}</div>`;
+        const btnLabel = item.is_following ? 'Отписаться' : 'Подписаться';
+        const btnClass = item.is_following ? 'btn-ghost' : 'btn-primary';
+        const isMe = !!CURRENT_USER && !!item.username && (item.username === CURRENT_USER);
+        const rightCtrl = isMe
+          ? `<span class="px-3 py-1.5 text-xs rounded-md bg-black/10 dark:bg-white/10 text-[var(--muted)] select-none">Вы</span>`
+          : `<button class="btn ${btnClass} text-xs px-3 py-1.5 js-follow-toggle" data-username="${item.username}">${btnLabel}</button>`;
+        return `
+          <div class="flex items-center justify-between p-3 sm:p-4">
+            <div class="flex items-center gap-3 min-w-0">
+              ${avatar}
+              <div class="min-w-0">
+                <div class="font-medium truncate">${(item.name||'')}</div>
+                <div class="text-xs text-[var(--muted)] truncate">@${item.username}</div>
+              </div>
+            </div>
+            ${rightCtrl}
+          </div>
+        `;
+      }).join('');
+    }catch(_){
+      body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  // Follow toggle inside likers modal
+  body.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.js-follow-toggle');
+    if (!btn) return;
+    e.preventDefault();
+    const username = btn.getAttribute('data-username');
+    try{
+      const fd = new FormData();
+      fd.append('username', username);
+      const res = await fetch("{% url 'dashboard:api:follow_toggle' %}", {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'},
+        body: fd,
+        credentials:'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (res.ok && j && j.ok !== false){
+        const following = !!j.following;
+        btn.textContent = following ? 'Отписаться' : 'Подписаться';
+        btn.classList.toggle('btn-primary', !following);
+        btn.classList.toggle('btn-ghost', following);
+      }
+    }catch(_){}
+  });
+
+  // Open on click on like counts (stop like-toggle bubbling)
+  document.addEventListener('click', (e)=>{
+    const el = e.target.closest('[data-open-likers]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    const url = el.getAttribute('data-url');
+    if (!url) return;
+    body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>';
+    openModal();
+    fetchLikers(url);
+  });
+})();
+</script>
+
+{% endblock %}

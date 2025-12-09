@@ -1,0 +1,872 @@
+/* ============================================
+   PROFILE PAGE RESPONSIVE STYLES
+   Fully adaptive layout for all devices (320px+)
+   ============================================ */
+
+/* ============================================
+   BASE MOBILE STYLES (320px+)
+   ============================================ */
+
+/* Profile Header Card */
+.profile-header-card {
+  padding: 1rem !important;
+}
+
+.profile-header-card .card {
+  padding: 0.75rem !important;
+}
+
+/* Avatar Section */
+.profile-avatar-section {
+  padding-top: 1rem !important;
+}
+
+.profile-avatar-section img,
+.profile-avatar-section span {
+  width: 3.5rem !important;
+  height: 3.5rem !important;
+}
+
+/* Avatar Controls */
+.profile-avatar-controls {
+  margin-top: 0.5rem;
+}
+
+.profile-avatar-controls button {
+  font-size: 0.75rem !important;
+  padding: 0.375rem 0.75rem !important;
+}
+
+/* Profile Info Section */
+.profile-info-section h1 {
+  font-size: 1rem !important;
+  line-height: 1.25 !important;
+}
+
+.profile-info-section p {
+  font-size: 0.75rem !important;
+}
+
+/* Stats Counters */
+.profile-stats {
+  gap: 0.75rem !important;
+  margin-top: 0.75rem !important;
+}
+
+.profile-stats a,
+.profile-stats div {
+  min-width: 3.5rem;
+}
+
+.profile-stats .text-base,
+.profile-stats .text-lg {
+  font-size: 0.875rem !important;
+}
+
+.profile-stats .text-xs {
+  font-size: 0.625rem !important;
+}
+
+/* Action Buttons */
+.profile-actions {
+  margin-top: 0.75rem !important;
+}
+
+.profile-actions .btn {
+  font-size: 0.75rem !important;
+  padding: 0.5rem 1rem !important;
+  width: 100%;
+}
+
+/* Media Tabs */
+.media-tabs-wrapper {
+  padding: 0.25rem !important;
+  gap: 0.25rem !important;
+}
+
+.media-tab {
+  font-size: 0.75rem !important;
+  padding: 0.5rem 0.5rem !important;
+  min-height: 2.5rem;
+}
+
+.media-tab svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.media-count {
+  font-size: 0.625rem !important;
+  padding: 0.125rem 0.375rem !important;
+  min-width: 1.25rem !important;
+}
+
+/* Grid Layout */
+#photos-grid .grid,
+#videos-grid .grid {
+  grid-template-columns: 1fr !important;
+  gap: 0.75rem !important;
+}
+
+/* Card Content */
+.card .p-4 {
+  padding: 0.75rem !important;
+}
+
+.card h3 {
+  font-size: 0.875rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Author Section */
+.card .flex.items-center.gap-2 img,
+.card .flex.items-center.gap-2 span {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+}
+
+.card .flex.items-center.gap-2 a {
+  font-size: 0.75rem !important;
+}
+
+/* Action Buttons in Cards */
+.card button,
+.card a.flex {
+  font-size: 0.75rem !important;
+  padding: 0.375rem 0.5rem !important;
+}
+
+.card button svg,
+.card a.flex svg {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+}
+
+/* Model Badge */
+.absolute.top-3.right-3 > div {
+  font-size: 0.625rem !important;
+  padding: 0.25rem 0.5rem !important;
+  max-width: calc(100% - 1.5rem);
+  word-break: break-word;
+}
+
+/* Time Badge */
+.absolute.bottom-3.right-3 time {
+  font-size: 0.625rem !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+/* Video Controls */
+.vid-snd-btn {
+  padding: 0.375rem 0.5rem !important;
+}
+
+.vid-snd-btn svg {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+}
+
+.vid-vol {
+  width: 3rem !important;
+}
+
+/* Video Play Button */
+.video-play-btn .play-btn-circle,
+.video-play-overlay > div {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+.video-play-btn svg,
+.video-play-overlay svg {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
+/* Follow Modal */
+.pf-follow-modal-panel {
+  max-width: calc(100vw - 1rem) !important;
+  margin: 0.5rem !important;
+}
+
+.pf-follow-modal-panel .p-4,
+.pf-follow-modal-panel .p-5 {
+  padding: 0.75rem !important;
+}
+
+.pf-follow-modal-panel h3 {
+  font-size: 0.875rem !important;
+}
+
+.pf-follow-modal-panel .inline-flex.rounded-xl {
+  width: 100%;
+}
+
+.pf-follow-modal-panel button {
+  font-size: 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+/* Search Bar */
+#pfFollowSearch {
+  font-size: 0.75rem !important;
+  padding: 0.5rem 0.5rem 0.5rem 2rem !important;
+}
+
+#pfFollowSearch + svg {
+  left: 0.5rem !important;
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+}
+
+#pfSearchClear {
+  right: 0.5rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
+/* Avatar Cropper Modal */
+#avatarCropModal .relative.mx-auto {
+  max-width: calc(100vw - 1rem) !important;
+}
+
+#avatarCropModal .px-4,
+#avatarCropModal .p-4 {
+  padding: 0.75rem !important;
+}
+
+#avatarCropModal h3 {
+  font-size: 0.875rem !important;
+}
+
+#avatarCropModal button {
+  font-size: 0.75rem !important;
+  padding: 0.375rem 0.75rem !important;
+}
+
+#avatarCropModal .inline-flex.rounded-xl button {
+  padding: 0.375rem 0.5rem !important;
+}
+
+#avatarCropModal input[type="range"] {
+  width: 8rem !important;
+}
+
+/* Media Modal */
+#pfMediaModal .relative.mx-auto {
+  max-width: calc(100vw - 1rem) !important;
+  margin: 0.5rem auto !important;
+}
+
+#pfMediaModal .grid {
+  grid-template-columns: 1fr !important;
+}
+
+#pfMediaModal .px-4,
+#pfMediaModal .p-4 {
+  padding: 0.75rem !important;
+}
+
+#pfMediaModal img,
+#pfMediaModal video {
+  max-height: 50vh !important;
+}
+
+/* Empty States */
+.card.p-12 {
+  padding: 2rem 1rem !important;
+}
+
+.card.p-12 h2 {
+  font-size: 1rem !important;
+}
+
+.card.p-12 p {
+  font-size: 0.75rem !important;
+}
+
+.card.p-12 svg {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+/* ============================================
+   SMALL PHONES (360px+)
+   ============================================ */
+
+@media (min-width: 360px) {
+  .profile-avatar-section img,
+  .profile-avatar-section span {
+    width: 4rem !important;
+    height: 4rem !important;
+  }
+
+  .profile-info-section h1 {
+    font-size: 1.125rem !important;
+  }
+
+  .profile-stats .text-base,
+  .profile-stats .text-lg {
+    font-size: 1rem !important;
+  }
+
+  .media-tab {
+    font-size: 0.8125rem !important;
+    padding: 0.625rem 0.75rem !important;
+  }
+
+  .media-tab svg {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+
+  .card h3 {
+    font-size: 0.9375rem !important;
+  }
+
+  .video-play-btn .play-btn-circle,
+  .video-play-overlay > div {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  .vid-vol {
+    width: 4rem !important;
+  }
+}
+
+/* ============================================
+   LARGE PHONES (400px+)
+   ============================================ */
+
+@media (min-width: 400px) {
+  .profile-header-card {
+    padding: 1.25rem !important;
+  }
+
+  .profile-header-card .card {
+    padding: 1rem !important;
+  }
+
+  .profile-avatar-section img,
+  .profile-avatar-section span {
+    width: 4.5rem !important;
+    height: 4.5rem !important;
+  }
+
+  .profile-avatar-controls button {
+    font-size: 0.8125rem !important;
+    padding: 0.5rem 1rem !important;
+  }
+
+  .profile-info-section h1 {
+    font-size: 1.25rem !important;
+  }
+
+  .profile-info-section p {
+    font-size: 0.8125rem !important;
+  }
+
+  .profile-stats {
+    gap: 1rem !important;
+  }
+
+  .profile-actions .btn {
+    font-size: 0.8125rem !important;
+    padding: 0.625rem 1.25rem !important;
+  }
+
+  .media-tab {
+    font-size: 0.875rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .card .p-4 {
+    padding: 1rem !important;
+  }
+
+  .card h3 {
+    font-size: 1rem !important;
+  }
+
+  .card .flex.items-center.gap-2 a {
+    font-size: 0.8125rem !important;
+  }
+
+  .card button,
+  .card a.flex {
+    font-size: 0.8125rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+}
+
+/* ============================================
+   PHABLETS (475px+)
+   ============================================ */
+
+@media (min-width: 475px) {
+  .xs\:inline {
+    display: inline !important;
+  }
+
+  .xs\:px-4 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  #photos-grid .grid,
+  #videos-grid .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+  }
+
+  .media-tabs-wrapper {
+    flex-wrap: nowrap !important;
+    width: auto !important;
+  }
+
+  .media-tabs-wrapper .media-tab {
+    flex: 0 0 auto !important;
+  }
+
+  .profile-actions .btn {
+    width: auto;
+  }
+}
+
+/* ============================================
+   SMALL TABLETS (640px+)
+   ============================================ */
+
+@media (min-width: 640px) {
+  .profile-header-card {
+    padding: 1.5rem !important;
+  }
+
+  .profile-header-card .card {
+    padding: 1.25rem !important;
+  }
+
+  .profile-avatar-section {
+    padding-top: 2rem !important;
+  }
+
+  .profile-avatar-section img,
+  .profile-avatar-section span {
+    width: 5rem !important;
+    height: 5rem !important;
+  }
+
+  .profile-avatar-controls button {
+    font-size: 0.875rem !important;
+  }
+
+  .profile-info-section h1 {
+    font-size: 1.25rem !important;
+  }
+
+  .profile-info-section p {
+    font-size: 0.875rem !important;
+  }
+
+  .profile-stats {
+    gap: 1.25rem !important;
+    margin-top: 0.75rem !important;
+  }
+
+  .profile-stats .text-base,
+  .profile-stats .text-lg {
+    font-size: 1rem !important;
+  }
+
+  .profile-stats .text-xs {
+    font-size: 0.75rem !important;
+  }
+
+  .profile-actions {
+    margin-top: 1rem !important;
+  }
+
+  .profile-actions .btn {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 1.5rem !important;
+  }
+
+  .media-tab {
+    font-size: 0.875rem !important;
+    padding: 0.625rem 1rem !important;
+  }
+
+  .media-tab svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  .media-count {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+
+  .card .p-4 {
+    padding: 1rem !important;
+  }
+
+  .card h3 {
+    font-size: 1rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .card .flex.items-center.gap-2 img,
+  .card .flex.items-center.gap-2 span {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+
+  .card .flex.items-center.gap-2 a {
+    font-size: 0.875rem !important;
+  }
+
+  .card button,
+  .card a.flex {
+    font-size: 0.875rem !important;
+    padding: 0.375rem 0.75rem !important;
+  }
+
+  .card button svg,
+  .card a.flex svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  .absolute.top-3.right-3 > div {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+
+  .absolute.bottom-3.right-3 time {
+    font-size: 0.75rem !important;
+  }
+
+  .vid-snd-btn {
+    padding: 0.375rem 0.625rem !important;
+  }
+
+  .vid-snd-btn svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  .vid-vol {
+    width: 5rem !important;
+  }
+
+  .video-play-btn .play-btn-circle,
+  .video-play-overlay > div {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+  }
+
+  .video-play-btn svg,
+  .video-play-overlay svg {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+
+  .pf-follow-modal-panel {
+    max-width: 480px !important;
+  }
+
+  .pf-follow-modal-panel .p-4,
+  .pf-follow-modal-panel .p-5 {
+    padding: 1rem !important;
+  }
+
+  .pf-follow-modal-panel h3 {
+    font-size: 1rem !important;
+  }
+
+  .pf-follow-modal-panel button {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 1rem !important;
+  }
+
+  #pfFollowSearch {
+    font-size: 0.875rem !important;
+    padding: 0.625rem 0.75rem 0.625rem 2.5rem !important;
+  }
+
+  #pfFollowSearch + svg {
+    left: 0.75rem !important;
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  #pfSearchClear {
+    right: 0.75rem !important;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+
+  #avatarCropModal .px-4,
+  #avatarCropModal .p-4 {
+    padding: 1rem !important;
+  }
+
+  #avatarCropModal h3 {
+    font-size: 1rem !important;
+  }
+
+  #avatarCropModal button {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 1rem !important;
+  }
+
+  #avatarCropModal input[type="range"] {
+    width: 14rem !important;
+  }
+
+  #pfMediaModal .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #pfMediaModal img,
+  #pfMediaModal video {
+    max-height: 60vh !important;
+  }
+
+  .card.p-12 {
+    padding: 3rem !important;
+  }
+
+  .card.p-12 h2 {
+    font-size: 1.25rem !important;
+  }
+
+  .card.p-12 p {
+    font-size: 0.875rem !important;
+  }
+
+  .card.p-12 svg {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  /* 640px+: make all three media tabs visible and adaptive */
+  .media-tabs-wrapper {
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .media-tabs-wrapper .media-tab {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ============================================
+   TABLETS (768px+)
+   ============================================ */
+
+@media (min-width: 768px) {
+  .profile-avatar-section img,
+  .profile-avatar-section span {
+    width: 5rem !important;
+    height: 5rem !important;
+  }
+
+  .profile-info-section h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .profile-stats .text-base,
+  .profile-stats .text-lg {
+    font-size: 1.125rem !important;
+  }
+
+  #photos-grid .grid,
+  #videos-grid .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+
+  .video-play-btn .play-btn-circle,
+  .video-play-overlay > div {
+    width: 4rem !important;
+    height: 4rem !important;
+  }
+
+  .video-play-btn svg,
+  .video-play-overlay svg {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+
+  .vid-vol {
+    width: 6rem !important;
+  }
+}
+
+/* ============================================
+   DESKTOPS (1024px+)
+   ============================================ */
+
+@media (min-width: 1024px) {
+  #photos-grid .grid,
+  #videos-grid .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .pf-follow-modal-panel h3 {
+    font-size: 1.25rem !important;
+  }
+
+  #avatarCropModal h3 {
+    font-size: 1.125rem !important;
+  }
+
+  /* Ensure tab text is always visible on desktop */
+  .media-tab span {
+    display: inline !important;
+  }
+
+  /* Desktop: make photo/video/published tabs fully visible and adaptive */
+  .media-tabs-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start;
+  }
+
+  .media-tabs-wrapper .media-tab {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    font-size: 0.9375rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .media-tab svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+}
+
+/* ============================================
+   TOUCH DEVICE OPTIMIZATIONS
+   ============================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .card button,
+  .card a.flex,
+  .media-tab,
+  .profile-actions .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Disable hover effects */
+  .card:hover,
+  .gallery-item:hover,
+  .video-card:hover .video-element {
+    transform: none !important;
+  }
+
+  /* Better tap feedback */
+  .card button:active,
+  .card a.flex:active,
+  .media-tab:active {
+    opacity: 0.7;
+  }
+}
+
+/* ============================================
+   LANDSCAPE ORIENTATION
+   ============================================ */
+
+@media (max-width: 767px) and (orientation: landscape) {
+  .profile-header-card .flex-col {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .profile-info-section {
+    text-align: left !important;
+  }
+
+  .profile-stats {
+    justify-content: flex-start !important;
+  }
+
+  #pfMediaModal img,
+  #pfMediaModal video {
+    max-height: 70vh !important;
+  }
+}
+
+/* ============================================
+   HIGH DPI DISPLAYS
+   ============================================ */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .card {
+    border-width: 0.5px;
+  }
+
+  .media-tab {
+    border-width: 0.5px;
+  }
+}
+
+/* ============================================
+   DARK MODE ADJUSTMENTS
+   ============================================ */
+
+[data-theme="dark"] .media-tab.active {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .video-play-btn,
+  .video-play-overlay,
+  .card,
+  .media-tab {
+    transition: none !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+.media-tab:focus-visible,
+.card button:focus-visible,
+.profile-actions .btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  .media-tabs-wrapper,
+  .video-play-overlay,
+  .profile-actions,
+  #pfFollowModal,
+  #avatarCropModal,
+  #pfMediaModal {
+    display: none !important;
+  }
+
+  .card {
+    break-inside: avoid;
+  }
+}

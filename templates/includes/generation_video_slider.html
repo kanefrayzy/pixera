@@ -1,0 +1,332 @@
+﻿{% load static %}
+
+<!-- Generation Video Slider Component -->
+<div class="generation-slider" id="generationVideoSlider">
+  <!-- Navigation arrows -->
+  <button class="slider-nav slider-nav-prev" id="prevVideoSlide" aria-label="Предыдущий видео-пример">
+    <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+  </button>
+  <button class="slider-nav slider-nav-next" id="nextVideoSlide" aria-label="Следующий видео-пример">
+    <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+    </svg>
+  </button>
+
+  <!-- Slides container -->
+  <div class="slider-container" id="videoSliderContainer">
+    <!-- Loading state -->
+    <div class="slide active flex items-center justify-center aspect-[4/5] bg-gray-100 dark:bg-gray-800 rounded-2xl sm:rounded-3xl">
+      <div class="text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+        <p class="text-sm text-[var(--muted)]">Загрузка видео...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicators -->
+  <div class="slider-indicators" id="videoSliderIndicators"></div>
+</div>
+
+<script>
+(function() {
+  const DATA_URL = '{% static "data/slider_video_examples.json" %}';
+  const container = document.getElementById('videoSliderContainer');
+  const indicators = document.getElementById('videoSliderIndicators');
+  const root = document.getElementById('generationVideoSlider');
+  const prevBtn = document.getElementById('prevVideoSlide');
+  const nextBtn = document.getElementById('nextVideoSlide');
+
+  let current = 0;
+  let total = 0;
+
+  // Build DOM immediately from provided data
+  function renderData(data) {
+    container.innerHTML = '';
+    indicators.innerHTML = '';
+    total = Array.isArray(data) ? data.length : 0;
+
+    if (!total) {
+      container.innerHTML = `
+        <div class="slide active">
+          <div class="relative">
+            <div class="w-full rounded-2xl sm:rounded-3xl object-cover aspect-[4/5] bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 grid place-items-center">
+              <div class="text-center p-6">
+                <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="text-sm text-[var(--muted)]">Нет видео‑примеров</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      window.videoSliderExamples = [];
+      return;
+    }
+
+    data.forEach((item, index) => {
+      const slide = document.createElement('div');
+      slide.className = `slide ${index === 0 ? 'active' : ''}`;
+      slide.dataset.slide = String(index);
+      const poster = item.thumbnail ? ` poster="${item.thumbnail}"` : '';
+      slide.innerHTML = `
+        <div class="relative group">
+          <video class="w-full rounded-2xl sm:rounded-3xl object-cover aspect-[4/5] bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900"
+                 src="${item.video}"${poster}
+                 preload="${index === 0 ? 'auto' : 'metadata'}" playsinline webkit-playsinline x5-playsinline muted
+                 title="${(item.title || 'Видео пример').replace(/"/g,'"')}"></video>
+
+          <!-- Play/Pause overlay -->
+          <button type="button"
+                  class="video-play-btn absolute inset-0 grid place-items-center transition opacity-100 z-30 pointer-events-auto cursor-pointer"
+                  aria-label="Воспроизведение">
+            <span class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 text-white shadow-lg backdrop-blur">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+            </span>
+          </button>
+
+          <!-- Volume control (shows only if audio is present) -->
+          <div class="video-vol-wrap absolute right-3 top-3 items-center gap-2 bg-black/55 text-white px-2.5 py-1.5 rounded-xl backdrop-blur-sm z-20">
+            <button type="button" class="video-mute-btn" aria-label="Звук">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5 9v6h4l5 5V4L9 9H5z"></path>
+              </svg>
+            </button>
+            <input type="range" class="video-volume w-24 sm:w-28 accent-[var(--primary)]" min="0" max="100" value="0">
+          </div>
+
+          <!-- No-audio badge -->
+          <div class="video-noaudio absolute right-3 top-3 hidden items-center gap-2 bg-black/55 text-white px-2.5 py-1.5 rounded-xl backdrop-blur-sm z-20" title="Нет звука">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16.5 12a4.5 4.5 0 01-1.1 2.9l1.1 1.1A6 6 0 0018 12a5.9 5.9 0 00-.6-2.6l-1.1 1.1c.12.48.2.98.2 1.5zM19 5l-1.5 1.5-2.1 2.1L12 12l-3 3H5v-6h3l3-3 2.1-2.1L17.5 3 19 4.5zM4 4l16 16-1.5 1.5L2.5 5.5 4 4z"></path>
+            </svg>
+            <span class="text-xs">Нет звука</span>
+          </div>
+        </div>
+      `;
+      if (index !== 0) slide.style.display = 'none';
+      container.appendChild(slide);
+
+      const dot = document.createElement('button');
+      dot.className = `indicator ${index === 0 ? 'active' : ''}`;
+      dot.dataset.slide = String(index);
+      dot.setAttribute('aria-label', `Слайд ${index + 1}`);
+      dot.addEventListener('click', () => setActive(index));
+      indicators.appendChild(dot);
+
+      const video = slide.querySelector('video');
+      const playBtn = slide.querySelector('.video-play-btn');
+      const safePlay = async () => { try { await video.play(); } catch (_) {} };
+      const updateOverlay = () => {
+        if (video.paused) {
+          playBtn.classList.remove('opacity-0','invisible','pointer-events-none');
+          playBtn.setAttribute('aria-label','Воспроизведение');
+        } else {
+          playBtn.classList.add('opacity-0','invisible','pointer-events-none');
+          playBtn.setAttribute('aria-label','Пауза');
+        }
+      };
+      playBtn.addEventListener('click', (e) => { e.stopPropagation(); if (video.paused) safePlay(); else video.pause(); });
+      video.addEventListener('click', () => { if (video.paused) safePlay(); else video.pause(); });
+      video.addEventListener('play', updateOverlay);
+      video.addEventListener('pause', updateOverlay);
+      video.addEventListener('ended', updateOverlay);
+
+      // Volume controls (only for videos that actually have audio)
+      const volWrap = slide.querySelector('.video-vol-wrap');
+      const noAudioWrap = slide.querySelector('.video-noaudio');
+      const vol = slide.querySelector('.video-volume');
+      const muteBtn = slide.querySelector('.video-mute-btn');
+
+      function setVolume(v) {
+        const val = Math.max(0, Math.min(100, v));
+        video.volume = val / 100;
+        video.muted = val === 0;
+      }
+
+      if (vol) {
+        vol.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value || '0', 10);
+          setVolume(val);
+        });
+      }
+
+      if (muteBtn) {
+        muteBtn.addEventListener('click', () => {
+          if (video.muted || video.volume === 0) {
+            setVolume(40);
+            if (vol) vol.value = 40;
+          } else {
+            setVolume(0);
+            if (vol) vol.value = 0;
+          }
+        });
+      }
+
+      function detectHasAudio() {
+        try {
+          let detectedTrue = false;
+          let detectedFalse = false;
+
+          // Firefox
+          if (typeof video.mozHasAudio !== 'undefined') {
+            if (video.mozHasAudio) detectedTrue = true;
+            else detectedFalse = true;
+          }
+
+          // Chromium/WebKit heuristic (becomes >0 только после декодирования)
+          if (typeof video.webkitAudioDecodedByteCount !== 'undefined') {
+            if (video.webkitAudioDecodedByteCount > 0) detectedTrue = true;
+          }
+
+          // Safari/Chrome audioTracks (иногда заполняется позже)
+          if (video.audioTracks && typeof video.audioTracks.length === 'number') {
+            if (video.audioTracks.length > 0) detectedTrue = true;
+            else detectedFalse = detectedFalse || true;
+          }
+
+          // Предпочитаем не скрывать управление при неопределённости
+          const showControls = detectedTrue || !detectedFalse;
+
+          if (volWrap) volWrap.classList.toggle('hidden', !showControls);
+          if (noAudioWrap) noAudioWrap.classList.toggle('hidden', showControls);
+        } catch (_) {
+          // На любой ошибке — показываем управление, чтобы не было ложного «Нет аудио»
+          if (volWrap) volWrap.classList.remove('hidden');
+          if (noAudioWrap) noAudioWrap.classList.add('hidden');
+        }
+      }
+
+      video.addEventListener('loadedmetadata', detectHasAudio, { once: true });
+      video.addEventListener('loadeddata', detectHasAudio, { once: true });
+
+      let audioChecked = false;
+      const tryDetect = () => { if (!audioChecked) { detectHasAudio(); audioChecked = true; } };
+      video.addEventListener('canplay', tryDetect, { once: true });
+      video.addEventListener('timeupdate', tryDetect, { once: true });
+
+      // Initial state: muted (for autoplay policy), overlay visible
+      setVolume(0);
+      updateOverlay();
+    });
+
+    if (!root.dataset.navWired) {
+      prevBtn && prevBtn.addEventListener('click', prev);
+      nextBtn && nextBtn.addEventListener('click', next);
+      root.dataset.navWired = '1';
+    }
+
+    window.videoSliderExamples = data;
+    document.dispatchEvent(new CustomEvent('videoSliderDataLoaded', { detail: { data, totalSlides: total } }));
+
+    root.classList.remove('hidden');
+    container.classList.remove('hidden');
+    setActive(0);
+    window.videoActiveIndex = 0;
+  }
+
+  function updateSidePanel(item) {
+    // Обновляем левую панель «Промпт/Параметры/Результат», как у фото
+    const videosTabActive = document.querySelector('.demo-tab.active[data-demo-tab="videos"]');
+    if (!videosTabActive) return;
+    const promptEl = document.getElementById('promptText');
+    const sSteps = document.getElementById('settingsSteps');
+    const sCfg = document.getElementById('settingsCfg');
+    const sRatio = document.getElementById('settingsRatio');
+    const sSeed = document.getElementById('settingsSeed');
+    const resultImg = document.getElementById('resultImage');
+    if (promptEl) promptEl.textContent = item.prompt || '';
+    if (sSteps) sSteps.textContent = item.settings?.steps ?? '';
+    if (sCfg) sCfg.textContent = item.settings?.cfg ?? '';
+    if (sRatio) sRatio.textContent = item.settings?.ratio ?? '3:2';
+    if (sSeed) sSeed.textContent = item.settings?.seed ?? 'auto';
+    if (resultImg && item.thumbnail) resultImg.src = item.thumbnail;
+  }
+
+  function setActive(index) {
+    current = (index + total) % total;
+    const slides = container.querySelectorAll('.slide');
+    const dots = indicators.querySelectorAll('.indicator');
+
+    slides.forEach((el, i) => {
+      const isActive = i === current;
+      el.classList.toggle('active', isActive);
+      el.style.display = isActive ? '' : 'none';
+      // Пауза неактивных
+      const v = el.querySelector('video');
+      const playBtn = el.querySelector('.video-play-btn');
+      if (v) {
+        if (!isActive && !v.paused) v.pause();
+        if (playBtn) playBtn.classList.toggle('opacity-0', isActive && !v.paused);
+      }
+    });
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+
+    // Обновить левую панель
+    const data = window.videoSliderExamples || [];
+    if (data[current]) updateSidePanel(data[current]);
+
+    // Обновить глобальный индекс активного видео
+    window.videoActiveIndex = current;
+
+    // Событие смены слайда (для внешних слушателей)
+    document.dispatchEvent(new CustomEvent('videoSlideChanged', {
+      detail: { index: current, item: (window.videoSliderExamples || [])[current] }
+    }));
+  }
+
+  function next() { setActive(current + 1); }
+  function prev() { setActive(current - 1); }
+
+  async function load() {
+    const LS_KEY = 'video_slider_examples_v2';
+    let renderedOnce = false;
+
+    // 0) Preloaded from server (fastest)
+    try {
+      const pre = window.videoSliderExamplesPreloaded;
+      if (Array.isArray(pre) && pre.length) {
+        renderData(pre);
+        renderedOnce = true;
+        try { localStorage.setItem(LS_KEY, JSON.stringify(pre)); } catch (_) {}
+        try { updateSidePanel(pre[0]); } catch (_) {}
+      }
+    } catch (_) {}
+
+    // 1) Try localStorage cache
+    if (!renderedOnce) {
+      try {
+        const cached = localStorage.getItem(LS_KEY);
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (Array.isArray(data) && data.length) {
+            renderData(data);
+            renderedOnce = true;
+            try { updateSidePanel(data[0]); } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2) Сеть отключена: используем только preloaded и localStorage
+    if (!renderedOnce) {
+      // Если нет данных вообще — отрисуем нейтральный пустой стейт
+      renderData([]);
+    }
+  }
+
+  load();
+})();
+</script>
+<style>
+/* Safety styles to guarantee visibility and clickability on all themes and devices */
+#generationVideoSlider .slide { position: relative; }
+#generationVideoSlider video { display:block; width:100%; height:auto; }
+#generationVideoSlider .video-play-btn { z-index:30; }
+#generationVideoSlider .video-vol-wrap,
+#generationVideoSlider .video-noaudio { z-index:20; }
+#generationVideoSlider .indicator.active { background: var(--primary); }
+</style>

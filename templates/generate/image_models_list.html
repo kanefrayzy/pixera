@@ -1,0 +1,139 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                    {{ title }}
+                </h1>
+                <a href="{% url 'generate:image_model_create' %}"
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Создать модель
+                </a>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">
+                Управление моделями генерации изображений
+            </p>
+        </div>
+
+        <!-- Models List -->
+        {% if models %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for model in models %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                <!-- Model Image -->
+                {% if model.image %}
+                <div class="h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                    <img src="{{ model.image.url }}" alt="{{ model.name }}" class="w-full h-full object-cover">
+                </div>
+                {% else %}
+                <div class="h-48 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                {% endif %}
+
+                <!-- Model Info -->
+                <div class="p-4">
+                    <div class="flex items-start justify-between mb-2">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ model.name }}
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            {% if model.is_beta %}
+                            <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
+                                BETA
+                            </span>
+                            {% endif %}
+                            {% if model.is_premium %}
+                            <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded">
+                                PRO
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                        {{ model.description|default:"Нет описания" }}
+                    </p>
+
+                    <div class="flex items-center justify-between text-sm mb-3">
+                        <span class="text-gray-500 dark:text-gray-400">{{ model.model_id }}</span>
+                        <span class="font-medium text-blue-600 dark:text-blue-400">{{ model.token_cost }} TOK</span>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="flex items-center gap-1 text-sm">
+                            <span class="w-2 h-2 rounded-full {% if model.is_active %}bg-green-500{% else %}bg-gray-400{% endif %}"></span>
+                            {% if model.is_active %}
+                                <span class="text-green-600 dark:text-green-400">Активна</span>
+                            {% else %}
+                                <span class="text-gray-500 dark:text-gray-400">Неактивна</span>
+                            {% endif %}
+                        </span>
+                        <span class="text-gray-400">•</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                            Порядок: {{ model.order }}
+                        </span>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'generate:image_model_detail' model.pk %}"
+                           class="flex-1 text-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded transition-colors">
+                            Детали
+                        </a>
+                        <a href="{% url 'generate:image_model_edit' model.pk %}"
+                           class="flex-1 text-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors">
+                            Редактировать
+                        </a>
+                        <a href="{% url 'generate:image_model_toggle_active' model.pk %}"
+                           class="px-3 py-2 {% if model.is_active %}bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900 dark:hover:bg-yellow-800 dark:text-yellow-200{% else %}bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900 dark:hover:bg-green-800 dark:text-green-200{% endif %} text-sm font-medium rounded transition-colors"
+                           title="{% if model.is_active %}Деактивировать{% else %}Активировать{% endif %}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {% if model.is_active %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                {% else %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                {% endif %}
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-12 text-center">
+            <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                Нет моделей
+            </h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                Создайте первую модель для генерации изображений
+            </p>
+            <a href="{% url 'generate:image_model_create' %}"
+               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Создать модель
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

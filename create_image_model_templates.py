@@ -1,0 +1,145 @@
+"""
+Script to create image model templates from video model templates
+"""
+import os
+import re
+
+def create_image_model_form():
+    """Create image_model_form.html from video_model_form.html"""
+
+    # Read video model form
+    with open('templates/generate/video_model_form.html', 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Replace all video_model references with image_model
+    content = content.replace('video_model', 'image_model')
+    content = content.replace('video_models', 'image_models')
+    content = content.replace('Видео модели', 'Модели изображений')
+    content = content.replace('видео модели', 'модели изображений')
+    content = content.replace('видео', 'изображения')
+    content = content.replace('Видео', 'Изображения')
+
+    # Save to image_model_form.html
+    with open('templates/generate/image_model_form.html', 'w', encoding='utf-8') as f:
+        f.write(content)
+
+    print("✅ Created templates/generate/image_model_form.html")
+
+
+def create_image_model_detail():
+    """Create image_model_detail.html from video_model_detail.html"""
+
+    # Read video model detail
+    with open('templates/generate/video_model_detail.html', 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Replace all video_model references with image_model
+    content = content.replace('video_model', 'image_model')
+    content = content.replace('video_models', 'image_models')
+    content = content.replace('Видео модели', 'Модели изображений')
+    content = content.replace('видео модели', 'модели изображений')
+    content = content.replace('видео', 'изображения')
+    content = content.replace('Видео', 'Изображения')
+
+    # Save to image_model_detail.html
+    with open('templates/generate/image_model_detail.html', 'w', encoding='utf-8') as f:
+        f.write(content)
+
+    print("✅ Created templates/generate/image_model_detail.html")
+
+
+def create_image_model_delete():
+    """Create image_model_delete.html"""
+
+    content = '''{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                {{ title }}
+            </h1>
+        </div>
+
+        <!-- Warning Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <div class="flex items-start mb-6">
+                <div class="flex-shrink-0">
+                    <svg class="h-12 w-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                        Вы уверены, что хотите удалить эту модель?
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Это действие необратимо. Модель будет удалена навсегда.
+                    </p>
+
+                    <!-- Model Info -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                        <dl class="space-y-2">
+                            <div class="flex justify-between">
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Название:</dt>
+                                <dd class="text-sm text-gray-900 dark:text-white">{{ model.name }}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">ID модели:</dt>
+                                <dd class="text-sm text-gray-900 dark:text-white">{{ model.model_id }}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Провайдер:</dt>
+                                <dd class="text-sm text-gray-900 dark:text-white">{{ model.provider }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <form method="post" class="flex items-center justify-end gap-4">
+                {% csrf_token %}
+                <a href="{% url 'generate:image_model_detail' model.pk %}"
+                   class="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Отмена
+                </a>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Удалить модель
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+'''
+
+    with open('templates/generate/image_model_delete.html', 'w', encoding='utf-8') as f:
+        f.write(content)
+
+    print("✅ Created templates/generate/image_model_delete.html")
+
+
+if __name__ == '__main__':
+    print("Creating image model templates...")
+    print()
+
+    try:
+        create_image_model_form()
+        create_image_model_detail()
+        create_image_model_delete()
+        print()
+        print("✅ All templates created successfully!")
+        print()
+        print("Next steps:")
+        print("1. Review and customize the templates if needed")
+        print("2. Create static/js/image-field-manager.js")
+        print("3. Update generate/views_api.py to use ImageModelConfiguration")
+    except Exception as e:
+        print(f"❌ Error: {e}")

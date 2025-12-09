@@ -1,4 +1,4 @@
-<button class="btn-ghost" id="drawerToggle" aria-expanded="false" aria-controls="drawer">☰ Меню</button>
+﻿<button class="btn-ghost" id="drawerToggle" aria-expanded="false" aria-controls="drawer">☰ Меню</button>
 
 <div class="backdrop" id="drawerBackdrop" hidden></div>
 
@@ -16,21 +16,103 @@
     <button class="drawer-close" id="drawerClose" aria-label="Закрыть" type="button">✕</button>
   </div>
 
+  <div class="px-4 py-3 border-b border-[var(--bord)]">
+    <!-- Profile Privacy Toggle -->
+    <div class="mb-3 p-2.5 rounded-xl bg-gradient-to-br from-black/[.03] to-black/[.01] dark:from-white/[.03] dark:to-white/[.01] border border-[var(--bord)]">
+      <label class="flex items-center justify-between cursor-pointer group">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <div class="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <svg id="privacy-icon" class="w-4 h-4 text-primary transition-all" viewBox="0 0 24 24" fill="currentColor">
+              {% if user_profile.is_private %}
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+              {% else %}
+              <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h2c0-1.66 1.34-3 3-3s3 1.34 3 3v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
+              {% endif %}
+            </svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-semibold text-[var(--text)] leading-none mb-0.5">Профиль</div>
+            <div id="privacy-status" class="text-[10px] text-[var(--muted)] leading-none">
+              {% if user_profile.is_private %}Приватный{% else %}Открытый{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="relative flex-shrink-0">
+          <input type="checkbox"
+                 id="privacy-toggle"
+                 class="sr-only peer"
+                 {% if user_profile.is_private %}checked{% endif %}>
+          <div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-primary transition-all duration-300 peer-focus:ring-2 peer-focus:ring-primary/50"></div>
+          <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-300 peer-checked:translate-x-5 flex items-center justify-center">
+            <svg class="w-3 h-3 text-gray-400 peer-checked:text-primary transition-colors" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+          </div>
+        </div>
+      </label>
+    </div>
+
+    <div class="flex items-center gap-3">
+      {% if user_profile and user_profile.avatar %}
+        <img
+          src="{{ user_profile.avatar.url }}"
+          alt="{{ request.user.username }}"
+          class="w-8 h-8 rounded-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+        <div class="flex items-center gap-2">
+          <form action="{% url 'dashboard:avatar_upload' %}" method="post" enctype="multipart/form-data" data-ajax>
+            {% csrf_token %}
+            <label class="w-8 h-8 rounded-full bg-primary/90 text-darkbg grid place-items-center hover:bg-primary transition cursor-pointer" title="Обновить аватар">
+              <input type="file" name="avatar" accept="image/png,image/jpeg,image/jpg,image/webp" class="sr-only" onchange="this.form.requestSubmit()">
+              <!-- two arrows (refresh) -->
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 0114.31-4.906M20 12a8 8 0 01-14.31 4.906M12 6v6l4 2"/>
+              </svg>
+            </label>
+          </form>
+          <form action="{% url 'dashboard:avatar_delete' %}" method="post" data-ajax>
+            {% csrf_token %}
+            <button type="submit" class="w-8 h-8 rounded-full bg-red-600 text-white grid place-items-center hover:bg-red-500 transition" title="Удалить аватар">
+              <!-- cross -->
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M6 18L18 6"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      {% else %}
+        <span class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-[0.80rem]">
+          {{ request.user.first_name|first|default:request.user.username|first|upper }}
+        </span>
+        <form action="{% url 'dashboard:avatar_upload' %}" method="post" enctype="multipart/form-data" data-ajax class="flex items-center gap-2">
+          {% csrf_token %}
+          <label class="w-8 h-8 rounded-full bg-primary text-darkbg grid place-items-center hover:bg-primary/90 cursor-pointer" title="Добавить аватар">
+            <input type="file" name="avatar" accept="image/png,image/jpeg,image/jpg,image/webp" class="sr-only" onchange="this.form.requestSubmit()">
+            <!-- plus -->
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"/>
+            </svg>
+          </label>
+          <span class="text-[10px] sm:text-xs text-[var(--muted)]">добавить аватар</span>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
   <nav class="drawer-nav">
     <a class="drawer-link" href="{% url 'dashboard:my_jobs' %}">Мои обработки</a>
     <a class="drawer-link" href="{% url 'dashboard:tips' %}">Рекомендации по обработке</a>
-    <a class="drawer-link" href="{% url 'generate:new' %}">Сгенерировать фото</a>
+    <a class="drawer-link" href="{% url 'generate:new' %}">Генерация</a>
+    <a class="drawer-link" href="{% url 'dashboard:saved' %}">Сохранённое</a>
 
     <div class="drawer-card panel">
       <div class="token-row">
         <span class="coin" aria-hidden="true"></span>
         <div class="token-meta">
           <div class="token-title">Мой баланс</div>
-          {% if request.user.is_authenticated and request.user.wallet %}
-            <div class="token-amount"><strong>{{ request.user.wallet.balance }}</strong> TOK</div>
-          {% else %}
-            <div class="token-amount"><strong>0</strong> TOK</div>
-          {% endif %}
+          <div class="token-amount"><strong id="drawer-balance-value">{{ wallet_leftover|default:0 }}</strong> TOK</div>
         </div>
       </div>
       <a class="btn" href="{% url 'dashboard:tariffs' %}">Пополнить</a>
@@ -51,6 +133,32 @@
   let lastActive = null;
 
   if(!drawer || !toggle || !backdrop) return;
+
+  // Live balance auto-refresh in drawer
+  const BALANCE_URL = '/dashboard/api/wallet/info/';
+  let balanceTimer = null;
+
+  async function refreshBalance(){
+    try{
+      const r = await fetch(BALANCE_URL, { headers: { 'X-Requested-With': 'fetch' }, credentials: 'same-origin' });
+      const j = await r.json().catch(()=>null);
+      if(!j || j.ok !== true) return;
+      const el = document.getElementById('drawer-balance-value');
+      if(!el) return;
+      el.textContent = String(parseInt(j.balance, 10) || 0);
+    }catch(_){}
+  }
+  function startBalance(){
+    if (balanceTimer) return;
+    refreshBalance();
+    balanceTimer = setInterval(refreshBalance, 15000);
+  }
+  function stopBalance(){
+    if(balanceTimer){
+      clearInterval(balanceTimer);
+      balanceTimer = null;
+    }
+  }
 
   function lockScroll(lock){
     document.documentElement.classList.toggle('no-scroll', !!lock);
@@ -82,6 +190,7 @@
       backdrop.classList.add('backdrop--show');
       toggle.setAttribute('aria-expanded','true');
       lockScroll(true);
+      startBalance();
       // фокус внутрь
       const items = focusables(drawer);
       (items[0] || drawer).focus();
@@ -92,6 +201,7 @@
 
   function close(){
     if(drawer.hasAttribute('hidden')) return;
+    stopBalance();
     drawer.classList.remove('drawer--open');
     backdrop.classList.remove('backdrop--show');
     toggle.setAttribute('aria-expanded','false');
@@ -118,5 +228,49 @@
 
   // Экспорт, если понадобится вызвать из других мест
   window.simpleDrawer = { open, close, toggle: ()=> drawer.hasAttribute('hidden') ? open() : close() };
+})();
+
+// Privacy Toggle Handler
+(function(){
+  const checkbox = document.getElementById('privacy-toggle');
+  const statusText = document.getElementById('privacy-status');
+  const icon = document.getElementById('privacy-icon');
+
+  if(!checkbox) return;
+
+  checkbox.addEventListener('change', async function(){
+    const isPrivate = this.checked;
+    const originalChecked = this.checked;
+
+    try {
+      const csrf = (document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/) || [])[1] || '';
+      const res = await fetch('{% url "dashboard:toggle_profile_privacy" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrf,
+          'X-Requested-With': 'fetch'
+        }
+      });
+
+      const data = await res.json();
+      if(data && data.success){
+        // Обновляем UI
+        if(statusText) statusText.textContent = data.is_private ? 'Приватный' : 'Открытый';
+        if(icon){
+          if(data.is_private){
+            icon.innerHTML = '<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>';
+          } else {
+            icon.innerHTML = '<path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h2c0-1.66 1.34-3 3-3s3 1.34 3 3v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>';
+          }
+        }
+      } else {
+        // Откатываем
+        this.checked = !originalChecked;
+      }
+    } catch(e){
+      // Откатываем при ошибке
+      this.checked = !originalChecked;
+    }
+  });
 })();
 </script>

@@ -1,0 +1,142 @@
+﻿{% load generate_extras %}
+{% comment %}Reusable grid for trending videos. Expects:
+- trending_videos: iterable of PublicVideo
+- liked_video_ids: set of liked video ids (optional)
+- saved_video_ids: set of saved video ids (optional)
+{% endcomment %}
+{% if trending_videos %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    {% for v in trending_videos %}
+      {% url 'gallery:video_like' v.pk as like_url %}
+      {% url 'gallery:video_likers' v.pk as likers_url %}
+      {% url 'gallery:video_save' v.pk as save_url %}
+      <article class="group" itemscope itemtype="https://schema.org/VideoObject">
+        <div class="card overflow-hidden">
+          <div class="relative cursor-pointer">
+            <video class="w-full aspect-[4/5] object-cover hover:cursor-pointer cursor-pointer transition-all duration-300 group-hover:scale-[1.02]"
+                   poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}"
+                   preload="metadata"
+                   muted
+                   loop
+                   playsinline webkit-playsinline x5-playsinline
+                   itemprop="contentUrl">
+              <source src="{{ v.video_url }}" type="video/mp4">
+            </video>
+
+            <div class="absolute inset-0 cursor-pointer pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
+
+            <!-- Play/Pause overlay -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none video-play-overlay transition-opacity duration-200">
+              <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70">
+                <svg class="w-8 h-8 text-white ml-1 play-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg class="w-8 h-8 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Top-right overlays (model + views) -->
+            <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+              {% with job=v.source_job %}
+              {% if job %}
+              <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                {{ job|model_display }}
+              </div>
+              {% endif %}
+              {% endwith %}
+              <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5 1.3-4.5 6-10 6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                </svg>
+                <span>{{ v.view_count|default:0 }}</span>
+              </div>
+            </div>
+
+
+
+          </div>
+
+          <div class="p-4">
+            <!-- Title (clickable link to detail) -->
+            <a href="{{ v.get_absolute_url }}" class="block group/title">
+              <h3 class="font-semibold mb-3 line-clamp-1 group-hover/title:text-primary transition" itemprop="name">
+                {{ v.title|default:"Без названия" }}
+              </h3>
+            </a>
+
+            <!-- Author (avatar + username) like in gallery -->
+            <div class="flex items-center gap-2 mb-3">
+              {% if v.uploaded_by and v.uploaded_by.profile and v.uploaded_by.profile.avatar %}
+                <img src="{{ v.uploaded_by.profile.avatar.url }}" alt="{{ v.uploaded_by.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+              {% else %}
+                <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                  {{ v.uploaded_by.username|default:"U"|slice:":1"|upper }}
+                </span>
+              {% endif %}
+              <a href="{% if v.uploaded_by and v.uploaded_by.username %}{% url 'profile_short' v.uploaded_by.username %}{% else %}#{% endif %}"
+                 class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                 aria-label="@{{ v.uploaded_by.username|default:'unknown' }}">
+                @{{ v.uploaded_by.username|default:"unknown" }}
+              </a>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 flex-nowrap">
+              <button type="button"
+                      class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if request.user.is_authenticated and v.pk in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                      data-id="{{ v.pk }}"
+                      data-url="{{ like_url }}"
+                      aria-pressed="{% if request.user.is_authenticated and v.pk in liked_video_ids %}true{% else %}false{% endif %}"
+                      aria-label="Лайк">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and v.pk in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                <span id="like-count-{{ v.pk }}" class="text-sm font-medium cursor-pointer likers-hotspot" data-open-likers="1" data-url="{{ likers_url }}" aria-label="Кто лайкнул">{{ v.likes_count|default:0 }}</span>
+                <span class="px-1 text-[var(--muted)] hover:text-[var(--text)] hidden sm:inline" data-open-likers="1" data-url="{{ likers_url }}" aria-label="Кто лайкнул">…</span>
+              </button>
+
+              <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg:white/10 transition text-[var(--muted)]"
+                 href="{{ v.get_absolute_url }}"
+                 title="Комментарии">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <span class="text-sm font-medium">{{ v.comments_count|default:0 }}</span>
+              </a>
+
+              <button type="button"
+                      class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                      data-id="{{ v.pk }}"
+                      data-url="{{ save_url }}"
+                      data-count-target="save-count-{{ v.pk }}"
+                      aria-pressed="{% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}true{% else %}false{% endif %}"
+                      aria-label="Сохранить">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                </svg>
+                <span id="save-count-{{ v.pk }}" class="text-sm font-medium">{{ v.saves_count|default:0 }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card p-12 text-center">
+    <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+      <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+      </svg>
+    </div>
+    <h2 class="text-xl font-semibold mb-3">Пока нет популярных видео</h2>
+    <p class="text-[var(--muted)] mb-8 max-w-md mx-auto">
+      Станьте первым, кто опубликует трендовое видео. Поделитесь своим творением с сообществом.
+    </p>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a class="btn btn-primary" href="{% url 'generate:new' %}">Создать видео</a>
+      <a class="btn btn-ghost" href="{% url 'gallery:index' %}">Смотреть галерею</a>
+    </div>
+  </div>
+{% endif %}

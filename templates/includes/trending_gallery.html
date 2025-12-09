@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 
 <!-- Community Gallery Section -->
 <section id="community" class="container py-12 sm:py-16" data-trending-endpoint="{% url 'gallery:trending_snippet' %}">
@@ -16,7 +16,7 @@
 
   <!-- Gallery Grid container -->
   <div id="trending-grid" class="mt-6">
-    {% include "includes/trending_gallery_grid.html" with trending_photos=trending_photos %}
+    {% include "includes/trending_gallery_grid.html" with trending_items=trending_items liked_photo_ids=liked_photo_ids liked_video_ids=liked_video_ids %}
   </div>
 
     <!-- Mobile buttons -->

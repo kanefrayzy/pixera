@@ -9,6 +9,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponseRedirect
+from django.contrib.sessions.exceptions import SessionInterrupted
 
 
 # ────────────────────────────── helpers ──────────────────────────────
@@ -107,6 +108,33 @@ def _set_cookie(response, name: str, value: str, *, years: int = 5, http_only: b
     )
 
 
+# ───────────────────── Безопасный перезапуск сессии ─────────────────────
+
+class SessionRescueMiddleware:
+    """
+    Перехватывает SessionInterrupted (Django 5.2+) при конкурентном logout/flush
+    и мягко восстанавливает сессию для idempotent GET-запросов через redirect
+    на тот же URL. Это предотвращает 500 при обновлении страницы генерации.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        try:
+            return self.get_response(request)
+        except SessionInterrupted:
+            # Перехватываем только безопасные методы, для POST пробрасываем исключение
+            if request.method not in ("GET", "HEAD"):
+                raise
+            # Создаём новую чистую сессию и пробуем ещё раз через redirect
+            try:
+                request.session.flush()
+                request.session.save()
+            except Exception:
+                pass
+            return HttpResponseRedirect(request.get_full_path())
+
+
 # ─────────────────────── Age gate (как было) ───────────────────────
 
 class AgeGateMiddleware:
@@ -183,6 +211,11 @@ class LanguagePrefixRedirectMiddleware:
         self.skip_prefixes = (
             "/admin/",
             "/i18n/",
+            "/generate/api/",
+            "/dashboard/api/",
+            "/gallery/api/",
+            "/moderation/api/",
+            "/api/",
             static_url if static_url.startswith("/") else "/" + static_url,
             media_url if media_url.startswith("/") else "/" + media_url,
         )

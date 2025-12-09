@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
-{% block title %}Пополнение — AI Gallery{% endblock %}
+{% block title %}Пополнение — Pixera{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-8">
@@ -307,7 +307,7 @@
 {
   "@context": "https://schema.org",
   "@type": "OfferCatalog",
-  "name": "Тарифы — AI Gallery",
+  "name": "Тарифы — Pixera",
   "description": "Прозрачные тарифы для генерации изображений с помощью ИИ",
   "url": "{{ request.build_absolute_uri }}",
   "itemListElement": [
@@ -322,7 +322,7 @@
       "url": "{% url 'dashboard:purchase_start' p.id %}",
       "seller": {
         "@type": "Organization",
-        "name": "AI Gallery"
+        "name": "Pixera"
       }
     }{% if not forloop.last %},{% endif %}
     {% endfor %}

@@ -1,24 +1,41 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% load generate_extras %}
 
-{% block title %}Галерея — AI Gallery{% endblock %}
+{% block title %}Галерея — Pixera{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-8">
 
 
   <!-- My Generations Section -->
+  {% if not request.user.is_authenticated %}
   <section class="card p-6" aria-labelledby="mygen-title">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
       <div>
         <h2 class="text-xl font-bold" id="mygen-title">Мои генерации</h2>
         {% if request.user.is_authenticated %}
-          <p class="text-sm text-[var(--muted)]">Ваши последние созданные изображения</p>
+          <p class="text-sm text-[var(--muted)]">Ваши последние созданные изображения и видео</p>
         {% else %}
           <p class="text-sm text-[var(--muted)]">Ваши последние генерации в этом браузере</p>
         {% endif %}
       </div>
+
+    <!-- Guest cache notice -->
+    <div class="mb-4 rounded-xl border border-[var(--bord)] bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 px-4 py-3 flex items-start gap-3">
+      <div class="w-8 h-8 grid place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300 shrink-0">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+        </svg>
+      </div>
+      <div class="text-sm leading-relaxed">
+        <div class="font-medium">Локальные генерации</div>
+        <p class="text-[var(--muted)]">
+          Ваши изображения и видео сохраняются в этом браузере и автоматически удаляются через 30 дней.
+        </p>
+      </div>
+    </div>
 
       {% if request.user.is_authenticated %}
         <a class="btn btn-ghost" href="{% url 'dashboard:my_jobs' %}">
@@ -34,8 +51,35 @@
       {% endif %}
     </div>
 
+    <!-- Media Type Tabs -->
+    <div class="flex gap-2 mb-6 border-b border-[var(--bord)]">
+      <button class="media-tab active px-4 py-2 -mb-px border-b-2 border-transparent transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+              data-tab="photos"
+              type="button"
+              aria-label="Показать фото">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span>Фото</span>
+        <span class="media-count">{{ my_photos_total }}</span>
+      </button>
+      <button class="media-tab px-4 py-2 -mb-px border-b-2 border-transparent transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+              data-tab="videos"
+              type="button"
+              aria-label="Показать видео">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>Видео</span>
+        <span class="media-count">{{ my_videos_total }}</span>
+      </button>
+    </div>
+
+    <!-- Photos Grid -->
     {% if my_thumbs %}
-      <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3" role="list">
+      <div id="photos-grid" class="media-content">
+        <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3" role="list">
         {% for j in my_thumbs|slice:":6" %}
           {% load generate_extras %}
           {% with s=j.prompt|safe_slugify|default:"image" %}
@@ -50,6 +94,13 @@
                      src="{% url 'generate:job_image' j.pk s %}"
                      alt="{{ j.prompt|default:'Моя генерация' }}">
               </a>
+              {% if j.video_model or j.model_id %}
+                <div class="absolute top-2 right-2">
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-[10px] sm:text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ j|model_display }}
+                  </div>
+                </div>
+              {% endif %}
               {% if j.status == 'PENDING_MODERATION' %}
                 <div class="absolute top-2 left-2 px-2 py-1 bg-orange-500/90 text-white text-xs rounded-md font-medium">
                   На модерации
@@ -63,31 +114,250 @@
           {% endwith %}
         {% endfor %}
       </div>
+      </div>
     {% else %}
-      <div class="text-center py-8">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-          <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-          </svg>
+      <div id="photos-grid" class="media-content">
+        <div class="text-center py-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2">Пока нет генераций</h3>
+          <p class="text-[var(--muted)] mb-4">Создайте первое изображение, чтобы увидеть его здесь</p>
+          <a class="btn btn-primary" href="{% url 'generate:new' %}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Сгенерировать первое фото
+          </a>
         </div>
-        <h3 class="font-semibold mb-2">Пока нет генераций</h3>
-        <p class="text-[var(--muted)] mb-4">Создайте первое изображение, чтобы увидеть его здесь</p>
-        <a class="btn btn-primary" href="{% url 'generate:new' %}">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-          Сгенерировать первое фото
-        </a>
       </div>
     {% endif %}
+
+    <!-- Videos Grid -->
+    {% if my_videos %}
+      <div id="videos-grid" class="media-content hidden">
+        <div class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3" role="list">
+          {% for v in my_videos %}
+            {% if v.video_url or v.image_url %}
+            <div role="listitem" class="group relative aspect-[4/3] sm:aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 hover:shadow-lg transition-all duration-300">
+              <!-- Video Element с оптимизацией -->
+                <video
+                  class="w-full h-full object-cover cursor-pointer transition-all duration-300 group-hover:scale-105"
+                  src="{{ v.video_url }}"
+                  poster="{{ v.thumbnail_url|default:'' }}"
+                  preload="metadata"
+                  playsinline
+                  muted
+                  loop
+                  title="{{ v.prompt|default:'Моё видео' }}"
+                  loading="lazy">
+                  Ваш браузер не поддерживает видео.
+                </video>
+
+                <!-- Play Button Overlay -->
+                <div class="absolute inset-0 flex items-center justify-center video-play-overlay cursor-pointer transition-opacity duration-200 bg-black/10 hover:bg-black/20">
+                  <div class="w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70 ring-1 ring-white/30">
+                    <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Controls Container -->
+                <div class="absolute inset-0 flex flex-col justify-between p-1.5 xs:p-2 sm:p-2.5 pointer-events-none">
+                  <!-- Top: Model Badge -->
+                  {% with mdl=v|model_display %}
+                  {% if mdl %}
+                  <div class="controls-top flex justify-start">
+                    <div class="model-badge inline-flex px-1.5 py-0.5 xs:px-2 xs:py-1 rounded-md bg-black/75 dark:bg-black/80 text-white text-[9px] xs:text-[10px] sm:text-xs font-medium backdrop-blur-sm whitespace-nowrap overflow-hidden text-ellipsis truncate max-w-[70%] xs:max-w-[75%] sm:max-w-[80%] shadow-sm">
+                      {{ mdl }}
+                    </div>
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+
+                  <!-- Bottom: Sound -->
+                  <div class="flex items-end justify-start pointer-events-auto">
+                    <!-- Sound Toggle + Volume -->
+                    <div class="flex items-center gap-1 xs:gap-1.5">
+                      <button type="button" class="vid-snd-btn inline-flex items-center justify-center w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-lg bg-black/75 dark:bg-black/80 text-white border border-white/30 hover:bg-black/85 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/40 shadow-sm" aria-label="Включить звук">
+                        <svg class="icon-vol-on w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 hidden" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                          <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                          <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                        </svg>
+                        <svg class="icon-vol-off w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                          <path d="M18 8l-6 6"></path>
+                          <path d="M12 8l6 6"></path>
+                        </svg>
+                      </button>
+                      <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-10 xs:w-14 sm:w-16 h-1 rounded-full accent-white bg-white/40 dark:bg-white/30 outline-none cursor-pointer shadow-sm" aria-label="Громкость" style="--tw-ring-color: rgba(255,255,255,0.3);" />
+                    </div>
+                  </div>
+
+                  <!-- Open Button - Top Right Corner -->
+                  <button
+                    type="button"
+                    class="mg-open-btn absolute top-1.5 right-1.5 xs:top-2 xs:right-2 inline-flex items-center justify-center w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 rounded-lg bg-black/75 dark:bg-black/80 text-white border border-white/30 hover:bg-black/85 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/40 shadow-sm pointer-events-auto"
+                    data-mg-src="{{ v.video_url }}"
+                    data-mg-poster="{{ v.thumbnail_url|default:'' }}"
+                    aria-label="Открыть видео">
+                    <svg class="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M14 3h7v7h-2V6.414l-8.293 8.293-1.414-1.414L17.586 5H14V3z"></path>
+                      <path d="M5 5h6V3H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14a2 2 0 0 0 2-2v-6h-2v6H5V5z"></path>
+                    </svg>
+                  </button>
+                </div>
+
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div id="videos-grid" class="media-content hidden">
+        <div class="text-center py-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2">Пока нет видео</h3>
+          <p class="text-[var(--muted)] mb-4">Создайте первое видео, чтобы увидеть его здесь</p>
+          <a class="btn btn-primary" href="{% url 'generate:new' %}?type=video">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Сгенерировать первое видео
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Guest-only: cache and render My Generations from browser (30 days retention) -->
+    <script>
+    (function(){
+      const STORAGE_KEY = 'mygen_cache_v1';
+      const TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+      function now(){ return Date.now(); }
+
+      function loadCache(){
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"photos":[],"videos":[]}'); }
+        catch(_){ return { photos:[], videos:[] }; }
+      }
+      function saveCache(cache){
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cache)); } catch(_){}
+      }
+      function purgeOld(cache){
+        const cutoff = now() - TTL_MS;
+        cache.photos = (cache.photos||[]).filter(it => (it.addedAt||0) >= cutoff);
+        cache.videos = (cache.videos||[]).filter(it => (it.addedAt||0) >= cutoff);
+        return cache;
+      }
+
+      // Harvest current DOM as seeds (if server rendered something)
+      function harvestSeeds(){
+        const photos = Array.from(document.querySelectorAll('#photos-grid img')).map(img => ({
+          url: img.getAttribute('src') || '',
+          alt: img.getAttribute('alt') || 'Моя генерация',
+          addedAt: now()
+        })).filter(p => !!p.url);
+
+        const videos = Array.from(document.querySelectorAll('#videos-grid video')).map(v => ({
+          url: v.currentSrc || (v.querySelector('source') && v.querySelector('source').getAttribute('src')) || '',
+          poster: v.getAttribute('poster') || '',
+          title: v.getAttribute('title') || 'Моё видео',
+          addedAt: now()
+        })).filter(v => !!v.url);
+
+        return { photos, videos };
+      }
+
+      function mergeUnique(existing, seeds, key='url', maxItems=200){
+        const map = new Map();
+        (existing||[]).forEach(it => { if (it && it[key]) map.set(it[key], it); });
+        (seeds||[]).forEach(it => { if (it && it[key] && !map.has(it[key])) map.set(it[key], it); });
+        // sort by addedAt desc
+        const arr = Array.from(map.values()).sort((a,b)=> (b.addedAt||0)-(a.addedAt||0));
+        return arr.slice(0, maxItems);
+      }
+
+      function cardPhotoHTML(item){
+        const alt = (item.alt || 'Моя генерация').replace(/"/g,'"');
+        return `
+          <div role="listitem" class="group relative aspect-square rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+            <a class="block w-full h-full" href="${item.url}" target="_blank" rel="noopener" title="Открыть изображение в новой вкладке">
+              <img class="w-full h-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" src="${item.url}" alt="${alt}">
+            </a>
+          </div>
+        `;
+      }
+
+      function cardVideoHTML(item){
+        const posterAttr = item.poster ? `poster="${item.poster}"` : '';
+        const title = (item.title || 'Моё видео').replace(/"/g,'"');
+        return `
+          <div role="listitem" class="group relative aspect-[4/3] sm:aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 hover:shadow-lg transition-all duration-300">
+            <video class="w-full h-full object-cover cursor-pointer transition-all duration-300 group-hover:scale-105"
+                   src="${item.url}" ${posterAttr} preload="metadata" playsinline muted loop title="${title}" loading="lazy">
+              Ваш браузер не поддерживает видео.
+            </video>
+            <div class="absolute inset-0 flex items-center justify-center video-play-overlay cursor-pointer transition-opacity duration-200 bg-black/10 hover:bg-black/20">
+              <div class="w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70 ring-1 ring-white/30">
+                <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"></path>
+                </svg>
+                <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderGrid(selector, items, isVideo=false, limit=12){
+        const root = document.querySelector(selector);
+        if (!root) return;
+        const listWrap = root.querySelector('div[role="list"]');
+        if (!listWrap) return;
+        const arr = (items||[]).slice(0, limit);
+        const html = arr.map(isVideo ? cardVideoHTML : cardPhotoHTML).join('');
+        listWrap.innerHTML = html || listWrap.innerHTML;
+      }
+
+      // Execute: load, purge, merge, render
+      try{
+        let cache = purgeOld(loadCache());
+        const seeds = harvestSeeds();
+
+        cache.photos = mergeUnique(cache.photos, seeds.photos, 'url', 300);
+        cache.videos = mergeUnique(cache.videos, seeds.videos, 'url', 300);
+        saveCache(cache);
+
+        // Render from cache (prioritize cached over server subset)
+        renderGrid('#photos-grid', cache.photos, false, 12);
+        renderGrid('#videos-grid', cache.videos, true, 12);
+      }catch(_){ /* no-op */ }
+    })();
+    </script>
   </section>
+  {% endif %}
 
   <!-- Categories Section -->
   <section class="card p-6" id="cats">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
         <h2 class="text-xl font-bold">Категории</h2>
-        <p class="text-sm text-[var(--muted)]">Исследуйте изображения по тематикам</p>
+        <p class="text-sm text-[var(--muted)] category-description" data-photos-text="Исследуйте изображения по тематикам" data-videos-text="Исследуйте видео по тематикам">Исследуйте изображения по тематикам</p>
       </div>
 
       <div class="flex items-center gap-3">
@@ -100,65 +370,131 @@
       </div>
     </div>
 
-    <!-- Category Pills -->
-    <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Категории">
-      <a class="pill {% if not active_category %}bg-primary/15 text-primary border-primary/30{% endif %}"
-         href="{% url 'gallery:index' %}"
-         role="tab"
-         aria-selected="{{ active_category|yesno:'false,true' }}">
-        Все
-      </a>
+    <!-- Photo Categories -->
+    <div id="photo-categories" class="categories-content {% if vcat_slug %}hidden{% endif %}">
+      <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Категории">
+        <a class="pill {% if not active_category %}bg-primary/15 text-primary border-primary/30{% endif %}"
+           href="{% url 'gallery:index' %}"
+           role="tab"
+           aria-selected="{{ active_category|yesno:'false,true' }}">
+          Все
+        </a>
 
-      {% for c in categories %}
-        <span class="flex items-center gap-1">
-          <a class="pill {% if active_category and active_category.slug == c.slug %}bg-primary/15 text-primary border-primary/30{% endif %}"
-             href="{% url 'gallery:index' %}?cat={{ c.slug|urlencode }}"
-             role="tab"
-             aria-selected="{% if active_category and active_category.slug == c.slug %}true{% else %}false{% endif %}">
-            {{ c.name }}
-          </a>
+        {% for c in categories %}
+          <span class="flex items-center gap-1">
+            <a class="pill {% if active_category and active_category.slug == c.slug %}bg-primary/15 text-primary border-primary/30{% endif %}"
+               href="{% url 'gallery:index' %}?cat={{ c.slug|urlencode }}"
+               role="tab"
+               aria-selected="{% if active_category and active_category.slug == c.slug %}true{% else %}false{% endif %}">
+              {{ c.name }}
+            </a>
 
-          {% if request.user.is_staff %}
-            <form method="post" action="" class="inline" onsubmit="return confirm('Удалить категорию «{{ c.name }}»?');">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="del_category">
-              <input type="hidden" name="cat_id" value="{{ c.id }}">
-              <button type="submit" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs transition" title="Удалить категорию" aria-label="Удалить категорию">×</button>
-            </form>
-          {% endif %}
-        </span>
-      {% empty %}
-        <span class="text-[var(--muted)] text-sm">Категории ещё не созданы.</span>
-      {% endfor %}
+            {% if request.user.is_staff %}
+              <form method="post" action="" class="inline" onsubmit="return confirm('Удалить категорию «{{ c.name }}»?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="del_category">
+                <input type="hidden" name="cat_id" value="{{ c.id }}">
+                <button type="submit" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs transition" title="Удалить категорию" aria-label="Удалить категорию">×</button>
+              </form>
+            {% endif %}
+          </span>
+        {% empty %}
+          <span class="text-[var(--muted)] text-sm">Категории ещё не созданы.</span>
+        {% endfor %}
+      </div>
+
+      <!-- Admin Category Management -->
+      {% if request.user.is_staff %}
+        <div class="p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
+          <form method="post" action="" class="flex flex-wrap gap-3" autocomplete="off">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_category">
+            <input class="field flex-1 min-w-48" name="cat_name" placeholder="Новая категория" required>
+            <input class="field flex-1 min-w-36" name="cat_slug" placeholder="slug (опц.)" pattern="[-a-z0-9_]+" title="только латиница, цифры, - и _">
+            <button class="btn btn-primary" type="submit">Добавить</button>
+          </form>
+        </div>
+      {% endif %}
     </div>
 
-    <!-- Admin Category Management -->
-    {% if request.user.is_staff %}
-      <div class="p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
-        <form method="post" action="" class="flex flex-wrap gap-3" autocomplete="off">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="add_category">
-          <input class="field flex-1 min-w-48" name="cat_name" placeholder="Новая категория" required>
-          <input class="field flex-1 min-w-36" name="cat_slug" placeholder="slug (опц.)" pattern="[-a-z0-9_]+" title="только латиница, цифры, - и _">
-          <button class="btn btn-primary" type="submit">Добавить</button>
-        </form>
+    <!-- Video Categories -->
+    <div id="video-categories" class="categories-content {% if not vcat_slug %}hidden{% endif %}">
+      <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Категории видео">
+        <a class="pill {% if not active_video_category %}bg-primary/15 text-primary border-primary/30{% endif %}" href="{% url 'gallery:index' %}?vcat=__all__#cats">Все</a>
+
+        {% for c in video_categories %}
+          <span class="flex items-center gap-1">
+            <a class="pill {% if active_video_category and active_video_category.slug == c.slug %}bg-primary/15 text-primary border-primary/30{% endif %}" href="{% url 'gallery:index' %}?vcat_id={{ c.id }}#cats">{{ c.name }}</a>
+
+            {% if request.user.is_staff %}
+              <form method="post" action="" class="inline" onsubmit="return confirm('Удалить категорию «{{ c.name }}»?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="del_video_category">
+                <input type="hidden" name="video_cat_id" value="{{ c.id }}">
+                <button type="submit" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs transition" title="Удалить категорию" aria-label="Удалить категорию">×</button>
+              </form>
+            {% endif %}
+          </span>
+        {% empty %}
+          <span class="text-[var(--muted)] text-sm">Категории видео ещё не созданы.</span>
+        {% endfor %}
       </div>
-    {% endif %}
+
+      <!-- Admin Video Category Management -->
+      {% if request.user.is_staff %}
+        <div class="p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
+          <form method="post" action="" class="flex flex-wrap gap-3" autocomplete="off">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_video_category">
+            <input class="field flex-1 min-w-48" name="video_cat_name" placeholder="Новая категория видео" required>
+            <input class="field flex-1 min-w-36" name="video_cat_slug" placeholder="slug (опц.)" pattern="[-a-z0-9_]+" title="только латиница, цифры, - и _">
+            <button class="btn btn-primary" type="submit">Добавить</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
   </section>
 
   <!-- Gallery Grid -->
   <section class="space-y-6">
+    <!-- Public Gallery Tabs -->
+    <div class="flex items-center justify-between gap-4 mb-6">
+      <div class="flex gap-2 border-b border-[var(--bord)] flex-1">
+        <button class="public-tab {% if not vcat_slug %}active{% endif %} px-4 py-2 -mb-px border-b-2 border-transparent transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+                data-tab="public-photos"
+                type="button"
+                aria-label="Показать публичные фото">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <span>Фото</span>
+        </button>
+        <button class="public-tab {% if vcat_slug %}active{% endif %} px-4 py-2 -mb-px border-b-2 border-transparent transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+                data-tab="public-videos"
+                type="button"
+                aria-label="Показать публичные видео">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>Видео</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Public Photos Grid -->
+    <div id="public-photos-grid" class="public-content {% if vcat_slug %}hidden{% endif %}">
     {% if public_photos %}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {% for p in public_photos %}
-          {% url 'gallery:photo_detail' p.pk as detail_url %}
+          {% comment %} detail via slug {% endcomment %}
           {% url 'gallery:photo_edit' p.pk as edit_url %}
           {% url 'gallery:photo_delete' p.pk as delete_url %}
 
-          <article class="group" itemscope itemtype="https://schema.org/ImageObject">
+          <article class="group js-open-photo" itemscope itemtype="https://schema.org/ImageObject" data-detail-url="{{ p.get_absolute_url }}">
             <div class="card overflow-hidden">
               <!-- Image -->
-              <a class="block relative" href="{{ detail_url }}" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
+              <div class="block relative" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
                 {% if p.image %}
                   <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
                        loading="lazy"
@@ -173,12 +509,26 @@
                   </div>
                 {% endif %}
 
-                <!-- View Count Overlay -->
-                <div class="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
-                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
-                  </svg>
-                  <span>{{ p.view_count|default:0 }}</span>
+                <div class="absolute inset-0 cursor-zoom-in pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
+                <!-- Top-right overlays (model + views) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  {% with job=p.source_job %}
+                  {% if job and job.video_model %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                  {% elif job and job.model_id %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                  <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                    </svg>
+                    <span>{{ p.view_count|default:0 }}</span>
+                  </div>
                 </div>
 
                 <!-- Admin Controls -->
@@ -203,16 +553,34 @@
                     </a>
                   </div>
                 {% endif %}
-              </a>
+              </div>
 
               <!-- Card Content -->
               <div class="p-4">
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
-                  {{ p.title|default:"Без названия" }}
-                </h3>
+                <a href="{{ p.get_absolute_url }}" class="block group/title">
+                  <h3 class="font-semibold mb-3 line-clamp-1 group-hover/title:text-primary transition" itemprop="name">
+                    {{ p.title|default:"Без названия" }}
+                  </h3>
+                </a>
+
+                <div class="flex items-center gap-2 mb-3">
+                  {% if p.uploaded_by and p.uploaded_by.profile and p.uploaded_by.profile.avatar %}
+                    <img src="{{ p.uploaded_by.profile.avatar.url }}" alt="{{ p.uploaded_by.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {{ p.uploaded_by.username|default:"U"|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  <a href="{% if p.uploaded_by and p.uploaded_by.username %}{% url 'profile_short' p.uploaded_by.username %}{% else %}#{% endif %}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                     aria-label="@{{ p.uploaded_by.username|default:'unknown' }}">
+                    @{{ p.uploaded_by.username|default:"unknown" }}
+                  </a>
+                </div>
 
                 <!-- Actions -->
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between gap-2 flex-nowrap">
+                  <!-- Like -->
                   <button type="button"
                           class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if request.user.is_authenticated and p.pk in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
                           data-photo-id="{{ p.pk }}"
@@ -223,11 +591,16 @@
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and p.pk in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
-                    <span id="like-count-{{ p.pk }}" class="text-sm font-medium">{{ p.likes_count|default:0 }}</span>
+                    <span id="like-count-{{ p.pk }}" class="text-sm font-medium cursor-pointer likers-hotspot" data-open-likers="1" data-total-likes="{{ p.likes_count|default:0 }}" data-url="{% url 'gallery:photo_likers' p.pk %}" aria-label="Кто лайкнул">{{ p.likes_count|default:0 }}</span>
+                    <span class="px-1 text-[var(--muted)] hover:text-[var(--text)] hidden sm:inline" data-open-likers="1" data-total-likes="{{ p.likes_count|default:0 }}" data-url="{% url 'gallery:photo_likers' p.pk %}" aria-label="Кто лайкнул">…</span>
                   </button>
 
+
+
+                  <!-- Comments -->
                   <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
-                     href="{{ detail_url }}#comments"
+                     href="{{ p.get_absolute_url }}#comments"
+                     data-open-comments="1"
                      title="Комментарии"
                      aria-label="Комментарии">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -235,6 +608,19 @@
                     </svg>
                     <span class="text-sm font-medium">{{ p.comments_count|default:0 }}</span>
                   </a>
+
+                  <!-- Save -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if request.user.is_authenticated and saved_photo_ids and p.pk in saved_photo_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'gallery:photo_save' p.pk %}"
+                          data-count-target="save-count-{{ p.pk }}"
+                          aria-pressed="{% if request.user.is_authenticated and saved_photo_ids and p.pk in saved_photo_ids %}true{% else %}false{% endif %}"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and saved_photo_ids and p.pk in saved_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                    <span id="save-count-{{ p.pk }}" class="text-sm font-medium">{{ p.saves_count|default:0 }}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -255,59 +641,183 @@
         </a>
       </div>
     {% endif %}
+    </div>
 
-    <!-- Pagination -->
-    {% if page_obj and page_obj.paginator.num_pages > 1 %}
-      <nav class="flex items-center justify-center" aria-label="Пагинация">
-        <div class="flex items-center gap-1">
-          {% if page_obj.has_previous %}
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page=1{% if cat_slug %}&cat={{ cat_slug|urlencode }}{% endif %}#cats">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
-              </svg>
-              Первая
-            </a>
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.previous_page_number }}{% if cat_slug %}&cat={{ cat_slug|urlencode }}{% endif %}#cats">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-              </svg>
-              Назад
-            </a>
-          {% endif %}
+    <!-- Public Videos Grid -->
+    <div id="public-videos-grid" class="public-content {% if not vcat_slug %}hidden{% endif %}">
+    {% if public_videos %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for v in public_videos %}
+          {% url 'gallery:video_delete' v.pk as delete_url %}
 
-          {% with total=page_obj.paginator.num_pages current=page_obj.number %}
-            {% for i in page_obj.paginator.page_range %}
-              {% if i == 1 or i == total or i >= current|add:"-2" and i <= current|add:"2" %}
-                {% if i == current %}
-                  <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">{{ i }}</span>
-                {% else %}
-                  <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ i }}{% if cat_slug %}&cat={{ cat_slug|urlencode }}{% endif %}#cats">{{ i }}</a>
+          <article class="group js-open-video" itemscope itemtype="https://schema.org/VideoObject" data-detail-url="{{ v.get_absolute_url }}">
+            <div class="card overflow-hidden">
+              <!-- Video (clickable for playback) -->
+              <div class="relative">
+                <video class="w-full aspect-[4/5] object-cover cursor-pointer transition-all duration-300 group-hover:scale-[1.02]"
+                       poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}"
+                       preload="metadata"
+                       muted
+                       loop
+                       playsinline
+                       itemprop="contentUrl">
+                  <source src="{{ v.video_url }}" type="video/mp4">
+                </video>
+
+                <div class="absolute inset-0 cursor-zoom-in pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
+                <!-- Play Icon Overlay -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none video-play-overlay transition-opacity duration-200">
+                  <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70">
+                    <svg class="w-8 h-8 text-white ml-1 play-icon" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg class="w-8 h-8 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Sound Toggle + Volume -->
+                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                  <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                    <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                      <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                    </svg>
+                    <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M18 8l-6 6"></path>
+                      <path d="M12 8l6 6"></path>
+                    </svg>
+                  </button>
+                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                </div>
+
+                <!-- Top-right overlays (model + views) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  {% with job=v.source_job %}
+                  {% if job %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                  <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                    </svg>
+                    <span>{{ v.view_count|default:0 }}</span>
+                  </div>
+                </div>
+
+                <!-- Admin Controls -->
+                {% if request.user.is_staff %}
+                  <div class="absolute top-3 left-3 flex gap-1">
+                    <a class="w-8 h-8 rounded-lg bg-red-500/80 text-white hover:bg-red-600 flex items-center justify-center text-xs transition pointer-events-auto"
+                       href="{{ delete_url }}?next={{ request.get_full_path|urlencode }}"
+                       onclick="event.stopPropagation();"
+                       title="Удалить"
+                       aria-label="Удалить">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </a>
+                  </div>
                 {% endif %}
-              {% elif i == 2 and current > 4 %}
-                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
-              {% elif i == total|add:"-1" and current < total|add:"-3" %}
-                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
-              {% endif %}
-            {% endfor %}
-          {% endwith %}
+              </div>
 
-          {% if page_obj.has_next %}
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.next_page_number }}{% if cat_slug %}&cat={{ cat_slug|urlencode }}{% endif %}#cats">
-              Вперёд
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </a>
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?page={{ page_obj.paginator.num_pages }}{% if cat_slug %}&cat={{ cat_slug|urlencode }}{% endif %}#cats">
-              Последняя
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
-              </svg>
-            </a>
-          {% endif %}
+              <!-- Card Content -->
+              <div class="p-4">
+                <!-- Title (clickable link to detail) -->
+                <a href="{{ v.get_absolute_url }}" class="block group/title">
+                  <h3 class="font-semibold mb-3 line-clamp-1 group-hover/title:text-primary transition" itemprop="name">
+                    {{ v.title|default:"Без названия" }}
+                  </h3>
+                </a>
+
+                <div class="flex items-center gap-2 mb-3">
+                  {% if v.uploaded_by and v.uploaded_by.profile and v.uploaded_by.profile.avatar %}
+                    <img src="{{ v.uploaded_by.profile.avatar.url }}" alt="{{ v.uploaded_by.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {{ v.uploaded_by.username|default:"U"|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  <a href="{% if v.uploaded_by and v.uploaded_by.username %}{% url 'profile_short' v.uploaded_by.username %}{% else %}#{% endif %}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                     aria-label="@{{ v.uploaded_by.username|default:'unknown' }}">
+                    @{{ v.uploaded_by.username|default:"unknown" }}
+                  </a>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-between gap-2 flex-nowrap">
+                  <!-- Like -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if v.pk in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-video-id="{{ v.pk }}"
+                          data-url="{% url 'gallery:video_like' v.pk %}"
+                          data-count-target="video-like-count-{{ v.pk }}"
+                          aria-pressed="{% if v.pk in liked_video_ids %}true{% else %}false{% endif %}"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if v.pk in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <span id="video-like-count-{{ v.pk }}" class="text-sm font-medium cursor-pointer likers-hotspot" data-open-likers="1" data-total-likes="{{ v.likes_count|default:0 }}" data-url="{% url 'gallery:video_likers' v.pk %}" aria-label="Кто лайкнул">{{ v.likes_count|default:0 }}</span>
+                    <span class="px-1 text-[var(--muted)] hover:text-[var(--text)] hidden sm:inline" data-open-likers="1" data-total-likes="{{ v.likes_count|default:0 }}" data-url="{% url 'gallery:video_likers' v.pk %}" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+
+
+                  <!-- Comments -->
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="{{ v.get_absolute_url }}#comments"
+                     data-open-comments="1"
+                     title="Комментарии"
+                     aria-label="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm font-medium">{{ v.comments_count|default:0 }}</span>
+                  </a>
+
+                  <!-- Save -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'gallery:video_save' v.pk %}"
+                          data-count-target="video-save-count-{{ v.pk }}"
+                          aria-pressed="{% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}true{% else %}false{% endif %}"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and saved_video_ids and v.pk in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                    <span id="video-save-count-{{ v.pk }}" class="text-sm font-medium">{{ v.saves_count|default:0 }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card p-8 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
         </div>
-      </nav>
+        <h3 class="text-lg font-semibold mb-2">Пока нет видео</h3>
+        <p class="text-[var(--muted)] mb-6">Станьте первым, кто поделится видео</p>
+        <a class="btn btn-primary" href="{% url 'generate:new' %}?type=video">
+          Создать видео
+        </a>
+      </div>
     {% endif %}
+    </div>
+
+    <!-- Pagination removed: replaced with client-side "Show more" -->
   </section>
 
   <!-- Admin Tools -->
@@ -365,8 +875,79 @@
           </form>
         </div>
 
+        <!-- Video Categories Management -->
+        <div class="mb-6">
+          <h3 class="font-semibold mb-4">Категории видео</h3>
+
+          <!-- Video Category Pills -->
+          <div class="flex flex-wrap gap-2 mb-4">
+            {% for c in video_categories %}
+              <span class="flex items-center gap-1">
+                <span class="pill">{{ c.name }}</span>
+                <form method="post" action="" class="inline" onsubmit="return confirm('Удалить категорию «{{ c.name }}»?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="del_video_category">
+                  <input type="hidden" name="video_cat_id" value="{{ c.id }}">
+                  <button type="submit" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs transition" title="Удалить категорию">×</button>
+                </form>
+              </span>
+            {% empty %}
+              <span class="text-[var(--muted)] text-sm">Категории видео ещё не созданы.</span>
+            {% endfor %}
+          </div>
+
+          <!-- Add Video Category Form -->
+          <div class="p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
+            <form method="post" action="" class="flex flex-wrap gap-3" autocomplete="off">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="add_video_category">
+              <input class="field flex-1 min-w-48" name="video_cat_name" placeholder="Новая категория видео" required>
+              <input class="field flex-1 min-w-36" name="video_cat_slug" placeholder="slug (опц.)" pattern="[-a-z0-9_]+" title="только латиница, цифры, - и _">
+              <button class="btn btn-primary" type="submit">Добавить</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Add Video Form -->
+        <div>
+          <h3 class="font-semibold mb-4">Добавить видео в галерею</h3>
+          <form method="post" action="" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid sm:grid-cols-2 gap-4">
+              <input name="video_title" class="field" placeholder="Заголовок видео" required>
+              <select name="video_category" class="field" required>
+                <option value="" disabled selected>Выберите категорию…</option>
+                {% for c in video_categories %}
+                  <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label for="video_file" class="btn btn-primary shrink-0">Выбрать файл</label>
+              <input id="video_file" name="video_file" type="file" accept="video/mp4" class="hidden" required>
+              <span id="video_file_name" class="text-sm text-[var(--muted)]">Файл не выбран</span>
+            </div>
+            <div class="text-xs text-[var(--muted)] -mt-2">Загрузите MP4 — файл автоматически сожмётся (H.264, faststart) для быстрой загрузки страницы.</div>
+            <input name="video_thumbnail" type="file" accept="image/*" class="field" placeholder="Превью видео (опционально)">
+            <textarea name="video_desc" class="field min-h-24 resize-none" placeholder="Короткое описание (опционально)"></textarea>
+
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="video_is_public" value="1" checked class="w-4 h-4 text-primary rounded">
+              <span>Опубликовать сразу</span>
+            </label>
+
+            <button class="btn btn-primary" type="submit" name="action" value="add_video">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              Добавить видео
+            </button>
+          </form>
+        </div>
+
         <div class="text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-800/30 p-3 rounded-xl">
-          Блок модерации подготовлен — логику подключения сделаем позже.
+          Админ может добавлять как фото, так и видео напрямую в публичную галерею.
         </div>
       </div>
     </section>
@@ -378,30 +959,69 @@
 {% if request.user.is_staff %}
   <script>
   (function(){
+    // Auto-slug for photo categories
     const nameEl = document.querySelector('input[name="cat_name"]');
     const slugEl = document.querySelector('input[name="cat_slug"]');
-    if(!nameEl || !slugEl) return;
+    if(nameEl && slugEl) {
+      const slugify = (s) => (s || "")
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^a-z0-9-_ ]+/g,'')
+        .trim().replace(/\s+/g,'-').slice(0,80);
 
-    const slugify = (s) => (s || "")
-      .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .replace(/[^a-z0-9-_ ]+/g,'')
-      .trim().replace(/\s+/g,'-').slice(0,80);
+      nameEl.addEventListener('input', ()=>{
+        if(slugEl.value.trim() === '' || slugEl.dataset.touched !== '1'){
+          slugEl.value = slugify(nameEl.value);
+        }
+      });
 
-    nameEl.addEventListener('input', ()=>{
-      if(slugEl.value.trim() === '' || slugEl.dataset.touched !== '1'){
-        slugEl.value = slugify(nameEl.value);
-      }
-    });
+      slugEl.addEventListener('input', ()=>{
+        slugEl.dataset.touched = '1';
+      });
+    }
 
-    slugEl.addEventListener('input', ()=>{
-      slugEl.dataset.touched = '1';
-    });
+    // Auto-slug for video categories
+    const videoNameEl = document.querySelector('input[name="video_cat_name"]');
+    const videoSlugEl = document.querySelector('input[name="video_cat_slug"]');
+    if(videoNameEl && videoSlugEl) {
+      const slugify = (s) => (s || "")
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^a-z0-9-_ ]+/g,'')
+        .trim().replace(/\s+/g,'-').slice(0,80);
+
+      videoNameEl.addEventListener('input', ()=>{
+        if(videoSlugEl.value.trim() === '' || videoSlugEl.dataset.touched !== '1'){
+          videoSlugEl.value = slugify(videoNameEl.value);
+        }
+      });
+
+      videoSlugEl.addEventListener('input', ()=>{
+        videoSlugEl.dataset.touched = '1';
+      });
+    }
   })();
   </script>
 {% endif %}
 
-<!-- Like functionality -->
+<!-- Choose file button binding -->
+<script>
+(function(){
+  const vf = document.getElementById('video_file');
+  const vfn = document.getElementById('video_file_name');
+  const vfl = document.querySelector('label[for="video_file"]');
+  if (vf && vfl){
+    // Clicking the styled label opens file dialog
+    vfl.addEventListener('click', function(e){ e.preventDefault(); vf.click(); });
+    // Show selected filename
+    vf.addEventListener('change', function(){
+      if (vfn) vfn.textContent = (vf.files && vf.files[0]) ? vf.files[0].name : 'Файл не выбран';
+    });
+  }
+})();
+</script>
+
+<!-- Like & Save functionality -->
 <script>
 (function(){
   function getCSRFCookie(){
@@ -413,6 +1033,8 @@
   document.addEventListener('click', async (e)=>{
     const btn = e.target.closest('.like-toggle');
     if (!btn) return;
+    // If click on likers count, do not toggle like
+    if (e.target.closest('[data-open-likers]')) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -459,6 +1081,66 @@
       }
     }catch(err){
       console.warn('Like failed:', err);
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+
+  // Save toggle functionality
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.save-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try{
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With':'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('save failed');
+
+      // Update button state
+      const icon = btn.querySelector('svg');
+      const isSaved = !!j.saved;
+
+      btn.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
+
+      if (isSaved) {
+        btn.classList.add('text-emerald-500');
+        btn.classList.remove('text-[var(--muted)]');
+        icon.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-emerald-500');
+        btn.classList.add('text-[var(--muted)]');
+        icon.setAttribute('fill', 'none');
+      }
+
+      if (countEl && typeof j.count === 'number'){
+        countEl.textContent = j.count;
+      }
+    }catch(err){
+      console.warn('Save failed:', err);
     }finally{
       delete btn.dataset.loading;
       btn.disabled = false;
@@ -515,6 +1197,1448 @@
     padding: 12px;
   }
 }
+
+/* Media tabs & Public tabs */
+.media-tab,
+.public-tab {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--muted);
+}
+
+.media-tab.active,
+.public-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary) !important;
+}
+
+.media-tab:hover:not(.active),
+.public-tab:hover:not(.active) {
+  color: var(--fg);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+:root[data-theme="dark"] .media-tab:hover:not(.active),
+:root[data-theme="dark"] .public-tab:hover:not(.active) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.media-tab .media-count {
+  opacity: 0.6;
+  font-size: 0.875rem;
+}
+
+.media-tab.active .media-count {
+  opacity: 1;
+}
+
+/* Video player styles */
+video {
+  background: var(--bg);
+}
+
+video::-webkit-media-controls-panel {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+video::-webkit-media-controls-play-button,
+video::-webkit-media-controls-timeline,
+video::-webkit-media-controls-current-time-display,
+video::-webkit-media-controls-time-remaining-display,
+video::-webkit-media-controls-mute-button,
+video::-webkit-media-controls-volume-slider {
+  filter: brightness(1.2);
+}
+
+/* Video play overlay */
+.video-play-overlay {
+  transition: opacity 0.2s ease;
+}
+
+video:not([controls]):hover + .video-play-overlay {
+  opacity: 1;
+}
+
+video[controls] + .video-play-overlay {
+  display: none;
+}
+
+/* Hide overlay while playing */
+.playing .video-play-overlay { opacity: 0; pointer-events: none; }
+
+/* Responsive video grid */
+@media (max-width: 320px) {
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Custom responsive grid for videos */
+@media (max-width: 475px) {
+  .grid.xs\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Fallback for browsers that don't support custom grid classes */
+.grid-cols-1.xs\:grid-cols-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 475px) {
+  .grid-cols-1.xs\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Ensure proper aspect ratios on mobile */
+@media (max-width: 640px) {
+  .aspect-\[4\/3\] {
+    aspect-ratio: 4/3;
+  }
+}
+
+/* Model badge stability for narrow widths */
+#videos-grid .model-badge {
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* tighten around ~400px to avoid collision with open button */
+@media (max-width: 420px) {
+  #videos-grid .model-badge { max-width: 64%; font-size: 9px !important; padding: 2px 6px !important; }
+  #videos-grid .controls-top { padding-right: 2rem !important; }
+}
+@media (max-width: 375px) {
+  #videos-grid .model-badge { max-width: 60%; }
+  #videos-grid .controls-top { padding-right: 2.25rem !important; }
+}
+@media (max-width: 340px) {
+  #videos-grid .model-badge { max-width: 58%; }
+  #videos-grid .controls-top { padding-right: 2.5rem !important; }
+}
+@media (min-width: 475px) {
+  #videos-grid .model-badge { max-width: 75%; }
+}
+@media (min-width: 640px) {
+  #videos-grid .model-badge { max-width: 80%; }
+}
+
+/* Fluid responsive button scaling for video cards */
+@media (max-width: 640px) {
+  #videos-grid .vid-snd-btn {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+
+  #videos-grid .mg-open-btn {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+
+  #videos-grid .vid-snd-btn svg,
+  #videos-grid .mg-open-btn svg {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+  }
+
+  #videos-grid .vid-vol {
+    width: 2.5rem !important;
+  }
+
+  /* Model badge scaling */
+  #videos-grid .inline-flex.px-1\.5 {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #videos-grid .vid-snd-btn {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+
+  #videos-grid .mg-open-btn {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+
+  #videos-grid .vid-snd-btn svg,
+  #videos-grid .mg-open-btn svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+  }
+
+  #videos-grid .vid-vol {
+    width: 2rem !important;
+  }
+
+  #videos-grid .video-play-overlay > div {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+
+  #videos-grid .video-play-overlay svg {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+  }
+}
+
+@media (max-width: 375px) {
+  #videos-grid .vid-snd-btn {
+    width: 1.375rem !important;
+    height: 1.375rem !important;
+  }
+
+  #videos-grid .mg-open-btn {
+    width: 1.375rem !important;
+    height: 1.375rem !important;
+  }
+
+  #videos-grid .vid-snd-btn svg,
+  #videos-grid .mg-open-btn svg {
+    width: 0.6875rem !important;
+    height: 0.6875rem !important;
+  }
+
+  #videos-grid .vid-vol {
+    width: 1.75rem !important;
+  }
+
+  #videos-grid .video-play-overlay > div {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+
+  #videos-grid .video-play-overlay svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+  }
+}
+
+@media (max-width: 320px) {
+  #videos-grid .vid-snd-btn {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  #videos-grid .mg-open-btn {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  #videos-grid .vid-snd-btn svg,
+  #videos-grid .mg-open-btn svg {
+    width: 0.625rem !important;
+    height: 0.625rem !important;
+  }
+
+  #videos-grid .vid-vol {
+    width: 1.5rem !important;
+  }
+
+  #videos-grid .video-play-overlay > div {
+    width: 1.375rem !important;
+    height: 1.375rem !important;
+  }
+
+  #videos-grid .video-play-overlay svg {
+    width: 0.6875rem !important;
+    height: 0.6875rem !important;
+  }
+
+  #videos-grid .absolute.inset-0.flex.flex-col {
+    padding: 0.25rem !important;
+  }
+}
+
+/* Touch-friendly controls */
+@media (max-width: 768px) {
+  .vid-snd-btn,
+  .mg-open-btn {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vid-snd-btn,
+  .mg-open-btn {
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+}
+
+/* Better spacing for small screens */
+@media (max-width: 480px) {
+  .gap-2 {
+    gap: 0.5rem;
+  }
+
+  .p-2 {
+    padding: 0.5rem;
+  }
+}
+
+/* Expand invisible tap area under like number for mobile (no visual changes) */
+.likers-hotspot { position: relative; }
+.likers-hotspot::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 100%;
+  height: 14px;
+}
+
+/* Narrow phones: prevent overflow near 420px by slightly reducing paddings/icons in actions row */
+@media (max-width: 420px) {
+  /* tighten paddings on all three action buttons without changing design */
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 {
+    padding: 6px 8px;
+  }
+  /* slightly smaller icons in actions row */
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* minor font size reduction only inside action buttons */
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm {
+    font-size: 12px;
+  }
+}
+@media (max-width: 375px) {
+  /* hold single-line actions down to ~375px */
+  .flex.items-center.justify-between.gap-2.flex-nowrap { gap: 0.25rem !important; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 { padding: 5px 6px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap svg,
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg { width: 12px; height: 12px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap .text-sm,
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm { font-size: 11px; }
+}
+@media (max-width: 340px) {
+  /* ensure fit down to 320px */
+  .flex.items-center.justify-between.gap-2.flex-nowrap { gap: 0.2rem !important; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 { padding: 4px 5px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap svg,
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg { width: 11px; height: 11px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap .text-sm,
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm { font-size: 10px; }
+}
 </style>
+
+<!-- Media Tab Switcher Script -->
+<script>
+(function() {
+  // Tab switching functionality for My Generations
+  const tabs = document.querySelectorAll('.media-tab');
+  const contents = document.querySelectorAll('.media-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+
+      // Update tab states
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Update content visibility
+      contents.forEach(content => {
+        if (content.id === `${targetTab}-grid`) {
+          content.classList.remove('hidden');
+        } else {
+          content.classList.add('hidden');
+        }
+      });
+
+      // Save preference to localStorage
+      try {
+        localStorage.setItem('gallery_active_tab', targetTab);
+      } catch(e) {
+        // Silent fail for localStorage
+      }
+    });
+  });
+
+  // Restore last active tab
+  try {
+    const savedTab = localStorage.getItem('gallery_active_tab');
+    if (savedTab) {
+      const savedTabEl = document.querySelector(`.media-tab[data-tab="${savedTab}"]`);
+      if (savedTabEl) {
+        savedTabEl.click();
+      }
+    }
+  } catch(e) {
+    // Silent fail
+  }
+
+  // Handle video play/pause for "Мои генерации" (videos-grid)
+  (function(){
+    function findCard(el){
+      return el.closest('div[role="listitem"]') || el.closest('.group') || el.parentElement;
+    }
+    function setPlaying(card, playing){
+      if (!card) return;
+      card.classList.toggle('playing', !!playing);
+      const overlay = card.querySelector('.video-play-overlay');
+      if (overlay){
+        const playI = overlay.querySelector('.play-icon');
+        const pauseI = overlay.querySelector('.pause-icon');
+        if (playI && pauseI){
+          playI.classList.toggle('hidden', !!playing);
+          pauseI.classList.toggle('hidden', !playing);
+        }
+      }
+    }
+    function pauseAll(except){
+      document.querySelectorAll('#videos-grid video').forEach(v=>{
+        if (v !== except){
+          try { v.pause(); } catch(_){}
+          setPlaying(findCard(v), false);
+        }
+      });
+    }
+
+    // Click on video toggles playback
+    document.addEventListener('click', (e)=>{
+      const video = e.target.closest('#videos-grid video');
+      if (!video || video.hasAttribute('controls')) return;
+      const card = findCard(video);
+      if (video.paused){
+        pauseAll(video);
+        video.play().catch(()=>{});
+        setPlaying(card, true);
+      } else {
+        video.pause();
+        setPlaying(card, false);
+      }
+    });
+
+    // Click on overlay toggles playback
+    document.addEventListener('click', (e)=>{
+      const ov = e.target.closest('#videos-grid .video-play-overlay');
+      if (!ov) return;
+      const card = findCard(ov);
+      const video = card ? card.querySelector('video') : null;
+      if (!video || video.hasAttribute('controls')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (video.paused){
+        pauseAll(video);
+        video.play().catch(()=>{});
+        setPlaying(card, true);
+      } else {
+        video.pause();
+        setPlaying(card, false);
+      }
+    });
+
+    // Sync overlay on events
+    document.querySelectorAll('#videos-grid video').forEach(video=>{
+      video.addEventListener('ended', ()=> setPlaying(findCard(video), false));
+      video.addEventListener('play',  ()=> setPlaying(findCard(video), true));
+      video.addEventListener('pause', ()=> setPlaying(findCard(video), false));
+    });
+  })();
+
+  // Sound toggle buttons for all video cards (My Generations + Public) + Volume slider
+  (function(){
+    const VOL_KEY = 'gallery_video_volume_pct';
+
+    function findCard(el){
+      return el.closest('div[role="listitem"]') || el.closest('article') || el.closest('.group') || el.parentElement;
+    }
+    function hasAudio(video){
+      if (!video) return false;
+      try {
+        if (typeof video.mozHasAudio !== 'undefined') return !!video.mozHasAudio;           // Firefox
+        if (video.audioTracks && video.audioTracks.length) return true;                     // Some browsers
+        if (typeof video.webkitAudioDecodedByteCount !== 'undefined') {                     // Safari/legacy
+          return video.webkitAudioDecodedByteCount > 0;
+        }
+        if (typeof video.captureStream === 'function') {
+          try {
+            const s = video.captureStream();
+            if (s && s.getAudioTracks) return s.getAudioTracks().length > 0;
+          } catch(_) {}
+        }
+      } catch(_) {}
+      return false;
+    }
+    function getSavedVol(){ try{ const v = localStorage.getItem(VOL_KEY); const n = Number(v); return isFinite(n) ? Math.max(0, Math.min(100, n)) : null; }catch(_){ return null; } }
+    function setSavedVol(p){ try{ localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, p)))); }catch(_){ } }
+
+    function markBtnState(btn, video){
+      const disabled = video ? !hasAudio(video) : true;
+      btn.dataset.disabled = disabled ? '1' : '0';
+      btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+      btn.title = disabled ? 'Нет аудио' : '';
+      btn.classList.toggle('opacity-60', disabled);
+      btn.classList.toggle('cursor-not-allowed', disabled);
+      // Icons
+      const onI = btn.querySelector('.icon-vol-on');
+      const offI = btn.querySelector('.icon-vol-off');
+      if (disabled){
+        if (onI) onI.classList.add('hidden');
+        if (offI) offI.classList.remove('hidden');
+      } else {
+        // keep according to muted state
+        if (onI && offI){
+          const muted = !!video?.muted;
+          onI.classList.toggle('hidden', muted);
+          offI.classList.toggle('hidden', !muted);
+        }
+      }
+      // Slider visibility
+      const card = findCard(btn);
+      const slider = card && card.querySelector('.vid-vol');
+      if (slider){
+        slider.classList.toggle('hidden', disabled);
+        slider.disabled = !!disabled;
+      }
+    }
+    function updateSoundBtn(btn, muted){
+      if (!btn) return;
+      if (btn.dataset.disabled === '1'){
+        const onI = btn.querySelector('.icon-vol-on');
+        const offI = btn.querySelector('.icon-vol-off');
+        if (onI) onI.classList.add('hidden');
+        if (offI) offI.classList.remove('hidden');
+        btn.setAttribute('aria-label', 'Нет аудио');
+        return;
+      }
+      const onI = btn.querySelector('.icon-vol-on');
+      const offI = btn.querySelector('.icon-vol-off');
+      if (onI && offI){
+        onI.classList.toggle('hidden', muted);
+        offI.classList.toggle('hidden', !muted);
+      }
+      btn.setAttribute('aria-label', muted ? 'Включить звук' : 'Выключить звук');
+    }
+    function syncSliderFromVideo(card, video){
+      const slider = card && card.querySelector('.vid-vol');
+      if (!slider || !video) return;
+      const pct = Math.round((video.muted ? 0 : (video.volume || 0)) * 100);
+      slider.value = isFinite(pct) ? pct : 0;
+    }
+    function wireVideoRecalc(btn, video){
+      if (!video) return;
+      video.addEventListener('loadedmetadata', ()=> markBtnState(btn, video));
+      video.addEventListener('play', ()=> markBtnState(btn, video));
+    }
+    function bindSlider(btn, card, video){
+      const slider = card && card.querySelector('.vid-vol');
+      if (!slider) return;
+      slider.addEventListener('input', ()=>{
+        const pct = Math.max(0, Math.min(100, Number(slider.value)||0));
+        setSavedVol(pct);
+        if (video){
+          video.volume = pct/100;
+          video.muted = pct === 0;
+          if (!video.muted){
+            try { video.play(); } catch(_){}
+          }
+          updateSoundBtn(btn, video.muted);
+        }
+      });
+    }
+    function initSoundButtons(scopeSel){
+      document.querySelectorAll(scopeSel + ' .vid-snd-btn').forEach(btn=>{
+        const card = findCard(btn);
+        const video = card && card.querySelector('video');
+        const slider = card && card.querySelector('.vid-vol');
+        // apply saved volume
+        const saved = getSavedVol();
+        if (video && saved !== null){
+          video.volume = saved/100;
+          if (saved > 0) video.muted = false;
+        }
+        markBtnState(btn, video);
+        updateSoundBtn(btn, !video ? true : !!video.muted);
+        if (slider){
+          slider.value = saved !== null ? saved : Math.round((video?.volume || 0.6)*100);
+        }
+        bindSlider(btn, card, video);
+        wireVideoRecalc(btn, video);
+      });
+    }
+
+    // Prevent clicks on disabled sound buttons (capture phase)
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.vid-snd-btn');
+      if (btn && btn.dataset.disabled === '1'){
+        e.preventDefault(); e.stopPropagation();
+      }
+    }, true);
+
+    // Delegated click for toggling audio (ensures playback with sound on unmute)
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.vid-snd-btn');
+      if (!btn) return;
+      if (btn.dataset.disabled === '1'){ e.preventDefault(); e.stopPropagation(); return; }
+      e.preventDefault(); e.stopPropagation();
+      const card = findCard(btn);
+      const video = card && card.querySelector('video');
+      if (!video) return;
+
+      if (video.muted){
+        const slider = card && card.querySelector('.vid-vol');
+        let pct = Number(slider?.value);
+        if (!isFinite(pct) || pct === 0){
+          pct = getSavedVol();
+          if (pct === null || pct === 0) pct = 60;
+          if (slider) slider.value = pct;
+          setSavedVol(pct);
+        }
+        video.volume = pct/100;
+        video.muted = false;
+        try { video.play(); } catch(_){}
+      } else {
+        video.muted = true;
+      }
+      updateSoundBtn(btn, video.muted);
+      syncSliderFromVideo(card, video);
+    });
+
+    // Initialize for both sections
+    initSoundButtons('#videos-grid');
+    initSoundButtons('#public-videos-grid');
+  })();
+
+  // Tab switching functionality for Public Gallery
+  const publicTabs = document.querySelectorAll('.public-tab');
+  const publicContents = document.querySelectorAll('.public-content');
+  const categoryContents = document.querySelectorAll('.categories-content');
+  const categoryDescription = document.querySelector('.category-description');
+
+  publicTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+
+      // Update tab states
+      publicTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Update content visibility
+      publicContents.forEach(content => {
+        if (content.id === `${targetTab}-grid`) {
+          content.classList.remove('hidden');
+        } else {
+          content.classList.add('hidden');
+        }
+      });
+
+      // Update categories visibility
+      categoryContents.forEach(catContent => {
+        if (targetTab === 'public-videos' && catContent.id === 'video-categories') {
+          catContent.classList.remove('hidden');
+        } else if (targetTab === 'public-photos' && catContent.id === 'photo-categories') {
+          catContent.classList.remove('hidden');
+        } else {
+          catContent.classList.add('hidden');
+        }
+      });
+
+      // Update category description
+      if (categoryDescription) {
+        if (targetTab === 'public-videos') {
+          categoryDescription.textContent = categoryDescription.dataset.videosText;
+        } else {
+          categoryDescription.textContent = categoryDescription.dataset.photosText;
+        }
+      }
+
+      // Save preference to localStorage
+      try {
+        localStorage.setItem('gallery_public_tab', targetTab);
+      } catch(e) {
+        // Silent fail for localStorage
+      }
+    });
+  });
+
+  // Restore last active public tab
+  try {
+    const savedPublicTab = localStorage.getItem('gallery_public_tab');
+    if (savedPublicTab) {
+      const savedTabEl = document.querySelector(`.public-tab[data-tab="${savedPublicTab}"]`);
+      if (savedTabEl) {
+        savedTabEl.click();
+      }
+    }
+  } catch(e) {
+    // Silent fail
+  }
+
+  // If a video category filter is present, force the Videos tab active on load
+  try {
+    var vcat = "{{ vcat_slug|default:'' }}";
+    if (vcat) {
+      const videoTab = document.querySelector('.public-tab[data-tab="public-videos"]');
+      if (videoTab) videoTab.click();
+    }
+  } catch(e) {}
+
+  // Handle video play/pause with proper overlay lookup and auto-pause
+  (function(){
+    function getOverlay(video){
+      return video && video.parentElement ? video.parentElement.querySelector('.video-play-overlay') : null;
+    }
+    function setPlaying(card, playing){
+      if (!card) return;
+      card.classList.toggle('playing', !!playing);
+      const overlay = card.querySelector('.video-play-overlay');
+      if (overlay){
+        const playI = overlay.querySelector('.play-icon');
+        const pauseI = overlay.querySelector('.pause-icon');
+        if (playI && pauseI){
+          playI.classList.toggle('hidden', !!playing);
+          pauseI.classList.toggle('hidden', !playing);
+        }
+      }
+    }
+    function pauseAll(except){
+      document.querySelectorAll('#public-videos-grid video').forEach(v=>{
+        if (v !== except){
+          try { v.pause(); } catch(_){}
+          setPlaying(v.closest('article'), false);
+        }
+      });
+    }
+
+    // Click on video toggles playback
+    document.addEventListener('click', (e)=>{
+      const video = e.target.closest('#public-videos-grid video');
+      if (!video || video.hasAttribute('controls')) return;
+      const card = video.closest('article');
+      if (video.paused){
+        pauseAll(video);
+        video.play().catch(()=>{});
+        setPlaying(card, true);
+      } else {
+        video.pause();
+        setPlaying(card, false);
+      }
+    });
+
+    // Click on play overlay toggles playback
+    document.addEventListener('click', (e)=>{
+      const ov = e.target.closest('#public-videos-grid .video-play-overlay');
+      if (!ov) return;
+      const card = ov.closest('article');
+      const video = card && card.querySelector('video');
+      if (!video || video.hasAttribute('controls')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (video.paused){
+        pauseAll(video);
+        video.play().catch(()=>{});
+        setPlaying(card, true);
+      } else {
+        video.pause();
+        setPlaying(card, false);
+      }
+    });
+
+    // Sync overlay on events
+    document.querySelectorAll('#public-videos-grid video').forEach(video=>{
+      video.addEventListener('ended', ()=> setPlaying(video.closest('article'), false));
+      video.addEventListener('play',  ()=> setPlaying(video.closest('article'), true));
+      video.addEventListener('pause', ()=> setPlaying(video.closest('article'), false));
+    });
+  })();
+})();
+</script>
+
+<!-- My Generations Video Modal -->
+<div id="mgVideoModal" class="fixed inset-0 z-[85] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-mg-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-4xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="text-base sm:text-lg font-bold">Просмотр видео</h3>
+      <div class="flex items-center gap-2">
+        <a data-mg-download href="#" download class="btn btn-ghost px-3 py-1.5 inline-flex items-center gap-2" aria-label="Скачать видео">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          <span class="hidden xs:inline">Скачать</span>
+        </a>
+        <button type="button" class="btn btn-ghost px-3 py-1.5" data-mg-close="1" aria-label="Закрыть">✕</button>
+      </div>
+    </div>
+    <div class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] sm:min-h-[60vh]">
+      <video id="mgVideoEl" class="max-w-full max-h-[75vh]" controls playsinline></video>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('mgVideoModal');
+  const video = document.getElementById('mgVideoEl');
+  const download = modal ? modal.querySelector('[data-mg-download]') : null;
+
+  function openModal(src, poster){
+    if (!modal || !video) return;
+    try { video.pause(); } catch(_){}
+    // Reset source for reliable reload
+    video.removeAttribute('src');
+    while (video.firstChild) video.removeChild(video.firstChild);
+    if (poster) video.setAttribute('poster', poster); else video.removeAttribute('poster');
+    const source = document.createElement('source');
+    source.src = src;
+    source.type = 'video/mp4';
+    video.appendChild(source);
+    video.load();
+    // Update download link
+    if (download) {
+      download.href = src || '#';
+      // filename hint
+      const file = (src || '').split('/').pop() || 'video.mp4';
+      download.setAttribute('download', file);
+    }
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    if (!modal || !video) return;
+    try { video.pause(); } catch(_){}
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // Open from card button
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.mg-open-btn');
+    if (!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    const src = btn.getAttribute('data-mg-src') || '';
+    const poster = btn.getAttribute('data-mg-poster') || '';
+    openModal(src, poster);
+  });
+
+  // Close handlers
+  document.addEventListener('click', (e)=>{
+    if (!modal || modal.classList.contains('hidden')) return;
+    if (e.target && (e.target.getAttribute('data-mg-close') === '1' || e.target.closest('[data-mg-close="1"]'))) {
+      e.preventDefault(); e.stopPropagation(); closeModal();
+    }
+  });
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) closeModal();
+  });
+})();
+</script>
+
+<style>
+@media (max-width: 374px) {
+  .mg-open-btn { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+}
+</style>
+
+<!-- Profile-like Media Modal (reused for gallery) -->
+<div id="pfMediaModal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-pf-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="grid md:grid-cols-2 gap-0">
+      <div id="pfModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
+      <div class="flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+          <div class="flex items-center gap-3">
+            <div id="pfModalAuthor" class="hidden sm:flex items-center gap-2"></div>
+            <button id="pfModalLikeBtn" type="button" class="btn btn-ghost px-3 py-1.5 like-toggle" data-url="" data-count-target="pfModalLikeCount" aria-pressed="false">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span id="pfModalLikeCount" class="text-sm font-medium">0</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-pf-close="1">✕</button>
+        </div>
+        <div id="pfModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('pfMediaModal');
+  const mediaEl = document.getElementById('pfModalMedia');
+  const commentsEl = document.getElementById('pfModalComments');
+  const likeBtn = document.getElementById('pfModalLikeBtn');
+  const likeCountEl = document.getElementById('pfModalLikeCount');
+  let currentDetailUrl = '';
+
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); }
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.pfClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchDetail(url){
+    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
+    const html = await r.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  async function openPhoto(detailUrl, mediaUrl, title, author){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<img class="max-w-full max-h-[75vh] object-contain" alt="'+(title||'')+'" src="'+mediaUrl+'"/>';
+    // Fill author (from card, for avatar reliability)
+    const auth = document.getElementById('pfModalAuthor');
+    if (auth){
+      if (author && (author.username || author.avatar)){
+        const letter = (author.username||'U').replace('@','').trim().charAt(0).toUpperCase();
+        auth.innerHTML = author.avatar
+          ? '<img src="'+author.avatar+'" class="w-7 h-7 rounded-full object-cover ring-1 ring-[var(--bord)]" alt="'+(author.username||'')+'"><span class="text-sm font-medium truncate">'+(author.username||'')+'</span>'
+          : '<span class="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">'+letter+'</span><span class="text-sm font-medium truncate">'+(author.username||'')+'</span>';
+        auth.classList.remove('hidden');
+      } else {
+        auth.classList.add('hidden');
+        auth.innerHTML = '';
+      }
+    }
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#photo-like-count, #video-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+      bindDynamicHandlers();
+    }catch(e){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  async function openVideo(detailUrl, videoUrl, poster, author){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline><source src="'+videoUrl+'" type="video/mp4"></video>';
+    // Fill author (from card)
+    const auth = document.getElementById('pfModalAuthor');
+    if (auth){
+      if (author && (author.username || author.avatar)){
+        const letter = (author.username||'U').replace('@','').trim().charAt(0).toUpperCase();
+        auth.innerHTML = author.avatar
+          ? '<img src="'+author.avatar+'" class="w-7 h-7 rounded-full object-cover ring-1 ring-[var(--bord)]" alt="'+(author.username||'')+'"><span class="text-sm font-medium truncate">'+(author.username||'')+'</span>'
+          : '<span class="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">'+letter+'</span><span class="text-sm font-medium truncate">'+(author.username||'')+'</span>';
+        auth.classList.remove('hidden');
+      } else {
+        auth.classList.add('hidden');
+        auth.innerHTML = '';
+      }
+    }
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#video-like-count, #photo-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+      bindDynamicHandlers();
+    }catch(e){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  likeBtn.addEventListener('click', async ()=>{
+    const url = likeBtn.dataset.url;
+    if (!url) return;
+    try{
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+        credentials:'same-origin'
+      });
+      const j = await res.json();
+      if (j && j.ok){
+        likeBtn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+        likeBtn.querySelector('svg').setAttribute('fill', j.liked ? 'currentColor':'none');
+        if (typeof j.count === 'number') likeCountEl.textContent = j.count;
+      }
+    }catch(_){}
+  });
+
+  function bindDynamicHandlers(){
+    commentsEl.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('.js-like-comment');
+      if (!btn) return;
+      e.preventDefault();
+      try{
+        const res = await fetch(btn.dataset.url, {
+          method:'POST',
+          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+          credentials:'same-origin'
+        });
+        const j = await res.json();
+        if (j && j.ok){
+          const id = btn.dataset.countId;
+          const el = id && document.getElementById(id);
+          if (el && typeof j.count === 'number') el.textContent = j.count;
+          const heart = btn.querySelector('svg');
+          btn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+          heart && heart.setAttribute('fill', j.liked ? 'currentColor':'none');
+          btn.classList.toggle('text-red-500', !!j.liked);
+          btn.classList.toggle('text-[var(--muted)]', !j.liked);
+        }
+      }catch(_){}
+    });
+
+    commentsEl.querySelectorAll('form[data-comment-form]').forEach(form=>{
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const fd = new FormData(form);
+        try{
+          const res = await fetch(form.action, {
+            method:'POST',
+            headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+            body: fd,
+            credentials:'same-origin'
+          });
+          const j = await res.json().catch(()=>null);
+          if (res.ok && j && j.ok){
+            const doc = await fetchDetail(currentDetailUrl);
+            const c = doc.getElementById('comments');
+            commentsEl.innerHTML = c ? c.innerHTML : commentsEl.innerHTML;
+            bindDynamicHandlers();
+          }
+        }catch(_){}
+      }, { once:true });
+    });
+  }
+
+  // Delegated click handling:
+  // - Clicking on comments opens modal with comments (like in my_jobs)
+  // - Clicking on the image itself navigates to detail (overlay is pointer-events:none above)
+  document.addEventListener('click', (e)=>{
+    const cm = e.target.closest('[data-open-comments]');
+    if (!cm) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    function extractAuthor(article){
+      let username = '';
+      let avatar = '';
+      const img = article.querySelector('img.rounded-full');
+      if (img) avatar = img.getAttribute('src') || '';
+      const unameEl = article.querySelector('a[aria-label^="@"], a[href*="/dashboard/profile/"]');
+      if (unameEl) username = (unameEl.textContent || '').trim();
+      return { username, avatar };
+    }
+
+    // Detect related article and media sources
+    const photoArticle = cm.closest('.js-open-photo');
+    if (photoArticle){
+      const href = photoArticle.getAttribute('data-detail-url') || (photoArticle.querySelector('a[href*="/gallery/photo/"]')?.getAttribute('href')) || '';
+      const img = photoArticle.querySelector('img');
+      const src = img && img.getAttribute('src');
+      const author = extractAuthor(photoArticle);
+      openPhoto(href, src || '', (img && img.getAttribute('alt')) || '', author);
+      return;
+    }
+
+    const videoArticle = cm.closest('.js-open-video');
+    if (videoArticle){
+      const href = videoArticle.getAttribute('data-detail-url') || (videoArticle.querySelector('a[href*="/gallery/video/"]')?.getAttribute('href')) || '';
+      const video = videoArticle.querySelector('video');
+      const vsrc = video && (video.currentSrc || (video.querySelector('source')?.getAttribute('src')));
+      const poster = video && video.getAttribute('poster');
+      const author = extractAuthor(videoArticle);
+      openVideo(href, vsrc || '', poster || '', author);
+      return;
+    }
+  });
+})();
+</script>
+
+<!-- Likers Modal -->
+<div id="likersModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
+  <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="font-semibold">Оценили</h3>
+      <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('likersModal');
+  const body = document.getElementById('likersBody');
+  const CURRENT_USER = "{{ request.user.username|default:''|escapejs }}";
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; body.innerHTML=''; }
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.likersClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchLikers(url, totalLikes){
+    try{
+      const res = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' });
+      const j = await res.json();
+      if (!res.ok || !j || j.ok === false) throw new Error('bad response');
+
+      const arr = Array.isArray(j.likers) ? j.likers : [];
+      const total = Number(totalLikes);
+      const guestCount = (isFinite(total) && total > arr.length) ? (total - arr.length) : 0;
+
+      const registeredHtml = arr.map(item => {
+        const avatar = item.avatar ? `<img src="${item.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${item.username}">`
+                                   : `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white grid place-items-center font-bold">${(item.name||item.username||'?').slice(0,1).toUpperCase()}</div>`;
+        const btnLabel = item.is_following ? 'Отписаться' : 'Подписаться';
+        const btnClass = item.is_following ? 'btn-ghost' : 'btn-primary';
+        const isMe = !!CURRENT_USER && !!item.username && (item.username === CURRENT_USER);
+        const rightCtrl = isMe
+          ? `<span class="px-3 py-1.5 text-xs rounded-md bg-black/10 dark:bg-white/10 text-[var(--muted)] select-none">Вы</span>`
+          : `<button class="btn ${btnClass} text-xs px-3 py-1.5 js-follow-toggle" data-username="${item.username}">${btnLabel}</button>`;
+        return `
+          <div class="flex items-center justify-between p-3 sm:p-4">
+            <div class="flex items-center gap-3 min-w-0">
+              ${avatar}
+              <div class="min-w-0">
+                <div class="font-medium truncate">${(item.name||'')}</div>
+                <div class="text-xs text-[var(--muted)] truncate">@${item.username}</div>
+              </div>
+            </div>
+            ${rightCtrl}
+          </div>
+        `;
+      }).join('');
+
+      const guestHtml = guestCount > 0
+        ? Array.from({ length: guestCount }, (_, i) => {
+            const n = i + 1;
+            return `
+              <div class="flex items-center justify-between p-3 sm:p-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-full bg-black/10 dark:bg-white/10 grid place-items-center text-[var(--muted)] shrink-0">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"></path>
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-medium truncate">Гость #${n}</div>
+                    <div class="text-xs text-[var(--muted)] truncate">@guest${n}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')
+        : '';
+
+      const html = (registeredHtml + guestHtml);
+      body.innerHTML = html || '<div class="p-4 text-sm text-[var(--muted)]">Пока нет лайков</div>';
+    }catch(_){
+      body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  // Follow toggle inside likers modal
+  body.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.js-follow-toggle');
+    if (!btn) return;
+    e.preventDefault();
+    const username = btn.getAttribute('data-username');
+    try{
+      const fd = new FormData();
+      fd.append('username', username);
+      const res = await fetch("{% url 'dashboard:api:follow_toggle' %}", {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'},
+        body: fd,
+        credentials:'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (res.ok && j && j.ok !== false){
+        const following = !!j.following;
+        btn.textContent = following ? 'Отписаться' : 'Подписаться';
+        btn.classList.toggle('btn-primary', !following);
+        btn.classList.toggle('btn-ghost', following);
+      }
+    }catch(_){}
+  });
+
+  // Open on click on like counts (stop like-toggle bubbling)
+  document.addEventListener('click', (e)=>{
+    const el = e.target.closest('[data-open-likers]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    const url = el.getAttribute('data-url');
+    if (!url) return;
+    body.innerHTML = '';
+    openModal();
+
+    // Determine total likes for guest placeholders
+    let totalLikes = 0;
+    const ds = el.getAttribute('data-total-likes') || (el.dataset ? el.dataset.totalLikes : '');
+    if (ds) {
+      totalLikes = Number(ds);
+    }
+    if (!isFinite(totalLikes) || totalLikes <= 0) {
+      try{
+        const btn = el.closest('button');
+        const countEl = btn && btn.querySelector('[id^="like-count-"], [id^="video-like-count-"]');
+        if (countEl) totalLikes = Number((countEl.textContent || '').replace(/[^\d]/g, '')) || 0;
+      }catch(_){}
+    }
+
+    fetchLikers(url, totalLikes);
+  });
+})();
+</script>
+
+<script>
+// Client-side "Show more" for public photos/videos (20 per click), responsive + dark/light friendly
+(function(){
+  function setupShowMore(containerSelector, buttonId, batch){
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+    const cards = Array.from(container.querySelectorAll('article'));
+    const BATCH = Number(batch) || 20;
+    if (cards.length <= BATCH) return;
+
+    let shown = BATCH;
+
+    // Hide excess initially
+    cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+
+    // Create button
+    let wrap = document.createElement('div');
+    wrap.className = 'mt-6 text-center';
+    let btn = document.createElement('button');
+    btn.id = buttonId;
+    btn.type = 'button';
+    btn.className = 'btn btn-outline w-full sm:w-auto';
+    btn.textContent = 'Показать ещё';
+    btn.addEventListener('click', function(){
+      shown += BATCH;
+      cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+      if (shown >= cards.length) {
+        btn.classList.add('hidden');
+      }
+    });
+    wrap.appendChild(btn);
+    container.appendChild(wrap);
+  }
+
+  // Photos tab
+  setupShowMore('#public-photos-grid', 'btnMorePublicPhotos', 20);
+  // Videos tab
+  setupShowMore('#public-videos-grid', 'btnMorePublicVideos', 20);
+})();
+</script>
+
+<script>
+/*
+  Instant category switching for /gallery/index without full page reload.
+  - Intercepts clicks on category pills in #photo-categories and #video-categories
+  - Fetches the same URL, parses HTML, swaps only relevant fragments (categories + grids)
+  - Updates History API (pushState) so back/forward works
+  - Keeps visuals unchanged
+*/
+(function(){
+  function deriveModeFromURL(url){
+    try {
+      const u = new URL(url, window.location.origin);
+      const vcat = u.searchParams.get('vcat');
+      const vcatId = u.searchParams.get('vcat_id');
+      const hasVcat = vcat && String(vcat).trim() !== '';
+      const hasVcatId = vcatId && String(vcatId).trim() !== '';
+      return (hasVcat || hasVcatId) ? 'videos' : 'photos';
+    } catch(_) {
+      return 'photos';
+    }
+  }
+
+  async function fetchDoc(url){
+    const res = await fetch(url, {
+      headers: { 'X-Requested-With': 'fetch' },
+      credentials: 'same-origin'
+    });
+    if (!res.ok) throw new Error('fetch failed: ' + res.status);
+    const html = await res.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  function swapSection(id, srcDoc){
+    const cur = document.getElementById(id);
+    const next = srcDoc.getElementById(id);
+    if (cur && next) {
+      cur.innerHTML = next.innerHTML;
+    }
+  }
+
+  function setPublicTab(mode){
+    const target = mode === 'videos' ? 'public-videos' : 'public-photos';
+
+    // Tabs active state
+    document.querySelectorAll('.public-tab').forEach(t => t.classList.remove('active'));
+    const tab = document.querySelector(`.public-tab[data-tab="${target}"]`);
+    if (tab) tab.classList.add('active');
+
+    // Content visibility
+    document.querySelectorAll('.public-content').forEach(c => {
+      if (c.id === `${target}-grid`) c.classList.remove('hidden');
+      else c.classList.add('hidden');
+    });
+
+    // Categories visibility
+    document.querySelectorAll('.categories-content').forEach(catContent => {
+      if (mode === 'videos' && catContent.id === 'video-categories') catContent.classList.remove('hidden');
+      else if (mode === 'photos' && catContent.id === 'photo-categories') catContent.classList.remove('hidden');
+      else catContent.classList.add('hidden');
+    });
+
+    // Category description text
+    const desc = document.querySelector('.category-description');
+    if (desc) {
+      desc.textContent = (mode === 'videos') ? (desc.dataset.videosText || desc.textContent)
+                                             : (desc.dataset.photosText || desc.textContent);
+    }
+  }
+
+  // Re-apply "Show more" after swapping grids (mirror of the inline script)
+  function setupShowMore(containerSelector, buttonId, batch){
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+
+    // Remove previous button if present
+    const prev = container.querySelector('#' + buttonId);
+    if (prev && prev.parentElement) {
+      prev.parentElement.remove();
+    }
+
+    const cards = Array.from(container.querySelectorAll('article'));
+    const BATCH = Number(batch) || 20;
+    if (cards.length <= BATCH) return;
+
+    let shown = BATCH;
+    cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+
+    const wrap = document.createElement('div');
+    wrap.className = 'mt-6 text-center';
+    const btn = document.createElement('button');
+    btn.id = buttonId;
+    btn.type = 'button';
+    btn.className = 'btn btn-outline w-full sm:w-auto';
+    btn.textContent = 'Показать ещё';
+    btn.addEventListener('click', function(){
+      shown += BATCH;
+      cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+      if (shown >= cards.length) btn.classList.add('hidden');
+    });
+    wrap.appendChild(btn);
+    container.appendChild(wrap);
+  }
+
+  let isLoading = false;
+  async function handleCategoryNavigate(href, mode){
+    if (isLoading) return;
+    isLoading = true;
+    try{
+      const doc = await fetchDoc(href);
+
+      // Swap both categories and both public grids to keep everything in sync
+      swapSection('photo-categories', doc);
+      swapSection('video-categories', doc);
+      swapSection('public-photos-grid', doc);
+      swapSection('public-videos-grid', doc);
+
+      // Ensure correct tab and description are visible
+      setPublicTab(mode);
+
+      // Re-apply "Show more" buttons
+      setupShowMore('#public-photos-grid', 'btnMorePublicPhotos', 20);
+      setupShowMore('#public-videos-grid', 'btnMorePublicVideos', 20);
+
+      // Update URL and keep anchor if present
+      window.history.pushState({ mode }, '', href);
+
+      // Scroll to categories (anchor-friendly)
+      const el = document.getElementById('cats');
+      if (el) {
+        try { el.scrollIntoView({ behavior: 'instant' }); } catch(_) { el.scrollIntoView(); }
+      }
+    } catch (e){
+      // Fallback to full navigation on error
+      window.location.href = href;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // Intercept category pill clicks (Photos + Videos)
+  document.addEventListener('click', function(e){
+    const link = e.target.closest('#photo-categories a.pill, #video-categories a.pill');
+    if (!link) return;
+    // Ignore admin forms (delete buttons next to pills)
+    if (e.target.closest('form')) return;
+
+    const href = link.href;
+    if (!href) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const mode = link.closest('#video-categories') ? 'videos' : 'photos';
+    handleCategoryNavigate(href, mode);
+  });
+
+  // Back/forward navigation
+  window.addEventListener('popstate', function(){
+    const href = window.location.href;
+    const mode = deriveModeFromURL(href);
+    handleCategoryNavigate(href, mode);
+  });
+})();
+</script>
 
 {% endblock %}

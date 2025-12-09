@@ -12,7 +12,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import F, Value
+from django.db.models import F, Value, Case, When, IntegerField, Count, Exists, OuterRef, Q
 from django.db.models.functions import Greatest
 from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -23,7 +23,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.conf import settings
 
 from generate.models import GenerationJob
-from .forms import ShareFromJobForm, PhotoCommentForm
+from .forms import SharePhotoFromJobForm, PhotoCommentForm
 from .models import (
     PublicPhoto,
     Category,
@@ -34,9 +34,107 @@ from .models import (
     Image,
     PublicVideo,
     VideoLike,
+    PhotoSave,
+    VideoSave,
 )
+from dashboard.models import Follow, Notification
+
+import os
+import tempfile
+import subprocess
+from django.core.files import File
+import io
+from PIL import Image
+
+def _save_optimized_webp_bytes(data: bytes, subdir: str = "public", filename_base: str = "image") -> str:
+    """
+    Сжать байты изображения в WEBP и сохранить в сторадж проекта.
+    - Конвертация в RGB
+    - Даунскейл до макс 2048px по длинной стороне
+    - WEBP quality=75, method=6 (лёгкий вес, хорошее качество)
+    Возвращает storage name (относительный путь), не URL.
+    """
+    base = slugify(filename_base)[:60] or "image"
+    im = Image.open(io.BytesIO(data))
+    if im.mode not in ("RGB", "L"):
+        im = im.convert("RGB")
+    # Downscale
+    try:
+        w, h = im.size
+        max_side = 2048
+        if max(w, h) > max_side:
+            if w >= h:
+                nw = max_side
+                nh = max(1, int(h * (max_side / float(w))))
+            else:
+                nh = max_side
+                nw = max(1, int(w * (max_side / float(h))))
+            im = im.resize((int(nw), int(nh)), Image.LANCZOS)
+    except Exception:
+        pass
+    # Encode WEBP
+    buf = io.BytesIO()
+    im.save(buf, format="WEBP", quality=75, method=6)
+    buf.seek(0)
+    dst_dir = f"{subdir}/{timezone.now():%Y/%m}/"
+    storage_name = default_storage.generate_filename(f"{dst_dir}{base}.webp")
+    return default_storage.save(storage_name, ContentFile(buf.read()))
 
 MIN_THUMB_SIZE = 1024  # 1 KiB — меньше считаем «пустышкой»
+
+
+def _save_optimized_mp4(upload, subdir: str = "public_videos") -> str:
+    """
+    Сохраняет загруженный MP4 как оптимизированный файл:
+    - H.264/AAC, faststart
+    - ограничивает ширину до 1280px, CRF=28 для лёгкого веса
+    - если ffmpeg недоступен — сохраняет как есть
+    Возвращает публичный URL (storage.url).
+    """
+    # безопасное имя
+    base = slugify(getattr(upload, "name", "video").rsplit(".", 1)[0])[
+        :60] or "video"
+    tmp_in = None
+    tmp_out = None
+    try:
+        fd, tmp_in = tempfile.mkstemp(suffix=".mp4")
+        with os.fdopen(fd, "wb") as fh:
+            for chunk in upload.chunks():
+                fh.write(chunk)
+        tmp_out = tempfile.mktemp(suffix="-opt.mp4")
+        cmd = [
+            "ffmpeg", "-y", "-i", tmp_in,
+            "-vf", "scale='min(1280,iw)':-2",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            tmp_out,
+        ]
+        try:
+            subprocess.run(
+                cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            final_path = tmp_out if os.path.exists(
+                tmp_out) and os.path.getsize(tmp_out) > 0 else tmp_in
+        except Exception:
+            final_path = tmp_in
+        # сохраняем в сторадж
+        dst_dir = f"{subdir}/{timezone.now():%Y/%m}/"
+        filename = f"{base}.mp4"
+        storage_name = default_storage.generate_filename(dst_dir + filename)
+        with open(final_path, "rb") as fobj:
+            storage_name = default_storage.save(storage_name, File(fobj))
+        return default_storage.url(storage_name)
+    finally:
+        try:
+            if tmp_in and os.path.exists(tmp_in):
+                os.remove(tmp_in)
+        except Exception:
+            pass
+        try:
+            if tmp_out and os.path.exists(tmp_out):
+                os.remove(tmp_out)
+        except Exception:
+            pass
 
 
 # ───────────────────────── helpers ─────────────────────────
@@ -68,7 +166,8 @@ def _get_fp_from_request(request: HttpRequest) -> str:
 
     # 3) заголовок (если фронт его шлёт)
     hdr = getattr(settings, "FP_HEADER_NAME", "X-Device-Fingerprint")
-    fp = (request.META.get(f"HTTP_{hdr.upper().replace('-', '_')}", "") or "").strip()
+    fp = (request.META.get(
+        f"HTTP_{hdr.upper().replace('-', '_')}", "") or "").strip()
     return fp
 
 
@@ -97,7 +196,8 @@ def _job_has_file(job: GenerationJob) -> bool:
 
 def _mark_photo_viewed_once(_request: HttpRequest, photo_id: int) -> None:
     """Инкремент счётчика просмотров (простая модель, без дедупликации)."""
-    PublicPhoto.objects.filter(pk=photo_id).update(view_count=F("view_count") + 1)
+    PublicPhoto.objects.filter(pk=photo_id).update(
+        view_count=F("view_count") + 1)
 
 
 # ───────────────────────── LIST / INDEX ─────────────────────────
@@ -127,7 +227,8 @@ def index(request: HttpRequest) -> HttpResponse:
                 slug = slugify(name)[:80]
 
             if Category.objects.filter(slug=slug).exists():
-                messages.error(request, "Категория с таким слагом уже существует.")
+                messages.error(
+                    request, "Категория с таким слагом уже существует.")
                 return redirect("gallery:index")
 
             Category.objects.create(name=name, slug=slug)
@@ -164,8 +265,29 @@ def index(request: HttpRequest) -> HttpResponse:
                 messages.error(request, "Можно загружать только изображения.")
                 return redirect("gallery:index")
 
+            # Сохранить изображение как WEBP в медиа-папку проекта
+            try:
+                data = file.read()
+                saved_name = _save_optimized_webp_bytes(
+                    data,
+                    subdir="public",
+                    filename_base=(title or getattr(file, "name", "image"))
+                )
+            except Exception:
+                # Фолбэк: сохранить исходник как есть
+                try:
+                    dst_dir = f"public/{timezone.now():%Y/%m}/"
+                    storage_name = default_storage.generate_filename(
+                        dst_dir + (getattr(file, "name", "image.jpg")))
+                    saved_name = default_storage.save(
+                        storage_name,
+                        ContentFile(data if 'data' in locals() and data else file.read())
+                    )
+                except Exception:
+                    saved_name = default_storage.save(getattr(file, "name", "image.jpg"), file)
+
             photo = PublicPhoto.objects.create(
-                image=file,
+                image=saved_name,
                 title=title,
                 caption=desc,
                 uploaded_by=request.user,
@@ -192,18 +314,32 @@ def index(request: HttpRequest) -> HttpResponse:
             desc = (request.POST.get("video_desc") or "").strip()
             cat_id = request.POST.get("video_category")
             is_public = bool(request.POST.get("video_is_public"))
-            video_url = (request.POST.get("video_url") or "").strip()
+            video_file = request.FILES.get("video_file")
             thumbnail_file = request.FILES.get("video_thumbnail")
 
             if not title:
                 messages.error(request, "Введите заголовок видео.")
                 return redirect("gallery:index")
-            if not video_url:
-                messages.error(request, "Введите URL видео.")
+            if not video_file:
+                messages.error(request, "Загрузите MP4 файл.")
+                return redirect("gallery:index")
+            ctype = (getattr(video_file, "content_type", "") or "").lower()
+            if "mp4" not in ctype and not (getattr(video_file, "name", "").lower().endswith(".mp4")):
+                messages.error(request, "Поддерживается только MP4.")
                 return redirect("gallery:index")
 
+            try:
+                optimized_url = _save_optimized_mp4(video_file)
+            except Exception:
+                # Фолбэк — сохраняем исходник как есть
+                dst_dir = f"public_videos/{timezone.now():%Y/%m}/"
+                storage_name = default_storage.generate_filename(
+                    dst_dir + (getattr(video_file, "name", "video.mp4")))
+                storage_name = default_storage.save(storage_name, video_file)
+                optimized_url = default_storage.url(storage_name)
+
             video = PublicVideo.objects.create(
-                video_url=video_url,
+                video_url=optimized_url,
                 thumbnail=thumbnail_file,
                 title=title,
                 caption=desc,
@@ -235,7 +371,8 @@ def index(request: HttpRequest) -> HttpResponse:
                 slug = slugify(name)[:80]
 
             if VideoCategory.objects.filter(slug=slug).exists():
-                messages.error(request, "Категория видео с таким слагом уже существует.")
+                messages.error(
+                    request, "Категория видео с таким слагом уже существует.")
                 return redirect("gallery:index")
 
             VideoCategory.objects.create(name=name, slug=slug)
@@ -262,13 +399,29 @@ def index(request: HttpRequest) -> HttpResponse:
     # ───────── Дальше — обычный GET ─────────
     # ФОТО: только изображения (НЕ видео)
     if request.user.is_authenticated:
+        # Общее количество фото (как в my-jobs)
+        my_photos_total = (
+            GenerationJob.objects
+            .filter(
+                user=request.user,
+                status__in=[GenerationJob.Status.DONE,
+                            GenerationJob.Status.PENDING_MODERATION]
+            )
+            .exclude(generation_type='video')
+            .filter(persisted=True)
+            .count()
+        )
+
+        # Берем только 6 для отображения
         my_thumbs = (
             GenerationJob.objects
             .filter(
                 user=request.user,
-                status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION]
+                status__in=[GenerationJob.Status.DONE,
+                            GenerationJob.Status.PENDING_MODERATION]
             )
-            .exclude(generation_type='video')  # Исключаем видео!
+            .exclude(generation_type='video')
+            .filter(persisted=True)
             .order_by("-created_at")[:6]
         )
     else:
@@ -280,7 +433,8 @@ def index(request: HttpRequest) -> HttpResponse:
         fp = _get_fp_from_request(request) or _hard_fingerprint(request)
 
         # Строим запрос с учетом всех идентификаторов
-        q = Q(user__isnull=True, status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION])
+        q = Q(user__isnull=True, status__in=[
+              GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION])
         guest_filters = Q()
 
         if skey:
@@ -297,20 +451,29 @@ def index(request: HttpRequest) -> HttpResponse:
             # Если нет идентификаторов, возвращаем пустой queryset
             q &= Q(pk__isnull=True)
 
+        # Общее количество фото для гостей
+        my_photos_total = GenerationJob.objects.filter(
+            q).exclude(generation_type='video').filter(persisted=True).count()
+
+        # Берем только 6 для отображения
         my_thumbs = (
             GenerationJob.objects
             .filter(q)
-            .exclude(generation_type='video')  # Исключаем видео!
+            .exclude(generation_type='video')
+            .filter(persisted=True)
             .order_by("-created_at")[:6]
         )
 
     cat_slug = (request.GET.get("cat") or "").strip()
+    vcat_slug = (request.GET.get("vcat") or "").strip()
+    vcat_id_raw = request.GET.get("vcat_id")
     categories = Category.objects.all()
     video_categories = VideoCategory.objects.all()
 
     # ПУБЛИЧНЫЕ ФОТО
     photos_qs = (
         PublicPhoto.objects.filter(is_active=True)
+        .annotate(saves_count=Count("saves", distinct=True))
         .select_related("uploaded_by", "category")
         .order_by("order", "-created_at")
     )
@@ -318,6 +481,7 @@ def index(request: HttpRequest) -> HttpResponse:
     # ПУБЛИЧНЫЕ ВИДЕО
     videos_qs = (
         PublicVideo.objects.filter(is_active=True)
+        .annotate(saves_count=Count("saves", distinct=True))
         .select_related("uploaded_by", "category")
         .order_by("order", "-created_at")
     )
@@ -328,20 +492,99 @@ def index(request: HttpRequest) -> HttpResponse:
         if active_category:
             if hasattr(PublicPhoto, "categories"):
                 photos_qs = photos_qs.filter(categories__slug=cat_slug)
-                videos_qs = videos_qs.filter(categories__slug=cat_slug)
             else:
                 photos_qs = photos_qs.filter(category__slug=cat_slug)
-                videos_qs = videos_qs.filter(category__slug=cat_slug)
 
-    paginator = Paginator(photos_qs, 6)
+    # Video category filtering (independent from photo category)
+    active_video_category = None
+    # Prefer explicit vcat_id if provided (robust even if some categories have empty slug)
+    if vcat_id_raw:
+        try:
+            vcat_id = int(vcat_id_raw)
+        except (TypeError, ValueError):
+            vcat_id = None
+        if vcat_id:
+            active_video_category = VideoCategory.objects.filter(pk=vcat_id).first()
+            if active_video_category:
+                # Keep slug in sync for templates / JS helpers
+                if not vcat_slug:
+                    vcat_slug = active_video_category.slug or ""
+                videos_qs = videos_qs.filter(category=active_video_category)
+    elif vcat_slug:
+        active_video_category = VideoCategory.objects.filter(slug=vcat_slug).first()
+        if active_video_category:
+            videos_qs = videos_qs.filter(category__slug=vcat_slug)
+
+    # Hide publications linked to hidden source jobs (not visible to others)
+    try:
+        from .models import JobHide
+        # Determine relation name on PublicPhoto dynamically: source_job or job
+        pf_names = {f.name for f in PublicPhoto._meta.get_fields()}
+        photo_rel_id = "source_job_id" if "source_job" in pf_names else (
+            "job_id" if "job" in pf_names else None)
+        if photo_rel_id:
+            photos_qs = photos_qs.annotate(
+                hidden_by_owner=Exists(
+                    JobHide.objects.filter(user=OuterRef(
+                        "uploaded_by_id"), job_id=OuterRef(photo_rel_id))
+                )
+            )
+        videos_qs = videos_qs.annotate(
+            hidden_by_owner=Exists(
+                JobHide.objects.filter(user=OuterRef(
+                    "uploaded_by_id"), job_id=OuterRef("source_job_id"))
+            )
+        )
+        if request.user.is_authenticated:
+            if photo_rel_id:
+                photos_qs = photos_qs.filter(
+                    Q(hidden_by_owner=False) | Q(uploaded_by_id=request.user.id))
+            videos_qs = videos_qs.filter(
+                Q(hidden_by_owner=False) | Q(uploaded_by_id=request.user.id))
+        else:
+            if photo_rel_id:
+                photos_qs = photos_qs.filter(hidden_by_owner=False)
+            videos_qs = videos_qs.filter(hidden_by_owner=False)
+    except Exception:
+        pass
+
+    # Instagram-like feed ordering for authenticated users:
+    #  - first show posts from followings
+    #  - then recommendations (others), keeping overall recency/popularity order
+    if request.user.is_authenticated:
+        try:
+            followed_ids = list(Follow.objects.filter(
+                follower=request.user).values_list("following_id", flat=True))
+        except Exception:
+            followed_ids = []
+
+        if followed_ids:
+            photos_qs = photos_qs.annotate(
+                feed_priority=Case(
+                    When(uploaded_by_id__in=followed_ids, then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
+            ).order_by("feed_priority", "-created_at", "-likes_count", "-view_count")
+
+            videos_qs = videos_qs.annotate(
+                feed_priority=Case(
+                    When(uploaded_by_id__in=followed_ids, then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
+            ).order_by("feed_priority", "-created_at", "-likes_count", "-view_count")
+
+    paginator = Paginator(photos_qs, 500)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
 
-    videos_paginator = Paginator(videos_qs, 6)
+    videos_paginator = Paginator(videos_qs, 500)
     videos_page_obj = videos_paginator.get_page(request.GET.get("vpage") or 1)
 
     # Определяем лайкнутые ФОТО на странице
     liked_photo_ids: set[int] = set()
-    page_photo_ids = list(page_obj.object_list.values_list("id", flat=True)) if page_obj.object_list else []
+    page_photo_ids = list(page_obj.object_list.values_list(
+        "id", flat=True)) if page_obj.object_list else []
     if page_photo_ids:
         if request.user.is_authenticated:
             liked_photo_ids = set(
@@ -357,9 +600,19 @@ def index(request: HttpRequest) -> HttpResponse:
                 ).values_list("photo_id", flat=True)
             )
 
+    # Определяем сохранённые ФОТО на странице (только для авторизованных)
+    saved_photo_ids: set[int] = set()
+    if page_photo_ids and request.user.is_authenticated:
+        saved_photo_ids = set(
+            PhotoSave.objects.filter(
+                user=request.user, photo_id__in=page_photo_ids)
+            .values_list("photo_id", flat=True)
+        )
+
     # Определяем лайкнутые ВИДЕО на странице
     liked_video_ids: set[int] = set()
-    page_video_ids = list(videos_page_obj.object_list.values_list("id", flat=True)) if videos_page_obj.object_list else []
+    page_video_ids = list(videos_page_obj.object_list.values_list(
+        "id", flat=True)) if videos_page_obj.object_list else []
     if page_video_ids:
         if request.user.is_authenticated:
             liked_video_ids = set(
@@ -375,6 +628,15 @@ def index(request: HttpRequest) -> HttpResponse:
                 ).values_list("video_id", flat=True)
             )
 
+    # Определяем сохранённые ВИДЕО на странице (только для авторизованных)
+    saved_video_ids: set[int] = set()
+    if page_video_ids and request.user.is_authenticated:
+        saved_video_ids = set(
+            VideoSave.objects.filter(
+                user=request.user, video_id__in=page_video_ids)
+            .values_list("video_id", flat=True)
+        )
+
     # Определяем статус публикации для my_thumbs
     published_job_ids = set()
     if my_thumbs:
@@ -388,21 +650,45 @@ def index(request: HttpRequest) -> HttpResponse:
 
     # Получаем видео для пользователя С ПРЕВЬЮ
     my_videos = []
+    my_videos_total = 0
     if request.user.is_authenticated:
-        videos_qs = (
-            Image.objects.filter(user=request.user, is_video=True)
-            .select_related('generation_job')
+        # Общее количество видео (как в my-jobs)
+        my_videos_total = (
+            GenerationJob.objects
+            .filter(
+                user=request.user,
+                generation_type='video',
+                status__in=[GenerationJob.Status.DONE,
+                            GenerationJob.Status.PENDING_MODERATION]
+            )
+            .filter(persisted=True)
+            .count()
+        )
+
+        # ВАЖНО: формируем список из GenerationJob, чтобы удалённые в my_jobs не попадали в «Мои генерации»
+        video_jobs = (
+            GenerationJob.objects
+            .filter(
+                user=request.user,
+                generation_type='video',
+                status__in=[GenerationJob.Status.DONE,
+                            GenerationJob.Status.PENDING_MODERATION]
+            )
+            .filter(persisted=True)
+            .select_related("video_model")
             .order_by("-created_at")[:6]
         )
         my_videos = [
             {
-                'id': v.id,
-                'video_url': v.image_url,
-                'thumbnail_url': v.generation_job.result_image.url if v.generation_job and v.generation_job.result_image else None,
-                'prompt': v.prompt,
-                'created_at': v.created_at,
+                'id': job.id,
+                'video_url': (job.result_video_url or ''),
+                'thumbnail_url': (job.result_image.url if job.result_image else None),
+                'prompt': job.prompt,
+                'created_at': job.created_at,
+                'model_id': job.model_id,
+                'video_model': job.video_model,
             }
-            for v in videos_qs
+            for job in video_jobs if job.result_video_url
         ]
     else:
         # Для гостей ищем видео по идентификаторам через GenerationJob
@@ -411,7 +697,8 @@ def index(request: HttpRequest) -> HttpResponse:
         gid = _guest_cookie_id(request) or ""
         fp = _get_fp_from_request(request) or _hard_fingerprint(request)
 
-        q = Q(user__isnull=True, generation_type='video', status__in=[GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION])
+        q = Q(user__isnull=True, generation_type='video', status__in=[
+              GenerationJob.Status.DONE, GenerationJob.Status.PENDING_MODERATION])
         guest_filters = Q()
 
         if skey:
@@ -426,13 +713,25 @@ def index(request: HttpRequest) -> HttpResponse:
         else:
             q &= Q(pk__isnull=True)
 
-        video_jobs = GenerationJob.objects.filter(q).order_by("-created_at")[:6]
+        # Общее количество видео для гостей
+        my_videos_total = GenerationJob.objects.filter(q).filter(persisted=True).count()
+
+        video_jobs = (
+            GenerationJob.objects
+            .filter(q)
+            .filter(persisted=True)
+            .select_related("video_model")
+            .order_by("-created_at")[:6]
+        )
         my_videos = [
             {
                 'id': job.id,
                 'video_url': job.result_video_url,
+                'thumbnail_url': (job.result_image.url if job.result_image else None),
                 'prompt': job.prompt,
                 'created_at': job.created_at,
+                'model_id': job.model_id,
+                'video_model': job.video_model,
             }
             for job in video_jobs if job.result_video_url
         ]
@@ -442,22 +741,28 @@ def index(request: HttpRequest) -> HttpResponse:
         "gallery/index.html",
         {
             "my_thumbs": my_thumbs,
+            "my_photos_total": my_photos_total,
             "my_videos": my_videos,
+            "my_videos_total": my_videos_total,
             "published_job_ids": published_job_ids,
             "categories": categories,
             "video_categories": video_categories,
             "active_category": active_category,
+            "active_video_category": active_video_category,
             "public_photos": page_obj.object_list,
             "page_obj": page_obj,
             "liked_photo_ids": liked_photo_ids,
+            "saved_photo_ids": saved_photo_ids,
             "public_videos": videos_page_obj.object_list,
             "videos_page_obj": videos_page_obj,
             "liked_video_ids": liked_video_ids,
+            "saved_video_ids": saved_video_ids,
             "cat_slug": cat_slug,
+            "vcat_slug": vcat_slug,
             "pending_count": PublicPhoto.objects.filter(is_active=False).count()
-                if request.user.is_staff else 0,
+            if request.user.is_staff else 0,
             "pending_videos_count": PublicVideo.objects.filter(is_active=False).count()
-                if request.user.is_staff else 0,
+            if request.user.is_staff else 0,
         },
     )
 
@@ -473,7 +778,8 @@ def trending(request: HttpRequest) -> HttpResponse:
     mode = (request.GET.get("by") or "views").lower()
     page_num = request.GET.get("page", 1)
 
-    cache_key = f"trending_{mode}_{page_num}"
+    user_key = f"u{request.user.id}" if request.user.is_authenticated else "anon"
+    cache_key = f"trending_{mode}_{page_num}_{user_key}"
     cached_result = cache.get(cache_key)
     if cached_result and not settings.DEBUG:
         return cached_result
@@ -482,26 +788,51 @@ def trending(request: HttpRequest) -> HttpResponse:
 
     base_qs = (
         PublicPhoto.objects.filter(is_active=True)
+        .annotate(saves_count=Count("saves", distinct=True))
         .select_related("category", "uploaded_by")
         .only("id", "image", "title", "caption", "created_at", "view_count", "likes_count",
               "category__name", "uploaded_by__username")
     )
+    # Hide publications with hidden source jobs (not visible to others)
+    try:
+        from .models import JobHide
+        # Detect relation name dynamically on PublicPhoto
+        pf_names = {f.name for f in PublicPhoto._meta.get_fields()}
+        photo_rel_id = "source_job_id" if "source_job" in pf_names else (
+            "job_id" if "job" in pf_names else None)
+        if photo_rel_id:
+            base_qs = base_qs.annotate(
+                hidden_by_owner=Exists(
+                    JobHide.objects.filter(user=OuterRef(
+                        "uploaded_by_id"), job_id=OuterRef(photo_rel_id))
+                )
+            )
+            if request.user.is_authenticated:
+                base_qs = base_qs.filter(Q(hidden_by_owner=False) | Q(
+                    uploaded_by_id=request.user.id))
+            else:
+                base_qs = base_qs.filter(hidden_by_owner=False)
+    except Exception:
+        pass
 
     if mode == "likes":
-        photos_qs = base_qs.order_by("-likes_count", "-view_count", "-created_at")
+        photos_qs = base_qs.order_by(
+            "-likes_count", "-view_count", "-created_at")
     elif mode == "new":
         photos_qs = (
             base_qs.filter(created_at__gte=now - timedelta(days=10))
                    .order_by("-created_at", "-likes_count", "-view_count")
         )
     else:  # views
-        photos_qs = base_qs.order_by("-view_count", "-likes_count", "-created_at")
+        photos_qs = base_qs.order_by(
+            "-view_count", "-likes_count", "-created_at")
 
-    paginator = Paginator(photos_qs, 12)
+    paginator = Paginator(photos_qs, 500)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
 
     liked_photo_ids: set[int] = set()
-    page_photo_ids = list(page_obj.object_list.values_list("id", flat=True)) if page_obj.object_list else []
+    page_photo_ids = list(page_obj.object_list.values_list(
+        "id", flat=True)) if page_obj.object_list else []
     if page_photo_ids:
         if request.user.is_authenticated:
             liked_photo_ids = set(
@@ -516,16 +847,131 @@ def trending(request: HttpRequest) -> HttpResponse:
                     user__isnull=True, session_key=skey, photo_id__in=page_photo_ids
                 ).values_list("photo_id", flat=True)
             )
+    # Saved photos on page (for initial bookmark state)
+    saved_photo_ids: set[int] = set()
+    if page_photo_ids and request.user.is_authenticated:
+        saved_photo_ids = set(
+            PhotoSave.objects.filter(
+                user=request.user, photo_id__in=page_photo_ids)
+            .values_list("photo_id", flat=True)
+        )
+
+    # Precompute all photo modes for in-place switching (no network on click)
+    photos_views_qs = base_qs.order_by("-view_count", "-likes_count", "-created_at")
+    photos_likes_qs = base_qs.order_by("-likes_count", "-view_count", "-created_at")
+    photos_new_qs = base_qs.filter(created_at__gte=now - timedelta(days=10)).order_by("-created_at", "-likes_count", "-view_count")
+
+    def _ids_for_photos(qs):
+        ids = list(qs.values_list("id", flat=True)[:500])
+        _liked = set()
+        _saved = set()
+        if ids:
+            if request.user.is_authenticated:
+                _liked = set(PhotoLike.objects.filter(user=request.user, photo_id__in=ids).values_list("photo_id", flat=True))
+                _saved = set(PhotoSave.objects.filter(user=request.user, photo_id__in=ids).values_list("photo_id", flat=True))
+            else:
+                skey2 = _ensure_session_key(request)
+                _liked = set(PhotoLike.objects.filter(user__isnull=True, session_key=skey2, photo_id__in=ids).values_list("photo_id", flat=True))
+        return ids, _liked, _saved
+
+    ids_v, liked_photo_ids_views, saved_photo_ids_views = _ids_for_photos(photos_views_qs)
+    ids_l, liked_photo_ids_likes, saved_photo_ids_likes = _ids_for_photos(photos_likes_qs)
+    ids_n, liked_photo_ids_new, saved_photo_ids_new = _ids_for_photos(photos_new_qs)
+
+    photos_views = list(photos_views_qs.filter(id__in=ids_v))
+    photos_likes = list(photos_likes_qs.filter(id__in=ids_l))
+    photos_new = list(photos_new_qs.filter(id__in=ids_n))
+
+    # Precompute all video modes for in-place switching
+    videos_base_qs = (
+        PublicVideo.objects.filter(is_active=True)
+        .annotate(saves_count=Count("saves", distinct=True))
+        .select_related("category", "uploaded_by")
+        .only(
+            "id",
+            "thumbnail",
+            "video_url",
+            "title",
+            "caption",
+            "created_at",
+            "view_count",
+            "likes_count",
+            "category__name",
+            "uploaded_by__username",
+        )
+    )
+    try:
+        from .models import JobHide
+        videos_base_qs = videos_base_qs.annotate(
+            hidden_by_owner=Exists(
+                JobHide.objects.filter(user=OuterRef("uploaded_by_id"), job_id=OuterRef("source_job_id"))
+            )
+        )
+        if request.user.is_authenticated:
+            videos_base_qs = videos_base_qs.filter(Q(hidden_by_owner=False) | Q(uploaded_by_id=request.user.id))
+        else:
+            videos_base_qs = videos_base_qs.filter(hidden_by_owner=False)
+    except Exception:
+        pass
+
+    videos_views_qs = videos_base_qs.order_by("-view_count", "-likes_count", "-created_at")
+    videos_likes_qs = videos_base_qs.order_by("-likes_count", "-view_count", "-created_at")
+    videos_new_qs = videos_base_qs.filter(created_at__gte=now - timedelta(days=10)).order_by("-created_at", "-likes_count", "-view_count")
+
+    def _ids_for_videos(qs):
+        ids = list(qs.values_list("id", flat=True)[:500])
+        _liked = set()
+        _saved = set()
+        if ids:
+            if request.user.is_authenticated:
+                _liked = set(VideoLike.objects.filter(user=request.user, video_id__in=ids).values_list("video_id", flat=True))
+                _saved = set(VideoSave.objects.filter(user=request.user, video_id__in=ids).values_list("video_id", flat=True))
+            else:
+                skey2 = _ensure_session_key(request)
+                _liked = set(VideoLike.objects.filter(user__isnull=True, session_key=skey2, video_id__in=ids).values_list("video_id", flat=True))
+        return ids, _liked, _saved
+
+    vids_v, liked_video_ids_views, saved_video_ids_views = _ids_for_videos(videos_views_qs)
+    vids_l, liked_video_ids_likes, saved_video_ids_likes = _ids_for_videos(videos_likes_qs)
+    vids_n, liked_video_ids_new, saved_video_ids_new = _ids_for_videos(videos_new_qs)
+
+    videos_views = list(videos_views_qs.filter(id__in=vids_v))
+    videos_likes = list(videos_likes_qs.filter(id__in=vids_l))
+    videos_new = list(videos_new_qs.filter(id__in=vids_n))
 
     return render(
         request,
         "gallery/trending.html",
         {
+            # Current (for initial view/render)
             "trending_photos": page_obj.object_list,
             "page_obj": page_obj,
             "paginator": paginator,
             "active_mode": mode,
             "liked_photo_ids": liked_photo_ids,
+            "saved_photo_ids": saved_photo_ids,
+
+            # Pre-rendered photos (all modes)
+            "photos_views": photos_views,
+            "photos_likes": photos_likes,
+            "photos_new": photos_new,
+            "liked_photo_ids_views": liked_photo_ids_views,
+            "liked_photo_ids_likes": liked_photo_ids_likes,
+            "liked_photo_ids_new": liked_photo_ids_new,
+            "saved_photo_ids_views": saved_photo_ids_views,
+            "saved_photo_ids_likes": saved_photo_ids_likes,
+            "saved_photo_ids_new": saved_photo_ids_new,
+
+            # Pre-rendered videos (all modes)
+            "videos_views": videos_views,
+            "videos_likes": videos_likes,
+            "videos_new": videos_new,
+            "liked_video_ids_views": liked_video_ids_views,
+            "liked_video_ids_likes": liked_video_ids_likes,
+            "liked_video_ids_new": liked_video_ids_new,
+            "saved_video_ids_views": saved_video_ids_views,
+            "saved_video_ids_likes": saved_video_ids_likes,
+            "saved_video_ids_new": saved_video_ids_new,
         },
     )
 
@@ -533,54 +979,126 @@ def trending(request: HttpRequest) -> HttpResponse:
 def trending_snippet(request: HttpRequest) -> HttpResponse:
     """
     Возвращает HTML-фрагмент сетки трендов для подгрузки на главной странице без перехода.
-    Поддерживает те же параметры, что и trending: by=views|likes|new, page (по умолчанию 1).
+    Поддерживает параметры: by=views|likes|new.
+    Выводим смешанную ленту (фото + видео) с тем же режимом сортировки.
     """
-    mode = (request.GET.get("by") or "likes").lower()  # для главной по умолчанию показываем лайки
+    mode = (request.GET.get("by") or "likes").lower()
     now = timezone.now()
 
-    base_qs = (
+    # Photos base
+    photos_base_qs = (
         PublicPhoto.objects.filter(is_active=True)
+        .annotate(saves_count=Count("saves", distinct=True))
         .select_related("category", "uploaded_by")
     )
+    # Hide hidden-by-owner photos
+    try:
+        from .models import JobHide
+        pf_names = {f.name for f in PublicPhoto._meta.get_fields()}
+        photo_rel_id = "source_job_id" if "source_job" in pf_names else (
+            "job_id" if "job" in pf_names else None)
+        if photo_rel_id:
+            photos_base_qs = photos_base_qs.annotate(
+                hidden_by_owner=Exists(
+                    JobHide.objects.filter(user=OuterRef("uploaded_by_id"), job_id=OuterRef(photo_rel_id))
+                )
+            )
+            if request.user.is_authenticated:
+                photos_base_qs = photos_base_qs.filter(Q(hidden_by_owner=False) | Q(uploaded_by_id=request.user.id))
+            else:
+                photos_base_qs = photos_base_qs.filter(hidden_by_owner=False)
+    except Exception:
+        pass
 
     if mode == "likes":
-        photos_qs = base_qs.order_by("-likes_count", "-view_count", "-created_at")
+        photos_qs = photos_base_qs.order_by("-likes_count", "-view_count", "-created_at")
     elif mode == "new":
-        photos_qs = (
-            base_qs.filter(created_at__gte=now - timedelta(days=10))
-                   .order_by("-created_at", "-likes_count", "-view_count")
-        )
+        photos_qs = photos_base_qs.filter(created_at__gte=now - timedelta(days=10)).order_by("-created_at", "-likes_count", "-view_count")
     else:  # views
-        photos_qs = base_qs.order_by("-view_count", "-likes_count", "-created_at")
+        photos_qs = photos_base_qs.order_by("-view_count", "-likes_count", "-created_at")
 
-    paginator = Paginator(photos_qs, 8)  # на главной выводим 8 карточек
-    page_obj = paginator.get_page(request.GET.get("page") or 1)
+    # Videos base
+    videos_base_qs = (
+        PublicVideo.objects.filter(is_active=True)
+        .annotate(saves_count=Count("saves", distinct=True))
+        .select_related("category", "uploaded_by")
+    )
+    try:
+        from .models import JobHide
+        videos_base_qs = videos_base_qs.annotate(
+            hidden_by_owner=Exists(
+                JobHide.objects.filter(user=OuterRef("uploaded_by_id"), job_id=OuterRef("source_job_id"))
+            )
+        )
+        if request.user.is_authenticated:
+            videos_base_qs = videos_base_qs.filter(Q(hidden_by_owner=False) | Q(uploaded_by_id=request.user.id))
+        else:
+            videos_base_qs = videos_base_qs.filter(hidden_by_owner=False)
+    except Exception:
+        pass
 
+    if mode == "likes":
+        videos_qs = videos_base_qs.order_by("-likes_count", "-view_count", "-created_at")
+    elif mode == "new":
+        videos_qs = videos_base_qs.filter(created_at__gte=now - timedelta(days=10)).order_by("-created_at", "-likes_count", "-view_count")
+    else:
+        videos_qs = videos_base_qs.order_by("-view_count", "-likes_count", "-created_at")
+
+    # Pick top items and mix
+    photos_list = list(photos_qs[:8])
+    videos_list = list(videos_qs[:8])
+
+    def _mix_lists(a, b, limit=8):
+        out = []
+        i = j = 0
+        while len(out) < limit and (i < len(a) or j < len(b)):
+            if i < len(a):
+                out.append({"kind": "photo", "obj": a[i]})
+                i += 1
+                if len(out) >= limit:
+                    break
+            if j < len(b):
+                out.append({"kind": "video", "obj": b[j]})
+                j += 1
+        return out
+
+    trending_items = _mix_lists(photos_list, videos_list, 8)
+
+    # Liked sets for current page items
     liked_photo_ids: set[int] = set()
-    page_photo_ids = list(page_obj.object_list.values_list("id", flat=True)) if page_obj.object_list else []
+    page_photo_ids = [p.id for p in photos_list]
     if page_photo_ids:
         if request.user.is_authenticated:
             liked_photo_ids = set(
-                PhotoLike.objects.filter(
-                    user=request.user, photo_id__in=page_photo_ids
-                ).values_list("photo_id", flat=True)
+                PhotoLike.objects.filter(user=request.user, photo_id__in=page_photo_ids).values_list("photo_id", flat=True)
             )
         else:
             skey = _ensure_session_key(request)
             liked_photo_ids = set(
-                PhotoLike.objects.filter(
-                    user__isnull=True, session_key=skey, photo_id__in=page_photo_ids
-                ).values_list("photo_id", flat=True)
+                PhotoLike.objects.filter(user__isnull=True, session_key=skey, photo_id__in=page_photo_ids).values_list("photo_id", flat=True)
             )
 
-    # Рендерим только сетку карточек, чтобы вставить внутрь контейнера на главной
+    liked_video_ids: set[int] = set()
+    page_video_ids = [v.id for v in videos_list]
+    if page_video_ids:
+        if request.user.is_authenticated:
+            liked_video_ids = set(
+                VideoLike.objects.filter(user=request.user, video_id__in=page_video_ids).values_list("video_id", flat=True)
+            )
+        else:
+            skey = _ensure_session_key(request)
+            liked_video_ids = set(
+                VideoLike.objects.filter(user__isnull=True, session_key=skey, video_id__in=page_video_ids).values_list("video_id", flat=True)
+            )
+
     return render(
         request,
         "includes/trending_gallery_grid.html",
         {
-            "trending_photos": page_obj.object_list,
+            "trending_items": trending_items,
             "active_mode": mode,
             "liked_photo_ids": liked_photo_ids,
+            "liked_video_ids": liked_video_ids,
         },
     )
 
@@ -593,12 +1111,31 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
         pk=pk,
         is_active=True,
     )
+    # Canonicalize: always redirect legacy /gallery/photo/<pk> to slug URL /gallery/<slug>
+    if getattr(photo, "slug", None):
+        return redirect(photo.get_absolute_url())
+
+    # Respect owner's hide setting: hidden publications are not visible to others
+    try:
+        from .models import JobHide
+        job_id = getattr(photo, "source_job_id", None)
+        if job_id is None:
+            job_id = getattr(photo, "job_id", None)
+        if job_id:
+            is_hidden = JobHide.objects.filter(
+                user=photo.uploaded_by, job_id=job_id).exists()
+            if is_hidden and (not request.user.is_authenticated or request.user.id != photo.uploaded_by_id):
+                from django.http import Http404
+                raise Http404()
+    except Exception:
+        pass
 
     # инкремент view_count
     _ensure_session_key(request)
     _mark_photo_viewed_once(request, photo.pk)
     try:
-        photo.refresh_from_db(fields=["view_count", "likes_count", "comments_count"])
+        photo.refresh_from_db(
+            fields=["view_count", "likes_count", "comments_count"])
     except Exception:
         pass
 
@@ -613,10 +1150,12 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
     # «уже лайкнуто» — и для юзера, и для гостя
     liked = False
     if request.user.is_authenticated:
-        liked = PhotoLike.objects.filter(user=request.user, photo=photo).exists()
+        liked = PhotoLike.objects.filter(
+            user=request.user, photo=photo).exists()
     else:
         skey = _ensure_session_key(request)
-        liked = PhotoLike.objects.filter(user__isnull=True, session_key=skey, photo=photo).exists()
+        liked = PhotoLike.objects.filter(
+            user__isnull=True, session_key=skey, photo=photo).exists()
 
     # Определяем лайкнутые комментарии для текущего пользователя/гостя
     liked_comment_ids: set[int] = set()
@@ -644,7 +1183,8 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
     # ───────── Похожие изображения (по категории; фолбэк — топ по лайкам) ─────────
     try:
         related_photos = []
-        base_qs = PublicPhoto.objects.filter(is_active=True).exclude(pk=photo.pk)
+        base_qs = PublicPhoto.objects.filter(
+            is_active=True).exclude(pk=photo.pk)
         # По категории
         if getattr(photo, "category_id", None):
             related_photos = list(
@@ -706,7 +1246,8 @@ def photo_like(request: HttpRequest, pk: int) -> HttpResponse:
 
         if request.user.is_authenticated:
             # Есть ли уже пользовательский лайк?
-            existing = PhotoLike.objects.select_for_update().filter(photo=photo, user=request.user).first()
+            existing = PhotoLike.objects.select_for_update().filter(
+                photo=photo, user=request.user).first()
             if existing:
                 existing.delete()
                 delta -= 1
@@ -719,7 +1260,8 @@ def photo_like(request: HttpRequest, pk: int) -> HttpResponse:
                         photo=photo, user__isnull=True, session_key=skey
                     ).delete()[0]
                 # Создаём пользовательский
-                PhotoLike.objects.create(photo=photo, user=request.user, session_key="")
+                PhotoLike.objects.create(
+                    photo=photo, user=request.user, session_key="")
                 delta += 1
                 # Компенсируем удалённый гостевой, чтобы общий счётчик не «скакал»
                 delta -= removed_guest
@@ -737,7 +1279,8 @@ def photo_like(request: HttpRequest, pk: int) -> HttpResponse:
                 delta -= 1
                 liked = False
             else:
-                PhotoLike.objects.create(photo=photo, user=None, session_key=skey)
+                PhotoLike.objects.create(
+                    photo=photo, user=None, session_key=skey)
                 delta += 1
                 liked = True
 
@@ -748,7 +1291,22 @@ def photo_like(request: HttpRequest, pk: int) -> HttpResponse:
             )
 
         # Берём актуальное значение из БД
-        new_count = PublicPhoto.objects.filter(pk=photo.pk).values_list("likes_count", flat=True).first() or 0
+        new_count = PublicPhoto.objects.filter(pk=photo.pk).values_list(
+            "likes_count", flat=True).first() or 0
+
+        # Уведомление автору фото о лайке
+        try:
+            if liked and request.user.is_authenticated and getattr(photo, "uploaded_by_id", None) and request.user.id != photo.uploaded_by_id:
+                Notification.create(
+                    recipient=photo.uploaded_by,
+                    actor=request.user,
+                    type=Notification.Type.LIKE_PHOTO,
+                    message=f"@{request.user.username} понравилось ваше фото",
+                    link=reverse("gallery:photo_detail", args=[photo.pk]),
+                    payload={"photo_id": photo.pk, "count": int(new_count)},
+                )
+        except Exception:
+            pass
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({"ok": True, "liked": liked, "count": new_count})
@@ -756,6 +1314,80 @@ def photo_like(request: HttpRequest, pk: int) -> HttpResponse:
         request.META.get("HTTP_REFERER")
         or reverse("gallery:photo_detail", args=[pk])
     )
+
+
+@login_required
+@require_POST
+def photo_save_toggle(request: HttpRequest, pk: int) -> HttpResponse:
+    """
+    Тоггл «Сохранить» (закладка) для публичного фото. Только для авторизованных.
+    Возвращает JSON: { ok, saved, count }
+    """
+    try:
+        photo = PublicPhoto.objects.get(pk=pk, is_active=True)
+    except PublicPhoto.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Photo not found"}, status=404)
+
+    saved = False
+    with transaction.atomic():
+        existing = PhotoSave.objects.select_for_update().filter(
+            photo=photo, user=request.user).first()
+        if existing:
+            existing.delete()
+            saved = False
+        else:
+            PhotoSave.objects.create(photo=photo, user=request.user)
+            saved = True
+
+    new_count = PhotoSave.objects.filter(photo=photo).count()
+    return JsonResponse({"ok": True, "saved": saved, "count": new_count}, status=200)
+
+
+def photo_likers(request: HttpRequest, pk: int) -> HttpResponse:
+    """
+    Список лайкнувших фото (только пользователи, без гостевых лайков).
+    Возвращает JSON: [{username, name, avatar, is_following}]
+    """
+    from dashboard.models import Follow
+    photo = get_object_or_404(PublicPhoto, pk=pk, is_active=True)
+
+    likes_qs = (
+        PhotoLike.objects
+        .select_related("user", "user__profile")
+        .filter(photo=photo, user__isnull=False)
+        .order_by("-id")
+    )
+
+    user_ids = list(likes_qs.values_list("user_id", flat=True))
+    following_set: set[int] = set()
+    if request.user.is_authenticated and user_ids:
+        following_set = set(
+            Follow.objects.filter(follower=request.user,
+                                  following_id__in=user_ids)
+            .values_list("following_id", flat=True)
+        )
+
+    def _avatar(u) -> str:
+        try:
+            prof = getattr(u, "profile", None)
+            av = getattr(prof, "avatar", None)
+            return av.url if (av and getattr(av, "url", None)) else ""
+        except Exception:
+            return ""
+
+    data = []
+    for pl in likes_qs:
+        u = pl.user
+        if not u:
+            continue
+        data.append({
+            "username": u.username,
+            "name": (u.get_full_name() or u.username),
+            "avatar": _avatar(u),
+            "is_following": (u.id in following_set),
+        })
+
+    return JsonResponse({"ok": True, "likers": data})
 
 
 # ───────────────────────── LIKE / UNLIKE (комментарий) ─────────────────────────
@@ -773,7 +1405,8 @@ def comment_like(request: HttpRequest, pk: int) -> HttpResponse:
         liked = False
 
         if request.user.is_authenticated:
-            existing = CommentLike.objects.select_for_update().filter(comment=comment, user=request.user).first()
+            existing = CommentLike.objects.select_for_update().filter(
+                comment=comment, user=request.user).first()
             if existing:
                 existing.delete()
                 delta -= 1
@@ -781,8 +1414,10 @@ def comment_like(request: HttpRequest, pk: int) -> HttpResponse:
             else:
                 # Консолидация гостевого лайка этой сессии (если есть)
                 if skey:
-                    CommentLike.objects.filter(comment=comment, user__isnull=True, session_key=skey).delete()
-                CommentLike.objects.create(comment=comment, user=request.user, session_key="")
+                    CommentLike.objects.filter(
+                        comment=comment, user__isnull=True, session_key=skey).delete()
+                CommentLike.objects.create(
+                    comment=comment, user=request.user, session_key="")
                 delta += 1
                 liked = True
         else:
@@ -796,7 +1431,8 @@ def comment_like(request: HttpRequest, pk: int) -> HttpResponse:
                 delta -= 1
                 liked = False
             else:
-                CommentLike.objects.create(comment=comment, user=None, session_key=skey)
+                CommentLike.objects.create(
+                    comment=comment, user=None, session_key=skey)
                 delta += 1
                 liked = True
 
@@ -805,7 +1441,29 @@ def comment_like(request: HttpRequest, pk: int) -> HttpResponse:
             PhotoComment.objects.filter(pk=comment.pk).update(
                 likes_count=Greatest(F("likes_count") + delta, Value(0))
             )
-        new_count = PhotoComment.objects.filter(pk=comment.pk).values_list("likes_count", flat=True).first() or 0
+        new_count = PhotoComment.objects.filter(pk=comment.pk).values_list(
+            "likes_count", flat=True).first() or 0
+
+        # Уведомление автору комментария о лайке
+        try:
+            if liked and request.user.is_authenticated and getattr(comment, "user_id", None) and request.user.id != comment.user_id:
+                anchor_id = comment.pk
+                Notification.create(
+                    recipient=comment.user,
+                    actor=request.user,
+                    type=Notification.Type.COMMENT_LIKE_PHOTO,
+                    message=f"@{request.user.username} понравился ваш комментарий",
+                    link=reverse("gallery:photo_detail", args=[
+                                 comment.photo_id]) + f"#c{anchor_id}",
+                    payload={
+                        "comment_id": comment.pk,
+                        "parent_id": comment.parent_id or 0,
+                        "photo_id": comment.photo_id,
+                        "count": int(new_count),
+                    },
+                )
+        except Exception:
+            pass
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({"ok": True, "liked": liked, "count": new_count})
@@ -830,7 +1488,7 @@ def comment_reply(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect(reverse("gallery:photo_detail", args=[parent.photo_id]))
 
     with transaction.atomic():
-        PhotoComment.objects.create(
+        child = PhotoComment.objects.create(
             photo=parent.photo,
             user=request.user,
             text=form.cleaned_data["text"],
@@ -840,6 +1498,22 @@ def comment_reply(request: HttpRequest, pk: int) -> HttpResponse:
         PublicPhoto.objects.filter(pk=parent.photo_id).update(
             comments_count=F("comments_count") + 1
         )
+
+        # Уведомление автору комментария об ответе
+        try:
+            if request.user.is_authenticated and getattr(parent, "user_id", None) and request.user.id != parent.user_id:
+                Notification.create(
+                    recipient=parent.user,
+                    actor=request.user,
+                    type=Notification.Type.REPLY_PHOTO,
+                    message=f"@{request.user.username} ответил(а) на ваш комментарий",
+                    link=reverse("gallery:photo_detail", args=[
+                                 parent.photo_id]) + f"#c{child.pk}",
+                    payload={"comment_id": parent.pk,
+                             "reply_id": child.pk, "photo_id": parent.photo_id},
+                )
+        except Exception:
+            pass
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({"ok": True})
@@ -865,18 +1539,29 @@ def share_from_job(request, job_id: int):
         return redirect("dashboard:my_jobs")
 
     if request.method == "POST":
-        form = ShareFromJobForm(request.POST)
+        # ФОТО: используем форму с категориями фото
+        form = SharePhotoFromJobForm(request.POST)
         if form.is_valid():
-            title   = form.cleaned_data.get("title", "")
+            title = form.cleaned_data.get("title", "")
             caption = form.cleaned_data.get("caption", "")
 
-            # скопировать файл из job.result_image в публичную папку
-            src_file = job.result_image
-            src_name = src_file.name.rsplit("/", 1)[-1]
-            dst_dir  = f"public/{job.created_at:%Y/%m}/"
-            dst_path = default_storage.generate_filename(dst_dir + src_name)
-            with default_storage.open(src_file.name, "rb") as fh:
-                saved_name = default_storage.save(dst_path, ContentFile(fh.read()))
+            # Сжать изображение в WEBP и сохранить в медиа-папку проекта
+            try:
+                with default_storage.open(job.result_image.name, "rb") as fh:
+                    data = fh.read()
+                saved_name = _save_optimized_webp_bytes(
+                    data,
+                    subdir="public",
+                    filename_base=f"job_{job.pk}"
+                )
+            except Exception:
+                # Фолбэк: копия исходника как есть
+                src_file = job.result_image
+                src_name = src_file.name.rsplit("/", 1)[-1]
+                dst_dir = f"public/{job.created_at:%Y/%m}/"
+                dst_path = default_storage.generate_filename(dst_dir + src_name)
+                with default_storage.open(src_file.name, "rb") as fh:
+                    saved_name = default_storage.save(dst_path, ContentFile(fh.read()))
 
             # если не админ — уходит на модерацию
             will_publish_now = request.user.is_staff
@@ -914,7 +1599,9 @@ def share_from_job(request, job_id: int):
             )
             return redirect("gallery:index")
     else:
-        form = ShareFromJobForm(initial={"title": (job.prompt or "").strip()[:140], "caption": ""})
+        # ФОТО: форма с категорий фото (без автозаполнения промпта)
+        form = SharePhotoFromJobForm(
+            initial={"title": "", "caption": ""})
 
     return render(
         request,
@@ -932,8 +1619,10 @@ def share_from_job(request, job_id: int):
 @staff_member_required
 def moderation(request: HttpRequest) -> HttpResponse:
     """Список работ, ожидающих публикации - фото и видео."""
-    pending_photos = PublicPhoto.objects.filter(is_active=False).select_related("uploaded_by").order_by("-created_at")
-    pending_videos = PublicVideo.objects.filter(is_active=False).select_related("uploaded_by").order_by("-created_at")
+    pending_photos = PublicPhoto.objects.filter(
+        is_active=False).select_related("uploaded_by").order_by("-created_at")
+    pending_videos = PublicVideo.objects.filter(
+        is_active=False).select_related("uploaded_by").order_by("-created_at")
 
     return render(request, "gallery/moderation.html", {
         "pending_photos": pending_photos,
@@ -986,7 +1675,8 @@ def job_delete(request: HttpRequest, pk: int) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
 
     if getattr(job, "is_public", False) and not request.user.is_staff:
-        messages.error(request, "Публичные работы может удалять только администратор.")
+        messages.error(
+            request, "Публичные работы может удалять только администратор.")
         return redirect(request.POST.get("next") or "dashboard:my_jobs")
 
     if (job.user_id != request.user.id) and (not request.user.is_staff):
@@ -996,6 +1686,12 @@ def job_delete(request: HttpRequest, pk: int) -> HttpResponse:
     try:
         if getattr(job, "result_image", None) and job.result_image.name:
             job.result_image.delete(save=False)
+    except Exception:
+        pass
+
+    # Удаляем связанные элементы личной галереи (включая видео-плитки в «Мои генерации»)
+    try:
+        Image.objects.filter(generation_job=job).delete()
     except Exception:
         pass
 
@@ -1020,8 +1716,29 @@ def public_add(request: HttpRequest) -> HttpResponse:
         messages.error(request, "Можно загружать только изображения.")
         return redirect("gallery:index")
 
+    # Сохранить изображение как WEBP в медиа-папку проекта
+    try:
+        data = file.read()
+        saved_name = _save_optimized_webp_bytes(
+            data,
+            subdir="public",
+            filename_base=(title or getattr(file, "name", "image"))
+        )
+    except Exception:
+        # Фолбэк: сохранить исходник как есть
+        try:
+            dst_dir = f"public/{timezone.now():%Y/%m}/"
+            storage_name = default_storage.generate_filename(
+                dst_dir + (getattr(file, "name", "image.jpg")))
+            saved_name = default_storage.save(
+                storage_name,
+                ContentFile(data if 'data' in locals() and data else file.read())
+            )
+        except Exception:
+            saved_name = default_storage.save(getattr(file, "name", "image.jpg"), file)
+
     PublicPhoto.objects.create(
-        image=file, title=title, caption=caption, uploaded_by=request.user
+        image=saved_name, title=title, caption=caption, uploaded_by=request.user
     )
     messages.success(request, "Фото добавлено в публичную ленту.")
     return redirect("gallery:index")
@@ -1062,7 +1779,8 @@ def category_add(request: HttpRequest) -> HttpResponse:
                 order = 0
 
             if Category.objects.filter(slug=slug).exists():
-                messages.error(request, "Категория с таким слагом уже существует.")
+                messages.error(
+                    request, "Категория с таким слагом уже существует.")
             else:
                 Category.objects.create(
                     name=name, slug=slug, order=order, is_active=is_active
@@ -1097,7 +1815,8 @@ def photo_edit(request: HttpRequest, pk: int) -> HttpResponse:
     title, caption, is_active, category (если поле существует у модели).
     """
     photo = get_object_or_404(PublicPhoto, pk=pk)
-    next_url = request.GET.get("next") or reverse("gallery:photo_detail", args=[photo.pk])
+    next_url = request.GET.get("next") or reverse(
+        "gallery:photo_detail", args=[photo.pk])
 
     if request.method == "POST":
         title = (request.POST.get("title") or "").strip()
@@ -1191,7 +1910,184 @@ def photo_comment(request: HttpRequest, pk: int) -> HttpResponse:
             comments_count=F("comments_count") + 1
         )
 
+        # Уведомление автору фото о новом комментарии
+        try:
+            if request.user.is_authenticated and getattr(photo, "uploaded_by_id", None) and request.user.id != photo.uploaded_by_id:
+                Notification.create(
+                    recipient=photo.uploaded_by,
+                    actor=request.user,
+                    type=Notification.Type.COMMENT_PHOTO,
+                    message=f"@{request.user.username} прокомментировал(а) ваше фото",
+                    link=reverse("gallery:photo_detail", args=[
+                                 photo.pk]) + "#comments",
+                    payload={"photo_id": photo.pk},
+                )
+        except Exception:
+            pass
+
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({"ok": True})
 
     return redirect(reverse("gallery:photo_detail", args=[pk]))
+
+
+# ───────────────────────── SLUG DETAIL (фото/видео) ─────────────────────────
+
+def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
+    """Детальная страница фото по slug без префикса /photo/."""
+    photo = get_object_or_404(
+        PublicPhoto.objects.select_related("uploaded_by", "category"),
+        slug=slug,
+        is_active=True,
+    )
+
+    # Respect owner's hide setting
+    try:
+        from .models import JobHide
+        job_id = getattr(photo, "source_job_id", None)
+        if job_id is None:
+            job_id = getattr(photo, "job_id", None)
+        if job_id:
+            is_hidden = JobHide.objects.filter(
+                user=photo.uploaded_by, job_id=job_id).exists()
+            if is_hidden and (not request.user.is_authenticated or request.user.id != photo.uploaded_by_id):
+                from django.http import Http404
+                raise Http404()
+    except Exception:
+        pass
+
+    # increment views
+    _ensure_session_key(request)
+    _mark_photo_viewed_once(request, photo.pk)
+    try:
+        photo.refresh_from_db(fields=["view_count", "likes_count", "comments_count"])
+    except Exception:
+        pass
+
+    # root comments
+    comments = (
+        photo.comments.select_related("user")
+        .prefetch_related("replies__user", "likes")
+        .filter(is_visible=True, parent__isnull=True)
+        .order_by("created_at")
+    )
+
+    # already liked
+    if request.user.is_authenticated:
+        liked = PhotoLike.objects.filter(user=request.user, photo=photo).exists()
+    else:
+        skey = _ensure_session_key(request)
+        liked = PhotoLike.objects.filter(user__isnull=True, session_key=skey, photo=photo).exists()
+
+    # liked comment ids
+    liked_comment_ids: set[int] = set()
+    all_comment_ids = []
+    for c in comments:
+        all_comment_ids.append(c.pk)
+        for r in c.replies.all():
+            all_comment_ids.append(r.pk)
+    if all_comment_ids:
+        if request.user.is_authenticated:
+            liked_comment_ids = set(
+                CommentLike.objects.filter(
+                    user=request.user, comment_id__in=all_comment_ids
+                ).values_list("comment_id", flat=True)
+            )
+        else:
+            skey = _ensure_session_key(request)
+            liked_comment_ids = set(
+                CommentLike.objects.filter(
+                    user__isnull=True, session_key=skey, comment_id__in=all_comment_ids
+                ).values_list("comment_id", flat=True)
+            )
+
+    # Related photos (by category or top)
+    try:
+        related_photos = []
+        base_qs = PublicPhoto.objects.filter(is_active=True).exclude(pk=photo.pk)
+        if getattr(photo, "category_id", None):
+            related_photos = list(
+                base_qs.filter(category_id=photo.category_id)
+                .order_by("-likes_count", "-view_count", "-created_at")[:8]
+            )
+        if len(related_photos) < 8:
+            exclude_ids = [photo.pk] + [p.pk for p in related_photos]
+            fill = list(
+                PublicPhoto.objects.filter(is_active=True)
+                .exclude(pk__in=exclude_ids)
+                .order_by("-likes_count", "-view_count", "-created_at")[: 8 - len(related_photos)]
+            )
+            related_photos.extend(fill)
+    except Exception:
+        related_photos = []
+
+    return render(
+        request,
+        "gallery/detail.html",
+        {
+            "photo": photo,
+            "comments": comments,
+            "liked": liked,
+            "liked_comment_ids": liked_comment_ids,
+            "comment_form": PhotoCommentForm(),
+            "related_photos": related_photos,
+        },
+    )
+
+
+def category_content_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
+    """
+    SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug>
+    - Сначала ищем фото по Category.slug + PublicPhoto.slug
+    - Если не нашли — ищем видео по VideoCategory.slug + PublicVideo.slug
+    """
+    # Пытаемся как фото
+    try:
+        category = Category.objects.filter(slug=category_slug).first()
+        if category:
+            photo = PublicPhoto.objects.filter(
+                slug=content_slug,
+                category=category,
+                is_active=True
+            ).first()
+            if photo:
+                return photo_detail_by_slug(request, content_slug)
+    except Exception:
+        pass
+
+    # Пытаемся как видео
+    try:
+        video_category = VideoCategory.objects.filter(slug=category_slug).first()
+        if video_category:
+            video = PublicVideo.objects.filter(
+                slug=content_slug,
+                category=video_category,
+                is_active=True
+            ).first()
+            if video:
+                from . import views_video as vvid
+                return vvid.video_detail(request, content_slug)
+    except Exception:
+        pass
+
+    # Если не нашли ни фото, ни видео - 404
+    from django.http import Http404
+    raise Http404("Content not found")
+
+
+def slug_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    """
+    Универсальный детальный маршрут по слагу:
+    - Сначала ищем фото по PublicPhoto.slug
+    - Если не нашли — ищем видео по PublicVideo.slug
+    """
+    # Пытаемся как фото
+    try:
+        if PublicPhoto.objects.filter(slug=slug, is_active=True).exists():
+            return photo_detail_by_slug(request, slug)
+    except Exception:
+        pass
+
+    # Пытаемся как видео
+    from . import views_video as vvid
+    return vvid.video_detail(request, slug)

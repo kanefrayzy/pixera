@@ -15,6 +15,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+# Import ReferenceImage model
+from .models_reference import ReferenceImage
+
 
 # ====== helpers / defaults ====================================================
 
@@ -37,6 +40,7 @@ def abuse_guest_jobs_limit() -> int:
     """Сколько бесплатных обработок можно сделать на кластер (по умолчанию 3)."""
     return int(getattr(settings, "ABUSE_MAX_GUEST_JOBS", 3) or 3)
 
+
 log = logging.getLogger(__name__)
 
 
@@ -55,7 +59,8 @@ class AbuseCluster(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     # счётчик бесплатных «обработок» (в штуках, не токенах)
-    guest_jobs_limit = models.PositiveIntegerField(default=abuse_guest_jobs_limit)
+    guest_jobs_limit = models.PositiveIntegerField(
+        default=abuse_guest_jobs_limit)
     guest_jobs_used = models.PositiveIntegerField(default=0)
 
     note = models.CharField(max_length=240, blank=True, default="")
@@ -98,9 +103,12 @@ class AbuseCluster(models.Model):
         """
         for other in (o for o in others if o and o.pk and o.pk != self.pk):
             AbuseIdentifier.objects.filter(cluster=other).update(cluster=self)
-            self.guest_jobs_limit = max(int(self.guest_jobs_limit), int(other.guest_jobs_limit))
-            self.guest_jobs_used = max(int(self.guest_jobs_used), int(other.guest_jobs_used))
-            self.save(update_fields=["guest_jobs_limit", "guest_jobs_used", "updated_at"])
+            self.guest_jobs_limit = max(
+                int(self.guest_jobs_limit), int(other.guest_jobs_limit))
+            self.guest_jobs_used = max(
+                int(self.guest_jobs_used), int(other.guest_jobs_used))
+            self.save(update_fields=["guest_jobs_limit",
+                      "guest_jobs_used", "updated_at"])
             other.delete()
         return self
 
@@ -134,7 +142,8 @@ class AbuseCluster(models.Model):
         for _, kind, val in probe:
             if not val:
                 continue
-            ident = AbuseIdentifier.objects.filter(kind=kind, value=AbuseIdentifier.normalize(kind, val)).select_related("cluster").first()
+            ident = AbuseIdentifier.objects.filter(kind=kind, value=AbuseIdentifier.normalize(
+                kind, val)).select_related("cluster").first()
             if ident:
                 ids.append(ident)
                 if ident.cluster_id:
@@ -165,15 +174,16 @@ class AbuseCluster(models.Model):
 class AbuseIdentifier(models.Model):
     """Уникальный идентификатор (kind + value), привязан к кластеру."""
     class Kind(models.TextChoices):
-        FP   = "fp", "Fingerprint"
-        GID  = "gid", "Cookie GID"
-        IP   = "ip", "IP hash"
-        UA   = "ua", "UA hash"
+        FP = "fp", "Fingerprint"
+        GID = "gid", "Cookie GID"
+        IP = "ip", "IP hash"
+        UA = "ua", "UA hash"
         USER = "user", "User ID"
 
     kind = models.CharField(max_length=8, choices=Kind.choices, db_index=True)
     value = models.CharField(max_length=128, db_index=True)
-    cluster = models.ForeignKey(AbuseCluster, related_name="identifiers", on_delete=models.CASCADE)
+    cluster = models.ForeignKey(
+        AbuseCluster, related_name="identifiers", on_delete=models.CASCADE)
 
     first_seen = models.DateTimeField(auto_now_add=True, db_index=True)
     last_seen = models.DateTimeField(auto_now=True)
@@ -182,7 +192,8 @@ class AbuseIdentifier(models.Model):
         verbose_name = "Анти-абуз идентификатор"
         verbose_name_plural = "Анти-абуз идентификаторы"
         constraints = [
-            models.UniqueConstraint(fields=["kind", "value"], name="uq_abuse_identifier_kind_value"),
+            models.UniqueConstraint(
+                fields=["kind", "value"], name="uq_abuse_identifier_kind_value"),
         ]
         indexes = [
             models.Index(fields=("kind", "value")),
@@ -218,7 +229,8 @@ class SuggestionCategory(models.Model):
     """Категория для подсказок (видна в UI над полем промпта)."""
     name = models.CharField("Название", max_length=80, unique=True)
     slug = models.SlugField("Слаг", max_length=80, unique=True, db_index=True)
-    description = models.CharField("Описание", max_length=200, blank=True, default="")
+    description = models.CharField(
+        "Описание", max_length=200, blank=True, default="")
     order = models.PositiveIntegerField(default=0, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
 
@@ -267,7 +279,8 @@ class PromptCategory(models.Model):
     name = models.CharField("Название", max_length=100, unique=True)
     slug = models.SlugField("Слаг", max_length=100, unique=True, db_index=True)
     description = models.TextField("Описание", blank=True, default="")
-    image = models.ImageField("Изображение категории", upload_to="prompt_categories/")
+    image = models.ImageField(
+        "Изображение категории", upload_to="prompt_categories/", blank=True, null=True)
     order = models.PositiveIntegerField("Порядок", default=0, db_index=True)
     is_active = models.BooleanField("Активна", default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -295,6 +308,42 @@ class PromptCategory(models.Model):
         return self.prompts.filter(is_active=True).count()
 
 
+class PromptSubcategory(models.Model):
+    """Подкатегория внутри категории промптов (второй уровень навигации)."""
+    category = models.ForeignKey(
+        "PromptCategory",
+        on_delete=models.CASCADE,
+        related_name="subcategories",
+        verbose_name="Категория"
+    )
+    name = models.CharField("Название", max_length=120)
+    slug = models.SlugField("Слаг", max_length=140, db_index=True)
+    description = models.TextField("Описание", blank=True, default="")
+    order = models.PositiveIntegerField("Порядок", default=0, db_index=True)
+    is_active = models.BooleanField("Активна", default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("order", "name")
+        verbose_name = "Подкатегория промптов"
+        verbose_name_plural = "Подкатегории промптов"
+        constraints = [
+            models.UniqueConstraint(fields=["category", "slug"], name="uq_prompt_subcat_category_slug"),
+        ]
+        indexes = [
+            models.Index(fields=["category", "is_active", "order"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.category.name} / {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name or "")[:140]
+        super().save(*args, **kwargs)
+
+
 class CategoryPrompt(models.Model):
     """Промпт внутри категории."""
     category = models.ForeignKey(
@@ -302,6 +351,14 @@ class CategoryPrompt(models.Model):
         on_delete=models.CASCADE,
         related_name="prompts",
         verbose_name="Категория"
+    )
+    subcategory = models.ForeignKey(
+        "PromptSubcategory",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="prompts",
+        verbose_name="Подкатегория"
     )
     title = models.CharField("Заголовок", max_length=150)
     prompt_text = models.TextField("Текст промпта")
@@ -321,11 +378,12 @@ class CategoryPrompt(models.Model):
         verbose_name_plural = "Промпты категорий"
         indexes = [
             models.Index(fields=["category", "is_active", "order"]),
+            models.Index(fields=["subcategory", "is_active", "order"]),
         ]
 
     def __str__(self) -> str:
         return f"{self.category.name}: {self.title}"
-    
+
     def get_prompt_for_generation(self) -> str:
         """Возвращает английский промпт если есть, иначе русский."""
         return self.prompt_en.strip() if self.prompt_en.strip() else self.prompt_text
@@ -385,19 +443,20 @@ class ShowcaseImage(models.Model):
 
     def __str__(self) -> str:
         return self.title or f"Showcase #{self.pk}"
-    
+
     def get_all_images(self):
         """Возвращает список всех изображений (основное + дополнительные)"""
         images = []
         if self.image:
             images.append(self.image.url)
-        
+
         # Получаем дополнительные изображения с полными объектами
-        additional_objs = self.additional_images.filter(is_active=True).order_by('order')
+        additional_objs = self.additional_images.filter(
+            is_active=True).order_by('order')
         for add_img in additional_objs:
             if add_img.image:
                 images.append(add_img.image.url)
-        
+
         return images
 
     def _make_thumbnail(self, image_field, width: int = 480, quality: int = 70) -> Optional[str]:
@@ -424,7 +483,8 @@ class ShowcaseImage(models.Model):
                 new_h = max(1, int(h * (width / float(w))))
                 im = im.resize((int(width), int(new_h)), Image.LANCZOS)
                 buf = io.BytesIO()
-                im.save(buf, format="JPEG", quality=int(quality), optimize=True, progressive=True)
+                im.save(buf, format="JPEG", quality=int(
+                    quality), optimize=True, progressive=True)
                 buf.seek(0)
                 default_storage.save(thumb_name, ContentFile(buf.read()))
             return default_storage.url(thumb_name)
@@ -443,7 +503,8 @@ class ShowcaseImage(models.Model):
                 "thumb": self._make_thumbnail(self.image, width=width, quality=quality),
                 "full": getattr(self.image, "url", None)
             })
-        additional_objs = self.additional_images.filter(is_active=True).order_by('order')
+        additional_objs = self.additional_images.filter(
+            is_active=True).order_by('order')
         for add_img in additional_objs:
             if add_img.image:
                 out.append({
@@ -461,9 +522,12 @@ class ShowcaseAdditionalImage(models.Model):
         related_name="additional_images",
         verbose_name="Пример"
     )
-    image = models.ImageField(upload_to="showcase/%Y/%m/additional/", verbose_name="Изображение")
-    order = models.PositiveIntegerField(default=0, db_index=True, verbose_name="Порядок")
-    is_active = models.BooleanField(default=True, db_index=True, verbose_name="Активно")
+    image = models.ImageField(
+        upload_to="showcase/%Y/%m/additional/", verbose_name="Изображение")
+    order = models.PositiveIntegerField(
+        default=0, db_index=True, verbose_name="Порядок")
+    is_active = models.BooleanField(
+        default=True, db_index=True, verbose_name="Активно")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -479,24 +543,44 @@ class ShowcaseAdditionalImage(models.Model):
 
 class VideoModel(models.Model):
     """Модель для генерации видео через Runware API."""
-    
+
     class Category(models.TextChoices):
         T2V = "t2v", "Text-to-Video"
         I2V = "i2v", "Image-to-Video"
         ANIME = "anime", "Anime"
-    
+
+    class ReferenceType(models.TextChoices):
+        """Типы входных данных для видео-моделей."""
+        FRAME_IMAGES = "frameImages", "Frame Images"
+        REFERENCE_IMAGES = "referenceImages", "Reference Images"
+        AUDIO_INPUTS = "audioInputs", "Audio Inputs"
+        CONTROL_NET = "controlNet", "ControlNet"
+
     name = models.CharField("Название", max_length=100)
-    model_id = models.CharField("ID модели", max_length=50, unique=True, db_index=True)
-    category = models.CharField("Категория", max_length=20, choices=Category.choices, default=Category.T2V)
+    model_id = models.CharField(
+        "ID модели", max_length=50, unique=True, db_index=True)
+    category = models.CharField(
+        "Категория", max_length=20, choices=Category.choices, default=Category.T2V)
     description = models.TextField("Описание", blank=True, default="")
     token_cost = models.PositiveIntegerField("Стоимость в токенах", default=18)
-    max_duration = models.PositiveIntegerField("Макс. длительность (сек)", default=8)
-    max_resolution = models.CharField("Макс. разрешение", max_length=20, default="1920x1080")
+    max_duration = models.PositiveIntegerField(
+        "Макс. длительность (сек)", default=8)
+    max_resolution = models.CharField(
+        "Макс. разрешение", max_length=20, default="1920x1080")
+
+    # Поддерживаемые типы референсов (JSON: список строк из ReferenceType)
+    supported_references = models.JSONField(
+        "Поддерживаемые референсы",
+        default=list,
+        blank=True,
+        help_text="Типы входных данных, которые поддерживает модель (frameImages, referenceImages, audioInputs, controlNet)"
+    )
+
     is_active = models.BooleanField("Активна", default=True, db_index=True)
     order = models.PositiveIntegerField("Порядок", default=0, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ("order", "name")
         verbose_name = "Модель видео"
@@ -504,17 +588,25 @@ class VideoModel(models.Model):
         indexes = [
             models.Index(fields=["is_active", "category", "order"]),
         ]
-    
+
     def __str__(self) -> str:
         return f"{self.name} ({self.model_id}) - {self.token_cost} TOK"
 
 
 class VideoPromptCategory(models.Model):
     """Категория промптов для видео (аналог PromptCategory для изображений)."""
+
+    class Mode(models.TextChoices):
+        I2V = "i2v", "Image-to-Video"
+        T2V = "t2v", "Text-to-Video"
+
     name = models.CharField("Название", max_length=100, unique=True)
     slug = models.SlugField("Слаг", max_length=100, unique=True, db_index=True)
     description = models.TextField("Описание", blank=True, default="")
-    image = models.ImageField("Изображение категории", upload_to="video_prompt_categories/")
+    image = models.ImageField(
+        "Изображение категории", upload_to="video_prompt_categories/", blank=True, null=True)
+    mode = models.CharField(
+        "Режим", max_length=10, choices=Mode.choices, default=Mode.T2V, db_index=True)
     order = models.PositiveIntegerField("Порядок", default=0, db_index=True)
     is_active = models.BooleanField("Активна", default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -525,7 +617,7 @@ class VideoPromptCategory(models.Model):
         verbose_name = "Категория промптов видео"
         verbose_name_plural = "Категории промптов видео"
         indexes = [
-            models.Index(fields=["is_active", "order"]),
+            models.Index(fields=["is_active", "mode", "order"]),
         ]
 
     def __str__(self) -> str:
@@ -542,6 +634,42 @@ class VideoPromptCategory(models.Model):
         return self.video_prompts.filter(is_active=True).count()
 
 
+class VideoPromptSubcategory(models.Model):
+    """Подкатегория внутри категории видеопромптов (второй уровень)."""
+    category = models.ForeignKey(
+        "VideoPromptCategory",
+        on_delete=models.CASCADE,
+        related_name="subcategories",
+        verbose_name="Категория"
+    )
+    name = models.CharField("Название", max_length=120)
+    slug = models.SlugField("Слаг", max_length=140, db_index=True)
+    description = models.TextField("Описание", blank=True, default="")
+    order = models.PositiveIntegerField("Порядок", default=0, db_index=True)
+    is_active = models.BooleanField("Активна", default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("order", "name")
+        verbose_name = "Подкатегория видеопромптов"
+        verbose_name_plural = "Подкатегории видеопромптов"
+        constraints = [
+            models.UniqueConstraint(fields=["category", "slug"], name="uq_video_prompt_subcat_category_slug"),
+        ]
+        indexes = [
+            models.Index(fields=["category", "is_active", "order"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.category.name} / {self.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name or "")[:140]
+        super().save(*args, **kwargs)
+
+
 class VideoPrompt(models.Model):
     """Промпт для генерации видео внутри категории."""
     category = models.ForeignKey(
@@ -549,6 +677,14 @@ class VideoPrompt(models.Model):
         on_delete=models.CASCADE,
         related_name="video_prompts",
         verbose_name="Категория"
+    )
+    subcategory = models.ForeignKey(
+        "VideoPromptSubcategory",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="video_prompts",
+        verbose_name="Подкатегория"
     )
     title = models.CharField("Заголовок", max_length=150)
     prompt_text = models.TextField("Текст промпта")
@@ -568,11 +704,12 @@ class VideoPrompt(models.Model):
         verbose_name_plural = "Промпты видео"
         indexes = [
             models.Index(fields=["category", "is_active", "order"]),
+            models.Index(fields=["subcategory", "is_active", "order"]),
         ]
 
     def __str__(self) -> str:
         return f"{self.category.name}: {self.title}"
-    
+
     def get_prompt_for_generation(self) -> str:
         """Возвращает английский промпт если есть, иначе русский."""
         return self.prompt_en.strip() if self.prompt_en.strip() else self.prompt_text
@@ -580,10 +717,18 @@ class VideoPrompt(models.Model):
 
 class ShowcaseVideo(models.Model):
     """Примеры видео для витрины (аналог ShowcaseImage)."""
+
+    class Mode(models.TextChoices):
+        I2V = "i2v", "Image-to-Video"
+        T2V = "t2v", "Text-to-Video"
+
     video_url = models.URLField("URL видео", max_length=500)
-    thumbnail = models.ImageField("Превью", upload_to="video_thumbnails/%Y/%m/")
+    thumbnail = models.ImageField(
+        "Превью", upload_to="video_thumbnails/%Y/%m/", blank=True)
     title = models.CharField("Название", max_length=140)
     prompt = models.TextField("Промпт", blank=True, default="")
+    mode = models.CharField(
+        "Режим", max_length=10, choices=Mode.choices, default=Mode.T2V, db_index=True)
     category = models.ForeignKey(
         ShowcaseCategory,
         null=True, blank=True,
@@ -601,12 +746,15 @@ class ShowcaseVideo(models.Model):
         verbose_name="Загрузил"
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    
+
     class Meta:
         ordering = ("order", "-created_at")
         verbose_name = "Пример видео"
         verbose_name_plural = "Примеры видео"
-    
+        indexes = [
+            models.Index(fields=["is_active", "mode", "order"]),
+        ]
+
     def __str__(self) -> str:
         return self.title or f"Video #{self.pk}"
 
@@ -618,8 +766,8 @@ class GenerationJob(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "В очереди"
         RUNNING = "RUNNING", "Обработка"
-        DONE    = "DONE",    "Готово"
-        FAILED  = "FAILED",  "Ошибка"
+        DONE = "DONE",    "Готово"
+        FAILED = "FAILED",  "Ошибка"
         PENDING_MODERATION = "PENDING_MODERATION", "Ожидает модерации"
 
     # --- принадлежность и гостевые идентификаторы ---
@@ -630,8 +778,10 @@ class GenerationJob(models.Model):
         related_name="generation_jobs",
     )
     guest_session_key = models.CharField(max_length=64, blank=True, default="")
-    guest_gid = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    guest_fp  = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    guest_gid = models.CharField(
+        max_length=64, blank=True, default="", db_index=True)
+    guest_fp = models.CharField(
+        max_length=64, blank=True, default="", db_index=True)
 
     cluster = models.ForeignKey(
         "AbuseCluster",
@@ -647,12 +797,13 @@ class GenerationJob(models.Model):
         default="image",
         db_index=True
     )
-    
+
     # --- параметры генерации ---
     prompt = models.TextField()
-    original_prompt = models.TextField(blank=True, default="", help_text="Оригинальный промпт до перевода")
+    original_prompt = models.TextField(
+        blank=True, default="", help_text="Оригинальный промпт до перевода")
     model_id = models.CharField(max_length=100, default=default_model_id)
-    
+
     # --- параметры видео (если generation_type == 'video') ---
     video_model = models.ForeignKey(
         "VideoModel",
@@ -661,15 +812,22 @@ class GenerationJob(models.Model):
         related_name="jobs",
         verbose_name="Модель видео"
     )
-    video_duration = models.PositiveIntegerField("Длительность видео (сек)", null=True, blank=True)
-    video_aspect_ratio = models.CharField("Соотношение сторон", max_length=10, blank=True, default="")  # 16:9, 9:16, 1:1
-    video_resolution = models.CharField("Разрешение", max_length=20, blank=True, default="")
-    video_camera_movement = models.CharField("Движение камеры", max_length=50, blank=True, default="")
-    video_seed = models.CharField("Seed", max_length=50, blank=True, default="")
-    
+    video_duration = models.PositiveIntegerField(
+        "Длительность видео (сек)", null=True, blank=True)
+    video_aspect_ratio = models.CharField(
+        "Соотношение сторон", max_length=10, blank=True, default="")  # 16:9, 9:16, 1:1
+    video_resolution = models.CharField(
+        "Разрешение", max_length=20, blank=True, default="")
+    video_camera_movement = models.CharField(
+        "Движение камеры", max_length=50, blank=True, default="")
+    video_seed = models.CharField(
+        "Seed", max_length=50, blank=True, default="")
+
     # --- для Image-to-Video ---
-    video_source_image = models.ImageField("Исходное изображение", upload_to="video_sources/%Y/%m/", null=True, blank=True)
-    video_motion_strength = models.PositiveIntegerField("Сила движения", null=True, blank=True, default=45)
+    video_source_image = models.ImageField(
+        "Исходное изображение", upload_to="video_sources/%Y/%m/", null=True, blank=True)
+    video_motion_strength = models.PositiveIntegerField(
+        "Сила движения", null=True, blank=True, default=45)
 
     # --- статус и ошибки ---
     status = models.CharField(
@@ -678,9 +836,12 @@ class GenerationJob(models.Model):
     error = models.TextField(blank=True, default="")
 
     # --- результат ---
-    result_image = models.ImageField(upload_to="gen/%Y/%m/", null=True, blank=True)
-    result_video_url = models.URLField("URL видео", max_length=500, blank=True, default="")
-    video_cached_until = models.DateTimeField("Видео кешировано до", null=True, blank=True)
+    result_image = models.ImageField(
+        upload_to="gen/%Y/%m/", null=True, blank=True)
+    result_video_url = models.URLField(
+        "URL видео", max_length=500, blank=True, default="")
+    video_cached_until = models.DateTimeField(
+        "Видео кешировано до", null=True, blank=True)
 
     # --- публикация ---
     is_public = models.BooleanField(default=False)
@@ -691,6 +852,11 @@ class GenerationJob(models.Model):
 
     # --- биллинг/токены ---
     tokens_spent = models.PositiveIntegerField(default=0)
+
+    # --- сохранение в "Мои генерации" (новая логика) ---
+    # Новые задачи по умолчанию не попадают в "Мои генерации", пока пользователь не сохранит их вручную.
+    # Для существующих записей выставим True в дата-миграции.
+    persisted = models.BooleanField(default=False, db_index=True)
 
     # --- async Runware ---
     provider_task_uuid = models.CharField(
@@ -776,6 +942,22 @@ class GenerationJob(models.Model):
         self.is_trending = bool(trending)
         self.save(update_fields=["is_public", "is_trending"])
 
+    def get_reference_images(self):
+        """Получить все референсные изображения для этой задачи."""
+        return self.reference_images.all().order_by('order')
+
+    def get_reference_images_urls(self):
+        """Получить список URL всех референсных изображений."""
+        return [ref.image.url for ref in self.get_reference_images() if ref.image]
+
+    def has_reference_images(self) -> bool:
+        """Проверить, есть ли у задачи референсные изображения."""
+        return self.reference_images.exists()
+
+    def reference_images_count(self) -> int:
+        """Количество референсных изображений."""
+        return self.reference_images.count()
+
     @classmethod
     @transaction.atomic
     def claim_for_user(
@@ -816,6 +998,241 @@ class GenerationJob(models.Model):
         return int(updated)
 
 
+# ====== Отслеживание устройств и безопасность ================================
+
+class DeviceFingerprint(models.Model):
+    """
+    Жёсткое отслеживание устройства с 4-этапной защитой.
+    Уровень 1: FP (жёсткий отпечаток браузера)
+    Уровень 2: GID (стойкий cookie)
+    Уровень 3: IP hash (защита от VPN)
+    Уровень 4: UA hash (отпечаток User-Agent)
+    """
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # 4 уровня защиты
+    fp = models.CharField(max_length=64, unique=True, db_index=True, help_text='Жёсткий отпечаток браузера')
+    gid = models.CharField(max_length=64, db_index=True, help_text='Стойкий cookie идентификатор')
+    ip_hash = models.CharField(max_length=64, db_index=True, help_text='Хеш IP адреса')
+    ua_hash = models.CharField(max_length=64, db_index=True, help_text='Хеш User-Agent')
+
+    # Дополнительные данные
+    first_ip = models.GenericIPAddressField(null=True, blank=True, help_text='Первый IP адрес')
+    session_keys = models.JSONField(default=list, help_text='История session keys')
+
+    # Флаги безопасности
+    is_vpn_detected = models.BooleanField(default=False, db_index=True, help_text='Обнаружен VPN')
+    is_incognito_detected = models.BooleanField(default=False, db_index=True, help_text='Обнаружен инкогнито')
+    is_blocked = models.BooleanField(default=False, db_index=True, help_text='Заблокирован за попытки обхода')
+
+    # Счётчики попыток обхода
+    bypass_attempts = models.PositiveIntegerField(default=0, help_text='Попытки обхода системы')
+    last_bypass_attempt = models.DateTimeField(null=True, blank=True)
+
+    # Связь с FreeGrant (один к одному)
+    free_grant = models.OneToOneField(
+        'FreeGrant',
+        on_delete=models.CASCADE,
+        related_name='device_fingerprint',
+        null=True,
+        blank=True,
+        help_text='Связанный грант'
+    )
+
+    class Meta:
+        verbose_name = 'Отпечаток устройства'
+        verbose_name_plural = 'Отпечатки устройств'
+        indexes = [
+            models.Index(fields=['fp', 'is_blocked']),
+            models.Index(fields=['gid', 'is_blocked']),
+            models.Index(fields=['ip_hash', 'is_blocked']),
+            models.Index(fields=['ua_hash', 'is_blocked']),
+            models.Index(fields=['is_blocked', 'created_at']),
+        ]
+
+    def __str__(self) -> str:
+        return f"Device#{self.pk} fp={self.fp[:8]}... blocked={self.is_blocked}"
+
+    @classmethod
+    @transaction.atomic
+    def get_or_create_device(
+        cls,
+        *,
+        fp: str,
+        gid: str,
+        ip_hash: str,
+        ua_hash: str,
+        first_ip: Optional[str] = None,
+        session_key: Optional[str] = None,
+    ) -> tuple["DeviceFingerprint", bool]:
+        """
+        Получить или создать устройство по 4-этапной проверке.
+        Возвращает (device, created).
+
+        ЖЕЛЕЗНАЯ ЛОГИКА:
+        1. Ищем по FP (самый жёсткий идентификатор)
+        2. Если не найдено - проверяем комбинацию GID + IP_HASH + UA_HASH
+        3. Если найдено совпадение по 3 параметрам - это то же устройство
+        4. Иначе создаём новое устройство
+        """
+        fp = (fp or "").strip()
+        gid = (gid or "").strip()
+        ip_hash = (ip_hash or "").strip()
+        ua_hash = (ua_hash or "").strip()
+
+        if not fp:
+            raise ValueError("FP is required for device tracking")
+
+        # Уровень 1: Поиск по FP (самый надёжный)
+        device = cls.objects.filter(fp=fp).first()
+        if device:
+            # Обновляем дополнительные данные если нужно
+            updated = False
+            if gid and not device.gid:
+                device.gid = gid
+                updated = True
+            if ip_hash and device.ip_hash != ip_hash:
+                # IP изменился - возможно VPN
+                if device.ip_hash and device.ip_hash != ip_hash:
+                    device.is_vpn_detected = True
+                device.ip_hash = ip_hash
+                updated = True
+            if ua_hash and not device.ua_hash:
+                device.ua_hash = ua_hash
+                updated = True
+            if first_ip and not device.first_ip:
+                device.first_ip = first_ip
+                updated = True
+            if session_key:
+                keys = device.session_keys or []
+                if session_key not in keys:
+                    keys.append(session_key)
+                    device.session_keys = keys[-10:]  # Храним последние 10
+                    updated = True
+
+            if updated:
+                device.save()
+
+            return device, False
+
+        # Уровень 2-4: Проверка по комбинации GID + IP + UA
+        # Если совпадают все 3 - это попытка обхода через инкогнито
+        if gid and ip_hash and ua_hash:
+            similar = cls.objects.filter(
+                gid=gid,
+                ip_hash=ip_hash,
+                ua_hash=ua_hash
+            ).first()
+
+            if similar:
+                # Обнаружена попытка обхода через инкогнито!
+                similar.is_incognito_detected = True
+                similar.bypass_attempts += 1
+                similar.last_bypass_attempt = timezone.now()
+
+                # Блокируем после 3 попыток
+                if similar.bypass_attempts >= 3:
+                    similar.is_blocked = True
+
+                similar.save()
+
+                # Логируем попытку
+                TokenGrantAttempt.objects.create(
+                    fp=fp,
+                    gid=gid,
+                    ip_hash=ip_hash,
+                    ua_hash=ua_hash,
+                    session_key=session_key or '',
+                    ip_address=first_ip,
+                    was_granted=False,
+                    was_blocked=True,
+                    block_reason='Обнаружена попытка обхода через инкогнито',
+                    device=similar
+                )
+
+                # Возвращаем существующее устройство (заблокированное)
+                return similar, False
+
+        # Создаём новое устройство
+        device = cls.objects.create(
+            fp=fp,
+            gid=gid,
+            ip_hash=ip_hash,
+            ua_hash=ua_hash,
+            first_ip=first_ip,
+            session_keys=[session_key] if session_key else []
+        )
+
+        return device, True
+
+    def can_get_tokens(self) -> tuple[bool, str]:
+        """
+        Проверка: может ли устройство получить токены.
+        Возвращает (can_get, reason).
+        """
+        if self.is_blocked:
+            return False, "Устройство заблокировано за попытки обхода системы"
+
+        if self.free_grant and self.free_grant.left <= 0:
+            return False, "Токены уже использованы"
+
+        return True, ""
+
+    def record_bypass_attempt(self, reason: str = "") -> None:
+        """Записать попытку обхода системы."""
+        self.bypass_attempts += 1
+        self.last_bypass_attempt = timezone.now()
+
+        if self.bypass_attempts >= 3:
+            self.is_blocked = True
+
+        self.save(update_fields=['bypass_attempts', 'last_bypass_attempt', 'is_blocked', 'updated_at'])
+
+
+class TokenGrantAttempt(models.Model):
+    """Лог попыток получения токенов для анализа и безопасности."""
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    # Идентификаторы попытки
+    fp = models.CharField(max_length=64, db_index=True)
+    gid = models.CharField(max_length=64, db_index=True)
+    ip_hash = models.CharField(max_length=64, db_index=True)
+    ua_hash = models.CharField(max_length=64, db_index=True)
+    session_key = models.CharField(max_length=64, blank=True, default='')
+
+    # IP адрес
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    # Результат попытки
+    was_granted = models.BooleanField(default=False, help_text='Были ли выданы токены')
+    was_blocked = models.BooleanField(default=False, help_text='Была ли попытка заблокирована')
+    block_reason = models.CharField(max_length=200, blank=True, default='', help_text='Причина блокировки')
+
+    # Связь с устройством
+    device = models.ForeignKey(
+        'DeviceFingerprint',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='grant_attempts'
+    )
+
+    class Meta:
+        verbose_name = 'Попытка получения токенов'
+        verbose_name_plural = 'Попытки получения токенов'
+        indexes = [
+            models.Index(fields=['fp', 'created_at']),
+            models.Index(fields=['gid', 'created_at']),
+            models.Index(fields=['ip_hash', 'created_at']),
+            models.Index(fields=['was_blocked', 'created_at']),
+        ]
+
+    def __str__(self) -> str:
+        status = "GRANTED" if self.was_granted else ("BLOCKED" if self.was_blocked else "DENIED")
+        return f"Attempt#{self.pk} {status} fp={self.fp[:8]}..."
+
+
 # ====== Бесплатный грант гостя ==============================================
 
 class FreeGrant(models.Model):
@@ -828,10 +1245,13 @@ class FreeGrant(models.Model):
     )
 
     # Идентификаторы гостя
-    gid = models.CharField(max_length=64, blank=True, db_index=True, default="")
+    gid = models.CharField(max_length=64, blank=True,
+                           db_index=True, default="")
     fp = models.CharField(max_length=64, blank=True, db_index=True, default="")
-    ua_hash = models.CharField(max_length=64, blank=True, db_index=True, default="")
-    ip_hash = models.CharField(max_length=64, blank=True, db_index=True, default="")
+    ua_hash = models.CharField(
+        max_length=64, blank=True, db_index=True, default="")
+    ip_hash = models.CharField(
+        max_length=64, blank=True, db_index=True, default="")
     first_ip = models.GenericIPAddressField(null=True, blank=True)
 
     # Лимит и расход (в токенах)
@@ -945,39 +1365,83 @@ class FreeGrant(models.Model):
         if grant:
             changed = False
             if fp and not grant.fp:
-                grant.fp = fp; changed = True
+                grant.fp = fp
+                changed = True
             if gid and not grant.gid:
-                grant.gid = gid; changed = True
+                grant.gid = gid
+                changed = True
             if ua_hash and not grant.ua_hash:
-                grant.ua_hash = ua_hash; changed = True
+                grant.ua_hash = ua_hash
+                changed = True
             if ip_hash and not grant.ip_hash:
-                grant.ip_hash = ip_hash; changed = True
+                grant.ip_hash = ip_hash
+                changed = True
             if first_ip and not grant.first_ip:
-                grant.first_ip = first_ip; changed = True
+                grant.first_ip = first_ip
+                changed = True
             if changed:
-                grant.save(update_fields=["fp", "gid", "ua_hash", "ip_hash", "first_ip", "updated_at"])
+                grant.save(update_fields=[
+                           "fp", "gid", "ua_hash", "ip_hash", "first_ip", "updated_at"])
             return grant
 
         # 2) Фолбэк: «приклеиваемся» к недавнему UA (например, 30 дней)
         if ua_hash:
             since = timezone.now() - timezone.timedelta(days=30)
-            recent = cls.objects.filter(ua_hash=ua_hash, created_at__gte=since).order_by("created_at").first()
+            recent = cls.objects.filter(
+                ua_hash=ua_hash, created_at__gte=since).order_by("created_at").first()
             if recent:
                 changed = False
                 if fp and not recent.fp:
-                    recent.fp = fp; changed = True
+                    recent.fp = fp
+                    changed = True
                 if gid and not recent.gid:
-                    recent.gid = gid; changed = True
+                    recent.gid = gid
+                    changed = True
                 if ip_hash and not recent.ip_hash:
-                    recent.ip_hash = ip_hash; changed = True
+                    recent.ip_hash = ip_hash
+                    changed = True
                 if first_ip and not recent.first_ip:
-                    recent.first_ip = first_ip; changed = True
+                    recent.first_ip = first_ip
+                    changed = True
                 if changed:
-                    recent.save(update_fields=["fp", "gid", "ip_hash", "first_ip", "updated_at"])
+                    recent.save(update_fields=[
+                                "fp", "gid", "ip_hash", "first_ip", "updated_at"])
                 return recent
 
         # 3) Не нашли — создаём новый один раз для этой связки
-        total = int(initial_tokens if initial_tokens is not None else guest_initial_tokens())
+        total = int(
+            initial_tokens if initial_tokens is not None else guest_initial_tokens())
         return cls.objects.create(
             fp=fp, gid=gid, ua_hash=ua_hash, ip_hash=ip_hash, first_ip=first_ip, total=total, consumed=0
         )
+
+
+# ====== Import VideoModelConfiguration =======================================
+# Импортируем новую модель для управления видео моделями
+from .models_video import VideoModelConfiguration
+from .models_image import ImageModelConfiguration
+
+__all__ = [
+    'AbuseCluster',
+    'AbuseIdentifier',
+    'SuggestionCategory',
+    'Suggestion',
+    'PromptCategory',
+    'PromptSubcategory',
+    'CategoryPrompt',
+    'ShowcaseCategory',
+    'ShowcaseImage',
+    'ShowcaseAdditionalImage',
+    'VideoModel',
+    'VideoPromptCategory',
+    'VideoPromptSubcategory',
+    'VideoPrompt',
+    'ShowcaseVideo',
+    'GenerationJob',
+    'DeviceFingerprint',
+    'TokenGrantAttempt',
+    'FreeGrant',
+    'ReferenceImage',
+    'VideoModelConfiguration',
+    'ImageModelConfiguration',
+]

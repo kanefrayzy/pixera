@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 {% load blog_tags %}
 
-{% block title %}AI Gallery — генерация изображений, галерея и блог{% endblock %}
+{% block title %}Pixera — генерация изображений, галерея и блог{% endblock %}
 {% block meta_description %}Онлайн-платформа для генерации ИИ-изображений: мгновенная генерация, аккуратная галерея, редактор промптов, фильтры, тренды и блог с гайдами. Оптимизировано под SEO, работает в тёмной и светлой темах.{% endblock %}
-{% block og_title %}AI Gallery — генерация и поиск вдохновляющих изображений{% endblock %}
+{% block og_title %}Pixera — генерация и поиск вдохновляющих изображений{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
@@ -14,10 +14,10 @@
 {% block extra_meta %}
 <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="AI Gallery">
+<meta property="og:site_name" content="Pixera">
 <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AI Gallery — генерация и поиск изображений">
+<meta name="twitter:title" content="Pixera — генерация и поиск изображений">
 <meta name="twitter:description" content="Генерируйте идеи и находите вдохновение. Красивый интерфейс, стабильная очередь, SEO из коробки.">
 {% endblock %}
 
@@ -79,19 +79,25 @@
         </div>
       </div>
 
-      <div class="hero-image-container">
-        <div class="card p-4 glassframe">
-          <img class="hero-image"
-               src="{% static 'img/bg.png' %}"
-               alt="Пример сгенерированного изображения"
-               onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 600%22&gt;&lt;rect width=%22800%22 height=%22600%22 fill=%22%23e5e7eb%22/&gt;&lt;text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2224%22&gt;AI Generation Preview&lt;/text&gt;&lt;/svg&gt;';" />
+        <div class="hero-image-container">
+          <div class="card p-4 glassframe" data-hero>
+            <div class="hero-frame">
+              <picture>
+                <source srcset="{% static 'img/bg.webp' %}" type="image/webp">
+                <img class="hero-image" data-hero-image
+                     src="{% static 'img/bg.png' %}"
+                     alt="Пример сгенерированного изображения"
+                     loading="eager" fetchpriority="high"
+                     onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 600%22><rect width=%22800%22 height=%22600%22 fill=%22%23e5e7eb%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2224%22>AI Generation Preview</text></svg>';" />
+              </picture>
+            </div>
 
-          <div class="hero-floating-controls">
-            <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]">Realtime</button>
-            <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]">Canvas</button>
-            <button class="btn btn-primary text-xs px-3 py-2 bg-gradient-to-r from-primary to-blue-400 text-white rounded-xl shadow-md hover:opacity-90 transition">Upscale ×4</button>
+            <div class="hero-floating-controls">
+              <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]" data-hero-action="realtime">Realtime</button>
+              <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]" data-hero-action="canvas">Canvas</button>
+              <button class="btn btn-primary text-xs px-3 py-2 bg-gradient-to-r from-primary to-blue-400 text-white rounded-xl shadow-md hover:opacity-90 transition" data-hero-action="upscale">Upscale ×4</button>
+            </div>
           </div>
-        </div>
 
         <div class="floating-element-left">
           <div class="card bg-transparent p-3 rotate-[-6deg]">
@@ -228,7 +234,7 @@
             <div class="tab-panel active" id="prompt" role="tabpanel">
               <div class="relative">
                 <div class="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-black/80 text-white font-mono text-xs sm:text-sm">
-                  <pre class="whitespace-pre-wrap break-words" id="promptText">Ultra-realistic portrait of a gorgeous mulatta woman, same pose and setting as reference, flawless glowing caramel skin, perfect white teeth, elegant refined facial features, natural curls, cinematic warm sunlight through leaves</pre>
+                  <pre class="whitespace-pre-wrap break-words" id="promptText"></pre>
                 </div>
                 <button class="copy-prompt-btn absolute top-2 right-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
                         id="copyPromptBtn"
@@ -265,7 +271,7 @@
             <div class="tab-panel hidden" id="result" role="tabpanel">
               <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                 <img id="resultImage"
-                     src="{% static 'img/woman.webp' %}"
+                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
                      alt="{% trans 'Миниатюра результата' %}"
                      class="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl object-cover"
                      onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22&gt;&lt;rect width=%2264%22 height=%2264%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';">
@@ -300,7 +306,56 @@
 
       <div class="order-1 lg:order-2">
         <div class="relative w-full max-w-sm mx-auto lg:max-w-none">
-          {% include "includes/generation_slider.html" %}
+          <!-- Media tabs for demo slider -->
+          <div class="flex gap-2 mb-3 border-b border-[var(--bord)]">
+            <button type="button"
+                    class="demo-tab active px-4 py-2 -mb-px border-b-2 border-primary text-primary text-xs sm:text-sm font-medium"
+                    data-demo-tab="images">
+              Фото
+            </button>
+            <button type="button"
+                    class="demo-tab px-4 py-2 -mb-px border-b-2 border-transparent text-xs sm:text-sm font-medium"
+                    data-demo-tab="videos">
+              Видео
+            </button>
+          </div>
+
+          <!-- Preload demo data (server → client) for instant render -->
+          <script>
+          window.sliderExamplesPreloaded = {{ image_slider_examples_json|default:"[]"|safe }};
+          window.videoSliderExamplesPreloaded = {{ video_slider_examples_json|default:"[]"|safe }};
+          // Установить стартовый промпт мгновенно из preloaded данных (по умолчанию активна вкладка «Фото»)
+          (function(){
+            try{
+              var promptEl = document.getElementById('promptText');
+              var activeTab = 'images';
+              var imagesTab = document.querySelector('.demo-tab.active[data-demo-tab="images"]');
+              if (!imagesTab) {
+                var saved = localStorage.getItem('home_demo_tab');
+                activeTab = saved || 'images';
+              }
+              if (promptEl){
+                if (activeTab === 'images' && Array.isArray(window.sliderExamplesPreloaded) && window.sliderExamplesPreloaded.length){
+                  promptEl.textContent = window.sliderExamplesPreloaded[0].prompt || '';
+                } else if (Array.isArray(window.videoSliderExamplesPreloaded) && window.videoSliderExamplesPreloaded.length){
+                  promptEl.textContent = window.videoSliderExamplesPreloaded[0].prompt || '';
+                } else {
+                  promptEl.textContent = '';
+                }
+              }
+            }catch(_){}
+          })();
+          </script>
+
+          <!-- Image slider -->
+          <div id="demo-images" class="demo-content hidden">
+            {% include "includes/generation_slider.html" %}
+          </div>
+
+          <!-- Video slider -->
+          <div id="demo-videos" class="demo-content">
+            {% include "includes/generation_video_slider.html" %}
+          </div>
         </div>
       </div>
     </div>
@@ -384,7 +439,7 @@
           <thead>
             <tr>
               <th>Возможность</th>
-              <th class="text-primary">AI Gallery</th>
+              <th class="text-primary">Pixera</th>
               <th>Обычные сервисы</th>
             </tr>
           </thead>
@@ -530,4 +585,34 @@
 
 {% block extra_js %}
 <script src="{% static 'js/home.js' %}"></script>
+<script src="{% static 'js/hero-interactions.js' %}"></script>
+<script>
+// Demo slider tabs (Фото/Видео) — keep state and ensure accessibility
+(function(){
+  const tabs = document.querySelectorAll('.demo-tab');
+  const images = document.getElementById('demo-images');
+  const videos = document.getElementById('demo-videos');
+  if (!tabs.length || !images || !videos) return;
+
+  function setActive(which){
+    tabs.forEach(t => {
+      const isActive = t.dataset.demoTab === which;
+      t.classList.toggle('active', isActive);
+      t.style.color = isActive ? 'var(--primary)' : 'var(--muted)';
+      t.style.borderBottomColor = isActive ? 'var(--primary)' : 'transparent';
+      t.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    images.classList.toggle('hidden', which !== 'images');
+    videos.classList.toggle('hidden', which !== 'videos');
+    try { localStorage.setItem('home_demo_tab', which); } catch(_) {}
+    // Notify inner sliders to (re)initialize their first slide immediately
+    try { document.dispatchEvent(new CustomEvent('demoMediaTabChanged', { detail: { tab: which } })); } catch(_) {}
+  }
+
+  tabs.forEach(t => t.addEventListener('click', () => setActive(t.dataset.demoTab)));
+  // restore: всегда по умолчанию показываем «Фото»
+  try { localStorage.setItem('home_demo_tab', 'images'); } catch(_) {}
+  setActive('images');
+})();
+</script>
 {% endblock %}

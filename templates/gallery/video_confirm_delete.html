@@ -1,0 +1,67 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Удалить видео — Pixera{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card p-6 sm:p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+        <svg class="w-6 h-6 text-red-600 dark:text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold">Удалить видео?</h1>
+        <p class="text-sm text-[var(--muted)]">Это действие нельзя будет отменить</p>
+      </div>
+    </div>
+
+    <!-- Video Preview -->
+    <div class="rounded-xl overflow-hidden bg-black mb-6">
+      <video class="w-full max-h-64 object-contain"
+             poster="{% if video.thumbnail %}{{ video.thumbnail.url }}{% endif %}"
+             muted>
+        <source src="{{ video.video_url }}" type="video/mp4">
+      </video>
+    </div>
+
+    <div class="mb-6">
+      <h3 class="font-semibold mb-2">{{ video.title|default:"Без названия" }}</h3>
+      {% if video.caption %}
+        <p class="text-sm text-[var(--muted)]">{{ video.caption|truncatewords:20 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Warning Message -->
+    <div class="card p-4 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 mb-6">
+      <div class="flex gap-3">
+        <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 9H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+        </svg>
+        <div class="text-sm">
+          <p class="font-medium text-red-800 dark:text-red-200">Внимание!</p>
+          <p class="text-red-700 dark:text-red-300 mt-1">
+            Видео будет скрыто из галереи. Все лайки и комментарии будут сохранены.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <button type="submit" class="btn w-full bg-red-600 hover:bg-red-700 text-white">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Да, удалить видео
+      </button>
+      <a href="{{ next|default:request.META.HTTP_REFERER|default:'/' }}" class="btn btn-ghost w-full text-center">
+        Отмена
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -2,14 +2,1487 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Генерация изображений — AI Gallery{% endblock %}
+{% block title %}Генерация изображений — Pixera{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/generate.css' %}">
+<link rel="stylesheet" href="{% static 'css/showcase.css' %}">
+    <link rel="stylesheet" href="{% static 'css/moon-slider.css' %}?v={{ STATIC_VERSION }}">
+<link rel="stylesheet" href="{% static 'css/video-generation-fix.css' %}?v={{ STATIC_VERSION }}">
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+<link rel="dns-prefetch" href="//images.unsplash.com">
+<link rel="preload" as="script" href="{% static 'js/generate-optimized.js' %}?v={{ STATIC_VERSION }}">
+<link rel="preload" as="script" href="{% static 'js/generate.js' %}?v={{ STATIC_VERSION }}">
+<link rel="preload" as="script" href="{% static 'js/image-generation.js' %}?v={{ STATIC_VERSION }}">
+<link rel="preload" as="script" href="{% static 'js/image-models.js' %}?v={{ STATIC_VERSION }}">
+{% with first=showcase_images.0 %}
+{% if first %}
+  {% with imgs=first.get_all_images_with_thumbs %}
+    <link rel="preload" as="image" href="{{ imgs.0.thumb|default:first.image.url }}" fetchpriority="high">
+  {% endwith %}
+{% endif %}
+{% endwith %}
+<style>
+/* Критические стили инлайн для мгновенного рендеринга */
+.card{background:var(--bg-card);border-radius:1rem;border:1px solid var(--bord);padding:1.5rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.625rem 1rem;border-radius:.5rem;font-weight:600;transition:all .2s}
+.btn-primary{background:var(--primary);color:#fff}
+.field{width:100%;padding:.625rem;border:1px solid var(--bord);border-radius:.5rem;background:var(--bg-card)}
+/* removed global .hidden override to preserve Tailwind responsive display utilities on header */
+/* .hidden{display:none!important} */
+#showcaseGrid,#videoShowcaseGrid{content-visibility:visible}
+/* Мгновенная загрузка изображений - убираем все задержки */
+img{image-rendering:crisp-edges;image-rendering:-webkit-optimize-contrast}
+.category-image-compact,.image-model-card img,.showcase-item img{will-change:transform;transform:translateZ(0);backface-visibility:hidden}
+/* Предзагрузка фонов для категорий */
+.category-image-wrapper-compact{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);will-change:contents}
+.card-hero{background:linear-gradient(135deg,#1f2937 0%,#111827 100%);will-change:contents}
+/* GPU ускорение для анимаций */
+.category-card-compact,.image-model-card,.prompt-item-modal{transform:translateZ(0);will-change:transform}
+/* Оптимизация скролла */
+*{scroll-behavior:auto!important}
+body{-webkit-overflow-scrolling:touch}
+/* Отключаем transitions при первой загрузке для мгновенного рендеринга */
+.preload-transitions *{transition:none!important;animation:none!important}
+</style>
+<script>
+// Убираем класс после загрузки для включения анимаций
+document.documentElement.classList.add('preload-transitions');
+window.addEventListener('load',()=>{
+requestAnimationFrame(()=>document.documentElement.classList.remove('preload-transitions'));
+},{once:true,passive:true});
+</script>
+{% if false %}
+<!-- Prompt Categories Section -->
+<div id="promptCats" class="prompt-categories-section" bis_skin_checked="1" style="display: none;">
+  <div class="section-header" bis_skin_checked="1">
+    <h2 class="section-title">Категории подсказок</h2>
+    <p class="section-subtitle">Выберите категорию для быстрого старта</p>
+  </div>
+
+
+  <!-- Admin: Create Prompt Category -->
+  <div class="pc-admin-create" bis_skin_checked="1">
+    <div class="pc-admin-grid" bis_skin_checked="1">
+      <input type="text" id="pcName" class="field" placeholder="Название категории" maxlength="100">
+      <input type="text" id="pcDesc" class="field" placeholder="Описание (необязательно)">
+      <input type="number" id="pcOrder" class="field" placeholder="Порядок" value="0">
+      <label class="pc-inline">
+        <input type="checkbox" id="pcActive" checked="">
+        <span>Активна</span>
+      </label>
+      <label class="pc-file">
+        <input type="file" id="pcImage" accept="image/*">
+        <span>Изображение</span>
+      </label>
+      <button class="btn btn-primary" id="pcCreateBtn" type="button">+ Категория</button>
+    </div>
+    <div class="text-xs text-[var(--muted)] mt-2" bis_skin_checked="1">Картинка используется как обложка карточки категории.</div>
+  </div>
+
+
+  <!-- First Row: 5 categories + "Show All" button (always visible) -->
+
+  <div class="categories-grid-compact" bis_skin_checked="1">
+
+
+      <div class="category-card-compact" data-category-id="6" data-name="Портрет" data-desc="Реалистичные и художественные портреты людей" data-order="1" data-active="1" data-image-url="/media/prompt_categories/%D0%9F%D0%BE%D1%80%D1%82%D1%80%D0%B5%D1%82_fkz62SG.jpg" bis_skin_checked="1">
+        <div class="category-image-wrapper-compact" bis_skin_checked="1">
+          <img src="/media/prompt_categories/%D0%9F%D0%BE%D1%80%D1%82%D1%80%D0%B5%D1%82_fkz62SG.jpg" alt="Портрет" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+          <div class="category-overlay-compact" bis_skin_checked="1"></div>
+          <h3 class="category-name-compact">Портрет</h3>
+
+
+          <div class="pc-card-actions" bis_skin_checked="1">
+            <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="6">✎</button>
+            <button class="pc-btn pc-del" type="button" title="Удалить" data-id="6">✕</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Параметры генерации (скрыты до выбора модели) -->
+
+
+
+
+      <div class="category-card-compact" data-category-id="7" data-name="Пейзаж" data-desc="Красивые природные и городские пейзажи" data-order="2" data-active="1" data-image-url="/media/prompt_categories/%D0%9F%D0%B5%D0%B9%D0%B7%D0%B0%D0%B6.jpg" bis_skin_checked="1">
+        <div class="category-image-wrapper-compact" bis_skin_checked="1">
+          <img src="/media/prompt_categories/%D0%9F%D0%B5%D0%B9%D0%B7%D0%B0%D0%B6.jpg" alt="Пейзаж" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+          <div class="category-overlay-compact" bis_skin_checked="1"></div>
+          <h3 class="category-name-compact">Пейзаж</h3>
+
+
+          <div class="pc-card-actions" bis_skin_checked="1">
+            <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="7">✎</button>
+            <button class="pc-btn pc-del" type="button" title="Удалить" data-id="7">✕</button>
+          </div>
+
+        </div>
+      </div>
+
+
+
+      <div class="category-card-compact" data-category-id="8" data-name="Для разработки" data-desc="Технологические и IT-тематические изображения" data-order="3" data-active="1" data-image-url="/media/prompt_categories/%D0%94%D0%BB%D1%8F_%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B8_6FxTsie.jpg" bis_skin_checked="1">
+        <div class="category-image-wrapper-compact" bis_skin_checked="1">
+          <img src="/media/prompt_categories/%D0%94%D0%BB%D1%8F_%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B8_6FxTsie.jpg" alt="Для разработки" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+          <div class="category-overlay-compact" bis_skin_checked="1"></div>
+          <h3 class="category-name-compact">Для разработки</h3>
+
+
+          <div class="pc-card-actions" bis_skin_checked="1">
+            <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="8">✎</button>
+            <button class="pc-btn pc-del" type="button" title="Удалить" data-id="8">✕</button>
+          </div>
+
+        </div>
+      </div>
+
+
+
+      <div class="category-card-compact" data-category-id="9" data-name="Эстетика" data-desc="Эстетичные и стильные композиции" data-order="4" data-active="1" data-image-url="/media/prompt_categories/%D0%AD%D1%81%D1%82%D0%B5%D1%82%D0%B8%D0%BA%D0%B0_pIOBN4J.jpg" bis_skin_checked="1">
+        <div class="category-image-wrapper-compact" bis_skin_checked="1">
+          <img src="/media/prompt_categories/%D0%AD%D1%81%D1%82%D0%B5%D1%82%D0%B8%D0%BA%D0%B0_pIOBN4J.jpg" alt="Эстетика" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+          <div class="category-overlay-compact" bis_skin_checked="1"></div>
+          <h3 class="category-name-compact">Эстетика</h3>
+
+
+          <div class="pc-card-actions" bis_skin_checked="1">
+            <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="9">✎</button>
+            <button class="pc-btn pc-del" type="button" title="Удалить" data-id="9">✕</button>
+          </div>
+
+        </div>
+      </div>
+
+
+
+      <div class="category-card-compact" data-category-id="10" data-name="Фэнтези" data-desc="Фантастические миры и существа" data-order="5" data-active="1" data-image-url="/media/prompt_categories/%D0%A4%D1%8D%D0%BD%D1%82%D0%B5%D0%B7%D0%B8_fG0EjHP.jpg" bis_skin_checked="1">
+        <div class="category-image-wrapper-compact" bis_skin_checked="1">
+          <img src="/media/prompt_categories/%D0%A4%D1%8D%D0%BD%D1%82%D0%B5%D0%B7%D0%B8_fG0EjHP.jpg" alt="Фэнтези" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+          <div class="category-overlay-compact" bis_skin_checked="1"></div>
+          <h3 class="category-name-compact">Фэнтези</h3>
+
+
+          <div class="pc-card-actions" bis_skin_checked="1">
+            <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="10">✎</button>
+            <button class="pc-btn pc-del" type="button" title="Удалить" data-id="10">✕</button>
+          </div>
+
+        </div>
+      </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Show All Button (6th element in first row) -->
+
+    <button type="button" id="showAllCategoriesBtn" class="category-card-compact category-show-all">
+      <div class="category-image-wrapper-compact" bis_skin_checked="1">
+        <div class="show-all-content" bis_skin_checked="1">
+          <svg class="show-all-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+          <span class="show-all-text">Все категории</span>
+          <span class="show-all-count">40</span>
+        </div>
+      </div>
+    </button>
+
+  </div>
+
+
+  <!-- All Categories Section -->
+  <div id="allCategoriesSection" class="hidden mt-6" bis_skin_checked="1">
+    <div class="categories-grid-full" bis_skin_checked="1">
+
+
+
+
+
+
+
+
+
+
+
+
+        <div class="category-card-compact" data-category-id="11" data-name="Архитектура" data-desc="Архитектурные шедевры и здания" data-order="6" data-active="1" data-image-url="/media/prompt_categories/%D0%90%D1%80%D1%85%D0%B8%D1%82%D0%B5%D0%BA%D1%82%D1%83%D1%80%D0%B0_AcFHjo9.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%90%D1%80%D1%85%D0%B8%D1%82%D0%B5%D0%BA%D1%82%D1%83%D1%80%D0%B0_AcFHjo9.jpg" alt="Архитектура" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Архитектура</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="11">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="11">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="12" data-name="Животные" data-desc="Дикие и домашние животные" data-order="7" data-active="1" data-image-url="/media/prompt_categories/%D0%96%D0%B8%D0%B2%D0%BE%D1%82%D0%BD%D1%8B%D0%B5_qc4v8Zd.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%96%D0%B8%D0%B2%D0%BE%D1%82%D0%BD%D1%8B%D0%B5_qc4v8Zd.jpg" alt="Животные" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Животные</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="12">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="12">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="13" data-name="Природа" data-desc="Природные явления и детали" data-order="8" data-active="1" data-image-url="/media/prompt_categories/%D0%9F%D1%80%D0%B8%D1%80%D0%BE%D0%B4%D0%B0_Kb5t9Wo.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9F%D1%80%D0%B8%D1%80%D0%BE%D0%B4%D0%B0_Kb5t9Wo.jpg" alt="Природа" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Природа</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="13">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="13">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="14" data-name="Еда" data-desc="Кулинарные шедевры и продукты" data-order="9" data-active="1" data-image-url="/media/prompt_categories/%D0%95%D0%B4%D0%B0_usNRt2o.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%95%D0%B4%D0%B0_usNRt2o.jpg" alt="Еда" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Еда</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="14">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="14">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="15" data-name="Транспорт" data-desc="Автомобили, самолеты и другой транспорт" data-order="10" data-active="1" data-image-url="/media/prompt_categories/%D0%A2%D1%80%D0%B0%D0%BD%D1%81%D0%BF%D0%BE%D1%80%D1%82_micG3gg.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%A2%D1%80%D0%B0%D0%BD%D1%81%D0%BF%D0%BE%D1%80%D1%82_micG3gg.jpg" alt="Транспорт" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Транспорт</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="15">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="15">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="16" data-name="Космос" data-desc="Космические пейзажи и объекты" data-order="11" data-active="1" data-image-url="/media/prompt_categories/%D0%9A%D0%BE%D1%81%D0%BC%D0%BE%D1%81_dTcWgWk.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9A%D0%BE%D1%81%D0%BC%D0%BE%D1%81_dTcWgWk.jpg" alt="Космос" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Космос</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="16">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="16">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="17" data-name="Абстракция" data-desc="Абстрактное искусство и формы" data-order="12" data-active="1" data-image-url="/media/prompt_categories/%D0%90%D0%B1%D1%81%D1%82%D1%80%D0%B0%D0%BA%D1%86%D0%B8%D1%8F_Xxi0ORB.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%90%D0%B1%D1%81%D1%82%D1%80%D0%B0%D0%BA%D1%86%D0%B8%D1%8F_Xxi0ORB.jpg" alt="Абстракция" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Абстракция</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="17">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="17">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="18" data-name="Мода" data-desc="Модные образы и стиль" data-order="13" data-active="1" data-image-url="/media/prompt_categories/%D0%9C%D0%BE%D0%B4%D0%B0_sAPSR2M.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9C%D0%BE%D0%B4%D0%B0_sAPSR2M.jpg" alt="Мода" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Мода</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="18">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="18">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="19" data-name="Спорт" data-desc="Спортивные моменты и атлеты" data-order="14" data-active="1" data-image-url="/media/prompt_categories/%D0%A1%D0%BF%D0%BE%D1%80%D1%82_LcKycD7.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%A1%D0%BF%D0%BE%D1%80%D1%82_LcKycD7.jpg" alt="Спорт" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Спорт</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="19">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="19">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="20" data-name="Технологии" data-desc="Современные технологии и гаджеты" data-order="15" data-active="1" data-image-url="/media/prompt_categories/%D0%A2%D0%B5%D1%85%D0%BD%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D0%B8_g7CXK1t.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%A2%D0%B5%D1%85%D0%BD%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D0%B8_g7CXK1t.jpg" alt="Технологии" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Технологии</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="20">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="20">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="21" data-name="Интерьер" data-desc="Дизайн интерьеров и помещений" data-order="16" data-active="1" data-image-url="/media/prompt_categories/%D0%98%D0%BD%D1%82%D0%B5%D1%80%D1%8C%D0%B5%D1%80_KtEXdYd.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%98%D0%BD%D1%82%D0%B5%D1%80%D1%8C%D0%B5%D1%80_KtEXdYd.jpg" alt="Интерьер" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Интерьер</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="21">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="21">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="22" data-name="Праздники" data-desc="Праздничные сцены и атмосфера" data-order="17" data-active="1" data-image-url="/media/prompt_categories/%D0%9F%D1%80%D0%B0%D0%B7%D0%B4%D0%BD%D0%B8%D0%BA%D0%B8_YPTgYtm.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9F%D1%80%D0%B0%D0%B7%D0%B4%D0%BD%D0%B8%D0%BA%D0%B8_YPTgYtm.jpg" alt="Праздники" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Праздники</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="22">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="22">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="23" data-name="Искусство" data-desc="Художественные произведения и творчество" data-order="18" data-active="1" data-image-url="/media/prompt_categories/%D0%98%D1%81%D0%BA%D1%83%D1%81%D1%81%D1%82%D0%B2%D0%BE.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%98%D1%81%D0%BA%D1%83%D1%81%D1%81%D1%82%D0%B2%D0%BE.jpg" alt="Искусство" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Искусство</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="23">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="23">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="24" data-name="Наука" data-desc="Научные открытия и исследования" data-order="19" data-active="1" data-image-url="/media/prompt_categories/%D0%9D%D0%B0%D1%83%D0%BA%D0%B0_4mytCx3.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9D%D0%B0%D1%83%D0%BA%D0%B0_4mytCx3.jpg" alt="Наука" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Наука</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="24">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="24">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="25" data-name="Музыка" data-desc="Музыкальные инструменты и выступления" data-order="20" data-active="1" data-image-url="/media/prompt_categories/%D0%9C%D1%83%D0%B7%D1%8B%D0%BA%D0%B0_6Xi4aW3.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9C%D1%83%D0%B7%D1%8B%D0%BA%D0%B0_6Xi4aW3.jpg" alt="Музыка" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Музыка</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="25">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="25">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="26" data-name="История" data-desc="Исторические события и эпохи" data-order="21" data-active="1" data-image-url="/media/prompt_categories/%D0%98%D1%81%D1%82%D0%BE%D1%80%D0%B8%D1%8F_67228xS.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%98%D1%81%D1%82%D0%BE%D1%80%D0%B8%D1%8F_67228xS.jpg" alt="История" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">История</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="26">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="26">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="27" data-name="Мифология" data-desc="Мифологические существа и легенды" data-order="22" data-active="1" data-image-url="/media/prompt_categories/%D0%9C%D0%B8%D1%84%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D1%8F_YsPWXKx.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9C%D0%B8%D1%84%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D1%8F_YsPWXKx.jpg" alt="Мифология" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Мифология</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="27">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="27">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="28" data-name="Города" data-desc="Городские пейзажи и улицы" data-order="23" data-active="1" data-image-url="/media/prompt_categories/%D0%93%D0%BE%D1%80%D0%BE%D0%B4%D0%B0_C8gXZGe.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%93%D0%BE%D1%80%D0%BE%D0%B4%D0%B0_C8gXZGe.jpg" alt="Города" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Города</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="28">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="28">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+
+        <div class="category-card-compact" data-category-id="29" data-name="Подводный мир" data-desc="Морские глубины и обитатели" data-order="24" data-active="1" data-image-url="/media/prompt_categories/%D0%9F%D0%BE%D0%B4%D0%B2%D0%BE%D0%B4%D0%BD%D1%8B%D0%B9_%D0%BC%D0%B8%D1%80_lDsQzim.jpg" bis_skin_checked="1">
+          <div class="category-image-wrapper-compact" bis_skin_checked="1">
+            <img src="/media/prompt_categories/%D0%9F%D0%BE%D0%B4%D0%B2%D0%BE%D0%B4%D0%BD%D1%8B%D0%B9_%D0%BC%D0%B8%D1%80_lDsQzim.jpg" alt="Подводный мир" class="category-image-compact" loading="eager" decoding="sync" width="600" height="600">
+            <div class="category-overlay-compact" bis_skin_checked="1"></div>
+            <h3 class="category-name-compact">Подводный мир</h3>
+
+
+            <div class="pc-card-actions" bis_skin_checked="1">
+              <button class="pc-btn pc-edit" type="button" title="Редактировать" data-id="29">✎</button>
+              <button class="pc-btn pc-del" type="button" title="Удалить" data-id="29">✕</button>
+            </div>
+
+          </div>
+        </div>
+
+
+    </div>
+
+    <!-- Pagination -->
+
+    <nav class="flex items-center justify-center mt-6" aria-label="Пагинация категорий">
+      <div class="flex items-center gap-1 flex-wrap justify-center" bis_skin_checked="1">
+
+
+
+
+
+
+                <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">1</span>
+
+
+                <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page=2#promptCats" bis_skin_checked="1">2</a>
+
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page=2#promptCats" aria-label="Вперёд" bis_skin_checked="1">
+            <span class="hidden sm:inline">Вперёд</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+          <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page=2#promptCats" aria-label="Последняя" bis_skin_checked="1">
+            <span class="hidden sm:inline">Последняя</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+            </svg>
+          </a>
+
+      </div>
+    </nav>
+
+  </div>
+</div>
+
+
+<!-- Edit Prompt Category Modal -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="pcEditModal" bis_skin_checked="1">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-xl w-full overflow-hidden border border-[var(--bord)] shadow-2xl" bis_skin_checked="1">
+    <div class="p-4 sm:p-6 border-b border-[var(--bord)] flex items-center justify-between" bis_skin_checked="1">
+      <h3 class="text-lg font-bold">Редактирование категории</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)]" id="pcEditClose" type="button">✕</button>
+    </div>
+    <div class="p-4 sm:p-6 space-y-3" bis_skin_checked="1">
+      <input type="hidden" id="pcEditId">
+      <input id="pcEditName" class="field w-full" type="text" placeholder="Название">
+      <textarea id="pcEditDesc" class="field w-full" rows="3" placeholder="Описание"></textarea>
+      <div class="grid grid-cols-2 gap-3" bis_skin_checked="1">
+        <input id="pcEditOrder" class="field" type="number" placeholder="Порядок">
+        <label class="pc-inline"><input id="pcEditActive" type="checkbox"><span>Активна</span></label>
+      </div>
+      <label class="pc-file w-full">
+        <input type="file" id="pcEditImage" accept="image/*">
+        <span>Заменить изображение</span>
+      </label>
+      <div class="flex items-center justify-end gap-2 pt-2" bis_skin_checked="1">
+        <button class="btn btn-ghost" id="pcEditCancel" type="button">Отмена</button>
+        <button class="btn btn-primary" id="pcEditSave" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<style>
+/* ===== Секция категорий ===== */
+.prompt-categories-section {
+  width: 100%;
+}
+
+/* При переходе по якорю фиксируем положение блока вверху вьюпорта
+   с учётом возможной фиксированной шапки (адаптивно) */
+#promptCats {
+  scroll-margin-top: clamp(56px, 8vh, 96px);
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text, #ffffff);
+  margin: 0 0 0.25rem 0;
+}
+
+.section-subtitle {
+  font-size: 0.875rem;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  margin: 0;
+}
+
+.pc-admin-create {
+  margin: 1rem 0 1.25rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--bord);
+  border-radius: 0.75rem;
+  background: rgba(0,0,0,.03);
+}
+html[data-theme="light"] .pc-admin-create { background: rgba(0,0,0,.02); }
+.pc-admin-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 2fr 3fr 1fr auto auto auto;
+}
+.pc-inline { display: inline-flex; align-items: center; gap: .5rem; padding: .5rem .75rem; border:1px dashed var(--bord); border-radius:.5rem; }
+.pc-file { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border:1px dashed var(--bord); border-radius:.5rem; cursor:pointer; }
+.pc-file input[type="file"]{ display:none; }
+
+/* ===== Компактная сетка (6 элементов в ряд) ===== */
+.categories-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.categories-grid-full {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+/* ===== Компактная карточка ===== */
+.category-card-compact {
+  position: relative;
+  cursor: pointer;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+
+.category-card-compact:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+}
+
+.category-image-wrapper-compact {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%; /* Квадрат */
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.category-image-compact {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.category-card-compact:hover .category-image-compact {
+  transform: scale(1.1);
+}
+
+.category-overlay-compact {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%);
+  z-index: 1;
+  transition: background 0.3s ease;
+}
+
+.category-card-compact:hover .category-overlay-compact {
+  background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.9) 100%);
+}
+
+.category-name-compact {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.875rem 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  z-index: 2;
+  margin: 0;
+  text-shadow:
+    0 2px 8px rgba(0,0,0,0.9),
+    0 1px 3px rgba(0,0,0,0.8),
+    -1px -1px 0 rgba(0,0,0,0.5),
+    1px -1px 0 rgba(0,0,0,0.5),
+    -1px 1px 0 rgba(0,0,0,0.5),
+    1px 1px 0 rgba(0,0,0,0.5);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Admin buttons on card */
+.pc-card-actions{
+  position:absolute; top:6px; right:6px; z-index:3; display:flex; gap:6px;
+}
+.pc-btn{ background:rgba(0,0,0,.6); color:#fff; border:1px solid rgba(255,255,255,.25); width:28px; height:28px; line-height:26px; text-align:center; border-radius:8px; cursor:pointer; font-weight:700; }
+.pc-btn:hover{ background:rgba(0,0,0,.8); }
+
+/* ===== Кнопка "Показать все" ===== */
+.category-show-all {
+  background: transparent;
+}
+
+.category-show-all .category-image-wrapper-compact {
+  /* Цвет как у кнопок сайта */
+  background: var(--primary);
+  position: relative;
+  isolation: isolate; /* создаёт новый контекст наложения для оверлея */
+}
+
+.show-all-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  z-index: 1; /* контент поверх оверлея */
+}
+
+.show-all-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #ffffff;
+  transition: transform 0.3s ease;
+}
+/* Оверлей для читаемости текста (обе темы) */
+.category-show-all .category-image-wrapper-compact::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(0,0,0,.18), rgba(0,0,0,.28));
+  z-index: 0;
+}
+/* Усиление контраста в светлой теме */
+html[data-theme="light"] .category-show-all .category-image-wrapper-compact::before {
+  background: linear-gradient(135deg, rgba(0,0,0,.22), rgba(0,0,0,.35));
+}
+html[data-theme="light"] .category-show-all .category-image-wrapper-compact {
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
+}
+
+.category-show-all:hover .show-all-icon {
+  transform: translateY(4px);
+}
+
+.show-all-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.show-all-count {
+  font-size: 0.6875rem;
+  color: rgba(255,255,255,0.8);
+}
+
+/* ===== Светлая тема ===== */
+html[data-theme="light"] .section-title {
+  color: #0f1419;
+}
+
+html[data-theme="light"] .section-subtitle {
+  color: #6b7280;
+}
+
+html[data-theme="light"] .category-card-compact:hover {
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
+}
+
+/* ===== Адаптив ===== */
+@media (max-width: 1024px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .pc-admin-grid { grid-template-columns: 2fr 3fr 1fr auto auto auto; }
+}
+
+@media (max-width: 768px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.625rem;
+  }
+  .pc-admin-grid { grid-template-columns: 1fr 1fr 1fr auto; }
+
+  .category-name-compact {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .show-all-text {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.75rem;
+    padding: 0.625rem 0.375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .show-all-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .show-all-text {
+    font-size: 0.6875rem;
+  }
+
+  .show-all-count {
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .category-name-compact {
+    font-size: 0.75rem;
+    padding: 0.625rem 0.375rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .categories-grid-compact,
+  .categories-grid-full {
+    gap: 0.375rem;
+  }
+
+  .category-name-compact {
+    font-size: 0.6875rem;
+    padding: 0.5rem 0.25rem;
+    letter-spacing: 0;
+  }
+
+  .show-all-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .show-all-text {
+    font-size: 0.625rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.8125rem;
+  }
+}
+
+/* ===== Анимация ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#allCategoriesSection:not(.hidden) {
+  animation: fadeIn 0.3s ease-out;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const IS_STAFF = (document.getElementById('gen-root')?.dataset.isStaff || 'false') === 'true';
+
+  // CSRF helper
+  function getCSRF() {
+    return (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+  }
+  async function postFD(url, fd) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'fetch' },
+      body: fd
+    });
+    let j = {}; try { j = await r.json(); } catch(_) {}
+    if (!r.ok || j.ok === false) throw new Error(j.error || ('Ошибка ' + r.status));
+    return j;
+  }
+  async function postJSON(url, data) {
+    const fd = new FormData();
+    Object.entries(data || {}).forEach(([k, v]) => fd.append(k, v));
+    return postFD(url, fd);
+  }
+
+  // Кнопка "Показать все категории"
+  const showAllBtn = document.getElementById('showAllCategoriesBtn');
+  const allCategoriesSection = document.getElementById('allCategoriesSection');
+  const promptCatsEl = document.getElementById('promptCats');
+
+  // Оставаться строго на блоке подсказок после перехода по пагинации/якорю
+  function stayOnPromptCats() {
+    if (!promptCatsEl) return;
+    try {
+      const usp = new URLSearchParams(window.location.search);
+      if (window.location.hash === '#promptCats' || usp.has('prompt_page')) {
+        // Даем браузеру отрисовать разметку, затем скроллим к началу блока
+        setTimeout(() => {
+          try { promptCatsEl.scrollIntoView({ behavior: 'auto', block: 'start' }); }
+          catch(_) { window.location.hash = '#promptCats'; }
+        }, 0);
+      }
+    } catch(_) {}
+  }
+  stayOnPromptCats();
+
+  // Тоггл показа всех категорий (кнопка "Все категории" <-> "Скрыть")
+  function setShowAllState(expanded) {
+    if (!allCategoriesSection) return;
+    const icon = showAllBtn?.querySelector('.show-all-icon');
+    const text = showAllBtn?.querySelector('.show-all-text');
+    if (expanded) {
+      allCategoriesSection.classList.remove('hidden');
+      if (text) text.textContent = 'Скрыть';
+      if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>';
+    } else {
+      allCategoriesSection.classList.add('hidden');
+      if (text) text.textContent = 'Все категории';
+      if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>';
+    }
+  }
+
+  let expanded = false;
+
+  if (showAllBtn && allCategoriesSection) {
+    showAllBtn.addEventListener('click', function() {
+      expanded = !expanded;
+      setShowAllState(expanded);
+      // Плавная прокрутка
+      if (expanded) {
+        setTimeout(() => {
+          try { allCategoriesSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(_) {}
+        }, 100);
+      } else {
+        try { showAllBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_) {}
+      }
+    });
+  }
+
+  // Авторазворачивание отключено: на странице генерации всегда стартуем в свернутом состоянии
+
+  // Обработка кликов по категориям - открытие модального окна с промптами
+  const categoryCards = document.querySelectorAll('.category-card-compact:not(.category-show-all)');
+
+  categoryCards.forEach(card => {
+    card.addEventListener('click', async function(e) {
+      // игнор кликов по админ-кнопкам
+      if (e.target.closest('.pc-card-actions')) return;
+
+      const categoryId = this.dataset.categoryId;
+      if (!categoryId) return;
+
+      const categoryName = this.querySelector('.category-name-compact').textContent;
+      const modal = document.getElementById('promptCategoryModal');
+      const modalTitle = document.getElementById('modalCategoryTitle');
+      const modalContainer = document.getElementById('modalPromptsContainer');
+
+      if (!modal || !modalTitle || !modalContainer) {
+        console.error('Modal elements not found');
+        return;
+      }
+
+      modalTitle.textContent = categoryName;
+      modalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Загрузка...</div>';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      try {
+        const response = await fetch(`/generate/api/categories/${categoryId}/prompts`);
+        const data = await response.json();
+
+        const adminCreate = IS_STAFF ? `
+          <div class="p-3 mb-3 rounded-xl border border-[var(--bord)] bg-black/[.03] dark:bg-white/[.03]">
+            <div class="grid gap-2 sm:grid-cols-2">
+              <input id="cpTitle" class="field" type="text" placeholder="Заголовок" maxlength="150">
+              <input id="cpOrder" class="field" type="number" placeholder="Порядок" value="0">
+              <select id="cpSubcat" class="field">
+                <option value="">Без подкатегории</option>
+              </select>
+              <textarea id="cpText" class="field sm:col-span-2" rows="3" placeholder="Текст промпта"></textarea>
+              <textarea id="cpEn" class="field sm:col-span-2" rows="3" placeholder="Английский промпт (опционально)"></textarea>
+              <label class="pc-inline"><input id="cpActive" type="checkbox" checked><span>Активен</span></label>
+              <div class="flex items-center justify-end sm:justify-start">
+                <button id="cpCreateBtn" class="btn btn-primary" type="button">+ Промпт</button>
+              </div>
+            </div>
+            <div class="mt-3 rounded-lg border border-[var(--bord)] p-3">
+              <div class="text-xs text-[var(--muted)] mb-2">Подкатегории (админ)</div>
+              <div class="grid gap-2 sm:grid-cols-3">
+                <input id="scName" class="field" type="text" placeholder="Название подкатегории" maxlength="120">
+                <input id="scOrder" class="field" type="number" placeholder="Порядок" value="0">
+                <label class="pc-inline"><input id="scActive" type="checkbox" checked><span>Активна</span></label>
+              </div>
+              <div class="mt-2 flex justify-end">
+                <button id="scCreateBtn" class="btn btn-ghost" type="button">+ Подкатегория</button>
+              </div>
+            </div>
+          </div>
+        ` : '';
+
+        const items = (data.prompts || []).map(prompt => `
+          <div class="prompt-item-modal" data-id="${prompt.id}" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en_raw || '')}" data-order="${prompt.order||0}" data-active="${prompt.is_active ? '1':'0'}">
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+              <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+              <div class="flex items-center gap-2">
+                ${IS_STAFF ? `<button class="btn btn-ghost text-xs js-cp-edit" type="button">Редактировать</button><button class="btn btn-ghost text-xs js-cp-del" type="button">Удалить</button>` : ''}
+                <button class="btn btn-primary shrink-0 w-full sm:w-auto js-use-btn">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                  Использовать
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        modalContainer.innerHTML = `
+          ${adminCreate}
+          <div id="pg-subcats" class="flex flex-wrap gap-2 mb-3"></div>
+          <div id="pg-items" class="space-y-3">${items || '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>'}</div>
+        `;
+
+        // Helpers to bind "Use" buttons for current items
+        function bindUseButtons(rootEl) {
+          rootEl.querySelectorAll('.prompt-use-btn, .js-use-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const promptItem = this.closest('.prompt-item-modal');
+              const promptTextEn = promptItem?.dataset.promptEn;
+              const promptTextRu = promptItem?.dataset.prompt;
+              const promptToUse = promptTextEn && promptTextEn.trim() !== '' ? promptTextEn : promptTextRu;
+              copyToClipboard(promptToUse || '');
+
+              const originalHTML = this.innerHTML;
+              this.innerHTML = `
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Скопировано!
+              `;
+              this.classList.add('copied');
+              setTimeout(() => { this.innerHTML = originalHTML; this.classList.remove('copied'); }, 2000);
+
+              const promptField = document.getElementById('prompt');
+              if (promptField && promptToUse) {
+                const currentValue = promptField.value.trim();
+                promptField.value = currentValue ? (currentValue + ', ' + promptToUse) : promptToUse;
+                promptField.focus();
+              }
+              closeModal();
+            });
+          });
+        }
+
+        // Load subcategories and render pills + fill admin select
+        async function loadSubcategories() {
+          try {
+            const r = await fetch(`/generate/api/prompt-categories/${categoryId}/subcategories`);
+            const j = await r.json();
+            const wrap = modalContainer.querySelector('#pg-subcats');
+            if (!wrap) return;
+
+            // Render pills
+            const subs = (j.subcategories || []);
+            const pills = [];
+            pills.push(`<button type="button" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm pg-subpill" data-id="">Все</button>`);
+            subs.forEach(sc => {
+              pills.push(`<button type="button" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/60 hover:text-primary text-xs sm:text-sm pg-subpill" data-id="${sc.id}">${escapeHtml(sc.name)} <span class="text-[var(--muted)]">(${sc.prompts_count})</span></button>`);
+            });
+            wrap.innerHTML = pills.join('');
+
+            // Fill admin select
+            const sel = modalContainer.querySelector('#cpSubcat');
+            if (sel) {
+              sel.innerHTML = `<option value="">Без подкатегории</option>` + subs.map(sc => `<option value="${sc.id}">${escapeHtml(sc.name)}</option>`).join('');
+            }
+
+            // Bind pill clicks
+            wrap.querySelectorAll('.pg-subpill').forEach(btn => {
+              btn.addEventListener('click', async () => {
+                const subId = btn.dataset.id || '';
+                // toggle active style
+                wrap.querySelectorAll('.pg-subpill').forEach(b => b.classList.remove('bg-primary/15','text-primary','border-primary/30'));
+                if (subId === '') {
+                  btn.classList.add('bg-primary/15','text-primary','border-primary/30');
+                  // show category-wide prompts that were preloaded
+                  const itemsWrap = modalContainer.querySelector('#pg-items');
+                  itemsWrap.innerHTML = `${items || '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>'}`;
+                  bindUseButtons(itemsWrap);
+                } else {
+                  try {
+                    const r2 = await fetch(`/generate/api/subcategories/${subId}/prompts`);
+                    const j2 = await r2.json();
+                    const dataItems = (j2.prompts || []);
+                    const itemsHtml = dataItems.map(prompt => `
+                      <div class="prompt-item-modal" data-id="${prompt.id}" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en_raw || '')}" data-order="${prompt.order||0}" data-active="${prompt.is_active ? '1':'0'}">
+                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                          <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+                          <div class="flex items-center gap-2">
+                            ${IS_STAFF ? `<button class="btn btn-ghost text-xs js-cp-edit" type="button">Редактировать</button><button class="btn btn-ghost text-xs js-cp-del" type="button">Удалить</button>` : ''}
+                            <button class="btn btn-primary shrink-0 w-full sm:w-auto prompt-use-btn">
+                              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                              </svg>
+                              Использовать
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('');
+                    const itemsWrap = modalContainer.querySelector('#pg-items');
+                    itemsWrap.innerHTML = itemsHtml || '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>';
+                    bindUseButtons(itemsWrap);
+                  } catch (e) {
+                    const itemsWrap = modalContainer.querySelector('#pg-items');
+                    itemsWrap.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки подкатегории</div>';
+                  }
+                }
+              });
+            });
+
+            // Set active on "Все" by default
+            const first = wrap.querySelector('.pg-subpill[data-id=""]');
+            if (first) first.click();
+          } catch (e) {
+            // silent
+          }
+        }
+        loadSubcategories();
+        // Bind initial items "Use" buttons
+        bindUseButtons(modalContainer);
+
+        // Create prompt
+        if (IS_STAFF) {
+          modalContainer.querySelector('#cpCreateBtn')?.addEventListener('click', async () => {
+            const title = (modalContainer.querySelector('#cpTitle')?.value || '').trim();
+            const text = (modalContainer.querySelector('#cpText')?.value || '').trim();
+            const en = (modalContainer.querySelector('#cpEn')?.value || '').trim();
+            const order = modalContainer.querySelector('#cpOrder')?.value || '0';
+            const active = modalContainer.querySelector('#cpActive')?.checked ? '1' : '0';
+            if (!title || !text) { alert('Заполните заголовок и текст'); return; }
+            try {
+              const subcatSel = modalContainer.querySelector('#cpSubcat');
+              const subcategory_id = (subcatSel && subcatSel.value) ? subcatSel.value : '';
+              await postJSON('/generate/api/prompts/create', { category_id: categoryId, subcategory_id, title, prompt_text: text, prompt_en: en, order, is_active: active });
+              location.reload();
+            } catch (e) { alert(e.message || String(e)); }
+          });
+        }
+
+        // Use buttons
+        modalContainer.querySelectorAll('.js-use-btn').forEach(btn => {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const promptItem = this.closest('.prompt-item-modal');
+
+            const promptTextEn = promptItem.dataset.promptEn;
+            const promptTextRu = promptItem.dataset.prompt;
+            const promptToUse = promptTextEn && promptTextEn.trim() !== '' ? promptTextEn : promptTextRu;
+
+            copyToClipboard(promptToUse);
+
+            const originalHTML = this.innerHTML;
+            this.innerHTML = `
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Скопировано!
+            `;
+            this.classList.add('copied');
+
+            setTimeout(() => {
+              this.innerHTML = originalHTML;
+              this.classList.remove('copied');
+            }, 2000);
+
+            const promptField = document.getElementById('prompt');
+            if (promptField) {
+              const currentValue = promptField.value.trim();
+              if (currentValue) {
+                promptField.value = currentValue + ', ' + promptToUse;
+              } else {
+                promptField.value = promptToUse;
+              }
+              promptField.focus();
+            }
+
+            closePromptModal();
+          });
+        });
+
+        // Edit/delete prompt (admin)
+        if (IS_STAFF) {
+          modalContainer.addEventListener('click', async (ev) => {
+            const editBtn = ev.target.closest('.js-cp-edit');
+            const delBtn = ev.target.closest('.js-cp-del');
+            const item = ev.target.closest('.prompt-item-modal');
+            if (!item) return;
+
+            if (delBtn) {
+              ev.preventDefault();
+              if (!confirm('Удалить промпт?')) return;
+              try {
+                await postJSON(`/generate/api/prompts/${item.dataset.id}/delete`, {});
+                location.reload();
+              } catch (e) { alert(e.message || String(e)); }
+              return;
+            }
+          });
+
+          // Admin: create subcategory
+          modalContainer.querySelector('#scCreateBtn')?.addEventListener('click', async () => {
+            const name = (modalContainer.querySelector('#scName')?.value || '').trim();
+            const order = modalContainer.querySelector('#scOrder')?.value || '0';
+            const active = modalContainer.querySelector('#scActive')?.checked ? '1' : '0';
+            if (!name) { alert('Введите название подкатегории'); return; }
+            try {
+              await postJSON('/generate/api/subcategories/create', { category_id: categoryId, name, order, is_active: active });
+              // reload subcategories list + select
+              await loadSubcategories();
+              (modalContainer.querySelector('#scName') || {}).value = '';
+              (modalContainer.querySelector('#scOrder') || {}).value = '0';
+            } catch (e) { alert(e.message || String(e)); }
+            return;
+          });
+>>>>>>> (keep following code unchanged)
+            if (editBtn) {
+              ev.preventDefault();
+              const title = prompt('Заголовок', item.querySelector('p')?.textContent?.slice(0, 150) || '');
+              if (title === null) return;
+              const text = prompt('Текст промпта', item.dataset.prompt || '');
+              if (text === null) return;
+              const en = prompt('Английский промпт', item.dataset.promptEn || '');
+              if (en === null) return;
+              const order = prompt('Порядок', item.dataset.order || '0');
+              if (order === null) return;
+              const active = confirm('Сделать активным? ОК=Да, Отмена=Нет');
+              try {
+                await postJSON(`/generate/api/prompts/${item.dataset.id}/update`, {
+                  title, prompt_text: text, prompt_en: en, order, is_active: active ? '1' : '0'
+                });
+                location.reload();
+              } catch (e) { alert(e.message || String(e)); }
+              return;
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading prompts:', error);
+        modalContainer.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки промптов</div>';
+      }
+    });
+  });
+
+  function closePromptModal() {
+    const modal = document.getElementById('promptCategoryModal');
+    if (modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Admin: create category
+  if (IS_STAFF) {
+    document.getElementById('pcCreateBtn')?.addEventListener('click', async () => {
+      const name = (document.getElementById('pcName')?.value || '').trim();
+      const desc = (document.getElementById('pcDesc')?.value || '').trim();
+      const order = document.getElementById('pcOrder')?.value || '0';
+      const active = document.getElementById('pcActive')?.checked ? '1' : '0';
+      const imgInput = document.getElementById('pcImage');
+      if (!name) { alert('Введите название'); return; }
+      const fd = new FormData();
+      fd.append('name', name);
+      if (desc) fd.append('description', desc);
+      fd.append('order', order);
+      fd.append('is_active', active);
+      if (imgInput?.files?.[0]) fd.append('image', imgInput.files[0]);
+      try { await postFD('/generate/api/prompt-categories/create', fd); location.reload(); }
+      catch (e) { alert(e.message || String(e)); }
+    });
+
+    // Admin: edit/delete category
+    document.addEventListener('click', async (e) => {
+      const btnEdit = e.target.closest('.pc-edit');
+      const btnDel = e.target.closest('.pc-del');
+
+      if (btnDel) {
+        e.preventDefault(); e.stopPropagation();
+        const id = btnDel.dataset.id;
+        if (!confirm('Удалить категорию? Все промпты будут удалены вместе с ней.')) return;
+        try { await postJSON(`/generate/api/prompt-categories/${id}/delete`, {}); location.reload(); }
+        catch (e2) { alert(e2.message || String(e2)); }
+        return;
+      }
+
+      if (btnEdit) {
+        e.preventDefault(); e.stopPropagation();
+        const card = btnEdit.closest('.category-card-compact');
+        const id = btnEdit.dataset.id;
+        // Fill modal
+        const modal = document.getElementById('pcEditModal');
+        modal?.classList.add('active');
+        if (modal) {
+          modal.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        }
+        document.getElementById('pcEditId').value = id;
+        document.getElementById('pcEditName').value = card?.dataset.name || '';
+        document.getElementById('pcEditDesc').value = card?.dataset.desc || '';
+        document.getElementById('pcEditOrder').value = card?.dataset.order || '0';
+        document.getElementById('pcEditActive').checked = (card?.dataset.active === '1');
+      }
+    });
+
+    function closePcEdit() {
+      const modal = document.getElementById('pcEditModal');
+      if (modal) { modal.classList.remove('active'); modal.style.display = 'none'; document.body.style.overflow = ''; }
+    }
+    document.getElementById('pcEditClose')?.addEventListener('click', closePcEdit);
+    document.getElementById('pcEditCancel')?.addEventListener('click', closePcEdit);
+    document.getElementById('pcEditModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'pcEditModal') closePcEdit();
+    });
+    document.getElementById('pcEditSave')?.addEventListener('click', async () => {
+      const id = document.getElementById('pcEditId').value;
+      const name = document.getElementById('pcEditName').value;
+      const desc = document.getElementById('pcEditDesc').value;
+      const order = document.getElementById('pcEditOrder').value;
+      const active = document.getElementById('pcEditActive').checked ? '1' : '0';
+      const img = document.getElementById('pcEditImage').files?.[0];
+      const fd = new FormData();
+      if (name) fd.append('name', name);
+      fd.append('description', desc || '');
+      fd.append('order', order || '0');
+      fd.append('is_active', active);
+      if (img) fd.append('image', img);
+      try { await postFD(`/generate/api/prompt-categories/${id}/update`, fd); location.reload(); }
+      catch (e) { alert(e.message || String(e)); }
+    });
+  }
+});
+</script>
+
+{% endif %}
 {% endblock %}
 
 {% block content %}
-<div id="gen-root" class="max-w-4xl mx-auto space-y-8 mt-4"
+<div id="gen-root" class="max-w-7xl mx-auto space-y-8"
+     data-user-key="{{ user_key }}"
      data-api-submit-url="{% url 'generate:api_submit' %}"
      data-api-status-tpl="{% url 'generate:api_status' job_id=12345 %}"
      data-job-detail-tpl="{% url 'generate:job_detail_no_slug' pk=12345 %}"
@@ -19,12 +1492,166 @@
      data-raw-cost="{{ price|default:TOKENS_PRICE_PER_GEN|default:10 }}">
 
   <!-- Header Section -->
-  <div class="card p-6 sm:p-8" itemscope itemtype="https://schema.org/WebPage">
+  <div class="card p-6" itemscope itemtype="https://schema.org/WebPage">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold">Сгенерировать изображение</h1>
-        <p class="mt-2 text-[var(--muted)] text-sm">Создавайте уникальные изображения с помощью ИИ</p>
+        <h1 class="text-2xl sm:text-3xl font-bold" id="page-title">Сгенерировать изображение</h1>
+        <p class="mt-2 text-[var(--muted)] text-sm" id="page-subtitle">Создавайте уникальные изображения с помощью ИИ</p>
       </div>
+
+      <!-- Переключатель Изображение / Видео -->
+      <div class="inline-flex rounded-xl bg-[var(--bord)] p-1 gap-1">
+        <button type="button" class="generation-mode-tab flex-1 sm:flex-initial px-3 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium {% if request.GET.type != 'video' %}active{% endif %}" data-mode="image" title="Изображение">
+          <svg class="mode-icon w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </button>
+        <button type="button" class="generation-mode-tab flex-1 sm:flex-initial px-3 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium {% if request.GET.type == 'video' %}active{% endif %}" data-mode="video" title="Видео">
+          <svg class="mode-icon w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M23 7l-7 5 7 5V7z"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Admin Panel for Image Models (только для админов) -->
+    {% if request.user.is_staff %}
+    <div class="mt-6 p-4 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10" id="image-models-admin-panel">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-base">Управление моделями изображений</h3>
+            <p class="text-xs text-[var(--muted)]">Настройка параметров моделей Runware</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <a href="{% url 'generate:image_models_list' %}" class="group flex items-center gap-3 p-4 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/50 hover:bg-primary/5 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+            <svg class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Список моделей</div>
+            <div class="text-xs text-[var(--muted)]">Просмотр всех моделей</div>
+          </div>
+          <svg class="w-5 h-5 text-[var(--muted)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+
+        <a href="{% url 'generate:image_model_create' %}" class="group flex items-center gap-3 p-4 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/50 hover:bg-primary/5 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+            <svg class="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Добавить модель</div>
+            <div class="text-xs text-[var(--muted)]">Создать новую модель</div>
+          </div>
+          <svg class="w-5 h-5 text-[var(--muted)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+
+        <a href="/admin/generate/imagemodelconfiguration/" target="_blank" class="group flex items-center gap-3 p-4 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/50 hover:bg-primary/5 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+            <svg class="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Django Admin</div>
+            <div class="text-xs text-[var(--muted)]">Расширенные настройки</div>
+          </div>
+          <svg class="w-5 h-5 text-[var(--muted)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+    <!-- End Admin Panel for Image Models -->
+
+<!-- Admin Panel for Video Models (только для админов) -->
+    {% if request.user.is_staff %}
+    <div class="mt-6 p-4 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10" id="video-models-admin-panel" style="{% if request.GET.type != 'video' %}display:none{% endif %}">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-base">Управление видео моделями</h3>
+            <p class="text-xs text-[var(--muted)]">Настройка параметров моделей Runware</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <a href="{% url 'generate:video_models_list' %}" class="group flex items-center gap-3 p-4 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/50 hover:bg-primary/5 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+            <svg class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Список моделей</div>
+            <div class="text-xs text-[var(--muted)]">Просмотр всех моделей</div>
+          </div>
+          <svg class="w-5 h-5 text-[var(--muted)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+
+        <a href="{% url 'generate:video_model_create' %}" class="group flex items-center gap-3 p-4 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/50 hover:bg-primary/5 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+            <svg class="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Добавить модель</div>
+            <div class="text-xs text-[var(--muted)]">Создать новую модель</div>
+          </div>
+          <svg class="w-5 h-5 text-[var(--muted)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+
+        <a href="/admin/generate/videomodelconfiguration/" target="_blank" class="group flex items-center gap-3 p-4 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/50 hover:bg-primary/5 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+            <svg class="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Django Admin</div>
+            <div class="text-xs text-[var(--muted)]">Расширенные настройки</div>
+          </div>
+          <svg class="w-5 h-5 text-[var(--muted)] group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="flex flex-wrap items-center justify-center gap-4 gap-y-6 sm:justify-end" style="margin-top: {% if request.user.is_staff %}1rem{% else %}0{% endif %}">
 
   <div class="flex flex-wrap items-center justify-center gap-4 gap-y-6 sm:justify-end">
         <!-- Balance Display -->
@@ -58,44 +1685,8 @@
           {% endif %}
         {% endwith %}
 
-        <!-- Generations Left -->
+        <!-- Tokens only UI (no operations counter) -->
         {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
-          {% if request.user.is_authenticated %}
-            <div class="min-w-[120px] flex flex-col justify-center"
-                 title="Осталось обработок"
-                 {% if request.user.is_staff %}
-                   data-auth-left="999999"
-                 {% elif cost %}
-                   data-auth-left="{{ auth_gens_left|default:0 }}"
-                 {% endif %}>
-              <div class="flex items-center gap-2 justify-center">
-                <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 9l4-6h10l4 6-9 12L3 9zm4.5-4l-2.5 4h4l2-4h-3.5zm5.5 0l-2 4h4l-2-4zm2 4h4l-2.5-4H15z"/>
-                </svg>
-                <span id="gensLeft" class="text-lg font-semibold">
-                  {% if request.user.is_staff %}
-                    ∞
-                  {% elif cost %}
-                    {{ auth_gens_left|default:0 }}
-                  {% else %}
-                    ∞
-                  {% endif %}
-                </span>
-              </div>
-              <div class="text-xs text-[var(--muted)] mt-1 text-center">Обработок</div>
-            </div>
-          {% else %}
-            <div class="min-w-[120px] flex flex-col justify-center" title="Осталось обработок" data-guest-left="{{ guest_gens_left|default:0 }}">
-              <div class="flex items-center gap-2 justify-center">
-                <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 9l4-6h10l4 6-9 12L3 9zm4.5-4l-2.5 4h4l2-4h-3.5zm5.5 0l-2 4h4l-2-4zm2 4h4l-2.5-4H15z"/>
-                </svg>
-                <span id="gensLeft" class="text-lg font-semibold">{{ guest_gens_left|default:0 }}</span>
-              </div>
-              <div class="text-xs text-[var(--muted)] mt-1 text-center">Обработок</div>
-            </div>
-          {% endif %}
-
           {% if not request.user.is_staff and cost %}
             <a class="btn btn-primary w-full sm:w-auto" id="topUpLink" href="{{ tariffs_url }}" rel="nofollow">Пополнить</a>
           {% endif %}
@@ -103,21 +1694,59 @@
       </div>
     </div>
 
-    <meta itemprop="name" content="Генерация изображений — AI Gallery">
+    <meta itemprop="name" content="Генерация изображений — Pixera">
     <meta itemprop="description" content="Онлайн-генератор изображений на ИИ: фотореализм, художественные стили и подсказки. Стоимость — токены, 1 обработка = {{ TOKENS_PRICE_PER_GEN|default:10 }} TOK.">
   </div>
 
 
 
   <!-- Generation Form -->
-  <form method="post" class="card p-6 sm:p-8" novalidate itemprop="potentialAction" itemscope itemtype="https://schema.org/CreateAction">
+  <!-- Force initial CSS-mode from URL to prevent FOUC when opening video mode -->
+  <style>
+    html.mode-video form[method="post"],
+    html.mode-video #image-generation-form { display: none !important; }
+    html.mode-video #video-form-container { display: block !important; }
+    html.mode-video #image-prompts-card,
+    html.mode-video #promptCats,
+    html.mode-video #showcaseSection { display: none !important; }
+  </style>
+  <script>
+    (function() {
+      try {
+        var usp = new URLSearchParams(window.location.search);
+        var t = usp.get('type');
+        if (t === 'video') {
+          document.documentElement.classList.add('mode-video');
+          try { localStorage.setItem('gen.topMode','video'); } catch(_) {}
+        } else if (t === 'image') {
+          document.documentElement.classList.remove('mode-video');
+          try { localStorage.setItem('gen.topMode','image'); } catch(_) {}
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <form id="image-generation-form" method="post" class="card p-6" novalidate itemprop="potentialAction" itemscope itemtype="https://schema.org/CreateAction" style="{% if request.GET.type == 'video' %}display:none{% endif %}">
     {% csrf_token %}
     <meta itemprop="name" content="Создать изображение по текстовому описанию">
 
     <div class="space-y-6">
       <!-- Prompt Input -->
       <div>
-        <label class="block text-sm font-medium mb-3" for="prompt">Описание изображения</label>
+        <div class="flex items-center justify-between mb-3">
+          <label class="block text-sm font-medium" for="prompt">Описание изображения</label>
+          <div class="inline-flex items-center gap-2">
+            <span class="text-[11px] sm:text-xs text-[var(--muted)]">Автоперевод</span>
+            <button
+              type="button"
+              id="img-auto-translate-toggle"
+              class="relative inline-flex h-6 w-11 items-center rounded-full bg-[var(--bord)] ring-1 ring-[var(--bord)] transition focus:outline-none focus:ring-2 focus:ring-primary/50"
+              aria-pressed="true"
+              aria-label="Автоперевод">
+              <span class="sr-only">Автоперевод</span>
+              <span class="dot translate-x-5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition"></span>
+            </button>
+          </div>
+        </div>
         <div class="relative">
           <textarea
             id="prompt"
@@ -129,19 +1758,487 @@
             maxlength="1500"
             itemprop="actionOption"></textarea>
 
-          <!-- Floating Tags -->
-          <div class="absolute top-3 right-3 flex flex-wrap gap-1 pointer-events-none opacity-30" aria-hidden="true">
-            <span class="badge text-xs">style</span>
-            <span class="badge text-xs">lighting</span>
-            <span class="badge text-xs">lens</span>
+          <!-- Prompt Generator (visual stub) -->
+          <div id="pg-image" class="mt-3 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 sm:p-4">
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch">
+              <input
+                type="text"
+                id="pg-image-input"
+                class="field w-full h-10 sm:h-11"
+                placeholder="Введите идею (например: «портрет в стиле неона, девушка в наушниках»)"
+                maxlength="240"
+                aria-label="Идея для профессионального промпта">
+              <button
+                type="button"
+                id="pg-image-btn"
+                class="btn btn-primary shrink-0 h-10 sm:h-11 px-4 sm:px-5 text-sm">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span class="hidden xs:inline">Сгенерировать промпт</span>
+                <span class="xs:hidden inline">Сгенерировать</span>
+              </button>
+            </div>
+
+            <!-- Result -->
+            <div id="pg-image-result" class="mt-3 hidden">
+              <div class="rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] p-3">
+                <pre class="whitespace-pre-wrap break-words text-[13px] leading-snug text-[var(--text)]" id="pg-image-text"></pre>
+              </div>
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <button type="button" id="pg-image-copy" class="btn btn-ghost text-xs sm:text-sm">
+                  Копировать
+                </button>
+                <button type="button" id="pg-image-insert" class="btn btn-ghost text-xs sm:text-sm">
+                  Вставить в поле выше
+                </button>
+                <label class="inline-flex items-center gap-2 text-xs sm:text-sm text-[var(--muted)] ml-auto">
+                  <input type="checkbox" id="pg-image-append" class="w-4 h-4">
+                  <span>Добавлять к текущему</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Loading shimmer -->
+            <div id="pg-image-loading" class="mt-3 hidden">
+              <div class="h-10 rounded-lg bg-[var(--bord)] overflow-hidden relative">
+                <div class="absolute inset-0 -translate-x-full animate-[shimmer_1.2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+              </div>
+            </div>
+          </div>
+          <style>
+            @keyframes shimmer { 100% { transform: translateX(100%); } }
+          </style>
+
+          <script>
+            (function() {
+              // Shared helpers
+              function copyToClipboard(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(text);
+                } else {
+                  const ta = document.createElement('textarea');
+                  ta.value = text;
+                  ta.style.position = 'fixed';
+                  ta.style.opacity = '0';
+                  document.body.appendChild(ta);
+                  ta.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(ta);
+                }
+              }
+              function getCSRF() {
+                return (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+              }
+
+              // Backend-powered generation via X.AI Grok
+              async function generateWithGrok(idea, mode) {
+                const url = "{% url 'generate:api_prompt_ai' %}";
+                const headers = {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": getCSRF(),
+                  "X-Requested-With": "fetch"
+                };
+                const body = JSON.stringify({ idea, mode });
+                const r = await fetch(url, { method: "POST", headers, body });
+                let j = {};
+                try { j = await r.json(); } catch(_) {}
+                if (!r.ok || j.ok === false) {
+                  throw new Error(j.error || ("HTTP " + r.status));
+                }
+                // Return full payload to allow UI to show fallback warning if any
+                return j;
+              }
+
+              function bindPromptGenerator(ns) {
+                const root = document.getElementById(`pg-${ns}`);
+                if (!root) return;
+
+                const input = document.getElementById(`pg-${ns}-input`);
+                const btn = document.getElementById(`pg-${ns}-btn`);
+                const loading = document.getElementById(`pg-${ns}-loading`);
+                const resultWrap = document.getElementById(`pg-${ns}-result`);
+                const resultText = document.getElementById(`pg-${ns}-text`);
+                const copyBtn = document.getElementById(`pg-${ns}-copy`);
+                const insertBtn = document.getElementById(`pg-${ns}-insert`);
+                const appendChk = document.getElementById(`pg-${ns}-append`);
+
+                const targetId = ns === 'image' ? 'prompt' : 'video-prompt';
+                const target = () => document.getElementById(targetId);
+
+                function setLoading(on) {
+                  loading.classList.toggle('hidden', !on);
+                  resultWrap.classList.toggle('hidden', on);
+                  btn.disabled = on;
+                }
+
+                btn?.addEventListener('click', async () => {
+                  const idea = (input?.value || '').trim();
+                  if (!idea) {
+                    input?.focus();
+                    return;
+                  }
+                  setLoading(true);
+                  try {
+                    const res = await generateWithGrok(idea, ns === 'video' ? 'video' : 'image');
+                    const pro = (res && res.text) ? res.text : '';
+                    resultText.textContent = pro || 'Не удалось сформировать промпт';
+
+                    // Show warning if backend used local fallback (e.g., provider has no credits)
+                    const noteId = `pg-${ns}-note`;
+                    const prev = document.getElementById(noteId);
+                    if (prev && prev.parentElement) prev.parentElement.removeChild(prev);
+                    if (res && res.fallback) {
+                      const note = document.createElement('div');
+                      note.id = noteId;
+                      note.className = 'mt-2 text-[10px] sm:text-xs text-amber-500';
+                      note.textContent = 'Внимание: используем локальный fallback (временная заглушка из-за отсутствия кредитов у провайдера).';
+                      resultWrap.appendChild(note);
+                    }
+                  } catch (e) {
+                    const msg = (e && e.message) ? String(e.message) : 'Неизвестная ошибка';
+                    resultText.textContent = 'Ошибка генерации промпта: ' + msg;
+                  } finally {
+                    setLoading(false);
+                    resultWrap.classList.remove('hidden');
+                  }
+                });
+
+                copyBtn?.addEventListener('click', () => {
+                  const t = resultText.textContent || '';
+                  if (t) copyToClipboard(t);
+                });
+
+                insertBtn?.addEventListener('click', () => {
+                  const tgt = target();
+                  if (!tgt) return;
+                  const t = (resultText.textContent || '').trim();
+                  if (!t) return;
+                  const append = !!appendChk?.checked;
+                  const cur = (tgt.value || '').trim();
+                  tgt.value = append && cur ? (cur + ', ' + t) : t;
+                  try { tgt.focus(); } catch(_) {}
+                });
+
+                // Enter key on input triggers generate
+                input?.addEventListener('keydown', (e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btn?.click();
+                  }
+                });
+              }
+
+              // Bind both image (this page) and, when present, video (in included template)
+              document.addEventListener('DOMContentLoaded', () => {
+                bindPromptGenerator('image');
+                // Attempt late-bind for video when switching tabs dynamically
+                const tryBindVideo = () => bindPromptGenerator('video');
+                tryBindVideo();
+                document.addEventListener('videoModeChanged', tryBindVideo);
+              });
+            })();
+          </script>
+
+        </div>
+
+        <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm">
+          <!-- Короткий совет -->
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bord)]/60">
+            <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+            </svg>
+            <span class="text-[var(--text)]">Совет: опишите сюжет, ключевые детали и свет в 1–2 фразах. Техпараметры укажите отдельными тегами.</span>
+          </div>
+          <!-- Стоимость с иконкой токена -->
+
+        </div>
+
+
+      </div>
+
+      <!-- Image Models Selection -->
+      <div class="space-y-2">
+        <label class="block text-xs sm:text-sm font-medium mb-1.5">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 flex-shrink-0 text-primary dark:text-primary/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-xs sm:text-sm">Модель</span>
+          </span>
+        </label>
+
+        <!-- Selected image model for submit -->
+        <input type="hidden" id="image-model-id" value="runware:101@1">
+
+        <!-- Cards container used by static/js/generate.js -->
+        <div id="image-model-cards" class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+          {% for model in image_models %}
+          <div class="image-model-card-wrap flex flex-col">
+            {% if model.is_beta %}
+            <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-purple-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
+              </svg>
+              <span class="text-[11px] sm:text-xs font-medium text-purple-600 dark:text-purple-400">Бета</span>
+            </div>
+            {% elif model.is_premium %}
+            <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+              </svg>
+              <span class="text-[11px] sm:text-xs font-medium text-amber-600 dark:text-amber-400">Премиум</span>
+            </div>
+            {% elif forloop.first %}
+            <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+              </svg>
+              <span class="text-[11px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400">Рекомендуем</span>
+            </div>
+            {% else %}
+            <div class="h-5 sm:h-6 mb-1"></div>
+            {% endif %}
+            <button type="button" class="image-model-card h-full w-full block group relative rounded-xl overflow-hidden border-2 border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary transition-all focus:outline-none"
+                    data-model="{{ model.model_id }}"
+                    data-selected="{% if forloop.first %}1{% else %}0{% endif %}"
+                    data-config='{{ model.to_json|safe }}'
+                    aria-label="Выбрать модель {{ model.name }}">
+              <div class="card-hero relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900" style="aspect-ratio:16/9; min-height:180px;">
+                {% if model.image %}
+                <img src="{{ model.image.url }}" alt="{{ model.name }}" class="absolute inset-0 w-full h-full object-cover" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" decoding="{% if forloop.first %}sync{% else %}async{% endif %}" {% if not forloop.first %}fetchpriority="low"{% endif %}>
+                {% else %}
+                <img src="/static/img/category/Пейзаж.jpg" alt="{{ model.name }}" class="absolute inset-0 w-full h-full object-cover" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" decoding="{% if forloop.first %}sync{% else %}async{% endif %}">
+                {% endif %}
+                <div class="card-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 pointer-events-none"></div>
+                <div class="absolute top-2 right-2 z-10">
+                  <span class="px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/90 text-white shadow">
+                    {{ model.token_cost }} TOK
+                  </span>
+                </div>
+                <div class="absolute inset-0 card-content flex flex-col items-center justify-center px-2 sm:px-4 text-center gap-1.5 sm:gap-2">
+                  <h3 class="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">{{ model.name }}</h3>
+                  {% if model.description %}
+                  <p class="text-white/90 text-xs sm:text-sm leading-snug drop-shadow-md line-clamp-2">
+                    {{ model.description }}
+                  </p>
+                  {% endif %}
+                </div>
+              </div>
+            </button>
+          </div>
+          {% empty %}
+          <!-- Fallback: если нет моделей в БД, показываем стандартную -->
+          <div class="image-model-card-wrap flex flex-col">
+            <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+              </svg>
+              <span class="text-[11px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400">Рекомендуем</span>
+            </div>
+            <button type="button" class="image-model-card h-full w-full block group relative rounded-xl overflow-hidden border-2 border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary transition-all focus:outline-none"
+                    data-model="runware:101@1" data-selected="1" aria-label="Выбрать стандартную модель">
+              <div class="card-hero relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900" style="aspect-ratio:16/9; min-height:180px;">
+                <img src="/static/img/category/Пейзаж.jpg" alt="Стандартная модель" class="absolute inset-0 w-full h-full object-cover" loading="eager" decoding="sync">
+                <div class="card-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 pointer-events-none"></div>
+                <div class="absolute top-2 right-2 z-10">
+                  <span class="px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/90 text-white shadow">
+                    {% with c=price|default:TOKENS_PRICE_PER_GEN|default:10 %}{{ c }} TOK{% endwith %}
+                  </span>
+                </div>
+                <div class="absolute inset-0 card-content flex flex-col items-center justify-center px-2 sm:px-4 text-center gap-1.5 sm:gap-2">
+                  <h3 class="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">Стандартная</h3>
+                  <p class="text-white/90 text-xs sm:text-sm leading-snug drop-shadow-md line-clamp-2">
+                    Универсальная модель: стабильное качество и быстрый отклик.
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Информация о выбранной модели (скрыта по умолчанию) -->
+      <div id="image-model-info-section" class="hidden rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 sm:p-4 space-y-3 mt-3">
+        <!-- Заголовок с иконкой -->
+        <div class="flex items-start gap-3">
+          <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 id="image-model-info-name" class="text-sm sm:text-base font-semibold text-[var(--text)] mb-1"></h3>
+            <p id="image-model-info-description" class="text-xs sm:text-sm text-[var(--muted)] line-clamp-2"></p>
           </div>
         </div>
 
-        <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[var(--muted)]">
-          <p>Совет: укажите стиль, свет, объектив, материалы и настроение. Избегайте двойных отрицаний.</p>
-          <p>Стоимость: <strong class="text-[var(--text)]">{% with c=price|default:TOKENS_PRICE_PER_GEN|default:10 %}{{ c }} TOK{% endwith %}</strong></p>
+        <!-- Параметры модели -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 pt-2 border-t border-[var(--bord)]">
+          <!-- Стоимость -->
+          <div class="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[var(--bord)]/40">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/>
+            </svg>
+            <div class="flex-1 min-w-0">
+              <div class="text-[10px] sm:text-xs text-[var(--muted)] leading-tight">Стоимость</div>
+              <div id="image-model-info-cost" class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate">— TOK</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Доступные функции -->
+        <div id="image-model-info-features" class="pt-2 border-t border-[var(--bord)]">
+          <div class="text-[10px] sm:text-xs font-medium text-[var(--muted)] mb-2">Доступные параметры:</div>
+          <div class="flex flex-wrap gap-1.5 sm:gap-2" id="image-model-features-list">
+            <!-- Будет заполнено JS -->
+          </div>
         </div>
       </div>
+
+      <!-- Параметры генерации (скрыты до выбора модели) -->
+      <div class="card p-6 mt-6 hidden" id="image-params-section">
+    <h3 class="text-lg font-semibold mb-4">Параметры генерации</h3>
+
+    <!-- Advanced Parameters -->
+        <div class="space-y-4" id="image-advanced-params">
+          <!-- Resolution -->
+          <div id="resolution-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Разрешение</label>
+            <select id="resolution-selector" name="resolution" class="field w-full">
+              <option value="512x512">512x512</option>
+              <option value="768x768">768x768</option>
+              <option value="1024x1024" selected>1024x1024</option>
+              <option value="1024x1536">1024x1536 (портрет)</option>
+              <option value="1536x1024">1536x1024 (пейзаж)</option>
+            </select>
+          </div>
+
+          <!-- Steps -->
+          <div id="steps-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Steps (шаги)</label>
+            <input type="number" id="steps-input" name="steps" class="field w-full" value="20" min="1" max="50">
+          </div>
+
+          <!-- CFG Scale -->
+          <div id="cfg-scale-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">CFG Scale</label>
+            <input type="number" id="cfg-scale-input" name="cfg_scale" class="field w-full" value="7.0" min="1.0" max="20.0" step="0.1">
+          </div>
+
+          <!-- Scheduler -->
+          <div id="scheduler-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Scheduler</label>
+            <select id="scheduler-select" name="scheduler" class="field w-full">
+              <option value="euler">Euler</option>
+              <option value="euler_a" selected>Euler A</option>
+              <option value="ddim">DDIM</option>
+              <option value="dpm">DPM</option>
+            </select>
+          </div>
+
+          <!-- Seed -->
+          <div id="seed-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Seed (опционально)</label>
+            <input type="number" id="seed-input" name="seed" class="field w-full" placeholder="Случайный">
+          </div>
+
+          <!-- Negative Prompt -->
+          <div id="negative-prompt-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Negative Prompt</label>
+            <textarea id="negative-prompt" name="negative_prompt" class="field w-full" rows="2" placeholder="Что не должно быть на изображении"></textarea>
+          </div>
+
+          <!-- Number of Results -->
+          <div id="number-results-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Количество изображений</label>
+            <input type="number" id="number-results" name="number_results" class="field w-full" value="1" min="1" max="4">
+          </div>
+        </div>
+
+        <!-- Reference Images Upload Component -->
+
+    <!-- Reference Images Upload Component -->
+        {% include 'generate/reference_upload_compact.html' with target_id='image' %}
+  </div>
+
+      <style>
+        /* Image model cards — responsive, dark/light, 320px-ready */
+        .image-model-card { display:block; width:100%; position:relative; border-radius: 0.75rem; }
+        .image-model-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .image-model-card[data-selected="1"] {
+          outline: 2px solid var(--primary);
+          outline-offset: -2px;
+          box-shadow: 0 0 0 4px rgba(99,102,241,.12);
+        }
+
+        .card-hero { aspect-ratio: 16/9; min-height: clamp(140px, 28vw, 220px); }
+
+        /* Fallback for older browsers without aspect-ratio */
+        @supports not (aspect-ratio: 1 / 1) {
+          .card-hero { position: relative; }
+          .card-hero::before { content: ""; display: block; padding-top: 56.25%; }
+          .card-hero > * { position: absolute; inset: 0; }
+        }
+
+        /* Ensure overlay readability */
+        .image-model-card .card-overlay {
+          background: linear-gradient(to top, rgba(0,0,0,.78) 10%, rgba(0,0,0,.35) 45%, transparent 70%);
+        }
+        html[data-theme="light"] .image-model-card .card-overlay {
+          background: linear-gradient(to top, rgba(0,0,0,.70) 15%, rgba(0,0,0,.25) 45%, rgba(0,0,0,.10) 70%);
+        }
+
+        /* Scalable typography for headings/descriptions on the card */
+        .image-model-card h3 { font-size: clamp(0.95rem, 1.5vw, 1.125rem); line-height: 1.25; }
+        .image-model-card p { font-size: clamp(0.72rem, 1.35vw, 0.95rem); }
+
+        /* Content wrapper sizing and text flow */
+        .image-model-card .card-content { width: min(92%, 800px); margin-inline: auto; }
+        .image-model-card p { overflow-wrap: anywhere; hyphens: auto; }
+
+        /* Token badge polish */
+        .image-model-card .token-badge { backdrop-filter: saturate(130%) blur(2px); }
+
+        /* Small screens */
+        @media (max-width: 480px) {
+          .card-hero { min-height: 160px; }
+          .image-model-card h3 { font-size: 0.95rem; }
+          .image-model-card p { font-size: 0.8rem; }
+        }
+        @media (max-width: 375px) {
+          .card-hero { min-height: 150px; }
+          .image-model-card h3 { font-size: 0.9rem; }
+          .image-model-card p { font-size: 0.75rem; }
+        }
+        @media (max-width: 320px) {
+          .card-hero { min-height: 140px; }
+          .image-model-card h3 { font-size: 0.85rem; }
+          .image-model-card p { font-size: 0.72rem; }
+        }
+      </style>
+      <style>
+        .model-nav-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 2rem;
+          height: 2rem;
+          border-radius: 9999px;
+          border: 1px solid var(--bord);
+          background: var(--bg-card);
+          color: var(--text);
+          transition: all .2s ease;
+        }
+        .model-nav-btn:hover {
+          border-color: rgba(99,102,241,.6);
+          color: var(--primary);
+          transform: translateY(-1px);
+        }
+        .model-nav-btn[aria-disabled="true"] {
+          opacity: .5;
+          pointer-events: none;
+        }
+      </style>
 
       <!-- Generate Button -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -152,22 +2249,297 @@
             </svg>
             Сгенерировать
           </button>
-          <span class="text-sm text-[var(--muted)]">Обычно ~1 минута</span>
+          <span class="inline-flex items-center gap-1.5 text-sm text-[var(--muted)]">
+            <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2M12 6a9 9 0 100 18 9 9 0 000-18zM12 2v2" />
+            </svg>
+            Обычно до 30 сек.
+          </span>
         </div>
 
-        <!-- Quick Stats -->
-  <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-[var(--muted)]">
-          <span class="pill">10M+ генераций</span>
-          <span class="pill">Фотореализм</span>
-          <span class="pill">×4 Upscale</span>
-        </div>
+
       </div>
     </div>
+
+  <!-- Очередь генерации (создаётся динамически через JS) -->
+  <div id="image-queue-placeholder" class="mt-6"></div>
+
+  <!-- Параметры генерации (под очередью) -->
+
   </form>
 
+  <!-- ФОРМА ГЕНЕРАЦИИ ВИДЕО -->
+  <div id="video-form-container" class="space-y-8" style="{% if request.GET.type == 'video' %}display: block{% else %}display: none{% endif %};">
+    <div class="card p-6">
+      {% include 'generate/video_form.html' %}
+    </div>
+
+    <!-- Категории промптов для видео -->
+    {% include 'generate/video_prompts.html' %}
+
+
+    {% if request.user.is_staff %}
+    <!-- Admin: Video Showcase Examples Creator (I2V / T2V) -->
+    <div id="video-admin-examples" class="card p-6">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold">Примеры видео (админ)</h2>
+          <p class="text-xs sm:text-sm text-[var(--muted)]">Создавайте и публикуйте примеры для I2V/T2V прямо со страницы</p>
+        </div>
+        <button id="vaToggle" type="button" class="btn btn-ghost text-sm">Свернуть</button>
+      </div>
+
+      <div id="vaFormWrap" class="rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-4 sm:p-5 mb-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-1">Название</label>
+            <input id="vaTitle" type="text" class="field w-full" placeholder="Animated Portrait" maxlength="140">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Режим</label>
+            <select id="vaMode" class="field w-full">
+              <option value="i2v">Фото/Видео (I2V)</option>
+              <option value="t2v">Текст/Видео (T2V)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Категория (опционально)</label>
+            <select id="vaCategory" class="field w-full">
+              <option value="">Без категории</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-2 lg:col-span-3">
+            <label class="block text-sm font-medium mb-1">Промпт</label>
+            <textarea id="vaPrompt" class="field w-full min-h-[88px]" placeholder="Короткий английский промпт для примера"></textarea>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium mb-1">Видео</label>
+            <div class="flex items-center gap-3">
+              <label for="vaVideoFile" class="btn btn-primary shrink-0">Выбрать файл</label>
+              <input id="vaVideoFile" type="file" accept="video/mp4" class="hidden">
+              <span id="vaVideoFileName" class="text-sm text-[var(--muted)]">Файл не выбран</span>
+            </div>
+            <div class="text-xs text-[var(--muted)] mt-1">Загрузите MP4 — файл автоматически сожмётся (H.264, faststart).</div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Порядок</label>
+            <input id="vaOrder" type="number" class="field w-full" value="0" min="0" step="1">
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3">
+          <button id="vaCreate" type="button" class="btn btn-primary">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Создать пример
+          </button>
+          <div id="vaMsg" class="text-xs text-[var(--muted)]"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-semibold">Галерея примеров</h3>
+        <div class="inline-flex items-center gap-2">
+          <span class="text-xs text-[var(--muted)]">Режим:</span>
+          <div class="inline-flex rounded-xl bg-[var(--bord)] p-1 gap-1">
+            <button type="button" class="vaModeTab px-2 py-1 rounded-lg text-xs font-medium active" data-mode="i2v">I2V</button>
+            <button type="button" class="vaModeTab px-2 py-1 rounded-lg text-xs font-medium" data-mode="t2v">T2V</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="vaGrid" class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+        <!-- cards -->
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      const root = document.getElementById('gen-root');
+      const isStaff = (root?.dataset.isStaff || 'false') === 'true';
+      const wrap = document.getElementById('video-admin-examples');
+      if (!isStaff || !wrap) { if (wrap) wrap.style.display = 'none'; return; }
+
+      const api = {
+        list: (mode) => `/generate/api/video/showcase/?mode=${mode}`,
+        cats: (mode) => `/generate/api/video/categories/?mode=${mode}`,
+        create: '/generate/api/video/showcase/create/',
+        del: (id) => `/generate/api/video/showcase/${id}/delete/`,
+      };
+
+      const title = document.getElementById('vaTitle');
+      const prompt = document.getElementById('vaPrompt');
+      const videoFile = document.getElementById('vaVideoFile');
+      const order = document.getElementById('vaOrder');
+      const modeSel = document.getElementById('vaMode');
+      const catSel = document.getElementById('vaCategory');
+      const createBtn = document.getElementById('vaCreate');
+      const msg = document.getElementById('vaMsg');
+      // File chooser binding for video file
+      const vfLabel = wrap.querySelector('label[for="vaVideoFile"]');
+      const vfName = document.getElementById('vaVideoFileName');
+      if (vfLabel && videoFile) {
+        vfLabel.addEventListener('click', (e) => { e.preventDefault(); videoFile.click(); });
+        videoFile.addEventListener('change', () => {
+          if (vfName) vfName.textContent = (videoFile.files && videoFile.files[0]) ? videoFile.files[0].name : 'Файл не выбран';
+        });
+      }
+
+      const grid = document.getElementById('vaGrid');
+      const tabs = wrap.querySelectorAll('.vaModeTab');
+      const toggle = document.getElementById('vaToggle');
+      const formWrap = document.getElementById('vaFormWrap');
+
+      let currentMode = (document.querySelector('.video-source-tab.active')?.dataset.source || 'i2v');
+
+      function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+      function csrf(){ return (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || ''; }
+      function setMsg(text, ok=false){ msg.textContent = text||''; msg.className = 'text-xs ' + (ok ? 'text-emerald-500' : 'text-[var(--muted)]'); }
+
+      async function loadCategories(mode){
+        try{
+          const r = await fetch(api.cats(mode));
+          const j = await r.json();
+          const items = (j.categories||[]);
+          catSel.innerHTML = '<option value=\"\">Без категории</option>' + items.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+        }catch(e){ /* silent */ }
+      }
+
+      function renderCards(list){
+        if (!list || list.length===0){
+          grid.innerHTML = '<div class="text-xs sm:text-sm text-[var(--muted)] col-span-full">Пока нет примеров</div>';
+          return;
+        }
+        grid.innerHTML = list.map(v => `
+          <div class="rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden group">
+            <div class="relative aspect-[16/9] bg-black">
+              <video src="${escapeHtml(v.video_url)}" class="absolute inset-0 w-full h-full object-cover" preload="metadata" controls></video>
+              <div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                <a href="${escapeHtml(v.video_url)}" target="_blank" class="px-2 py-1 rounded-md bg-black/60 text-white text-[10px] sm:text-xs font-semibold hover:bg-black/70">Открыть</a>
+                <button data-id="${v.id}" class="vaDel px-2 py-1 rounded-md bg-red-500/80 text-white text-[10px] sm:text-xs font-semibold hover:bg-red-600">Удалить</button>
+              </div>
+            </div>
+            <div class="p-3">
+              <div class="text-sm font-semibold mb-1 line-clamp-1">${escapeHtml(v.title)}</div>
+              ${v.prompt ? `<pre class="text-[11px] sm:text-xs bg-[var(--bord)]/60 p-2 rounded-md whitespace-pre-wrap leading-snug">${escapeHtml(v.prompt)}</pre>` : ''}
+            </div>
+          </div>
+        `).join('');
+        grid.querySelectorAll('.vaDel').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            if (!id) return;
+            if (!confirm('Удалить пример?')) return;
+            try{
+              const fd = new FormData();
+              fd.append('csrfmiddlewaretoken', csrf());
+              const r = await fetch(api.del(id), { method:'POST', body: fd, headers:{'X-Requested-With':'fetch'} });
+              const j = await r.json();
+              if (j && j.success) {
+                setMsg('Удалено', true);
+                await refresh();
+              } else {
+                alert(j.error || 'Ошибка удаления');
+              }
+            }catch(e){ alert('Ошибка сети'); }
+          });
+        });
+      }
+
+      async function load(mode){
+        try{
+          const r = await fetch(api.list(mode));
+          const j = await r.json();
+          renderCards(j.examples || []);
+        }catch(e){
+          grid.innerHTML = '<div class="text-xs sm:text-sm text-red-500 col-span-full">Ошибка загрузки примеров</div>';
+        }
+      }
+
+      async function refresh(){
+        await load(currentMode);
+      }
+
+      createBtn.addEventListener('click', async () => {
+        const t = (title.value||'').trim();
+        const p = (prompt.value||'').trim();
+        const file = (videoFile && videoFile.files && videoFile.files[0]) ? videoFile.files[0] : null;
+        const m = (modeSel.value||currentMode||'i2v'); // сохраняем выбор для категорий/видимости
+        const c = (catSel.value||'').trim();
+        const o = parseInt(order.value||'0')||0;
+
+        if (!t || !p || !file){ setMsg('Заполните название, промпт и выберите MP4 файл'); return; }
+
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', csrf());
+        fd.append('title', t);
+        fd.append('prompt', p);
+        fd.append('video_file', file);
+        fd.append('order', String(o));
+        fd.append('mode', m);
+        if (c) fd.append('category_id', c);
+
+        try{
+          const r = await fetch(api.create, { method:'POST', body: fd, headers:{'X-Requested-With':'fetch'} });
+          const j = await r.json();
+          if (j && j.success){
+            setMsg('Создано', true);
+            title.value=''; prompt.value=''; order.value='0';
+            if (videoFile) { videoFile.value=''; const n = document.getElementById('vaVideoFileName'); if (n) n.textContent = 'Файл не выбран'; }
+            await refresh();
+          } else {
+            setMsg(j.error || 'Ошибка создания');
+          }
+        }catch(e){ setMsg('Ошибка сети'); }
+      });
+
+      tabs.forEach(btn => btn.addEventListener('click', () => {
+        tabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode || 'i2v';
+        modeSel.value = currentMode;
+        loadCategories(currentMode);
+        refresh();
+      }));
+
+      // collapse
+      toggle.addEventListener('click', () => {
+        const hidden = formWrap.style.display === 'none';
+        formWrap.style.display = hidden ? '' : 'none';
+        toggle.textContent = hidden ? 'Свернуть' : 'Развернуть';
+      });
+
+      // listen outer video mode changes
+      document.addEventListener('videoModeChanged', (e) => {
+        const m = (e?.detail?.mode) || 'i2v';
+        currentMode = m;
+        tabs.forEach(b => b.classList.toggle('active', (b.dataset.mode===m)));
+        modeSel.value = currentMode;
+        loadCategories(currentMode);
+        refresh();
+      });
+
+      // bootstrap
+      tabs.forEach(b => b.classList.toggle('active', (b.dataset.mode===currentMode)));
+      modeSel.value = currentMode;
+      loadCategories(currentMode);
+      refresh();
+    })();
+    </script>
+    {% endif %}
+  </div>
+
+  <!-- Prompt Categories Section (New Beautiful Block) -->
+  {% if prompt_categories %}
+  <div id="image-prompts-card" class="card p-6 mt-6" style="{% if request.GET.type == 'video' %}display:none{% endif %}">
+    {% include 'generate/prompts.html' %}
+  </div>
+  {% endif %}
+
   <!-- Suggestions Section -->
-  {% if suggestion_categories %}
-  <div class="card p-6">
+  {% if false and suggestion_categories %}
+  <div class="card p-6" style="content-visibility:auto;contain-intrinsic-size: 1000px;">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
         <h2 class="text-lg font-semibold">Подсказки по категориям</h2>
@@ -175,25 +2547,138 @@
       </div>
 
       <!-- Category Pills (scrollable on mobile) -->
-      <div class="overflow-x-auto no-scrollbar -mx-2 px-2" aria-label="Категории подсказок">
+      <div class="overflow-x-auto no-scrollbar -mx-2 px-2 js-cat-container" aria-label="Категории подсказок">
         <div class="flex items-center gap-2 min-w-max" role="tablist">
-          <button class="pill bg-primary/15 text-primary border-primary/30 js-cat-btn" role="tab" aria-selected="true" data-cat="all">Все</button>
-          {% for cat in suggestion_categories %}
-            {% if cat.is_active %}
-              <span class="flex items-center gap-1">
-                <button class="pill js-cat-btn" role="tab" aria-selected="false" data-cat="{{ cat.slug }}" data-id="{{ cat.id }}" data-name="{{ cat.name }}" data-slug="{{ cat.slug }}">
-                  {{ cat.name }}
-                </button>
-                {% if request.user.is_staff %}
-                  <button class="w-6 h-6 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 flex items-center justify-center text-xs js-cat-edit" title="Изменить категорию" data-id="{{ cat.id }}" data-name="{{ cat.name|escape }}" data-slug="{{ cat.slug|escape }}">✎</button>
-                  <button class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs js-cat-del" title="Удалить категорию" data-id="{{ cat.id }}">✕</button>
-                {% endif %}
-              </span>
-            {% endif %}
-          {% endfor %}
         </div>
       </div>
     </div>
+
+    <!-- Prompt Categories Grid (OLD - HIDDEN) -->
+    {% if prompt_categories and false %}
+    <div class="mb-8">
+      <h3 class="text-base font-semibold mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Категории с примерами
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+        {% for category in prompt_categories %}
+          {% if forloop.counter <= 11 %}
+          <div class="prompt-category-card group cursor-pointer" data-category-id="{{ category.id }}">
+            <div class="relative aspect-square rounded-xl overflow-hidden bg-[var(--bord)] shadow-sm hover:shadow-lg transition-shadow duration-300">
+              {% if category.image %}
+              <img src="{{ category.image.url }}" alt="{{ category.name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="eager" decoding="sync">
+              {% else %}
+              <div class="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5"></div>
+              {% endif %}
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div class="absolute bottom-0 left-0 right-0 p-3 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                <h4 class="text-white font-semibold text-sm mb-1 drop-shadow-lg">{{ category.name }}</h4>
+                <p class="text-white/80 text-xs line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow">{{ category.description|truncatewords:8 }}</p>
+              </div>
+              <div class="absolute top-2 right-2 bg-primary/90 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
+                {{ category.active_prompts_count }}
+              </div>
+            </div>
+          </div>
+          {% elif forloop.counter == 12 %}
+          <button type="button" id="showAllPromptsBtn" class="prompt-category-card group cursor-pointer block w-full">
+            <div class="relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary to-primary/80 shadow-sm hover:shadow-xl transition-all duration-300 flex items-center justify-center">
+              <div class="text-center p-4">
+                <svg class="w-12 h-12 mx-auto mb-3 text-white opacity-90 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                <h4 class="text-white font-bold text-sm mb-1">Смотреть всё</h4>
+                <p class="text-white/80 text-xs">{{ prompt_page_obj.paginator.count }} категорий</p>
+              </div>
+            </div>
+          </button>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- All Prompt Categories Section (Hidden by default) -->
+    <div id="allPromptCategoriesSection" class="hidden mt-8 animate-fade-in">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+        {% for category in prompt_categories %}
+        {% if forloop.counter > 11 %}
+        <div class="prompt-category-card group cursor-pointer" data-category-id="{{ category.id }}">
+          <div class="relative aspect-square rounded-xl overflow-hidden bg-[var(--bord)] shadow-sm hover:shadow-lg transition-shadow duration-300">
+            {% if category.image %}
+            <img src="{{ category.image.url }}" alt="{{ category.name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="eager" decoding="sync">
+            {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5"></div>
+            {% endif %}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-3 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+              <h4 class="text-white font-semibold text-sm mb-1 drop-shadow-lg">{{ category.name }}</h4>
+              <p class="text-white/80 text-xs line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow">{{ category.description|truncatewords:8 }}</p>
+            </div>
+            <div class="absolute top-2 right-2 bg-primary/90 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
+              {{ category.active_prompts_count }}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- Pagination for All Categories -->
+      {% if prompt_page_obj.paginator.num_pages > 1 %}
+      <nav class="flex items-center justify-center mt-8" aria-label="Пагинация категорий промптов">
+        <div class="flex items-center gap-1 flex-wrap justify-center">
+          {% if prompt_page_obj.has_previous %}
+            <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page=1#allPromptCategoriesSection" aria-label="Первая">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+              </svg>
+              <span class="hidden sm:inline">Первая</span>
+            </a>
+            <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ prompt_page_obj.previous_page_number }}#allPromptCategoriesSection" aria-label="Назад">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+              <span class="hidden sm:inline">Назад</span>
+            </a>
+          {% endif %}
+
+          {% with total=prompt_page_obj.paginator.num_pages current=prompt_page_obj.number %}
+            {% for i in prompt_page_obj.paginator.page_range %}
+              {% if i == 1 or i == total or i >= current|add:"-2" and i <= current|add:"2" %}
+                {% if i == current %}
+                  <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">{{ i }}</span>
+                {% else %}
+                  <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ i }}#allPromptCategoriesSection">{{ i }}</a>
+                {% endif %}
+              {% elif i == 2 and current > 4 %}
+                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+              {% elif i == total|add:"-1" and current < total|add:"-3" %}
+                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
+              {% endif %}
+            {% endfor %}
+          {% endwith %}
+
+          {% if prompt_page_obj.has_next %}
+            <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ prompt_page_obj.next_page_number }}#allPromptCategoriesSection" aria-label="Вперёд">
+              <span class="hidden sm:inline">Вперёд</span>
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </a>
+            <a class="btn btn-ghost px-3 py-2 text-sm" href="?prompt_page={{ prompt_page_obj.paginator.num_pages }}#allPromptCategoriesSection" aria-label="Последняя">
+              <span class="hidden sm:inline">Последняя</span>
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+              </svg>
+            </a>
+          {% endif %}
+        </div>
+      </nav>
+      {% endif %}
+    </div>
+    {% endif %}
 
     {% if request.user.is_staff %}
       <div class="flex flex-wrap gap-3 mb-6 p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
@@ -212,38 +2697,8 @@
 
     <!-- Hidden Templates -->
     <div class="tags js-suggest-wrap" data-cat="all" hidden>
-      {% for s in suggestions %}
-        <span class="sg-item" data-sid="{{ s.id }}">
-          <button type="button" class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition js-suggest" data-text="{{ s.text|escape }}">{{ s.title }}</button>
-          {% if request.user.is_staff %}
-            <button type="button" class="w-6 h-6 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 flex items-center justify-center text-xs js-sg-edit" title="Изменить" data-id="{{ s.id }}" data-title="{{ s.title|escape }}" data-text="{{ s.text|escape }}">✎</button>
-            <button type="button" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs js-sg-del" title="Удалить" data-id="{{ s.id }}">✕</button>
-          {% endif %}
-        </span>
-      {% empty %}
-        <span class="text-[var(--muted)] text-sm">Подсказки пока не добавлены.</span>
-      {% endfor %}
+      <span class="text-[var(--muted)] text-sm">Подсказки пока не добавлены.</span>
     </div>
-
-    {% for cat in suggestion_categories %}
-      {% if cat.is_active %}
-        <div class="tags js-suggest-wrap" data-cat="{{ cat.slug }}" hidden>
-          {% for s in cat.suggestions.all %}
-            {% if s.is_active %}
-              <span class="sg-item" data-sid="{{ s.id }}">
-                <button type="button" class="pill hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition js-suggest" data-text="{{ s.text|escape }}">{{ s.title }}</button>
-                {% if request.user.is_staff %}
-                  <button type="button" class="w-6 h-6 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 flex items-center justify-center text-xs js-sg-edit" title="Изменить" data-id="{{ s.id }}" data-title="{{ s.title|escape }}" data-text="{{ s.text|escape }}">✎</button>
-                  <button type="button" class="w-6 h-6 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 flex items-center justify-center text-xs js-sg-del" title="Удалить" data-id="{{ s.id }}">✕</button>
-                {% endif %}
-              </span>
-            {% endif %}
-          {% empty %}
-            <span class="text-[var(--muted)] text-sm">В этой категории пока нет подсказок.</span>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endfor %}
 
     {% if request.user.is_staff %}
       <div class="flex flex-wrap gap-3 mt-6 p-4 rounded-2xl bg-black/[.02] dark:bg-white/[.02] border border-[var(--bord)]">
@@ -264,134 +2719,42 @@
   {% endif %}
 
   <!-- Showcase Section -->
-  {% if showcase_images %}
-  <div class="card p-4 sm:p-6 lg:p-8" aria-labelledby="showcaseTitle">
+  <div id="showcaseSection" class="card p-4 sm:p-6 lg:p-8" aria-labelledby="showcaseTitle" style="scroll-margin-top: clamp(56px, 8vh, 96px); {% if request.GET.type == 'video' %}display:none{% endif %}">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 mb-4 sm:mb-6">
       <div>
         <h2 id="showcaseTitle" class="text-lg sm:text-xl lg:text-2xl font-bold">Примеры результатов</h2>
         <p class="text-xs sm:text-sm text-[var(--muted)] mt-1">Вдохновляйтесь работами других пользователей</p>
       </div>
 
-      {% if showcase_categories %}
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {% if request.user.is_staff %}
+          <a href="/admin/generate/showcaseimage/add/" class="btn btn-primary text-xs sm:text-sm whitespace-nowrap" target="_blank">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Добавить пример
+          </a>
+        {% endif %}
+
         <div class="overflow-x-auto no-scrollbar -mx-2 px-2">
           <div class="flex items-center gap-2 min-w-max">
-            <button class="pill bg-primary/15 text-primary border-primary/30 js-sh-cat text-xs sm:text-sm" data-cat="all">Все</button>
-            {% for sc in showcase_categories %}
-              {% if sc.is_active %}
-                <button class="pill js-sh-cat text-xs sm:text-sm" data-cat="{{ sc.slug }}">{{ sc.name }}</button>
-              {% endif %}
-            {% endfor %}
+            <a class="pill js-showcase-filter text-xs sm:text-sm" data-category="portrait" href="?scat=portrait#showcaseSection">Портреты</a>
+            <a class="pill js-showcase-filter text-xs sm:text-sm" data-category="fashion" href="?scat=fashion#showcaseSection">Мода</a>
+            <a class="pill js-showcase-filter text-xs sm:text-sm" data-category="art" href="?scat=art#showcaseSection">Арт</a>
+            <a class="pill js-showcase-filter text-xs sm:text-sm" data-category="nature" href="?scat=nature#showcaseSection">Природа</a>
+            <a class="pill js-showcase-filter text-xs sm:text-sm" data-category="fantasy" href="?scat=fantasy#showcaseSection">Фэнтези</a>
           </div>
         </div>
-      {% endif %}
+      </div>
     </div>
 
-    <!-- Mobile: 2 columns, Tablet: 3 columns, Desktop: 4 columns -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6" id="showcaseGrid">
-      {% for item in showcase_images|slice:":6" %}
-        {% if item.is_active %}
-          <article class="group showcase-card showcase-item" data-cat="{{ item.category.slug|default:'misc' }}" itemscope itemtype="https://schema.org/ImageObject">
-            <div class="card overflow-hidden transition-all duration-300">
-              <!-- Image Container -->
-              <div class="relative overflow-hidden showcase-image-container" data-image-url="{{ item.image.url }}">
-                <img
-                  loading="lazy"
-                  src="{{ item.image.url }}"
-                  alt="{{ item.title|default:'Пример изображения' }}"
-                  itemprop="image"
-                  class="w-full aspect-[4/5] sm:aspect-[3/4] object-cover transition duration-300 group-hover:scale-105 cursor-pointer showcase-image">
+    <!-- Mobile: 1 column (320px), 2 columns (480px+), Tablet: 3 columns, Desktop: 4 columns -->
+    <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6" id="showcaseGrid"></div>
 
-                <!-- Overlay with category - hidden on very small screens -->
-                <div class="absolute top-2 left-2 right-2 hidden xs:flex items-center justify-between pointer-events-none">
-                  <span class="pill bg-black/70 text-white backdrop-blur-sm border-white/20 text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1">
-                    {{ item.category.name|default:'Misc' }}
-                  </span>
-                  <span class="pill bg-black/70 text-white backdrop-blur-sm border-white/20 flex items-center gap-1 text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1">
-                    <svg class="w-2 h-2 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-                    </svg>
-                    {{ item.likes_count|default:0 }}
-                  </span>
-                </div>
 
-                <!-- Open Button Overlay (hidden by default) -->
-                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 invisible transition-all duration-300 showcase-overlay">
-                  <div class="flex flex-col items-center gap-3 text-white">
-                    <button class="btn btn-primary px-6 py-2 text-sm showcase-open-btn" type="button">
-                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                      </svg>
-                      Открыть
-                    </button>
-                    <button class="btn btn-ghost text-white hover:text-white text-sm py-1 px-3 showcase-cancel-btn" type="button">
-                      Отмена
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Card Content -->
-              <div class="p-2 sm:p-3 lg:p-4 space-y-2 sm:space-y-3">
-                <!-- Title -->
-                <h3 class="font-medium sm:font-semibold text-xs sm:text-sm lg:text-base leading-tight line-clamp-1" itemprop="name">
-                  {{ item.title|default:'Пример изображения' }}
-                </h3>
-
-                <!-- Category on mobile (replaces overlay) -->
-                <div class="flex xs:hidden items-center justify-between text-[10px] text-[var(--muted)]">
-                  <span class="pill text-[10px] px-1.5 py-0.5">{{ item.category.name|default:'Misc' }}</span>
-                  <span class="flex items-center gap-1">
-                    <svg class="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-                    </svg>
-                    {{ item.likes_count|default:0 }}
-                  </span>
-                </div>
-
-                <!-- Prompt Preview -->
-                {% if item.prompt %}
-                  <div class="text-[10px] sm:text-xs text-[var(--muted)] leading-relaxed">
-                    <p class="line-clamp-2 overflow-hidden">
-                      {{ item.prompt|truncatechars:80|truncatechars:120 }}...
-                    </p>
-                  </div>
-
-                  <!-- Insert Prompt Button -->
-                  <button type="button" class="btn btn-primary w-full text-[10px] sm:text-xs py-1.5 sm:py-2 transition-all duration-200 js-insert-prompt" data-prompt="{{ item.prompt|escape }}">
-                    <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                    </svg>
-                    <span class="hidden sm:inline">Использовать промпт</span>
-                    <span class="sm:hidden">Промпт</span>
-                  </button>
-                {% else %}
-                  <div class="text-[10px] sm:text-xs text-[var(--muted)] italic">
-                    Промпт не указан
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          </article>
-        {% endif %}
-      {% empty %}
-        <div class="col-span-full text-center py-8 sm:py-12">
-          <div class="max-w-xs sm:max-w-md mx-auto">
-            <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-[var(--muted)]/10 flex items-center justify-center">
-              <svg class="w-6 h-6 sm:w-8 sm:h-8 text-[var(--muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            <p class="text-[var(--muted)] text-sm sm:text-lg">Пока нет примеров</p>
-            <p class="text-[var(--muted)] text-xs sm:text-sm mt-1 sm:mt-2">Первые работы появятся совсем скоро</p>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
 
   <!-- Why Choose Us -->
-  <div class="card p-6 sm:p-8">
+  <div class="card p-6 mt-6">
     <h2 class="text-lg font-semibold mb-6">Почему именно мы</h2>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
       <div>
@@ -483,5 +2846,1334 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/generate.js' %}"></script>
+<script>
+// Оптимизированный критический JS с кэшированием и делегированием
+(function(){
+'use strict';
+const root=document.getElementById('gen-root');
+if(!root)return;
+const hidden=document.getElementById('image-model-id');
+const container=document.getElementById('image-model-cards');
+if(!container)return;
+const cards=container.querySelectorAll('.image-model-card');
+if(!cards.length)return;
+
+// Кэшируем классы для быстрого доступа
+const SELECTED='border-primary';
+const cardsArr=Array.from(cards);
+
+function select(card){
+  // Batch DOM updates
+  requestAnimationFrame(()=>{
+    cardsArr.forEach(c=>{
+      c.dataset.selected='0';
+      c.classList.remove(SELECTED);
+    });
+    if(card){
+      hidden.value=card.dataset.model||'';
+      card.dataset.selected='1';
+      card.classList.add(SELECTED);
+      try{localStorage.setItem('gen.image.model',card.dataset.model)}catch(_){}
+
+      // Обновляем поля через ImageFieldManager
+      if (card.dataset.config) {
+        try {
+          const config = JSON.parse(card.dataset.config);
+          if (window.imageFieldManager) {
+            window.imageFieldManager.updateFieldsForModel(config);
+          } else if (typeof ImageFieldManager !== 'undefined') {
+            window.imageFieldManager = new ImageFieldManager();
+            window.imageFieldManager.updateFieldsForModel(config);
+          }
+        } catch (e) {
+          console.error('Error updating image fields:', e);
+        }
+      }
+    }
+  });
+}
+
+/* Nav buttons (back/forward) next to "Модель" */
+const leftNav=document.querySelector('.model-nav-btn.left');
+const rightNav=document.querySelector('.model-nav-btn.right');
+
+function currentIndex(){
+  return cardsArr.findIndex(c=>c.dataset.selected==='1');
+}
+function updateNavState(){
+  const i=currentIndex();
+  if(leftNav) leftNav.setAttribute('aria-disabled', i<=0 ? 'true' : 'false');
+  if(rightNav) rightNav.setAttribute('aria-disabled', i>=cardsArr.length-1 ? 'true' : 'false');
+}
+function selectAndUpdate(card){
+  select(card);
+  updateNavState();
+  try{ card && card.scrollIntoView({behavior:'smooth', block:'nearest', inline:'nearest'}); }catch(_){}
+}
+
+// Используем делегирование событий вместо множественных слушателей
+container.addEventListener('click',e=>{
+  const card=e.target.closest('.image-model-card');
+  if(card)selectAndUpdate(card);
+},{passive:true});
+
+// Клики по стрелкам
+leftNav?.addEventListener('click', (e)=>{
+  e.preventDefault();
+  const i=currentIndex();
+  if(i>0){
+    const card=cardsArr[i-1];
+    selectAndUpdate(card);
+  }
+});
+rightNav?.addEventListener('click', (e)=>{
+  e.preventDefault();
+  const i=currentIndex();
+  if(i<cardsArr.length-1){
+    const card=cardsArr[i+1];
+    selectAndUpdate(card);
+  }
+});
+
+// Восстанавливаем выбор
+let pre=cards[0];
+try{
+  const saved=localStorage.getItem('gen.image.model');
+  if(saved)pre=cardsArr.find(c=>c.dataset.model===saved)||pre;
+}catch(_){}
+if(!pre)pre=cardsArr.find(c=>c.dataset.selected==='1')||cards[0];
+if(pre)select(pre);
+updateNavState();
+})();
+</script>
+<script src="{% static 'js/generate-optimized.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script src="{% static 'js/generate.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script src="{% static 'js/image-generation.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script src="{% static 'js/image-models.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script src="{% static 'js/image-field-manager.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script src="{% static 'js/image-price-calculator.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script src="{% static 'js/update-image-model-info.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script src="{% static 'js/balance-updater.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script>
+// Оптимизированные данные витрины с ленивой загрузкой
+window.showcaseGalleryData = [
+{% for item in showcase_images %}
+  {
+    id: {{ item.id|default:"0" }},
+    category: "{{ item.category.slug|default:'misc' }}",
+    title: "{{ item.title|escapejs }}",
+    prompt: "{{ item.prompt|escapejs }}",
+    images: [
+      {% with imgs=item.get_all_images_with_thumbs %}
+        {% for im in imgs %}
+          {"thumb":"{{ im.thumb|escapejs }}","full":"{{ im.full|escapejs }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      {% endwith %}
+    ]
+  }{% if not forloop.last %},{% endif %}
+{% endfor %}
+];
+</script>
+<script src="{% static 'js/showcase.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script>
+// Оптимизированная витрина с кэшированием и batch updates
+(function(){
+'use strict';
+const init=()=>{
+  const pills=document.querySelectorAll('.js-showcase-filter');
+  if(!pills.length)return;
+
+  const pillsArr=Array.from(pills);
+  const anyActive=pillsArr.some(b=>b.classList.contains('bg-primary/15'));
+  if(anyActive)return;
+
+  const scat=(new URLSearchParams(location.search).get('scat')||'all').trim();
+  const classes=['bg-primary/15','text-primary','border-primary/30'];
+
+  requestAnimationFrame(()=>{
+    pillsArr.forEach(btn=>{
+      const on=(btn.dataset.category||'all').trim()===scat;
+      classes.forEach(cls=>btn.classList.toggle(cls,on));
+    });
+  });
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true,passive:true});
+else init();
+})();
+</script>
+<script>
+// Оптимизированный скролл с IntersectionObserver
+(function(){
+'use strict';
+const init=()=>{
+  const pc=document.getElementById('promptCats');
+  if(!pc)return;
+
+  const usp=new URLSearchParams(location.search);
+  if(usp.has('prompt_page')||location.hash==='#promptCats'){
+    requestAnimationFrame(()=>{
+      try{pc.scrollIntoView({behavior:'auto',block:'start'})}
+      catch(_){location.hash='#promptCats'}
+    });
+  }
+
+  const pcNav=document.querySelector('nav[aria-label="Пагинация категорий"]');
+  if(pcNav){
+    pcNav.addEventListener('click',e=>{
+      const link=e.target.closest('a[href*="prompt_page="]');
+      if(!link)return;
+      e.preventDefault();
+      try{
+        const url=new URL(link.href,location.origin);
+        url.hash='promptCats';
+        location.href=url.toString();
+      }catch{
+        location.href=(link.getAttribute('href')||'')+'#promptCats';
+      }
+    },{passive:false});
+  }
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true,passive:true});
+else init();
+})();
+</script>
+
+<!-- Prompt Categories Modal & JavaScript -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="promptCategoryModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-[var(--bord)] shadow-2xl animate-modal-in">
+    <div class="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--bord)] p-4 sm:p-6 flex items-center justify-between z-10">
+      <h3 class="text-lg sm:text-xl font-bold" id="modalCategoryTitle">Промпты</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" id="closePromptModal" aria-label="Закрыть">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-88px)] custom-scrollbar" id="modalPromptsContainer">
+      <div class="text-center text-[var(--muted)] py-8">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ===== Категории промптов ===== */
+.prompt-category-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.prompt-category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="light"] .prompt-category-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.prompt-category-card:active {
+  transform: translateY(-2px);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ===== Модальное окно ===== */
+#promptCategoryModal {
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+#promptCategoryModal.active {
+  display: flex;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-in {
+  animation: modal-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Кастомный скроллбар (обе темы) ===== */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 10px;
+  border: 2px solid var(--bg-card, #1e293b);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #4f46e5 0%, #7c3aed 100%);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+/* Светлая тема - скроллбар */
+html[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
+  border-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+html[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #4f46e5 0%, #7c3aed 100%);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* ===== Промпты в модальном окне ===== */
+.prompt-item-modal {
+  background: var(--bg-2, #11121a);
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 14px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.prompt-item-modal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.prompt-item-modal:hover {
+  background: var(--bg-3, #151625);
+  border-color: #6366f1;
+  transform: translateX(8px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
+}
+
+html[data-theme="light"] .prompt-item-modal {
+  background: #f7f7f9;
+  border-color: rgba(0,0,0,.10);
+}
+
+html[data-theme="light"] .prompt-item-modal:hover {
+  background: #ffffff;
+  border-color: #6366f1;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.15);
+}
+
+.prompt-item-modal:hover::before {
+  transform: scaleY(1);
+}
+
+.prompt-item-modal:active {
+  transform: translateX(6px) scale(0.98);
+}
+
+.prompt-item-modal h4 {
+  color: var(--text-strong, #eef1f6);
+  margin: 0 0 8px 0;
+}
+
+html[data-theme="light"] .prompt-item-modal h4 {
+  color: #0f1419;
+}
+
+.prompt-item-modal p {
+  color: var(--muted, #a0a8b5);
+  margin: 0;
+}
+
+html[data-theme="light"] .prompt-item-modal p {
+  color: #6b7280;
+}
+
+/* ===== Индикатор копирования ===== */
+.prompt-copy-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  white-space: nowrap;
+}
+
+.prompt-item-modal:hover .prompt-copy-indicator {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.prompt-item-modal.copied .prompt-copy-indicator {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  opacity: 1;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* ===== Адаптив для мобильных ===== */
+@media (max-width: 640px) {
+  .prompt-item-modal {
+    padding: 1rem;
+  }
+
+  .prompt-copy-indicator {
+    position: static;
+    display: block;
+    margin-top: 0.75rem;
+    opacity: 0.8;
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    transform: none !important;
+  }
+
+  .prompt-item-modal:hover .prompt-copy-indicator {
+    opacity: 1;
+  }
+
+  .prompt-item-modal.copied .prompt-copy-indicator {
+    opacity: 1;
+  }
+}
+
+/* ===== Кнопка "Использовать промт" ===== */
+.prompt-use-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+  white-space: nowrap;
+  min-height: 38px;
+}
+
+.prompt-use-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  transform: translateY(-2px);
+}
+
+.prompt-use-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+.prompt-use-btn.copied {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.prompt-use-btn svg {
+  flex-shrink: 0;
+}
+
+/* ===== Адаптив для мобильных (кнопка) ===== */
+@media (max-width: 640px) {
+  .prompt-use-btn {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    min-height: 36px;
+  }
+}
+
+/* ===== Адаптив до 480px ===== */
+@media (max-width: 480px) {
+  #promptCategoryModal > div {
+    max-width: 95vw;
+    margin: 0 auto;
+  }
+
+  .prompt-item-modal {
+    padding: 1rem;
+  }
+
+  .prompt-item-modal p {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+}
+
+/* ===== Адаптив до 375px ===== */
+@media (max-width: 375px) {
+  .prompt-category-card h4 {
+    font-size: 0.8125rem;
+  }
+
+  .prompt-category-card p {
+    font-size: 0.6875rem;
+  }
+
+  .prompt-item-modal {
+    padding: 0.875rem;
+  }
+
+  .prompt-use-btn {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    min-height: 36px;
+  }
+}
+
+/* ===== Адаптив до 320px ===== */
+@media (max-width: 320px) {
+  /* Модальное окно */
+  #promptCategoryModal {
+    padding: 0.5rem;
+  }
+
+  #promptCategoryModal > div {
+    max-width: 100%;
+    border-radius: 1rem;
+  }
+
+  .sticky.top-0 {
+    padding: 0.75rem 1rem !important;
+  }
+
+  #modalCategoryTitle {
+    font-size: 1rem;
+  }
+
+  /* Категории */
+  .prompt-category-card {
+    font-size: 0.8125rem;
+  }
+
+  .prompt-category-card h4 {
+    font-size: 0.75rem;
+  }
+
+  .prompt-category-card p {
+    font-size: 0.625rem;
+  }
+
+  .prompt-category-card .absolute.top-2.right-2 {
+    font-size: 0.625rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Промпты в модальном окне */
+  .prompt-item-modal {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+  }
+
+  .prompt-item-modal p {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  /* Кнопка использовать */
+  .prompt-use-btn {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.6875rem;
+    min-height: 32px;
+    gap: 0.25rem;
+    border-radius: 0.5rem;
+  }
+
+  .prompt-use-btn svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  /* Контейнер промптов */
+  .p-4.sm\:p-6 {
+    padding: 0.75rem !important;
+  }
+
+  .space-y-3 > * + * {
+    margin-top: 0.625rem !important;
+  }
+}
+
+/* ===== Модальное окно - фон и контейнер ===== */
+#promptCategoryModal {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+html[data-theme="light"] #promptCategoryModal {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+#promptCategoryModal > div {
+  background: var(--surface, #0f1117);
+  border-color: var(--border, rgba(255,255,255,.08));
+}
+
+html[data-theme="light"] #promptCategoryModal > div {
+  background: #ffffff;
+  border-color: rgba(0,0,0,.10);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Disable legacy image prompts modal JS when the modern block (prompts.html) is present
+  if (document.getElementById('image-prompts-card')) {
+    return;
+  }
+  const modal = document.getElementById('promptCategoryModal');
+  const modalTitle = document.getElementById('modalCategoryTitle');
+  const modalContainer = document.getElementById('modalPromptsContainer');
+  const closeBtn = document.getElementById('closePromptModal');
+  const categoryCards = document.querySelectorAll('.prompt-category-card');
+
+  // Открытие модального окна при клике на категорию
+  categoryCards.forEach(card => {
+    card.addEventListener('click', async function() {
+      const categoryId = this.dataset.categoryId;
+
+      // Пропускаем кнопку "Смотреть всё"
+      if (!categoryId) {
+        return;
+      }
+
+      const categoryName = this.querySelector('h4').textContent;
+
+      modalTitle.textContent = categoryName;
+      modalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Загрузка...</div>';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      try {
+        const response = await fetch(`/generate/api/categories/${categoryId}/prompts`);
+        const data = await response.json();
+
+        if (data.prompts && data.prompts.length > 0) {
+          modalContainer.innerHTML = `
+            <div class="space-y-3">
+              ${data.prompts.map(prompt => `
+                <div class="prompt-item-modal" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en)}">
+                  <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                    <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+                    <button class="prompt-use-btn shrink-0 w-full sm:w-auto">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                      </svg>
+                      Использовать
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+
+          // Добавляем обработчики клика на кнопки
+          modalContainer.querySelectorAll('.prompt-use-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const promptItem = this.closest('.prompt-item-modal');
+
+              const promptTextEn = promptItem.dataset.promptEn;
+              const promptTextRu = promptItem.dataset.prompt;
+              const promptToUse = promptTextEn && promptTextEn.trim() !== '' ? promptTextEn : promptTextRu;
+
+              copyToClipboard(promptToUse);
+
+              const originalHTML = this.innerHTML;
+              this.innerHTML = `
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Скопировано!
+              `;
+              this.classList.add('copied');
+
+              setTimeout(() => {
+                this.innerHTML = originalHTML;
+                this.classList.remove('copied');
+              }, 2000);
+
+              const promptField = document.getElementById('prompt');
+              if (promptField) {
+                const currentValue = promptField.value.trim();
+                if (currentValue) {
+                  promptField.value = currentValue + ', ' + promptToUse;
+                } else {
+                  promptField.value = promptToUse;
+                }
+                promptField.focus();
+              }
+
+              closeModal();
+            });
+          });
+        } else {
+          modalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>';
+        }
+      } catch (error) {
+        console.error('Error loading prompts:', error);
+        modalContainer.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки промптов</div>';
+      }
+    });
+  });
+
+  // Закрытие модального окна
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('active')) {
+      closeModal();
+    }
+  });
+
+  function closeModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Управление показом/скрытием всех категорий промптов
+  const showAllPromptsBtn = document.getElementById('showAllPromptsBtn');
+  const allPromptCategoriesSection = document.getElementById('allPromptCategoriesSection');
+
+  if (showAllPromptsBtn && allPromptCategoriesSection) {
+    showAllPromptsBtn.addEventListener('click', function() {
+      const isHidden = allPromptCategoriesSection.classList.contains('hidden');
+      const btnTitle = this.querySelector('h4');
+      const btnIcon = this.querySelector('svg');
+
+      if (isHidden) {
+        allPromptCategoriesSection.classList.remove('hidden');
+        btnTitle.textContent = 'Скрыть';
+        btnIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>';
+
+        setTimeout(() => {
+          allPromptCategoriesSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      } else {
+        allPromptCategoriesSection.classList.add('hidden');
+        btnTitle.textContent = 'Смотреть всё';
+        btnIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>';
+
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+
+  // Автоматически показываем секцию, если в URL есть параметр prompt_page или якорь
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasPromptPage = urlParams.has('prompt_page');
+  const hasAnchor = window.location.hash === '#allPromptCategoriesSection';
+
+  if ((hasPromptPage || hasAnchor) && allPromptCategoriesSection) {
+    allPromptCategoriesSection.classList.remove('hidden');
+    if (hasAnchor) {
+      setTimeout(() => {
+        allPromptCategoriesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }
+});
+</script>
+
+<style>
+/* Анимация для секции всех категорий */
+.animate-fade-in {
+  animation: fadeInSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Стили для переключателя режимов ===== */
+.generation-mode-tab {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.generation-mode-tab .mode-icon {
+  color: var(--muted);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.generation-mode-tab.active {
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="dark"] .generation-mode-tab.active {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.generation-mode-tab.active .mode-icon {
+  color: var(--primary);
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+}
+
+.generation-mode-tab:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="dark"] .generation-mode-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.generation-mode-tab:hover:not(.active) .mode-icon {
+  color: var(--fg);
+}
+</style>
+
+<!-- Модули для генерации видео -->
+<!-- Lazy-loaded on demand in the mode switcher -->
+
+<!-- Оптимизированный переключатель режимов -->
+<script>
+(function(){
+'use strict';
+const init=()=>{
+  const imageModeTab=document.querySelector('[data-mode="image"]');
+  const videoModeTab=document.querySelector('[data-mode="video"]');
+  const imageForm=document.querySelector('form[method="post"]');
+  const videoFormContainer=document.getElementById('video-form-container');
+  const pageTitle=document.getElementById('page-title');
+  const pageSubtitle=document.getElementById('page-subtitle');
+
+  // Кэшируем элементы
+  const els={
+    videoPromptCats:document.getElementById('videoPromptCats'),
+    videoShowcaseSection:document.getElementById('videoShowcaseSection'),
+    imagePromptCats:document.getElementById('promptCats'),
+    imageShowcaseSection:document.getElementById('showcaseSection'),
+    imagePromptsCard:document.getElementById('image-prompts-card'),
+    imageQueue:document.getElementById('image-queue-card'),
+    videoQueue:document.getElementById('video-queue-card')
+  };
+
+  let __vgLoaded=false;
+  const loadVideoAssets=()=>{
+    if(__vgLoaded)return;
+    __vgLoaded=true;
+    const head=document.head;
+    const cssId='vg-css';
+    if(!document.getElementById(cssId)){
+      const l=document.createElement('link');
+      l.id=cssId;l.rel='stylesheet';
+      l.href="{% static 'css/video-generation.css' %}?v={{ STATIC_VERSION }}";
+      head.appendChild(l);
+    }
+    const scripts=[
+      "{% static 'js/video-cache.js' %}?v={{ STATIC_VERSION }}",
+      "{% static 'js/video-optimizer.js' %}?v={{ STATIC_VERSION }}",
+      "{% static 'js/video-field-manager.js' %}?v={{ STATIC_VERSION }}",
+      "{% static 'js/moon-slider-handler.js' %}?v={{ STATIC_VERSION }}",
+      "{% static 'js/video-generation.js' %}?v={{ STATIC_VERSION }}",
+      "{% static 'js/video-prompts.js' %}?v={{ STATIC_VERSION }}"
+    ];
+    const fragment=document.createDocumentFragment();
+    scripts.forEach(src=>{
+      if(document.querySelector(`script[src="${src}"]`))return;
+      const s=document.createElement('script');
+      s.src=src;s.defer=true;
+      s.onload=()=>{
+        if(src.includes('video-generation.js')&&!window.videoGeneration&&typeof VideoGeneration==='function'){
+          window.videoGeneration=new VideoGeneration();
+        }
+        if(src.includes('video-prompts.js')){
+          const tab=document.querySelector('.video-source-tab.active');
+          const mode=tab?.dataset.source||'t2v';
+          document.dispatchEvent(new CustomEvent('forceLoadVideoContent',{detail:{mode}}));
+        }
+      };
+      fragment.appendChild(s);
+    });
+    head.appendChild(fragment);
+  };
+
+  if(!imageModeTab||!videoModeTab||!imageForm||!videoFormContainer)return;
+
+  const switchMode=mode=>{
+    requestAnimationFrame(()=>{
+      document.documentElement.classList.toggle('mode-video',mode==='video');
+      const isImage=mode==='image';
+
+      imageModeTab.classList.toggle('active',isImage);
+      videoModeTab.classList.toggle('active',!isImage);
+      imageForm.style.display=isImage?'block':'none';
+      videoFormContainer.style.display=isImage?'none':'block';
+
+      const displays={
+        imagePromptCats:isImage?'block':'none',
+        imageShowcaseSection:isImage?'block':'none',
+        imagePromptsCard:isImage?'block':'none',
+        imageQueue:isImage?'':'none',
+        videoPromptCats:isImage?'none':'block',
+        videoShowcaseSection:isImage?'none':'block',
+        videoQueue:isImage?'none':''
+      };
+
+      Object.entries(displays).forEach(([k,v])=>{
+        if(els[k])els[k].style.display=v;
+      });
+
+      // Toggle admin panel visibility
+      const adminPanel=document.getElementById('video-models-admin-panel');
+      const imageAdminPanel=document.getElementById('image-models-admin-panel');
+      if(adminPanel)adminPanel.style.display=isImage?'none':'block';
+      if(imageAdminPanel)imageAdminPanel.style.display=isImage?'block':'none';
+
+      if(pageTitle)pageTitle.textContent=isImage?'Сгенерировать изображение':'Сгенерировать видео';
+      if(pageSubtitle)pageSubtitle.textContent=isImage?'Создавайте уникальные изображения с помощью ИИ':'Создавайте уникальные видео с помощью ИИ';
+
+      try{localStorage.setItem('gen.topMode',mode)}catch(_){}
+
+      if(!isImage){
+        loadVideoAssets();
+        const tab=document.querySelector('.video-source-tab.active');
+        const videoMode=tab?.dataset.source||'i2v';
+        document.dispatchEvent(new CustomEvent('videoModeChanged',{detail:{mode:videoMode}}));
+      }
+
+      // Initialize ImageFieldManager for default image model
+      if (isImage && window.ImageFieldManager) {
+        const defaultImageCard = document.querySelector('.image-model-card.active');
+        if (defaultImageCard && defaultImageCard.dataset.model) {
+          try {
+            const model = JSON.parse(defaultImageCard.dataset.model || '{}');
+            if (!window.imageFieldManager) {
+              window.imageFieldManager = new window.ImageFieldManager();
+            }
+            window.imageFieldManager.updateFieldsForModel(model);
+          } catch(e) {
+            console.error('Failed to initialize ImageFieldManager:', e);
+          }
+        }
+      }
+    });
+  };
+
+  imageModeTab.addEventListener('click',()=>switchMode('image'),{passive:true});
+  videoModeTab.addEventListener('click',()=>switchMode('video'),{passive:true});
+
+  if(els.videoPromptCats)els.videoPromptCats.style.display='none';
+  if(els.videoShowcaseSection)els.videoShowcaseSection.style.display='none';
+
+  const usp=new URLSearchParams(location.search);
+  const paramType=usp.get('type');
+
+  if(paramType==='video'){
+    const savedSrc=localStorage.getItem('gen.videoSource');
+    if(savedSrc){
+      const tab=document.querySelector(`.video-source-tab[data-source="${savedSrc}"]`);
+      if(tab){
+        document.querySelectorAll('.video-source-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+      }
+    }
+    loadVideoAssets();
+    switchMode('video');
+    localStorage.setItem('gen.topMode','video');
+  }else if(paramType==='image'){
+    switchMode('image');
+    localStorage.setItem('gen.topMode','image');
+  }else{
+    const savedTop=localStorage.getItem('gen.topMode');
+    if(savedTop==='video'){
+      const savedSrc=localStorage.getItem('gen.videoSource');
+      if(savedSrc){
+        const tab=document.querySelector(`.video-source-tab[data-source="${savedSrc}"]`);
+        if(tab){
+          document.querySelectorAll('.video-source-tab').forEach(t=>t.classList.remove('active'));
+          tab.classList.add('active');
+        }
+      }
+      switchMode('video');
+    }else{
+      switchMode('image');
+    }
+  }
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true,passive:true});
+else init();
+})();
+</script>
+
+<!-- Модальное окно для категорий промптов ВИДЕО -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="videoPromptCategoryModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-[var(--bord)] shadow-2xl animate-modal-in">
+    <div class="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--bord)] p-4 sm:p-6 flex items-center justify-between z-10">
+      <h3 class="text-lg sm:text-xl font-bold" id="videoModalCategoryTitle">Промпты видео</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" id="closeVideoPromptModal" aria-label="Закрыть">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-88px)] custom-scrollbar" id="videoModalPromptsContainer">
+      <div class="text-center text-[var(--muted)] py-8">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript для категорий промптов видео -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const videoModal = document.getElementById('videoPromptCategoryModal');
+  const videoModalTitle = document.getElementById('videoModalCategoryTitle');
+  const videoModalContainer = document.getElementById('videoModalPromptsContainer');
+  const videoCloseBtn = document.getElementById('closeVideoPromptModal');
+  const videoCategoryCards = document.querySelectorAll('.video-prompt-category-card');
+
+  // Открытие модального окна при клике на категорию видео
+  videoCategoryCards.forEach(card => {
+    card.addEventListener('click', async function() {
+      const categoryId = this.dataset.categoryId;
+
+      // Пропускаем кнопку "Смотреть всё"
+      if (!categoryId) {
+        return;
+      }
+
+      const categoryName = this.querySelector('h4').textContent;
+
+      videoModalTitle.textContent = categoryName;
+      videoModalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Загрузка...</div>';
+      videoModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      try {
+        const response = await fetch(`/generate/api/video/categories/${categoryId}/prompts`);
+        const data = await response.json();
+
+        if (data.prompts && data.prompts.length > 0) {
+          // Local helpers (csrf + post)
+          const getCSRF = () => (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+          const postFD = async (url, fd) => {
+            const r = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'fetch' }, body: fd });
+            let j = {}; try { j = await r.json(); } catch(_) {}
+            if (!r.ok || j.ok === false) throw new Error(j.error || ('Ошибка ' + r.status));
+            return j;
+          };
+          const postJSON = async (url, data) => {
+            const fd = new FormData(); Object.entries(data || {}).forEach(([k,v]) => fd.append(k, v));
+            return postFD(url, fd);
+          };
+
+          const IS_STAFF_V = (document.getElementById('gen-root')?.dataset.isStaff || 'false') === 'true';
+          const adminCreate = IS_STAFF_V ? `
+            <div class="p-3 mb-3 rounded-xl border border-[var(--bord)] bg-black/[.03] dark:bg-white/[.03]">
+              <div class="text-xs text-[var(--muted)] mb-2">Подкатегории (админ)</div>
+              <div class="grid gap-2 sm:grid-cols-3">
+                <input id="vscName" class="field" type="text" placeholder="Название подкатегории" maxlength="120">
+                <input id="vscOrder" class="field" type="number" placeholder="Порядок" value="0">
+                <label class="pc-inline"><input id="vscActive" type="checkbox" checked><span>Активна</span></label>
+              </div>
+              <div class="mt-2 flex justify-end">
+                <button id="vscCreateBtn" class="btn btn-ghost" type="button">+ Подкатегория</button>
+              </div>
+            </div>
+          ` : '';
+
+          videoModalContainer.innerHTML = `
+            ${adminCreate}
+            <div id="vpg-subcats" class="flex flex-wrap gap-2 mb-3"></div>
+            <div id="vpg-items" class="space-y-3">
+              ${data.prompts.map(prompt => `
+                <div class="prompt-item-modal" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en)}">
+                  <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                    <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+                    <button class="video-prompt-use-btn shrink-0 w-full sm:w-auto">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                      </svg>
+                      Использовать
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+
+          // Helper to bind "Use" buttons
+          function bindVideoUseButtons(rootEl) {
+            rootEl.querySelectorAll('.video-prompt-use-btn').forEach(btn => {
+              btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const promptItem = this.closest('.prompt-item-modal');
+                const promptTextEn = promptItem?.dataset.promptEn;
+                const promptTextRu = promptItem?.dataset.prompt;
+                const promptToUse = promptTextEn && promptTextEn.trim() !== '' ? promptTextEn : promptTextRu;
+
+                const originalHTML = this.innerHTML;
+                this.innerHTML = `
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Скопировано!
+                `;
+                this.classList.add('copied');
+                setTimeout(() => { this.innerHTML = originalHTML; this.classList.remove('copied'); }, 2000);
+
+                const videoPromptField = document.getElementById('video-prompt');
+                if (videoPromptField && promptToUse) {
+                  const currentValue = videoPromptField.value.trim();
+                  videoPromptField.value = currentValue ? (currentValue + ', ' + promptToUse) : promptToUse;
+                  videoPromptField.focus();
+                }
+                closeVideoModal();
+              });
+            });
+          }
+
+          bindVideoUseButtons(videoModalContainer);
+
+          // Load and render subcategories (pills), fill admin select (if needed)
+          async function loadVideoSubcategories() {
+            try {
+              const r = await fetch(`/generate/api/video/categories/${categoryId}/subcategories`);
+              const j = await r.json();
+              const wrap = videoModalContainer.querySelector('#vpg-subcats');
+              if (!wrap) return;
+
+              const subs = (j.subcategories || []);
+              const pills = [];
+              pills.push(`<button type="button" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm vpg-subpill" data-id="">Все</button>`);
+              subs.forEach(sc => {
+                pills.push(`<button type="button" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary/60 hover:text-primary text-xs sm:text-sm vpg-subpill" data-id="${sc.id}">${escapeHtml(sc.name)} <span class="text-[var(--muted)]">(${sc.prompts_count})</span></button>`);
+              });
+              wrap.innerHTML = pills.join('');
+
+              // Bind pill clicks
+              wrap.querySelectorAll('.vpg-subpill').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                  const subId = btn.dataset.id || '';
+                  wrap.querySelectorAll('.vpg-subpill').forEach(b => b.classList.remove('bg-primary/15','text-primary','border-primary/30'));
+                  const itemsWrap = videoModalContainer.querySelector('#vpg-items');
+                  if (subId === '') {
+                    btn.classList.add('bg-primary/15','text-primary','border-primary/30');
+                    // Rebuild initial list from data.prompts
+                    itemsWrap.innerHTML = `${data.prompts.map(prompt => `
+                      <div class="prompt-item-modal" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en)}">
+                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                          <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+                          <button class="video-prompt-use-btn shrink-0 w-full sm:w-auto">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            Использовать
+                          </button>
+                        </div>
+                      </div>
+                    `).join('')}`;
+                    bindVideoUseButtons(itemsWrap);
+                  } else {
+                    try {
+                      const r2 = await fetch(`/generate/api/video/subcategories/${subId}/prompts`);
+                      const j2 = await r2.json();
+                      const dataItems = (j2.prompts || []);
+                      const itemsHtml = dataItems.map(prompt => `
+                        <div class="prompt-item-modal" data-prompt="${escapeHtml(prompt.prompt_text)}" data-prompt-en="${escapeHtml(prompt.prompt_en)}">
+                          <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                            <p class="text-sm text-[var(--muted)] leading-relaxed flex-1 min-w-0">${escapeHtml(prompt.prompt_text)}</p>
+                            <button class="video-prompt-use-btn shrink-0 w-full sm:w-auto">
+                              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                              Использовать
+                            </button>
+                          </div>
+                        </div>
+                      `).join('');
+                      itemsWrap.innerHTML = itemsHtml || '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>';
+                      bindVideoUseButtons(itemsWrap);
+                      btn.classList.add('bg-primary/15','text-primary','border-primary/30');
+                    } catch (e) {
+                      itemsWrap.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки подкатегории</div>';
+                    }
+                  }
+                });
+              });
+
+              // Admin: create subcategory
+              videoModalContainer.querySelector('#vscCreateBtn')?.addEventListener('click', async () => {
+                const name = (videoModalContainer.querySelector('#vscName')?.value || '').trim();
+                const order = videoModalContainer.querySelector('#vscOrder')?.value || '0';
+                const active = videoModalContainer.querySelector('#vscActive')?.checked ? '1' : '0';
+                if (!name) { alert('Введите название подкатегории'); return; }
+                try {
+                  await postJSON('/generate/api/video/subcategories/create', { category_id: categoryId, name, order, is_active: active });
+                  await loadVideoSubcategories();
+                  (videoModalContainer.querySelector('#vscName') || {}).value = '';
+                  (videoModalContainer.querySelector('#vscOrder') || {}).value = '0';
+                } catch (e) { alert(e.message || String(e)); }
+              });
+
+              // Default select "Все"
+              const first = wrap.querySelector('.vpg-subpill[data-id=""]');
+              if (first) first.click();
+            } catch (e) {
+              // silent
+            }
+          }
+          loadVideoSubcategories();
+        } else {
+          videoModalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Промпты не найдены</div>';
+        }
+      } catch (error) {
+        console.error('Error loading video prompts:', error);
+        videoModalContainer.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки промптов</div>';
+      }
+    });
+  });
+
+  // Закрытие модального окна
+  if (videoCloseBtn) {
+    videoCloseBtn.addEventListener('click', closeVideoModal);
+  }
+
+  if (videoModal) {
+    videoModal.addEventListener('click', function(e) {
+      if (e.target === videoModal) {
+        closeVideoModal();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && videoModal && videoModal.classList.contains('active')) {
+      closeVideoModal();
+    }
+  });
+
+  function closeVideoModal() {
+    if (videoModal) {
+      videoModal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  // Кнопка "Смотреть всё" для категорий видео
+  const showAllVideoPromptsBtn = document.getElementById('showAllVideoPromptsBtn');
+  const allVideoPromptCategoriesSection = document.getElementById('allVideoPromptCategoriesSection');
+
+  if (showAllVideoPromptsBtn && allVideoPromptCategoriesSection) {
+    showAllVideoPromptsBtn.addEventListener('click', function() {
+      const isHidden = allVideoPromptCategoriesSection.classList.contains('hidden');
+      const btnTitle = this.querySelector('h4');
+      const btnIcon = this.querySelector('svg');
+
+      if (isHidden) {
+        allVideoPromptCategoriesSection.classList.remove('hidden');
+        btnTitle.textContent = 'Скрыть';
+        btnIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>';
+        setTimeout(() => {
+          allVideoPromptCategoriesSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      } else {
+        allVideoPromptCategoriesSection.classList.add('hidden');
+        btnTitle.textContent = 'Смотреть всё';
+        btnIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>';
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+});
+</script>
+
+<style>
+/* Стили для кнопки использования промпта видео */
+.video-prompt-use-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.25);
+  white-space: nowrap;
+  min-height: 38px;
+}
+
+.video-prompt-use-btn:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
+  transform: translateY(-2px);
+}
+
+.video-prompt-use-btn.copied {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+</style>
 {% endblock %}

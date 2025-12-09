@@ -1,0 +1,1142 @@
+﻿<!-- Форма генерации видео -->
+<div id="video-generation-form" class="space-y-6">
+
+  <!-- Переключатель I2V / T2V -->
+  <div id="video-mode-block">
+    <label class="block text-sm font-medium mb-2 sm:mb-3">Режим генерации</label>
+    <div class="inline-flex rounded-xl bg-[var(--bord)] p-1 gap-1 w-full sm:w-auto">
+      <!-- I2V - Фото/Видео (по умолчанию) -->
+      <button type="button" class="video-source-tab video-source-i2v active flex-1 sm:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium" data-source="i2v" title="Фото/Видео">
+        <div class="relative flex-shrink-0">
+          <!-- Photo icon -->
+          <svg class="source-icon w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <!-- Elegant orange sparkle -->
+          <svg class="sparkle-icon absolute -top-1 -left-1 w-2.5 h-2.5 sm:w-3 sm:h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2l2.2 4.6L19 9l-4.8 2.4L12 16l-2.2-4.6L5 9l4.8-2.4L12 2z"></path>
+          </svg>
+        </div>
+        <span class="whitespace-nowrap" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; max-width: none !important; overflow: visible !important;">Фото/Видео</span>
+      </button>
+
+      <!-- T2V - Текст/Видео -->
+      <button type="button" class="video-source-tab flex-1 sm:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium" data-source="t2v" title="Текст/Видео">
+        <svg class="source-icon w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M23 7l-7 5 7 5V7z"/>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+        <span class="whitespace-nowrap" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; max-width: none !important; overflow: visible !important;">Текст/Видео</span>
+      </button>
+    </div>
+  </div>
+
+  <style id="video-tab-force-visible-v3">
+    /* Video source tabs - ULTRA FORCED VISIBILITY - v3 */
+    .video-source-tab,
+    button.video-source-tab,
+    .video-source-tab.active,
+    button.video-source-tab.active {
+      cursor: pointer !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      background: transparent !important;
+      border: none !important;
+      position: relative !important;
+      overflow: visible !important;
+      max-width: none !important;
+      width: auto !important;
+    }
+
+    .video-source-tab span,
+    .video-source-tab span.whitespace-nowrap,
+    .video-source-tab.active span,
+    .video-source-tab.active span.whitespace-nowrap,
+    button.video-source-tab span,
+    button.video-source-tab span.whitespace-nowrap,
+    button.video-source-tab.active span,
+    button.video-source-tab.active span.whitespace-nowrap {
+      display: inline-block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      font-size: 0.75rem !important;
+      color: inherit !important;
+      max-width: none !important;
+      width: auto !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      white-space: nowrap !important;
+      content: attr(data-text) !important;
+    }
+
+    @media (min-width: 640px) {
+      .video-source-tab span,
+      .video-source-tab span.whitespace-nowrap {
+        font-size: 0.875rem !important;
+      }
+    }
+
+    .video-source-tab .source-icon {
+      color: var(--muted);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .video-source-tab.active {
+      background: var(--bg-card);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    :root[data-theme="dark"] .video-source-tab.active {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    /* Default T2V styling */
+    .video-source-tab.active .source-icon {
+      color: var(--primary);
+      filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.4));
+    }
+
+    /* Special I2V "Оживить фото" styling with elegant orange sparkle */
+    .video-source-i2v .sparkle-icon {
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #f59e0b; /* amber-500 */
+      filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.6));
+    }
+
+    .video-source-i2v.active .source-icon {
+      color: #f97316; /* orange-500 */
+      filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.5));
+    }
+
+    .video-source-i2v.active .sparkle-icon {
+      opacity: 1;
+      color: #fbbf24; /* amber-400 */
+      filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.9));
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.15) rotate(10deg);
+        opacity: 0.92;
+      }
+    }
+
+    /* Hover states */
+    .video-source-tab:hover:not(.active) {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    :root[data-theme="dark"] .video-source-tab:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .video-source-tab:hover:not(.active) .source-icon {
+      color: var(--fg);
+    }
+
+    /* Responsive breakpoint for xs (475px) */
+    @media (min-width: 475px) {
+      .xs\:inline {
+        display: inline !important;
+      }
+      .xs\:px-3 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+      }
+    }
+
+    /* Ultra-small screens (320px) - keep text visible */
+    @media (max-width: 374px) {
+      .video-source-tab {
+        font-size: 0.65rem;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+      }
+      .video-source-tab .source-icon {
+        width: 0.75rem;
+        height: 0.75rem;
+      }
+      .video-source-i2v .sparkle-icon {
+        width: 0.5rem;
+        height: 0.5rem;
+      }
+      .video-source-tab span {
+        font-size: 0.65rem;
+      }
+    }
+  </style>
+
+  <!-- Описание сцены -->
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <label class="block text-sm font-medium" for="video-prompt">Описание сцены</label>
+      <div class="inline-flex items-center gap-2">
+        <span class="text-[11px] sm:text-xs text-[var(--muted)]">Автоперевод</span>
+        <button
+          type="button"
+          id="auto-translate-toggle"
+          class="relative inline-flex h-6 w-11 items-center rounded-full bg-[var(--bord)] ring-1 ring-[var(--bord)] transition focus:outline-none focus:ring-2 focus:ring-primary/50"
+          aria-pressed="true"
+          aria-label="Автоперевод">
+          <span class="sr-only">Автоперевод</span>
+          <span class="dot translate-x-5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition"></span>
+        </button>
+      </div>
+    </div>
+    <textarea
+      id="video-prompt"
+      class="field w-full min-h-28 resize-none"
+      placeholder="Пример: cinematic dusk city, neon reflections, slow orbit camera, moody atmosphere"
+      maxlength="1500"></textarea>
+
+    <div class="mt-3">
+      <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bord)]/60">
+        <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+        </svg>
+        <span class="text-[var(--text)]">Совет: опишите действие, движение камеры и атмосферу</span>
+      </div>
+    </div>
+
+    <!-- Prompt Generator for Video (visual stub) -->
+    <div id="pg-video" class="mt-3 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 sm:p-4">
+      <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch">
+        <input
+          type="text"
+          id="pg-video-input"
+          class="field w-full h-10 sm:h-11"
+          placeholder="Введите идею для видео (например: «сумеречный город, неон, плавная орбита камеры»)"
+          maxlength="240"
+          aria-label="Идея для профессионального видео‑промпта">
+        <button
+          type="button"
+          id="pg-video-btn"
+          class="btn btn-primary shrink-0 h-10 sm:h-11 px-4 sm:px-5 text-sm">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span class="hidden xs:inline">Сгенерировать промпт</span>
+          <span class="xs:hidden inline">Сгенерировать</span>
+        </button>
+      </div>
+
+      <!-- Result -->
+      <div id="pg-video-result" class="mt-3 hidden">
+        <div class="rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] p-3">
+          <pre class="whitespace-pre-wrap break-words text-[13px] leading-snug text-[var(--text)]" id="pg-video-text"></pre>
+        </div>
+        <div class="mt-2 flex flex-wrap items-center gap-2">
+          <button type="button" id="pg-video-copy" class="btn btn-ghost text-xs sm:text-sm">
+            Копировать
+          </button>
+          <button type="button" id="pg-video-insert" class="btn btn-ghost text-xs sm:text-sm">
+            Вставить в поле выше
+          </button>
+          <label class="inline-flex items-center gap-2 text-xs sm:text-sm text-[var(--muted)] ml-auto">
+            <input type="checkbox" id="pg-video-append" class="w-4 h-4">
+            <span>Добавлять к текущему</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Loading shimmer -->
+      <div id="pg-video-loading" class="mt-3 hidden">
+        <div class="h-10 rounded-lg bg-[var(--bord)] overflow-hidden relative">
+          <div class="absolute inset-0 -translate-x-full animate-[shimmer_1.2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- I2V: Компактная загрузка фото под промптом -->
+  <div id="i2v-upload-compact" style="display:none">
+    <label class="block text-sm font-medium mb-2">Исходное фото</label>
+    <div id="video-upload-area" class="i2v-square border-2 border-dashed border-[var(--bord)] rounded-xl p-4 text-center hover:border-primary/50 transition-colors duration-200 overflow-hidden cursor-pointer">
+      <input type="file" id="video-source-image" accept="image/*" class="hidden">
+      <div class="h-full flex flex-col items-center justify-center">
+        <svg class="w-10 h-10 mb-2 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <p class="text-xs text-[var(--muted)]">Перетащите фото или нажмите, чтобы выбрать</p>
+        <p class="text-[10px] text-[var(--muted)] mt-1">Макс. 10MB, JPG/PNG</p>
+      </div>
+    </div>
+    <div id="video-image-preview" class="mt-2 hidden i2v-square relative">
+      <img src="" alt="Preview" class="w-full h-full object-contain bg-[var(--bg-card)] rounded-lg">
+      <!-- Overlay remove button -->
+      <button type="button" id="remove-video-image" class="i2v-remove-btn" aria-label="Удалить фото">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- I2V: Detected source aspect ratio (display only; frame size unchanged) -->
+    <div id="i2v-aspect-info" class="mt-2 hidden">
+      <div class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-[var(--bord)]/60 text-[10px] sm:text-xs text-[var(--text)]">
+        <svg class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2"></rect>
+          <path d="M8 6v12M16 6v12" stroke-width="2" opacity="0.25"></path>
+        </svg>
+        <span class="font-medium">Формат источника:</span>
+        <span id="i2v-aspect-text" class="tabular-nums">—</span>
+      </div>
+    </div>
+
+    <!-- Audio inputs (optional) -->
+    <div class="mt-3 min-w-0 flex-1">
+      <label class="block text-sm font-medium mb-2" for="i2v-audio-url">Аудио (URL / UUID / Data URI)</label>
+      <input id="i2v-audio-url" type="text" class="field w-full h-9" placeholder="https://... или UUID / data:audio/...">
+      <p class="text-[10px] text-[var(--muted)] mt-1">Опционально. Будет передано как audioInputs при генерации Wan2.5‑Preview.</p>
+    </div>
+  </div>
+
+  <!-- Параметры генерации - Компактный блок -->
+  <div class="space-y-2 sm:space-y-3">
+
+    <!-- Модель с описанием -->
+    <div class="space-y-1" id="video-model-section">
+      <label class="block text-xs sm:text-sm font-medium mb-1.5">
+        <span class="flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 flex-shrink-0 text-primary dark:text-primary/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span class="text-xs sm:text-sm">Модель</span>
+        </span>
+      </label>
+
+      <!-- Храним выбранную модель для сабмита -->
+      <input type="hidden" id="video-model" value="">
+
+      <!-- Грид карточек моделей -->
+      <div id="model-cards" class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3"></div>
+    </div>
+
+    <!-- Информация о выбранной модели -->
+    <div id="model-info-section" class="hidden rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 sm:p-4 space-y-3">
+      <!-- Заголовок с иконкой -->
+      <div class="flex items-start gap-3">
+        <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 id="model-info-name" class="text-sm sm:text-base font-semibold text-[var(--text)] mb-1"></h3>
+          <p id="model-info-description" class="text-xs sm:text-sm text-[var(--muted)] line-clamp-2"></p>
+        </div>
+      </div>
+
+      <!-- Параметры модели -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 pt-2 border-t border-[var(--bord)]">
+        <!-- Стоимость -->
+        <div class="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[var(--bord)]/40">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] sm:text-xs text-[var(--muted)] leading-tight">Стоимость</div>
+            <div id="model-info-cost" class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate">— TOK</div>
+          </div>
+        </div>
+
+        <!-- Макс. длительность -->
+        <div class="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[var(--bord)]/40">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] sm:text-xs text-[var(--muted)] leading-tight">Макс. время</div>
+            <div id="model-info-duration" class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate">— сек</div>
+          </div>
+        </div>
+
+        <!-- Разрешение -->
+        <div class="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[var(--bord)]/40">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] sm:text-xs text-[var(--muted)] leading-tight">Разрешение</div>
+            <div id="model-info-resolution" class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate">—</div>
+          </div>
+        </div>
+
+        <!-- Категория -->
+        <div class="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[var(--bord)]/40">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343"/>
+            <path d="M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] sm:text-xs text-[var(--muted)] leading-tight">Тип</div>
+            <div id="model-info-category" class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Доступные функции -->
+      <div id="model-info-features" class="pt-2 border-t border-[var(--bord)]">
+        <div class="text-[10px] sm:text-xs font-medium text-[var(--muted)] mb-2">Доступные параметры:</div>
+        <div class="flex flex-wrap gap-1.5 sm:gap-2" id="model-features-list">
+          <!-- Будет заполнено JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Сетка параметров 2 колонки на больших экранах -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+
+      <!-- Длительность -->
+      <div id="duration-section" class="space-y-1">
+        <label class="block text-xs sm:text-sm font-medium mb-1.5">Длительность</label>
+        <div id="duration-options" class="flex flex-wrap gap-2">
+          <!-- Кнопки длительности будут сгенерированы JS в зависимости от модели -->
+        </div>
+        <!-- Храним выбранное значение -->
+        <input type="hidden" id="video-duration" value="5">
+      </div>
+
+      <!-- Разрешение с иконками -->
+      <div class="space-y-1">
+        <label class="block text-xs sm:text-sm font-medium mb-1.5" for="video-resolution">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 flex-shrink-0 text-primary dark:text-primary/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="2" y="3" width="20" height="14" rx="2" stroke-width="2"/>
+              <path d="M8 21h8" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 17v4" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="text-xs sm:text-sm">Разрешение</span>
+          </span>
+        </label>
+        <select id="video-resolution" class="field w-full text-xs sm:text-sm h-9 sm:h-10 rounded-md border border-[var(--bord)] bg-[var(--bg-card)] dark:bg-gray-900 px-2.5 sm:px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 appearance-none text-white dark:text-white light:text-black shadow-inner">
+          <optgroup label="📺 Ландшафт 16:9">
+            <option value="1920x1080">1920×1080 (Full HD)</option>
+            <option value="1280x720">1280×720 (HD)</option>
+            <option value="854x480">854×480 (SD)</option>
+          </optgroup>
+          <optgroup label="📱 Портрет 9:16">
+            <option value="1080x1920">1080×1920 (Full HD)</option>
+            <option value="720x1280">720×1280 (HD)</option>
+            <option value="480x854">480×854 (SD)</option>
+          </optgroup>
+          <optgroup label="⬜ Квадрат 1:1">
+            <option value="1080x1080">1080×1080 (Full HD)</option>
+            <option value="720x720">720×720 (HD)</option>
+            <option value="480x480">480×480 (SD)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Камера -->
+      <div class="space-y-1">
+        <label class="block text-xs sm:text-sm font-medium mb-1.5" for="video-camera">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 flex-shrink-0 text-primary dark:text-primary/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M23 7l-7 5 7 5V7z" stroke-width="2"/>
+              <rect x="1" y="5" width="15" height="14" rx="2" stroke-width="2"/>
+            </svg>
+            <span class="text-xs sm:text-sm">Движение камеры</span>
+          </span>
+        </label>
+        <select id="video-camera" class="field w-full text-xs sm:text-sm h-9 sm:h-10 rounded-md border border-[var(--bord)] bg-[var(--bg-card)] dark:bg-gray-900 px-2.5 sm:px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 appearance-none text-white dark:text-white light:text-black shadow-inner">
+          <option value="">Авто</option>
+          <option value="static">Static (статичная)</option>
+          <option value="slow pan">Slow Pan (панорама)</option>
+          <option value="orbit">Orbit (орбита)</option>
+          <option value="dolly">Dolly (наезд/отъезд)</option>
+        </select>
+      </div>
+
+      <!-- Seed -->
+      <div class="space-y-1">
+        <label class="block text-xs sm:text-sm font-medium mb-1.5" for="video-seed">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 flex-shrink-0 text-primary dark:text-primary/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+            </svg>
+            <span class="text-xs sm:text-sm">Seed</span> <span class="text-[11px] sm:text-xs text-[var(--muted)] font-normal">(опционально)</span>
+          </span>
+        </label>
+        <input type="text" id="video-seed" class="field w-full text-xs sm:text-sm h-9 sm:h-10 rounded-md border border-[var(--bord)] bg-[var(--bg-card)] px-2.5 sm:px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200" placeholder="Случайный">
+      </div>
+    </div>
+
+    <!-- Video Quantity Selector -->
+    <div id="video-quantity-container" class="sm:col-span-2 space-y-1.5" style="display: none;">
+      <label class="block text-xs sm:text-sm font-medium mb-1.5">
+        <span class="flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 flex-shrink-0 text-primary dark:text-primary/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          <span class="text-xs sm:text-sm">Количество видео</span>
+        </span>
+      </label>
+      <div class="moon-slider-container">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <input
+            type="range"
+            id="video-quantity"
+            name="number_videos"
+            class="moon-slider flex-1"
+            min="1"
+            max="4"
+            value="1"
+            step="1"
+            data-value-id="video-quantity-value"
+          >
+          <div class="moon-slider-value">
+            <span id="video-quantity-value" class="moon-slider-value-number">1</span>
+            <span class="moon-slider-value-unit">видео</span>
+          </div>
+        </div>
+        <p class="text-[10px] sm:text-xs text-[var(--muted)] mt-1">
+          💡 Цена умножается на количество видео
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Улучшенные стили для select - читаемость на обеих темах */
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      background-size: 1.25rem;
+      padding-right: 2.5rem;
+      color: var(--text) !important;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    }
+
+    :root[data-theme="dark"] .field select {
+      color: #ffffff !important;
+      background-color: #1f2937 !important;
+    }
+
+    :root[data-theme="light"] .field select {
+      color: #000000 !important;
+      background-color: #ffffff !important;
+    }
+
+    /* Усиление для выбранного значения */
+    .field select option:checked {
+      color: white !important;
+      background: #6366f1 !important;
+    }
+
+    /* Optgroup стили для лучшей читаемости */
+    .field select optgroup {
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.5rem 0;
+      background: transparent;
+      color: inherit !important;
+    }
+
+    :root[data-theme="dark"] .field select optgroup {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #e5e7eb !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    :root[data-theme="light"] .field select optgroup {
+      background: rgba(0, 0, 0, 0.04) !important;
+      color: #374151 !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .field select option {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.875rem;
+      color: inherit !important;
+    }
+
+    :root[data-theme="dark"] .field select option {
+      background: #1f2937 !important;
+      color: #f9fafb !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    :root[data-theme="dark"] .field select option:checked {
+      background: #6366f1 !important;
+      color: white !important;
+    }
+
+    :root[data-theme="light"] .field select option {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    :root[data-theme="light"] .field select option:checked {
+      background: #6366f1 !important;
+      color: white !important;
+    }
+
+    /* Slider стили — «синяя луна», перекатывающаяся по линии */
+    .slider-thumb {
+      appearance: none;
+      background: transparent;
+      width: 100%;
+      height: 8px;
+      border-radius: 9999px;
+    }
+
+    /* WebKit thumb */
+    .slider-thumb::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background:
+        radial-gradient(closest-side, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.8) 40%, rgba(255,255,255,0.0) 60%),
+        radial-gradient(circle at 30% 30%, #93c5fd 0%, #60a5fa 35%, #3b82f6 65%, #2563eb 100%);
+      border: 2px solid rgba(255,255,255,0.75);
+      box-shadow:
+        0 0 0 3px rgba(59,130,246,0.15),
+        0 8px 18px rgba(59,130,246,0.35),
+        inset 0 -2px 4px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .2s ease;
+    }
+    .slider-thumb::-webkit-slider-thumb:hover {
+      transform: translateY(-1px) scale(1.05);
+      box-shadow:
+        0 0 0 4px rgba(59,130,246,0.2),
+        0 10px 22px rgba(59,130,246,0.45),
+        inset 0 -2px 4px rgba(0,0,0,0.2);
+    }
+    .slider-thumb::-webkit-slider-thumb:active {
+      transform: scale(0.98);
+      box-shadow:
+        0 0 0 2px rgba(59,130,246,0.25),
+        0 6px 16px rgba(59,130,246,0.35),
+        inset 0 -1px 3px rgba(0,0,0,0.25);
+    }
+
+    /* Firefox thumb */
+    .slider-thumb::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background:
+        radial-gradient(closest-side, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.8) 40%, rgba(255,255,255,0.0) 60%),
+        radial-gradient(circle at 30% 30%, #93c5fd 0%, #60a5fa 35%, #3b82f6 65%, #2563eb 100%);
+      border: 2px solid rgba(255,255,255,0.75);
+      box-shadow:
+        0 0 0 3px rgba(59,130,246,0.15),
+        0 8px 18px rgba(59,130,246,0.35),
+        inset 0 -2px 4px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .2s ease;
+    }
+    .slider-thumb::-moz-range-thumb:hover {
+      transform: translateY(-1px) scale(1.05);
+      box-shadow:
+        0 0 0 4px rgba(59,130,246,0.2),
+        0 10px 22px rgba(59,130,246,0.45),
+        inset 0 -2px 4px rgba(0,0,0,0.2);
+    }
+    .slider-thumb::-moz-range-thumb:active {
+      transform: scale(0.98);
+      box-shadow:
+        0 0 0 2px rgba(59,130,246,0.25),
+        0 6px 16px rgba(59,130,246,0.35),
+        inset 0 -1px 3px rgba(0,0,0,0.25);
+    }
+
+    /* Трек с «заполнением» слева направо */
+    .slider-thumb::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 9999px;
+      background:
+        linear-gradient(to right, rgba(59,130,246,0.85) 0%, rgba(59,130,246,0.85) var(--value, 50%), rgba(255,255,255,0.08) var(--value, 50%), rgba(255,255,255,0.08) 100%);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.06);
+    }
+    .slider-thumb::-moz-range-track {
+      height: 8px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.06);
+    }
+    .slider-thumb::-moz-range-progress {
+      height: 8px;
+      border-radius: 9999px;
+      background: rgba(59,130,246,0.85);
+    }
+
+    /* Адаптив для маленьких экранов (320px+) */
+    @media (max-width: 374px) {
+      .field select,
+      .field input,
+      .field textarea {
+        font-size: 0.75rem;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+      }
+
+      label {
+        font-size: 0.75rem;
+      }
+
+      .grid {
+        gap: 0.75rem !important;
+      }
+
+      .space-y-2 > * + * {
+        margin-top: 0.5rem !important;
+      }
+
+      svg {
+        width: 0.875rem !important;
+        height: 0.875rem !important;
+      }
+    }
+
+    /* Улучшения видимости в темах для selects */
+    :root[data-theme="dark"] .field select option:hover,
+    :root[data-theme="dark"] .field select optgroup:hover {
+      background: rgba(99, 102, 241, 0.2) !important;
+      color: #ffffff !important;
+    }
+
+    :root[data-theme="light"] .field select option:hover,
+    :root[data-theme="light"] .field select optgroup:hover {
+      background: rgba(99, 102, 241, 0.1) !important;
+      color: #111827 !important;
+    }
+
+    /* Placeholder стили для лучшей видимости */
+    .field input::placeholder,
+    .field textarea::placeholder,
+    .field select option[value=""] {
+      color: #9ca3af !important;
+    }
+
+    :root[data-theme="dark"] .field input::placeholder,
+    :root[data-theme="dark"] .field textarea::placeholder,
+    :root[data-theme="dark"] .field select option[value=""] {
+      color: #d1d5db !important;
+    }
+
+    :root[data-theme="light"] .field input::placeholder,
+    :root[data-theme="light"] .field textarea::placeholder,
+    :root[data-theme="light"] .field select option[value=""] {
+      color: #6b7280 !important;
+    }
+
+    /* Текст в inputs для тем */
+    .field input,
+    .field textarea,
+    .field select {
+      color: var(--text) !important;
+    }
+
+    :root[data-theme="dark"] .field input,
+    :root[data-theme="dark"] .field textarea,
+    :root[data-theme="dark"] .field select {
+      color: #f9fafb !important;
+    }
+
+    :root[data-theme="light"] .field input,
+    :root[data-theme="light"] .field textarea,
+    :root[data-theme="light"] .field select {
+      color: #111827 !important;
+    }
+
+    /* I2V compact square upload */
+    #i2v-upload-compact .i2v-square {
+      aspect-ratio: 1 / 1;
+      width: clamp(100px, 22vw, 140px); /* ещё компактнее: маленький квадратный блок */
+      position: relative;
+      overflow: hidden;
+      border-radius: 0.75rem;
+      flex: 0 0 auto; /* не растягиваться во флексе */
+    }
+    #i2v-upload-compact .i2v-square img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* показываем всю фотографию, без обрезки */
+      background: var(--bg-card);
+    }
+    /* Подсказка внутри области загрузки — центрируем по квадрату */
+    #i2v-upload-compact #video-upload-area > .h-full {
+      height: 100%;
+    }
+    /* Сделать внутренности реально компактными в маленьком квадрате */
+    #i2v-upload-compact #video-upload-area { padding: 0.5rem !important; }
+    #i2v-upload-compact #video-upload-area svg { width: 20px; height: 20px; }
+
+    /* Overlay remove button on preview */
+    #i2v-upload-compact .i2v-remove-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+    #i2v-upload-compact .i2v-remove-btn:hover {
+      background: rgba(0,0,0,0.75);
+      transform: scale(1.04);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+    html[data-theme="light"] #i2v-upload-compact .i2v-remove-btn {
+      background: rgba(0,0,0,0.5);
+      border-color: rgba(0,0,0,0.2);
+    }
+
+    /* Компоновка: компактный квадрат слева от текста/подсказок */
+    #i2v-upload-compact {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    /* ===== VIDEO MODEL CARDS - В СТИЛЕ САЙТА ===== */
+
+    /* Grid System - Equal Height Cards */
+    #model-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    @media (min-width: 480px) {
+      #model-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      #model-cards {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+      }
+    }
+
+    /* Model Card Wrapper */
+    .model-card-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Model Card - Full Height */
+    .model-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .model-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    [data-theme="dark"] .model-card {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    [data-theme="dark"] .model-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Selected state - blue border only for chosen card (supports data-selected and ARIA) */
+    .model-card[data-selected="1"],
+    .model-card.selected,
+    .model-card[aria-selected="true"] {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(99,102,241,0.35) inset, 0 6px 16px rgba(99,102,241,0.15);
+    }
+    .model-card[data-selected="0"],
+    .model-card[aria-selected="false"] {
+      border-color: var(--bord) !important;
+      box-shadow: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      #model-cards {
+        gap: 0.75rem;
+      }
+
+      .model-card {
+        border-radius: 0.75rem;
+      }
+    }
+
+    @media (max-width: 374px) {
+      #model-cards {
+        gap: 0.5rem;
+      }
+
+      .model-card {
+        border-radius: 0.625rem;
+      }
+
+      .model-card .grid-cols-3 {
+        gap: 0.375rem;
+      }
+    }
+
+    /* Line Clamp */
+    .line-clamp-1 {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+
+  <!-- I2V специфичные поля (скрыты по умолчанию) -->
+  <div id="i2v-fields" style="display: none;">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+
+      <!-- Сила движения -->
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-2">Сила движения</label>
+        <div id="motion-options" class="flex flex-wrap gap-2">
+          <button type="button" class="px-3 py-1.5 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm hover:border-primary/60 hover:text-primary motion-pill" data-value="20">Нежно</button>
+          <button type="button" class="px-3 py-1.5 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm hover:border-primary/60 hover:text-primary motion-pill" data-value="40">Мягко</button>
+          <button type="button" class="px-3 py-1.5 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm hover:border-primary/60 hover:text-primary motion-pill" data-value="60">Средне</button>
+          <button type="button" class="px-3 py-1.5 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm hover:border-primary/60 hover:text-primary motion-pill" data-value="80">Активно</button>
+          <button type="button" class="px-3 py-1.5 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm hover:border-primary/60 hover:text-primary motion-pill" data-value="100">Макс</button>
+        </div>
+        <!-- Храним выбранное значение -->
+        <input type="hidden" id="video-motion-strength" value="45">
+      </div>
+    </div>
+  </div>
+
+  <!-- Дополнительные параметры модели -->
+  <div id="advanced-params-section" class="rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-4 sm:p-5 space-y-4" style="display: none;">
+    <div class="flex items-center gap-2 pb-3 border-b border-[var(--bord)]">
+      <svg class="w-5 h-5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+      </svg>
+      <h3 class="text-sm sm:text-base font-semibold text-[var(--text)]">Дополнительные параметры</h3>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+
+      <!-- FPS -->
+      <div id="fps-param" class="space-y-1.5" style="display: none;">
+        <label class="block text-xs sm:text-sm font-medium text-[var(--text)]" for="video-fps">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            <span>FPS (кадров в секунду)</span>
+          </span>
+        </label>
+        <select id="video-fps" class="field w-full text-xs sm:text-sm h-9 sm:h-10 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none">
+          <!-- Опции будут заполнены динамически из JS на основе конфигурации модели -->
+          <option value="15">15 FPS</option>
+          <option value="24">24 FPS</option>
+          <option value="30" selected>30 FPS</option>
+          <option value="60">60 FPS</option>
+          <option value="90">90 FPS</option>
+          <option value="120">120 FPS</option>
+        </select>
+        <p id="fps-hint" class="text-[10px] sm:text-xs text-[var(--muted)] mt-1" style="display: none;">
+          Доступные значения FPS определяются выбранной моделью
+        </p>
+      </div>
+
+      <!-- Guidance Scale -->
+      <div id="guidance-scale-param" class="space-y-1.5" style="display: none;">
+        <label class="block text-xs sm:text-sm font-medium text-[var(--text)]" for="video-guidance-scale">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M2 12h20"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>Guidance Scale</span>
+          </span>
+        </label>
+        <input type="number" id="video-guidance-scale" class="field w-full text-xs sm:text-sm h-9 sm:h-10 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all" placeholder="7.5" min="1" max="20" step="0.1">
+      </div>
+
+      <!-- Inference Steps -->
+      <div id="inference-steps-param" class="space-y-1.5" style="display: none;">
+        <label class="block text-xs sm:text-sm font-medium text-[var(--text)]">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12h4l3 9 4-18 3 9h4"/>
+            </svg>
+            <span>Шаги генерации</span>
+          </span>
+        </label>
+        <div class="moon-slider-container">
+          <div class="flex items-center gap-3 sm:gap-4">
+            <input
+              type="range"
+              id="video-inference-steps"
+              class="moon-slider flex-1"
+              min="10"
+              max="100"
+              value="50"
+              step="1"
+              data-value-id="video-inference-steps-value"
+            >
+            <div class="moon-slider-value">
+              <span id="video-inference-steps-value" class="moon-slider-value-number">50</span>
+              <span class="moon-slider-value-unit">шагов</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quality -->
+      <div id="quality-param" class="space-y-1.5" style="display: none;">
+        <label class="block text-xs sm:text-sm font-medium text-[var(--text)]">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span>Качество</span>
+          </span>
+        </label>
+        <div class="moon-slider-container">
+          <div class="flex items-center gap-3 sm:gap-4">
+            <input
+              type="range"
+              id="video-quality"
+              class="moon-slider flex-1"
+              min="0"
+              max="4"
+              value="2"
+              step="1"
+              data-value-id="video-quality-value"
+              data-labels='["По умолчанию", "Низкое", "Среднее", "Высокое", "Ультра"]'
+            >
+            <div class="moon-slider-value">
+              <span id="video-quality-value" class="moon-slider-value-number">Среднее</span>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="video-quality-hidden" value="medium">
+      </div>
+
+      <!-- Style -->
+      <div id="style-param" class="space-y-1.5" style="display: none;">
+        <label class="block text-xs sm:text-sm font-medium text-[var(--text)]" for="video-style">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343"/>
+              <path d="M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+            </svg>
+            <span>Стиль</span>
+          </span>
+        </label>
+        <select id="video-style" class="field w-full text-xs sm:text-sm h-9 sm:h-10 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none">
+          <option value="">По умолчанию</option>
+          <option value="realistic">Реалистичный</option>
+          <option value="anime">Аниме</option>
+          <option value="cartoon">Мультяшный</option>
+          <option value="cinematic">Кинематографичный</option>
+          <option value="artistic">Художественный</option>
+        </select>
+      </div>
+
+      <!-- Output Format -->
+      <div id="output-format-param" class="space-y-1.5" style="display: none;">
+        <label class="block text-xs sm:text-sm font-medium text-[var(--text)]" for="video-output-format">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <path d="M14 2v6h6"/>
+              <path d="M12 18v-6"/>
+              <path d="M9 15l3 3 3-3"/>
+            </svg>
+            <span>Формат вывода</span>
+          </span>
+        </label>
+        <select id="video-output-format" class="field w-full text-xs sm:text-sm h-9 sm:h-10 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none">
+          <option value="mp4">MP4</option>
+          <option value="webm">WebM</option>
+          <option value="gif">GIF</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Negative Prompt -->
+    <div id="negative-prompt-param" class="space-y-1.5" style="display: none;">
+      <label class="block text-xs sm:text-sm font-medium text-[var(--text)]" for="video-negative-prompt">
+        <span class="flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M15 9l-6 6M9 9l6 6"/>
+          </svg>
+          <span>Негативный промпт</span>
+          <span class="text-[10px] sm:text-[11px] text-[var(--muted)] font-normal">(что не должно быть в видео)</span>
+        </span>
+      </label>
+      <textarea id="video-negative-prompt" class="field w-full min-h-20 resize-none text-xs sm:text-sm rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all" placeholder="Например: blurry, low quality, distorted, watermark"></textarea>
+    </div>
+  </div>
+
+  <!-- Подсказка для пользователя -->
+  <div class="mt-2 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 text-xs text-[var(--muted)]">
+        Результаты (фото) хранятся локально 24 часа. По истечении срока очередь очищается автоматически. Данные не покидают ваш браузер.
+      </div>
+
+  <!-- Результаты генерации (плитки) -->
+  <div class="flex items-center justify-between mt-2">
+    <h4 class="text-sm font-medium">Очередь и результаты</h4>
+    <button type="button" id="clear-video-queue-btn" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm hover:border-primary/60 hover:text-primary transition">
+      Очистить очередь
+    </button>
+  </div>
+  <div id="video-results-grid" class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3"></div>
+
+  <!-- Кнопка генерации -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-[var(--bord)]">
+    <div class="flex items-center gap-3 text-sm text-[var(--muted)]">
+      <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2M12 6a9 9 0 100 18 9 9 0 000-18zM12 2v2" />
+      </svg>
+      <span>Обычно от 1 до 3 минут</span>
+    </div>
+    <button type="button" id="generate-video-btn" class="btn btn-primary px-8 py-3 w-full sm:w-auto text-base">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Сгенерировать видео
+    </button>
+  </div>
+
+</div>

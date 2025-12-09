@@ -17,23 +17,12 @@ class InstantSignupView(SignupView):
     def get_success_url(self):
         request = self.request
 
-        # 1) пробуем ?next=
-        next_url = request.POST.get("next") or request.GET.get("next")
-        if next_url and url_has_allowed_host_and_scheme(
-            next_url,
-            allowed_hosts={request.get_host()},
-            require_https=request.is_secure(),
-        ):
-            return next_url
-
-        # 2) пусть решит адаптер allauth (учтёт ACCOUNT_LOGIN_ON_SIGNUP и т.п.)
+        # Всегда ведём на профиль через адаптер; игнорируем ?next=
         try:
             return get_adapter(request).get_login_redirect_url(request)
         except Exception:
             pass
 
-        # 3) запасной вариант из настроек
-        fallback = getattr(settings, "ACCOUNT_SIGNUP_REDIRECT_URL", None) or \
-                   getattr(settings, "LOGIN_REDIRECT_URL", "/")
-        # resolve_url сохраняет query (?drawer=1) если он указан строкой
+        # Фолбэк на настройки (по умолчанию — профиль)
+        fallback = getattr(settings, "ACCOUNT_SIGNUP_REDIRECT_URL", None) or getattr(settings, "LOGIN_REDIRECT_URL", "/dashboard/me")
         return resolve_url(fallback)

@@ -1,0 +1,25 @@
+<!-- Video Quantity Selector -->
+<div id="video-quantity-container" class="form-group" style="display: none;">
+    <label for="video-quantity">
+        <i class="fas fa-layer-group"></i>
+        Количество видео
+    </label>
+    <div class="quantity-selector">
+        <input
+            type="range"
+            id="video-quantity"
+            name="number_videos"
+            min="1"
+            max="4"
+            value="1"
+            class="form-range"
+        >
+        <div class="quantity-display">
+            <span id="video-quantity-value">1</span>
+            <span class="quantity-label">видео</span>
+        </div>
+    </div>
+    <small class="form-text text-muted">
+        Цена умножается на количество видео
+    </small>
+</div>

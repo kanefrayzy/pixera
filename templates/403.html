@@ -1,0 +1,86 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Доступ запрещён — Pixera{% endblock %}
+{% block meta_description %}У вас нет прав доступа к этой странице. Войдите в аккаунт или обратитесь к администратору.{% endblock %}
+{% block robots %}noindex,follow{% endblock %}
+{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{% endblock %}
+
+{% block hero %}{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4">
+  <div class="max-w-2xl w-full text-center">
+    <div class="mb-8 relative">
+      <div class="w-32 h-32 mx-auto relative">
+        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500/20 to-red-500/20 animate-pulse"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-6xl font-bold text-amber-500 opacity-80">403</span>
+        </div>
+
+        <div class="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-amber-500/30 animate-bounce" style="animation-delay: 0.1s;"></div>
+        <div class="absolute -bottom-2 -left-2 w-6 h-6 rounded-full bg-red-500/30 animate-bounce" style="animation-delay: 0.3s;"></div>
+        <div class="absolute top-1/2 -right-4 w-4 h-4 rounded-full bg-orange-500/30 animate-bounce" style="animation-delay: 0.5s;"></div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-4xl sm:text-5xl font-bold mb-4">
+          Доступ запрещён
+        </h1>
+        <p class="text-xl text-[var(--muted)] max-w-lg mx-auto">
+          У вас нет прав доступа к этой странице. Возможно, требуется авторизация
+        </p>
+      </div>
+
+      <div class="card p-6 max-w-md mx-auto">
+        <h2 class="font-semibold mb-4 text-left">Возможные решения:</h2>
+        <ul class="space-y-3 text-left">
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a class="text-primary hover:underline" href="/accounts/login">
+              Войти в аккаунт
+            </a>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'pages:home' %}">
+              Перейти на главную
+            </a>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <a class="text-primary hover:underline" href="{% url 'pages:contact' %}">
+              Связаться с поддержкой
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        {% if not user.is_authenticated %}
+        <a
+          href="/accounts/login"
+          class="btn-primary px-6 py-3 rounded-lg font-medium transition-all hover:scale-105"
+        >
+          Войти
+        </a>
+        {% endif %}
+        <a
+          href="{% url 'pages:home' %}"
+          class="btn-secondary px-6 py-3 rounded-lg font-medium transition-all hover:scale-105"
+        >
+          На главную
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

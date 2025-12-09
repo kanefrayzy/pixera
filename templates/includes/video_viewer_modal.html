@@ -1,0 +1,56 @@
+﻿{% comment %}
+  Reusable global Video Viewer Modal
+  - Dark/Light theme aware (uses CSS vars from base.html)
+  - Responsive down to 320px
+  - Tailwind utilities only
+  - Open via JS: window.VideoViewer.open(url, { filename, poster })
+  - Close via [data-mg-close], backdrop, or Escape
+{% endcomment %}
+
+<div id="videoViewerModal" class="fixed inset-0 z-[95] hidden">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm" data-mg-close="1" aria-hidden="true"></div>
+
+  <!-- Modal container -->
+  <div class="relative mx-auto my-6 w-[95vw] max-w-[min(1120px,95vw)] rounded-2xl border border-[var(--bord)] bg-[var(--bg)] shadow-2xl overflow-hidden">
+    <!-- Header (matches the provided snippet) -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="text-base sm:text-lg font-bold">Просмотр видео</h3>
+      <div class="flex items-center gap-2">
+        <a data-mg-download
+           href="#"
+           download
+           class="btn btn-ghost px-3 py-1.5 inline-flex items-center gap-2"
+           aria-label="Скачать видео">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"></path>
+          </svg>
+          <span class="hidden xs:inline">Скачать</span>
+        </a>
+        <button type="button" class="btn btn-ghost px-3 py-1.5" data-mg-close="1" aria-label="Закрыть">✕</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="p-3 sm:p-4">
+      <div class="bg-black/5 dark:bg-white/5 rounded-xl border border-[var(--bord)] overflow-hidden">
+        <div id="videoViewerBody" class="w-full grid place-items-center">
+          <!-- Injected by JS:
+               <video controls playsinline class="w-full h-full max-h-[70vh] bg-black">
+                 <source src="..." type="video/mp4">
+               </video>
+          -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Ensure proper sizing on small screens */
+  @media (max-width: 480px) {
+    #videoViewerModal .rounded-2xl {
+      border-radius: 1rem;
+    }
+  }
+</style>

@@ -1,0 +1,787 @@
+﻿{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <div class="flex items-center gap-4 mb-4">
+                <a href="{% url 'generate:video_models_list' %}"
+                   class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </a>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                    {{ title }}
+                </h1>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            {% if form.errors %}
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div class="flex">
+                    <svg class="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
+                            Ошибки в форме:
+                        </h3>
+                        <ul class="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
+                            {% if form.non_field_errors %}
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endif %}
+                            {% for field in form %}
+                                {% if field.errors %}
+                                    {% for error in field.errors %}
+                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Basic Information -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Основная информация
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Название модели *
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.model_id.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ID модели Runware *
+                        </label>
+                        {{ form.model_id }}
+                        {% if form.model_id.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.model_id.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.model_id.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.model_id.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.slug.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Слаг
+                        </label>
+                        {{ form.slug }}
+                        {% if form.slug.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.slug.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Оставьте пустым для автогенерации</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Категория *
+                        </label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.category.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.token_cost.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Стоимость в токенах *
+                        </label>
+                        {{ form.token_cost }}
+                        {% if form.token_cost.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.token_cost.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.order.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Порядок *
+                        </label>
+                        {{ form.order }}
+                        {% if form.order.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.order.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Порядок отображения в списке (меньше = выше)</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.provider.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Провайдер *
+                        </label>
+                        {{ form.provider }}
+                        {% if form.provider.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.provider.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Название провайдера (например: Runware, ByteDance)</p>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Описание
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Изображение модели
+                        </label>
+                        {% if form.instance.image %}
+                        <div class="mb-3">
+                            <img src="{{ form.instance.image.url }}" alt="Current image" class="h-32 w-auto rounded-lg border border-gray-300 dark:border-gray-600">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Текущее изображение</p>
+                        </div>
+                        {% endif %}
+                        <input type="file" name="image" accept="image/*" id="id_image" autocomplete="off" class="block w-full text-sm text-gray-900 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none">
+                        {% if form.image.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.image.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.image.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.image.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resolutions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Разрешения
+                    </h2>
+                    <button type="button" onclick="toggleSection('resolutions')" class="text-blue-600 dark:text-blue-400 text-sm">
+                        Свернуть/Развернуть
+                    </button>
+                </div>
+                <div id="resolutions" class="space-y-4">
+                    <div class="flex items-center">
+                        {{ form.supports_custom_resolution }}
+                        <label for="{{ form.supports_custom_resolution.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Поддерживает произвольное разрешение
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. ширина</label>
+                            {{ form.min_width }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. ширина</label>
+                            {{ form.max_width }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. высота</label>
+                            {{ form.min_height }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. высота</label>
+                            {{ form.max_height }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Предустановленные разрешения:</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                            {% for field in form %}
+                            {% if 'resolution_' in field.name %}
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                {{ field }}
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                            </label>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aspect Ratios -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Соотношения сторон
+                </h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {% for field in form %}
+                    {% if 'aspect_ratio_' in field.name %}
+                    <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                        {{ field }}
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                    </label>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Duration -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Длительность
+                    </h2>
+                    <button type="button" onclick="toggleSection('duration')" class="text-blue-600 dark:text-blue-400 text-sm">
+                        Свернуть/Развернуть
+                    </button>
+                </div>
+                <div id="duration" class="space-y-4">
+                    <div class="flex items-center">
+                        {{ form.supports_custom_duration }}
+                        <label for="{{ form.supports_custom_duration.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Поддерживает произвольную длительность
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. длительность (сек)</label>
+                            {{ form.min_duration }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. длительность (сек)</label>
+                            {{ form.max_duration }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Предустановленные длительности:</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            {% for field in form %}
+                            {% if 'duration_' in field.name and 'min_duration' not in field.name and 'max_duration' not in field.name %}
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                {{ field }}
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                            </label>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Movement -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Движение камеры
+                    </h2>
+                    <button type="button" onclick="toggleSection('camera')" class="text-blue-600 dark:text-blue-400 text-sm">
+                        Свернуть/Развернуть
+                    </button>
+                </div>
+                <div id="camera" class="space-y-4">
+                    <div class="flex items-center">
+                        {{ form.supports_camera_movement }}
+                        <label for="{{ form.supports_camera_movement.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Поддерживает движение камеры
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {% for field in form %}
+                        {% if 'camera_' in field.name and field.name != 'supports_camera_movement' %}
+                        <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                            {{ field }}
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image-to-Video -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Image-to-Video
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        {{ form.supports_image_to_video }}
+                        <label for="{{ form.supports_image_to_video.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Поддерживает Image-to-Video
+                        </label>
+                    </div>
+
+                    <div class="flex items-center">
+                        {{ form.supports_motion_strength }}
+                        <label for="{{ form.supports_motion_strength.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Поддерживает силу движения
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. сила движения</label>
+                            {{ form.min_motion_strength }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. сила движения</label>
+                            {{ form.max_motion_strength }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">По умолчанию</label>
+                            {{ form.default_motion_strength }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supported Reference Types -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                     Поддерживаемые типы референсов
+                </h2>
+                <div class="space-y-3">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Укажите, какие типы входных данных поддерживает модель
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="flex items-start p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            {{ form.reference_frameImages }}
+                            <div class="ml-3">
+                                <label for="{{ form.reference_frameImages.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    Frame Images
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Массив изображений для I2V (ByteDance, KlingAI, Vidu)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            {{ form.reference_referenceImages }}
+                            <div class="ml-3">
+                                <label for="{{ form.reference_referenceImages.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    Reference Images
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Референсные изображения (Wan2.5-Preview)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            {{ form.reference_audioInputs }}
+                            <div class="ml-3">
+                                <label for="{{ form.reference_audioInputs.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    Audio Inputs
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Аудио для V2V генерации
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            {{ form.reference_controlNet }}
+                            <div class="ml-3">
+                                <label for="{{ form.reference_controlNet.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    ControlNet
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Управление структурой и композицией
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multiple Videos -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Множественная генерация
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        {{ form.supports_multiple_videos }}
+                        <label for="{{ form.supports_multiple_videos.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Поддерживает множественную генерацию
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Минимум видео</label>
+                            {{ form.min_videos }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Максимум видео</label>
+                            {{ form.max_videos }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">По умолчанию</label>
+                            {{ form.default_videos }}
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Позволяет пользователям генерировать несколько видео за раз. Цена умножается на количество.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Advanced Parameters -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Продвинутые параметры
+                    </h2>
+                    <button type="button" onclick="toggleSection('advanced')" class="text-blue-600 dark:text-blue-400 text-sm">
+                        Свернуть/Развернуть
+                    </button>
+                </div>
+                <div id="advanced" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex items-center">
+                            {{ form.supports_seed }}
+                            <label for="{{ form.supports_seed.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                Поддерживает seed
+                            </label>
+                        </div>
+
+                        <div class="flex items-center">
+                            {{ form.supports_negative_prompt }}
+                            <label for="{{ form.supports_negative_prompt.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                Поддерживает негативный промпт
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- FPS -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div class="flex items-center mb-2">
+                            {{ form.supports_fps }}
+                            <label for="{{ form.supports_fps.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Поддерживает настройку FPS
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Мин. FPS</label>
+                                {{ form.min_fps }}
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Макс. FPS</label>
+                                {{ form.max_fps }}
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">По умолчанию</label>
+                                {{ form.default_fps }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Guidance Scale -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div class="flex items-center mb-2">
+                            {{ form.supports_guidance_scale }}
+                            <label for="{{ form.supports_guidance_scale.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Поддерживает guidance scale
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Минимум</label>
+                                {{ form.min_guidance_scale }}
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Максимум</label>
+                                {{ form.max_guidance_scale }}
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">По умолчанию</label>
+                                {{ form.default_guidance_scale }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inference Steps -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div class="flex items-center mb-2">
+                            {{ form.supports_inference_steps }}
+                            <label for="{{ form.supports_inference_steps.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Поддерживает количество шагов
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Минимум</label>
+                                {{ form.min_inference_steps }}
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Максимум</label>
+                                {{ form.max_inference_steps }}
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">По умолчанию</label>
+                                {{ form.default_inference_steps }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality & Style -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Качество и стили
+                </h2>
+                <div class="space-y-4">
+                    <!-- Quality -->
+                    <div>
+                        <div class="flex items-center mb-2">
+                            {{ form.supports_quality }}
+                            <label for="{{ form.supports_quality.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Поддерживает настройку качества
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {% for field in form %}
+                            {% if 'quality_' in field.name and field.name != 'supports_quality' %}
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                {{ field }}
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                            </label>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Styles -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div class="flex items-center mb-2">
+                            {{ form.supports_style_presets }}
+                            <label for="{{ form.supports_style_presets.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Поддерживает стилевые пресеты
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {% for field in form %}
+                            {% if 'style_' in field.name and field.name != 'supports_style_presets' %}
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                {{ field }}
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                            </label>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Formats -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Форматы вывода
+                </h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                            {{ form.supports_mp4 }}
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ form.supports_mp4.label }}</span>
+                        </label>
+                        <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                            {{ form.supports_webm }}
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ form.supports_webm.label }}</span>
+                        </label>
+                        <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                            {{ form.supports_gif }}
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ form.supports_gif.label }}</span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center">
+                        {{ form.supports_watermark_removal }}
+                        <label for="{{ form.supports_watermark_removal.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Поддерживает удаление водяного знака
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Метаданные
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex items-center">
+                        {{ form.is_active }}
+                        <label for="{{ form.is_active.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Активна
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        {{ form.is_beta }}
+                        <label for="{{ form.is_beta.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Бета-версия
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Доступные параметры (Optional Fields) -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Доступные параметры для пользователя
+                </h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Отметьте параметры, которые будут доступны пользователю при генерации видео с этой моделью
+                </p>
+
+                <div class="space-y-4">
+                    <!-- Базовые параметры -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Базовые параметры</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="duration_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.duration %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">⏱️ Длительность</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="resolution_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.resolution %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">📐 Разрешение</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="camera_movement_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.camera_movement %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">📹 Движение камеры</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="seed_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.seed %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🎲 Seed</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="number_videos_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.number_videos %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🎬 Количество видео</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- I2V параметры -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Image-to-Video параметры</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="motion_strength_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.motion_strength %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">💫 Сила движения</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="audio_inputs_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.audio_inputs %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🔊 Аудио вход</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Продвинутые параметры -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Продвинутые параметры</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="fps_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.fps %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🎬 FPS</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="guidance_scale_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.guidance_scale %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🎯 Guidance Scale</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="inference_steps_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.inference_steps %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🔢 Шаги генерации</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="quality_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.quality %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">⭐ Качество</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="style_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.style %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🎨 Стиль</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="output_format_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.output_format %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">📁 Формат вывода</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="negative_prompt_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.negative_prompt %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🚫 Негативный промпт</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- UI элементы (всегда видимые) -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">UI элементы (всегда видимые)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="generation_mode_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.generation_mode %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🎬 Режим генерации</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="prompt_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.prompt %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">✍️ Промпт</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="auto_translate_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.auto_translate %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🌐 Автоперевод</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="reference_images_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.reference_images %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">🖼️ Референсы</span>
+                            </label>
+                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" name="prompt_generator_enabled" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {% if form.instance.optional_fields.prompt_generator %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">✨ Генератор промптов</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{% url 'generate:video_models_list' %}"
+                   class="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Отмена
+                </a>
+                <button type="submit"
+                        class="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% if form.instance.pk %}Обновить модель{% else %}Создать модель{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.classList.toggle('hidden');
+    }
+}
+</script>
+{% endblock %}

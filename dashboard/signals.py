@@ -1,89 +1,68 @@
-﻿# FILE: dashboard/signals.py
-from __future__ import annotations
-
-import hashlib
-from django.conf import settings
-from django.db import transaction
+﻿"""
+Signal handlers for sending real-time notifications
+"""
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-from django.contrib.auth.signals import user_logged_in
-
-from .models import Wallet, STARTER_TOKENS
-
-# Эти модели импортируем тут, чтобы избежать циклов при старте приложений
-from generate.models import FreeGrant, GenerationJob
-
-User = get_user_model()
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from .models import Notification
 
 
-@receiver(post_save, sender=User)
-def create_wallet_for_user(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Notification)
+def send_notification_to_websocket(sender, instance, created, **kwargs):
     """
-    Создаём пустой кошелёк при регистрации пользователя.
-    ВАЖНО: баланс = STARTER_TOKENS (0), чтобы не «возвращать» гостевые токены.
+    Send notification to user's WebSocket channel when a new notification is created
     """
-    if created:
-        Wallet.objects.get_or_create(user=instance, defaults={"balance": STARTER_TOKENS})
+    if not created:
+        return
 
-
-def _ua_hash(request) -> str:
-    ua = (request.META.get("HTTP_USER_AGENT") or "").strip()
-    al = (request.META.get("HTTP_ACCEPT_LANGUAGE") or "").strip()
-    return hashlib.sha256(f"{ua}|{al}".encode("utf-8")).hexdigest()
-
-
-def _ip_hash(request) -> str:
-    ip = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip() or \
-         (request.META.get("REMOTE_ADDR") or "")
-    if not ip:
-        return ""
-    return hashlib.sha256(f"{ip}|{settings.SECRET_KEY}".encode("utf-8")).hexdigest()
-
-
-def _hard_fp(request) -> str:
-    return hashlib.sha256(f"{_ua_hash(request)}|{_ip_hash(request)}|{settings.SECRET_KEY}".encode("utf-8")).hexdigest()
-
-
-@receiver(user_logged_in)
-def on_user_logged_in(sender, request, user, **kwargs):
-    """
-    1) Переносим остаток гостевой квоты в Wallet и «обнуляем» гостя (однократно).
-    2) Привязываем все гостевые GenerationJob текущей сессии к пользователю.
-    """
-    # гарантируем session_key (нужен для связи гостевых задач)
-    if not request.session.session_key:
-        request.session.save()
-
-    # --- 1) Перенос гостевых токенов ---
     try:
-        # Проверяем, есть ли уже привязанный к этому пользователю FreeGrant
-        existing_grant = FreeGrant.objects.filter(user=user).first()
-        if existing_grant:
-            # У пользователя уже есть привязанный грант, не создаем новый и не переносим токены
-            pass
-        else:
-            gid = (request.COOKIES.get("gid") or "").strip()
-            grant = FreeGrant.ensure_for(
-                fp=_hard_fp(request),
-                gid=gid,
-                session_key=request.session.session_key,
-                ip_hash=_ip_hash(request),
-                ua_hash=_ua_hash(request),
-                first_ip=(request.META.get("REMOTE_ADDR") or "").strip() or None,
-            )
-            # если уже привязано к этому юзеру — переносить нечего
-            if grant.user_id != user.id:
-                grant.bind_to_user(user, transfer_left=True)  # используем правильный метод
-    except Exception:
-        # не мешаем логину даже если что-то пошло не так
-        pass
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            return
 
-    # --- 2) Привязка гостевых работ текущей сессии к аккаунту ---
-    try:
-        with transaction.atomic():
-            GenerationJob.objects.select_for_update() \
-                .filter(user__isnull=True, guest_session_key=request.session.session_key) \
-                .update(user=user, guest_session_key="")
-    except Exception:
-        pass
+        # Get actor info
+        actor_info = {"username": "", "avatar_url": ""}
+        if instance.actor:
+            try:
+                prof = getattr(instance.actor, "profile", None)
+                avatar_url = getattr(getattr(prof, "avatar", None), "url", "") if prof else ""
+            except Exception:
+                avatar_url = ""
+            actor_info = {
+                "username": instance.actor.username,
+                "avatar_url": avatar_url
+            }
+
+        # Prepare notification data
+        notification_data = {
+            "id": instance.id,
+            "type": instance.type,
+            "message": instance.message,
+            "link": instance.link,
+            "is_read": instance.is_read,
+            "created_at": instance.created_at.isoformat(),
+            "actor": actor_info,
+            "preview": {
+                "kind": None,
+                "image_url": "",
+                "video_url": "",
+                "poster_url": "",
+                "text": "",
+            },
+        }
+
+        # Send to user's notification group
+        group_name = f"notifications_{instance.recipient_id}"
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "notification_message",
+                "notification": notification_data
+            }
+        )
+    except Exception as e:
+        # Don't break notification creation if WebSocket fails
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send notification to WebSocket: {e}")

@@ -1,0 +1,284 @@
+/**
+ * Moon Slider Component - Black Track Edition
+ * Минималистичный чёрный ползунок с луной без свечения
+ * Адаптивный дизайн 320px+, поддержка светлой/темной темы
+ */
+
+/* ===== MOON SLIDER CONTAINER ===== */
+.moon-slider-container {
+  position: relative;
+  width: 100%;
+  padding: 1rem 0;
+}
+
+/* ===== SLIDER INPUT ===== */
+.moon-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 10px;
+  background: transparent;
+  outline: none;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* ===== TRACK (Чёрный ползунок) ===== */
+.moon-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 10px;
+  background: linear-gradient(
+    to right,
+    #1a1a1a 0%,
+    #2d2d2d 50%,
+    #1a1a1a 100%
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.moon-slider::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 10px;
+  background: linear-gradient(
+    to right,
+    #1a1a1a 0%,
+    #2d2d2d 50%,
+    #1a1a1a 100%
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(255, 255, 255, 0.05);
+}
+
+/* Progress indicator (optional subtle effect) */
+.moon-slider::-moz-range-progress {
+  height: 8px;
+  border-radius: 10px;
+  background: linear-gradient(
+    to right,
+    #2d2d2d 0%,
+    #3a3a3a 100%
+  );
+}
+
+/* Light theme track - немного светлее */
+:root[data-theme="light"] .moon-slider::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    #2a2a2a 0%,
+    #3d3d3d 50%,
+    #2a2a2a 100%
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .moon-slider::-moz-range-track {
+  background: linear-gradient(
+    to right,
+    #2a2a2a 0%,
+    #3d3d3d 50%,
+    #2a2a2a 100%
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== THUMB (Луна катится по чёрному ползунку) ===== */
+.moon-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  background-image: url('/static/img/moon.svg');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: none;
+  margin-top: -8px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+  will-change: transform;
+  transform: rotate(var(--moon-rotation, 0deg));
+  filter: none;
+}
+
+.moon-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  background-image: url('/static/img/moon.svg');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  transform: rotate(var(--moon-rotation, 0deg));
+  filter: none;
+}
+
+/* Hover state - небольшое увеличение */
+.moon-slider:hover::-webkit-slider-thumb {
+  transform: rotate(var(--moon-rotation, 0deg)) scale(1.1);
+}
+
+.moon-slider:hover::-moz-range-thumb {
+  transform: rotate(var(--moon-rotation, 0deg)) scale(1.1);
+}
+
+/* Active state - небольшое уменьшение */
+.moon-slider:active::-webkit-slider-thumb {
+  transform: rotate(var(--moon-rotation, 0deg)) scale(0.95);
+}
+
+.moon-slider:active::-moz-range-thumb {
+  transform: rotate(var(--moon-rotation, 0deg)) scale(0.95);
+}
+
+/* ===== VALUE DISPLAY ===== */
+.moon-slider-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.5rem;
+  background: rgba(var(--bord-rgb, 100, 116, 139), 0.25);
+  backdrop-filter: blur(6px);
+  min-width: 50px;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.moon-slider-value-number {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text, #f3f4f6);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.moon-slider-value-unit {
+  font-size: 0.75rem;
+  color: var(--muted, #94a3b8);
+  line-height: 1;
+}
+
+/* Light theme value display */
+:root[data-theme="light"] .moon-slider-value {
+  background: rgba(203, 213, 225, 0.35);
+}
+
+:root[data-theme="light"] .moon-slider-value-number {
+  color: #1e293b;
+}
+
+:root[data-theme="light"] .moon-slider-value-unit {
+  color: #64748b;
+}
+
+/* ===== RESPONSIVE ===== */
+
+/* Small devices (475px and up) */
+@media (min-width: 475px) {
+  .moon-slider-value {
+    padding: 0.4rem 0.65rem;
+    min-width: 56px;
+  }
+
+  .moon-slider-value-number {
+    font-size: 0.9375rem;
+  }
+}
+
+/* Medium devices (640px and up) */
+@media (min-width: 640px) {
+  .moon-slider::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+    margin-top: -9px;
+  }
+
+  .moon-slider::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Ultra-small screens (320px - 374px) */
+@media (max-width: 374px) {
+  .moon-slider-container {
+    padding: 0.75rem 0;
+  }
+
+  .moon-slider::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: -7px;
+  }
+
+  .moon-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .moon-slider-value {
+    padding: 0.3rem 0.45rem;
+    min-width: 45px;
+  }
+
+  .moon-slider-value-number {
+    font-size: 0.8125rem;
+  }
+
+  .moon-slider-value-unit {
+    font-size: 0.6875rem;
+  }
+}
+
+/* ===== FOCUS STATES (Accessibility) ===== */
+.moon-slider:focus {
+  outline: none;
+}
+
+.moon-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid rgba(96, 165, 250, 0.5);
+  outline-offset: 2px;
+}
+
+.moon-slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid rgba(96, 165, 250, 0.5);
+  outline-offset: 2px;
+}
+
+/* ===== DISABLED STATE ===== */
+.moon-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.moon-slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.moon-slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+  transform: none !important;
+}

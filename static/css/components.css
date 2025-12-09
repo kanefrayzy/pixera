@@ -325,7 +325,7 @@
 }
 
 /* Modal Styles */
-.modal {
+.modal:not(.hidden) {
   position: fixed;
   top: 0;
   left: 0;

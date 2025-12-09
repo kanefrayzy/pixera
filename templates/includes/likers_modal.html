@@ -1,0 +1,190 @@
+﻿<!-- Global Likers Modal (included site-wide) -->
+<div id="likersModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
+  <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="font-semibold">Оценили</h3>
+      <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">
+      <div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  Global Likers Modal handler:
+  - Opens on click of any element inside a [data-open-likers] container (usually the numeric count under the heart)
+  - Uses capture-phase listener to prevent like-toggle handlers from consuming the event
+  - Works on all pages where base.html is used
+*/
+(function(){
+  // Support multiple instances accidentally rendered on page (pick the last one)
+  const modals = document.querySelectorAll('#likersModal');
+  const modal = modals.length ? modals[modals.length - 1] : null;
+  const body = modal ? modal.querySelector('#likersBody') : null;
+  if (!modal || !body) return;
+
+  // Current logged-in username (for "Вы" badge)
+  const CURRENT_USER = "{{ request.user.username|default:''|escapejs }}";
+
+  function getCSRFCookie(){
+    try{
+      const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+      if (m) return decodeURIComponent(m[1]);
+    }catch(_){}
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+
+  function openModal(){
+    modal.classList.remove('hidden');
+    try { document.body.style.overflow = 'hidden'; } catch(_) {}
+  }
+
+  function closeModal(){
+    modal.classList.add('hidden');
+    try { document.body.style.overflow = ''; } catch(_) {}
+    body.innerHTML = '';
+  }
+
+  modal.addEventListener('click', (e)=>{
+    if (e.target && e.target.getAttribute('data-likers-close') === '1') {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+
+  async function fetchLikers(url, totalLikes){
+    try{
+      const res = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' });
+      const j = await res.json().catch(()=>null);
+      if (!res.ok || !j || j.ok === false) throw new Error('bad response');
+
+      const arr = Array.isArray(j.likers) ? j.likers : [];
+      const total = Number(totalLikes);
+      const guestCount = (isFinite(total) && total > arr.length) ? (total - arr.length) : 0;
+
+      const registeredHtml = arr.map(item => {
+        const initial = (item.name || item.username || '?').slice(0,1).toUpperCase();
+        const profileHref = '/dashboard/profile/' + encodeURIComponent(item.username);
+        const avatar = item.avatar
+          ? `<a href="${profileHref}" class="shrink-0" aria-label="@${item.username}"><img src="${item.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${item.username}"></a>`
+          : `<a href="${profileHref}" class="shrink-0" aria-label="@${item.username}"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white grid place-items-center font-bold">${initial}</div></a>`;
+        const btnLabel = item.is_following ? 'Отписаться' : 'Подписаться';
+        const btnClass = item.is_following ? 'btn-ghost' : 'btn-primary';
+        const isMe = !!CURRENT_USER && !!item.username && (item.username === CURRENT_USER);
+        const rightCtrl = isMe
+          ? `<span class="px-3 py-1.5 text-xs rounded-md bg-black/10 dark:bg-white/10 text-[var(--muted)] select-none">Вы</span>`
+          : `<button class="btn ${btnClass} text-xs px-3 py-1.5 js-follow-toggle" data-username="${item.username}">${btnLabel}</button>`;
+        return `
+          <div class="flex items-center justify-between p-3 sm:p-4">
+            <div class="flex items-center gap-3 min-w-0">
+              ${avatar}
+              <div class="min-w-0">
+                <a href="${profileHref}" class="font-medium truncate hover:text-primary transition">${(item.name||'')}</a>
+                <a href="${profileHref}" class="text-xs text-[var(--muted)] truncate hover:text-primary transition">@${item.username}</a>
+              </div>
+            </div>
+            ${rightCtrl}
+          </div>
+        `;
+      }).join('');
+
+      const guestHtml = guestCount > 0
+        ? Array.from({ length: guestCount }, (_, i) => {
+            const n = i + 1;
+            return `
+              <div class="flex items-center justify-between p-3 sm:p-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-full bg-black/10 dark:bg-white/10 grid place-items-center text-[var(--muted)] shrink-0">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"></path>
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-medium truncate">Гость #${n}</div>
+                    <div class="text-xs text-[var(--muted)] truncate">@guest${n}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')
+        : '';
+
+      const html = (registeredHtml + guestHtml);
+      body.innerHTML = html || '<div class="p-4 text-sm text-[var(--muted)]">Пока нет лайков</div>';
+    }catch(_){
+      body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  // Follow toggle inside likers modal (uses dashboard API)
+  body.addEventListener('click', async (e)=>{
+    const btn = e.target && e.target.closest('.js-follow-toggle');
+    if (!btn) return;
+    e.preventDefault();
+    const username = btn.getAttribute('data-username');
+    if (!username) return;
+    try{
+      const fd = new FormData();
+      fd.append('username', username);
+      const res = await fetch("{% url 'dashboard:api:follow_toggle' %}", {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'},
+        body: fd,
+        credentials:'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (res.ok && j && j.ok !== false){
+        const following = !!j.following;
+        btn.textContent = following ? 'Отписаться' : 'Подписаться';
+        btn.classList.toggle('btn-primary', !following);
+        btn.classList.toggle('btn-ghost', following);
+      }
+    }catch(_){}
+  });
+
+  // Capture-phase listener to open likers modal before like-toggle handlers run
+  document.addEventListener('click', function onCountClick(e){
+    const target = e.target && e.target.closest('[data-open-likers]');
+    if (!target) return;
+
+    const url = target.getAttribute('data-url');
+    if (!url) return;
+
+    // Stop any other click handlers (including like-toggle) from processing this click
+    try { e.stopImmediatePropagation && e.stopImmediatePropagation(); } catch(_) {}
+    try { e.stopPropagation(); } catch(_) {}
+    try { e.preventDefault(); } catch(_) {}
+
+    body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>';
+    openModal();
+
+    // Determine total likes (for guests = total - registered)
+    let totalLikes = 0;
+    const ds = target.getAttribute('data-total-likes') || (target.dataset ? target.dataset.totalLikes : '');
+    if (ds) {
+      totalLikes = Number(ds);
+    }
+    if (!isFinite(totalLikes) || totalLikes <= 0) {
+      try {
+        const btn = target.closest('button');
+        const countEl = btn && btn.querySelector('[id^="like-count-"], [id^="video-like-count-"]');
+        if (countEl) totalLikes = Number((countEl.textContent || '').replace(/[^\d]/g, '')) || 0;
+      } catch(_) {}
+    }
+
+    fetchLikers(url, totalLikes);
+  }, true); // capture phase to win over bubbling listeners
+})();
+</script>

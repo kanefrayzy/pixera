@@ -1,23 +1,271 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
+{% load i18n %}
 
 {% block hero %}{% endblock %}
 
 {% block content %}
 <section class="min-h-screen" role="region" aria-label="Личный кабинет">
-  
+
+{% block dashboard_header %}
   <!-- Dashboard Header -->
   <header class="sticky top-16 z-40 bg-[var(--bg)]/80 backdrop-blur-md" role="banner" aria-label="Шапка кабинета">
 
 
     <div class="container py-4">
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold">
-            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+        <div class="flex flex-col items-start gap-2">
+          <div class="min-w-0">
+            <div class="text-base sm:text-lg font-semibold truncate">
+              {{ request.user.first_name|default:request.user.username }}
+            </div>
+            <div class="text-xs sm:text-sm text-[var(--muted)] truncate">
+              {{ request.user.email }}
+            </div>
           </div>
-          <div>
-            <div class="font-medium">Здравствуйте, {{ request.user.get_username }}</div>
-            <div class="text-sm text-[var(--muted)]">Добро пожаловать в ваш кабинет</div>
+
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 sm:pt-0 w-full">
+            <span class="relative inline-flex items-center shrink-0 group">
+              <img
+                src="{% if user_profile and user_profile.avatar %}{{ user_profile.avatar.url }}{% else %}#{% endif %}"
+                alt="{{ request.user.username }}"
+                class="js-avatar-img {% if not user_profile or not user_profile.avatar %}hidden {% endif %} w-16 h-16 rounded-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              <span class="js-avatar-fallback {% if user_profile and user_profile.avatar %}hidden {% endif %} w-16 h-16 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-lg">
+                {{ request.user.first_name|first|default:request.user.username|first|upper }}
+              </span>
+
+              <!-- Hover overlay: refresh icon directly on avatar -->
+              <form action="{% url 'dashboard:avatar_upload' %}" method="post" enctype="multipart/form-data" data-ajax
+                    class="absolute inset-0 grid place-items-center js-has-avatar-only {% if not user_profile or not user_profile.avatar %}hidden{% endif %} pointer-events-none">
+                {% csrf_token %}
+                <label class="pointer-events-auto w-9 h-9 sm:w-10 sm:h-10 rounded-full grid place-items-center ring-1 ring-[var(--bord)]
+                               bg-black text-white dark:bg-white dark:text-[var(--bg)]
+                               opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition"
+                       title="{% trans 'Обновить аватар' %}">
+                  <input type="file" name="avatar" accept="image/png,image/jpeg,image/jpg,image/webp" class="sr-only" onchange="this.form.requestSubmit()">
+                  <!-- circular arrows icon -->
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.5 7.5A8.5 8.5 0 0012 3.5c-4.694 0-8.5 3.806-8.5 8.5"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.5 3.5v4h-4"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.5 16.5A8.5 8.5 0 0012 20.5c4.694 0 8.5-3.806 8.5-8.5"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.5 20.5v-4h4"/>
+                  </svg>
+                </label>
+              </form>
+            </span>
+            <div class="my-2 sm:my-0 grid grid-cols-3 gap-3 sm:gap-4 px-3 py-2 rounded-2xl border border-[var(--bord)] bg-white/40 dark:bg-white/5 min-w-0 w-full max-w-md">
+              <button id="cabBtnFollowers" type="button"
+                      class="flex flex-col items-center justify-center text-center rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 min-w-0 min-h-[60px]"
+                      aria-label="{% trans 'Подписчики' %}">
+                <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="cabFollowers">{{ follow_stats.followers|default:0 }}</div>
+                <div class="mt-1 text-[10px] sm:text-xs text-[var(--muted)] w-full overflow-hidden text-ellipsis whitespace-nowrap leading-tight">{% trans "Подписчики" %}</div>
+              </button>
+
+              <button id="cabBtnFollowing" type="button"
+                      class="flex flex-col items-center justify-center text-center rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 min-w-0 min-h-[60px]"
+                      aria-label="{% trans 'Подписки' %}">
+                <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="cabFollowing">{{ follow_stats.following|default:0 }}</div>
+                <div class="mt-1 text-[10px] sm:text-xs text-[var(--muted)] w-full overflow-hidden text-ellipsis whitespace-nowrap leading-tight">{% trans "Подписки" %}</div>
+              </button>
+
+              <a href="{% url 'dashboard:my_jobs' %}?only=published"
+                 class="flex flex-col items-center justify-center text-center rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 min-w-0 min-h-[60px]"
+                 aria-label="{% trans 'Публикации' %}">
+                <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="cabPosts">{{ follow_stats.posts|default:0 }}</div>
+                <div class="mt-1 text-[10px] sm:text-xs text-[var(--muted)] w-full overflow-hidden text-ellipsis whitespace-nowrap leading-tight">{% trans "Публикации" %}</div>
+              </a>
+            </div>
+
+            <!-- Follow Modal for header counters -->
+            <div id="followModalCab" class="modal hidden fixed inset-0 z-50 flex items-center justify-center">
+              <div class="modal-backdrop absolute inset-0 bg-black/60"></div>
+              <div class="relative w-[92vw] max-w-md sm:max-w-lg md:max-w-xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 id="followModalCabTitle" class="text-lg font-semibold"></h3>
+                  <button type="button" class="btn btn-ghost px-3 py-2" onclick="Modal.close('followModalCab')" aria-label="Close">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+                <nav class="flex justify-center mb-2">
+                  <div class="inline-flex rounded-xl bg-[var(--bord)] p-1 gap-1">
+                    <button id="fmCabTabFollowers" type="button" class="px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] hover:text-[var(--text)]">
+                      Подписчики
+                    </button>
+                    <button id="fmCabTabFollowing" type="button" class="px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted)] hover:text-[var(--text)]">
+                      Подписки
+                    </button>
+                  </div>
+                </nav>
+                <div id="followModalCabBody" class="max-h-[70vh] overflow-y-auto">
+                  <div class="text-[var(--muted)] text-sm py-6 text-center">Загрузка...</div>
+                </div>
+              </div>
+            </div>
+
+            <script>
+            (function(){
+              const urls = {
+                followers: "{% url 'dashboard:api:follow_list_followers' %}",
+                following: "{% url 'dashboard:api:follow_list_following' %}",
+                recs: "{% url 'dashboard:api:follow_recommendations' %}?limit=12"
+              };
+              const currentUser = "{{ request.user.username }}";
+              const modalId = 'followModalCab';
+              const titleEl = document.getElementById('followModalCabTitle');
+              const bodyEl = document.getElementById('followModalCabBody');
+
+              function renderUsers(users){
+                if (!users || !users.length){
+                  return '<div class="text-sm text-[var(--muted)] py-6 text-center">Список пуст</div>';
+                }
+                return '<ul class="divide-y divide-[var(--bord)]">' + users.map(u => `
+                  <li class="py-3 flex items-center gap-3">
+                    <img src="${u.avatar_url || ''}" alt="" class="w-9 h-9 rounded-full object-cover ${u.avatar_url ? '' : 'hidden'}">
+                    <div class="w-9 h-9 rounded-full bg-[var(--bord)] ${u.avatar_url ? 'hidden' : ''}"></div>
+                    <div class="min-w-0 flex-1">
+                      <a href="/dashboard/profile/${encodeURIComponent(u.username)}" class="font-medium truncate hover:underline">${u.name || u.username}</a>
+                      <div class="text-xs text-[var(--muted)]">@${u.username}</div>
+                    </div>
+                    <button class="btn ${u.is_following ? 'btn-ghost' : 'btn-primary'} text-xs whitespace-nowrap" data-follow-toggle="1" data-username="${u.username}">
+                      ${u.is_following ? 'Отписаться' : 'Подписаться'}
+                    </button>
+                  </li>`).join('') + '</ul>';
+              }
+
+              function renderRecommendations(recs){
+                if (!recs || !recs.length) return '';
+                return `
+                  <div class="mt-4 pt-3 border-t border-[var(--bord)]">
+                    <div class="text-sm font-semibold mb-2">Рекомендации</div>
+                    <ul class="divide-y divide-[var(--bord)]">
+                      ${recs.map(u => `
+                        <li class="py-3 flex items-center gap-3">
+                          <img src="${u.avatar_url || ''}" alt="" class="w-9 h-9 rounded-full object-cover ${u.avatar_url ? '' : 'hidden'}">
+                          <div class="w-9 h-9 rounded-full bg-[var(--bord)] ${u.avatar_url ? 'hidden' : ''}"></div>
+                          <div class="min-w-0 flex-1">
+                            <a href="/dashboard/profile/${encodeURIComponent(u.username)}" class="font-medium truncate hover:underline">${u.name || u.username}</a>
+                            <div class="text-xs text-[var(--muted)]">@${u.username}</div>
+                          </div>
+                          <button class="btn btn-primary text-xs whitespace-nowrap" data-follow-toggle="1" data-username="${u.username}">
+                            Подписаться
+                          </button>
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                `;
+              }
+
+              function setActiveTab(kind){
+                const f1 = document.getElementById('fmCabTabFollowers');
+                const f2 = document.getElementById('fmCabTabFollowing');
+                const activeCls = ['bg-black/[.06]','dark:bg-white/10','text-[var(--text)]','shadow'];
+                [f1,f2].forEach(el => el && el.classList.remove(...activeCls));
+                (kind === 'followers' ? f1 : f2)?.classList.add(...activeCls);
+              }
+
+              async function resJson(res){ try { return await res.json(); } catch(_) { return null; } }
+
+              async function loadFollowList(kind){
+                titleEl.textContent = kind === 'followers' ? 'Подписчики' : 'Подписки';
+                bodyEl.innerHTML = '<div class="py-6 text-center text-sm text-[var(--muted)]">Загрузка...</div>';
+                try{
+                  const res = await fetch(urls[kind], { headers: { 'X-Requested-With': 'fetch' }});
+                  const data = await resJson(res);
+                  if (data && data.ok){
+                    bodyEl.innerHTML = renderUsers(data.users);
+                  } else {
+                    bodyEl.innerHTML = '<div class="py-6 text-center text-sm text-red-500">Ошибка загрузки</div>';
+                  }
+                } catch(e){
+                  bodyEl.innerHTML = '<div class="py-6 text-center text-sm text-red-500">Ошибка сети</div>';
+                }
+
+                try {
+                  const recRes = await fetch(urls.recs, { headers: { 'X-Requested-With': 'fetch' }});
+                  const recData = await resJson(recRes);
+                  if (recData && recData.ok && Array.isArray(recData.users) && recData.users.length) {
+                    bodyEl.insertAdjacentHTML('beforeend', renderRecommendations(recData.users));
+                  }
+                } catch(e) {}
+
+                bodyEl.onclick = async function(ev) {
+                  const btn = ev.target.closest('[data-follow-toggle="1"]');
+                  if (!btn) return;
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  const username = btn.getAttribute('data-username');
+                  if (!username) return;
+
+                  try {
+                    const fd = new FormData();
+                    fd.append('username', username);
+                    const csrf = (document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/) || [])[1] || '';
+                    const res = await fetch('/dashboard/api/follow/toggle/', {
+                      method: 'POST',
+                      headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'fetch' },
+                      body: fd
+                    });
+                    const j = await res.json();
+                    if (j && j.ok) {
+                      const nowFollowing = !!j.following;
+                      btn.textContent = nowFollowing ? 'Отписаться' : 'Подписаться';
+                      btn.classList.toggle('btn-primary', !nowFollowing);
+                      btn.classList.toggle('btn-ghost', nowFollowing);
+                      // Обновить счётчики в шапке
+                      const cRes = await fetch(`/dashboard/api/follow/${encodeURIComponent(currentUser)}/counters/`, { headers: { 'X-Requested-With': 'fetch' }});
+                      const c = await cRes.json();
+                      if (c && c.ok) {
+                        const dF = document.getElementById('cabFollowers');
+                        const dFg = document.getElementById('cabFollowing');
+                        const dP = document.getElementById('cabPosts');
+                        if (dF) dF.textContent = c.followers;
+                        if (dFg) dFg.textContent = c.following;
+                        if (dP) dP.textContent = c.posts;
+                      }
+                    }
+                  } catch(e) {}
+                };
+              }
+
+              async function openModal(kind){
+                setActiveTab(kind);
+                await loadFollowList(kind);
+                const t1 = document.getElementById('fmCabTabFollowers');
+                const t2 = document.getElementById('fmCabTabFollowing');
+                if (t1) t1.onclick = async ()=>{ setActiveTab('followers'); await loadFollowList('followers'); };
+                if (t2) t2.onclick = async ()=>{ setActiveTab('following'); await loadFollowList('following'); };
+                Modal.open(modalId);
+              }
+
+              document.getElementById('cabBtnFollowers')?.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); openModal('followers'); });
+              document.getElementById('cabBtnFollowing')?.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); openModal('following'); });
+            })();
+            </script>
+
+            <div class="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
+
+              <!-- Удалить (только когда аватар есть) -->
+              <form action="{% url 'dashboard:avatar_delete' %}" method="post" data-ajax class="js-has-avatar-only {% if not user_profile or not user_profile.avatar %}hidden{% endif %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded-xl border border-red-500/40 px-3 py-1.5 text-xs text-red-600 dark:text-red-400 bg-transparent hover:bg-red-500/10 transition" title="{% trans 'Удалить аватар' %}">
+                  {% trans "Удалить аватар" %}
+                </button>
+              </form>
+
+              <!-- Добавить (только когда аватара нет) -->
+              <form action="{% url 'dashboard:avatar_upload' %}" method="post" enctype="multipart/form-data" data-ajax class="js-no-avatar-only {% if user_profile and user_profile.avatar %}hidden{% endif %}">
+                {% csrf_token %}
+                <label class="rounded-xl border border-[var(--bord)] px-3 py-1.5 text-xs text-[var(--text)] bg-transparent hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition" title="{% trans 'Добавить аватар' %}">
+                  <input type="file" name="avatar" accept="image/png,image/jpeg,image/jpg,image/webp" class="sr-only" onchange="this.form.requestSubmit()">
+                  {% trans "Добавить аватар" %}
+                </label>
+              </form>
+            </div>
           </div>
         </div>
 
@@ -32,6 +280,7 @@
       </div>
     </div>
   </header>
+{% endblock %}
 
   <!-- Dashboard Content -->
   <main class="container py-6" role="main">

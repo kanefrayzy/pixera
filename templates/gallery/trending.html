@@ -1,8 +1,9 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% load generate_extras %}
 
-{% block title %}Тренды — AI Gallery{% endblock %}
+{% block title %}Тренды — Pixera{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-8">
@@ -30,55 +31,108 @@
     </div>
   </div>
 
+  {% if request.user.is_authenticated %}
+  <!-- Accounts search (Instagram-like) -->
+  <section id="accFollowSection"
+           class="space-y-6"
+           data-search-endpoint="{% url 'dashboard:api:follow_search' %}"
+           data-recs-endpoint="{% url 'dashboard:api:follow_recommendations' %}"
+           data-toggle-endpoint="{% url 'dashboard:api:follow_toggle' %}">
+    <!-- Search accounts -->
+    <div class="card p-6">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl border border-[var(--bord)] grid place-items-center bg-white/40 dark:bg-white/5">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="6"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <input id="accSearchInput"
+               class="field flex-1"
+               type="search"
+               placeholder="Поиск аккаунтов для подписки…"
+               autocomplete="off"
+               aria-label="Поиск аккаунтов">
+      </div>
+      <div id="accSearchResults" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="font-semibold">Рекомендации подписок</h2>
+        <button id="accRecsRefresh" class="btn btn-ghost text-sm">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4.5 12a7.5 7.5 0 0 1 12.49-5.303L19.5 9M19.5 12a7.5 7.5 0 0 1-12.49 5.303L4.5 15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          </svg>
+          Обновить
+        </button>
+      </div>
+      <div id="accRecs" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+  </section>
+  {% endif %}
 
   <div class="card p-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 class="font-semibold mb-2">Сортировка</h2>
+        <h2 id="sort" class="font-semibold mb-2" style="scroll-margin-top: 80px;">Сортировка</h2>
         <p class="text-sm text-[var(--muted)]">Выберите критерий для отображения популярного контента</p>
       </div>
 
-      <nav class="flex flex-wrap gap-2" aria-label="Режим сортировки">
-        {% with m=active_mode %}
-          <a class="flex items-center gap-1 pill {% if m == 'views' %}bg-primary/15 text-primary border-primary/30{% endif %}"
-             href="{% url 'gallery:trending' %}?by=views">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-            По просмотрам
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Фото/Видео переключатель -->
+        <div class="inline-flex rounded-xl border border-[var(--bord)] overflow-hidden">
+          <span class="px-3 py-1.5 text-xs sm:text-sm bg-primary/15 text-primary border-r border-[var(--bord)]">Фото</span>
+          <a href="{% url 'gallery:trending_videos' %}?by={{ active_mode }}#sort"
+             class="px-3 py-1.5 text-xs sm:text-sm hover:bg-black/[.04] dark:hover:bg-white/10 transition">
+            Видео
           </a>
-          <a class="flex items-center gap-1 pill {% if m == 'likes' %}bg-primary/15 text-primary border-primary/30{% endif %}"
-             href="{% url 'gallery:trending' %}?by=likes">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-            </svg>
-            По лайкам
-          </a>
-          <a class="flex items-center gap-1 pill {% if m == 'new' %}bg-primary/15 text-primary border-primary/30{% endif %}"
-             href="{% url 'gallery:trending' %}?by=new">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            Новые (за месяц)
-          </a>
-        {% endwith %}
-      </nav>
+        </div>
+
+        <nav class="flex flex-wrap gap-2" aria-label="Режим сортировки">
+          {% with m=active_mode %}
+            <a class="flex items-center gap-1 pill {% if m == 'views' %}bg-primary/15 text-primary border-primary/30{% endif %}"
+               href="{% url 'gallery:trending' %}?by=views">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              По просмотрам
+            </a>
+            <a class="flex items-center gap-1 pill {% if m == 'likes' %}bg-primary/15 text-primary border-primary/30{% endif %}"
+               href="{% url 'gallery:trending' %}?by=likes">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              По лайкам
+            </a>
+            <a class="flex items-center gap-1 pill {% if m == 'new' %}bg-primary/15 text-primary border-primary/30{% endif %}"
+               href="{% url 'gallery:trending' %}?by=new">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Новые (за месяц)
+            </a>
+          {% endwith %}
+        </nav>
+      </div>
+      </div>
     </div>
   </div>
 
 
   {% if trending_photos %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div id="trending-photos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
       {% for p in trending_photos %}
-        {% url 'gallery:photo_detail' p.pk as detail_url %}
+
         {% url 'gallery:photo_edit' p.pk as edit_url %}
         {% url 'gallery:photo_delete' p.pk as delete_url %}
 
-        <article class="group" itemscope itemtype="https://schema.org/ImageObject">
+        <article class="group js-open-photo" itemscope itemtype="https://schema.org/ImageObject" data-detail-url="{{ p.get_absolute_url }}">
           <div class="card overflow-hidden">
 
-            <a class="block relative" href="{{ detail_url }}" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
+            <a class="block relative" href="{{ p.get_absolute_url }}" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
               {% if p.image %}
                 <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
                      loading="lazy"
@@ -94,12 +148,22 @@
                 </div>
               {% endif %}
 
-
-              <div class="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5-1.3-4.5-6-10-6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
-                </svg>
-                <span>{{ p.view_count|default:0 }}</span>
+              <div class="absolute inset-0 cursor-zoom-in" data-open-media="1" aria-label="Открыть"></div>
+              <!-- Top-right overlays (model + views) -->
+              <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                {% with job=p.source_job %}
+                {% if job %}
+                <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                  {{ job|model_display }}
+                </div>
+                {% endif %}
+                {% endwith %}
+                <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 5c-5.5 0-9.5 4.7-10 6 .5 1.3 4.5 6 10 6s9.5-4.7 10-6c-.5 1.3-4.5 6-10 6zm0 10a4 4 0 1 1 .001-8.001A4 4 0 0 1 12 15z"/>
+                  </svg>
+                  <span>{{ p.view_count|default:0 }}</span>
+                </div>
               </div>
 
 
@@ -158,14 +222,30 @@
 
 
             <div class="p-4">
+              <!-- Meta: model label + created time (matches gallery card style) -->
               <h3 class="font-semibold mb-3 line-clamp-2" itemprop="name">
                 {% with t=p.title|default:"Без названия" %}
                   {{ t|truncatewords:1 }}
                 {% endwith %}
               </h3>
 
+              <!-- Author (avatar + username) like in gallery -->
+              <div class="flex items-center gap-2 mb-3">
+                {% if p.uploaded_by and p.uploaded_by.profile and p.uploaded_by.profile.avatar %}
+                  <img src="{{ p.uploaded_by.profile.avatar.url }}" alt="{{ p.uploaded_by.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                {% else %}
+                  <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                    {{ p.uploaded_by.username|default:"U"|slice:":1"|upper }}
+                  </span>
+                {% endif %}
+                <a href="{% if p.uploaded_by and p.uploaded_by.username %}{% url 'profile_short' p.uploaded_by.username %}{% else %}#{% endif %}"
+                   class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                   aria-label="@{{ p.uploaded_by.username|default:'unknown' }}">
+                  @{{ p.uploaded_by.username|default:"unknown" }}
+                </a>
+              </div>
 
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between gap-2 flex-nowrap">
                 <button type="button"
                         class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if request.user.is_authenticated and p.pk in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
                         data-id="{{ p.pk }}"
@@ -175,17 +255,31 @@
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and p.pk in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                   </svg>
-                  <span id="like-count-{{ p.pk }}" class="text-sm font-medium">{{ p.likes_count|default:0 }}</span>
+                  <span id="like-count-{{ p.pk }}" class="text-sm font-medium cursor-pointer likers-hotspot" data-open-likers="1" data-total-likes="{{ p.likes_count|default:0 }}" data-url="{% url 'gallery:photo_likers' p.pk %}" aria-label="Кто лайкнул">{{ p.likes_count|default:0 }}</span>
+                  <span class="px-1 text-[var(--muted)] hover:text-[var(--text)] hidden sm:inline" data-open-likers="1" data-total-likes="{{ p.likes_count|default:0 }}" data-url="{% url 'gallery:photo_likers' p.pk %}" aria-label="Кто лайкнул">…</span>
                 </button>
 
                 <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
-                   href="{{ detail_url }}"
+                   href="{{ p.get_absolute_url }}"
                    title="Комментарии">
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                   </svg>
                   <span class="text-sm font-medium">{{ p.comments_count|default:0 }}</span>
                 </a>
+
+                <!-- Save (bookmark) -->
+                <button type="button"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if request.user.is_authenticated and saved_photo_ids and p.pk in saved_photo_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                        data-url="{% url 'gallery:photo_save' p.pk %}"
+                        data-count-target="save-count-{{ p.pk }}"
+                        aria-pressed="{% if request.user.is_authenticated and saved_photo_ids and p.pk in saved_photo_ids %}true{% else %}false{% endif %}"
+                        aria-label="Сохранить">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and saved_photo_ids and p.pk in saved_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                  </svg>
+                  <span id="save-count-{{ p.pk }}" class="text-sm font-medium">{{ p.saves_count|default:0 }}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -194,61 +288,11 @@
     </div>
 
 
-    {% if page_obj and page_obj.paginator.num_pages > 1 %}
-      <nav class="flex items-center justify-center" aria-label="Пагинация">
-        <div class="flex items-center gap-1">
-          {% if page_obj.has_previous %}
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?by={{ active_mode }}&page=1">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
-              </svg>
-              Первая
-            </a>
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?by={{ active_mode }}&page={{ page_obj.previous_page_number }}">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-              </svg>
-              Назад
-            </a>
-          {% endif %}
-
-          {% with total=page_obj.paginator.num_pages current=page_obj.number %}
-            {% for i in page_obj.paginator.page_range %}
-              {% if i == 1 or i == total or i >= current|add:"-2" and i <= current|add:"2" %}
-                {% if i == current %}
-                  <span class="btn btn-primary px-3 py-2 text-sm" aria-current="page">{{ i }}</span>
-                {% else %}
-                  <a class="btn btn-ghost px-3 py-2 text-sm" href="?by={{ active_mode }}&page={{ i }}">{{ i }}</a>
-                {% endif %}
-              {% elif i == 2 and current > 4 %}
-                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
-              {% elif i == total|add:"-1" and current < total|add:"-3" %}
-                <span class="px-3 py-2 text-sm text-[var(--muted)]" aria-hidden="true">…</span>
-              {% endif %}
-            {% endfor %}
-          {% endwith %}
-
-          {% if page_obj.has_next %}
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?by={{ active_mode }}&page={{ page_obj.next_page_number }}">
-              Вперёд
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </a>
-            <a class="btn btn-ghost px-3 py-2 text-sm" href="?by={{ active_mode }}&page={{ page_obj.paginator.num_pages }}">
-              Последняя
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
-              </svg>
-            </a>
-          {% endif %}
-        </div>
-      </nav>
-    {% endif %}
+    <!-- Пагинация удалена: используется клиентская кнопка «Показать ещё» -->
 
   {% else %}
 
-    <div class="card p-12 text-center">
+    <div class="card p-12 text-center mt-8">
       <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
         <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
@@ -290,6 +334,8 @@
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.like-toggle');
     if (!btn) return;
+    // If click on the numeric count under the heart, open likers modal, do not toggle
+    if (e.target.closest('[data-open-likers]')) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -337,6 +383,70 @@
     } catch (err) {
       console.warn('Like failed:', err);
     } finally {
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+<script>
+/* Save toggle for trending photos */
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.save-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try{
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('save failed');
+
+      // Update button state
+      const icon = btn.querySelector('svg');
+      const isSaved = !!j.saved;
+
+      btn.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
+
+      if (isSaved) {
+        btn.classList.add('text-emerald-500');
+        btn.classList.remove('text-[var(--muted)]');
+        if (icon) icon.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-emerald-500');
+        btn.classList.add('text-[var(--muted)]');
+        if (icon) icon.setAttribute('fill', 'none');
+      }
+
+      if (countEl && typeof j.count === 'number'){
+        countEl.textContent = j.count;
+      }
+    }catch(err){
+      console.warn('Save failed:', err);
+    }finally{
       delete btn.dataset.loading;
       btn.disabled = false;
     }
@@ -430,6 +540,653 @@
 [data-theme="dark"] .pill:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
+/* User card styles */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--bord);
+  background: rgba(255,255,255,.4);
+}
+[data-theme="dark"] .user-card {
+  background: rgba(255,255,255,.05);
+}
+
+/* Enlarge invisible tap area under like number on mobile, no visual changes */
+.likers-hotspot { position: relative; }
+.likers-hotspot::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 100%;
+  height: 14px;
+}
+
+/* Narrow phones: prevent overflow near 420px by slightly reducing paddings/icons in actions row */
+@media (max-width: 420px) {
+  /* tighten paddings on all three action buttons without changing design */
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 {
+    padding: 6px 8px;
+  }
+  /* slightly smaller icons in actions row */
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* and a minor font size reduction only inside action buttons */
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm {
+    font-size: 12px;
+  }
+}
+@media (max-width: 375px) {
+  /* keep actions in one row down to ~375px */
+  .flex.items-center.justify-between.gap-2.flex-nowrap { gap: 0.25rem !important; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 { padding: 5px 6px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap svg,
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg { width: 12px; height: 12px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap .text-sm,
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm { font-size: 11px; }
+}
+@media (max-width: 340px) {
+  /* ensure fit down to 320px */
+  .flex.items-center.justify-between.gap-2.flex-nowrap { gap: 0.2rem !important; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .like-toggle,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > a,
+  .flex.items-center.justify-between.gap-2.flex-nowrap > .save-toggle,
+  .flex.items-center.gap-2.px-3.py-1\.5 { padding: 4px 5px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap svg,
+  .flex.items-center.gap-2.px-3.py-1\.5 svg,
+  .like-toggle svg,
+  .save-toggle svg { width: 11px; height: 11px; }
+  .flex.items-center.justify-between.gap-2.flex-nowrap .text-sm,
+  .flex.items-center.gap-2.px-3.py-1\.5 .text-sm,
+  .like-toggle .text-sm,
+  .save-toggle .text-sm { font-size: 10px; }
+}
 </style>
+
+<!-- Gallery Media Modal (Instagram-like) -->
+<div id="pfMediaModal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-pf-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="grid md:grid-cols-2 gap-0">
+      <!-- Media -->
+      <div id="pfModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
+      <!-- Right pane -->
+      <div class="flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+          <div class="flex items-center gap-2">
+            <button id="pfModalLikeBtn" type="button" class="btn btn-ghost px-3 py-1.5 like-toggle" data-url="" data-count-target="pfModalLikeCount" aria-pressed="false">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span id="pfModalLikeCount" class="text-sm font-medium">0</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-pf-close="1">✕</button>
+        </div>
+        <div id="pfModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('pfMediaModal');
+  const mediaEl = document.getElementById('pfModalMedia');
+  const commentsEl = document.getElementById('pfModalComments');
+  const likeBtn = document.getElementById('pfModalLikeBtn');
+  const likeCountEl = document.getElementById('pfModalLikeCount');
+  let currentDetailUrl = '';
+
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); }
+
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.pfClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchDetail(url){
+    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
+    const html = await r.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  async function openPhoto(detailUrl, mediaUrl, title){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<img class="max-w-full max-h-[75vh] object-contain" alt="'+(title||'')+'" src="'+mediaUrl+'"/>';
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#photo-like-count, #video-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+      bindDynamicHandlers();
+    }catch(e){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  likeBtn.addEventListener('click', async ()=>{
+    const url = likeBtn.dataset.url;
+    if (!url) return;
+    try{
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+        credentials:'same-origin'
+      });
+      const j = await res.json();
+      if (j && j.ok){
+        likeBtn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+        likeBtn.querySelector('svg').setAttribute('fill', j.liked ? 'currentColor':'none');
+        if (typeof j.count === 'number') likeCountEl.textContent = j.count;
+      }
+    }catch(_){}
+  });
+
+  function bindDynamicHandlers(){
+    // Like comment inside modal
+    commentsEl.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('.js-like-comment');
+      if (!btn) return;
+      e.preventDefault();
+      try{
+        const res = await fetch(btn.dataset.url, {
+          method:'POST',
+          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+          credentials:'same-origin'
+        });
+        const j = await res.json();
+        if (j && j.ok){
+          const id = btn.dataset.countId;
+          const el = id && document.getElementById(id);
+          if (el && typeof j.count === 'number') el.textContent = j.count;
+          const heart = btn.querySelector('svg');
+          btn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+          heart && heart.setAttribute('fill', j.liked ? 'currentColor':'none');
+          btn.classList.toggle('text-red-500', !!j.liked);
+          btn.classList.toggle('text-[var(--muted)]', !j.liked);
+        }
+      }catch(_){}
+    });
+
+    // Submit root/reply comment via AJAX
+    commentsEl.querySelectorAll('form[data-comment-form]').forEach(form=>{
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const fd = new FormData(form);
+        try{
+          const res = await fetch(form.action, {
+            method:'POST',
+            headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+            body: fd,
+            credentials:'same-origin'
+          });
+          const j = await res.json().catch(()=>null);
+          if (res.ok && j && j.ok){
+            // Re-fetch comments to reflect new state
+            const doc = await fetchDetail(currentDetailUrl);
+            const c = doc.getElementById('comments');
+            commentsEl.innerHTML = c ? c.innerHTML : commentsEl.innerHTML;
+            bindDynamicHandlers();
+          }
+        }catch(_){}
+      }, { once:true });
+    });
+  }
+
+  // Delegated click handling for trending photos
+  document.addEventListener('click', (e)=>{
+    // Prefer explicit opener overlay if present
+    const opener = e.target.closest('[data-open-media]');
+    // Do not open modal when clicking interactive controls unless explicit opener was clicked
+    if (!opener && e.target.closest('button, a[href], input, textarea, select, .like-toggle, .js-like-comment, [data-pf-close]')) {
+      return;
+    }
+
+    const photoArticle = (opener && opener.closest('.js-open-photo')) || e.target.closest('.js-open-photo');
+    if (photoArticle){
+      e.preventDefault();
+      const anchor = photoArticle.querySelector('a[href*="/gallery/photo/"]');
+      const img = photoArticle.querySelector('img');
+      const href = (anchor && anchor.getAttribute('href')) || photoArticle.dataset.detailUrl || photoArticle.getAttribute('data-detail-url') || '';
+      const src = img && img.getAttribute('src');
+      openPhoto(href, src || '', img && img.getAttribute('alt') || '');
+      return;
+    }
+  });
+})();
+</script>
+
+<!-- Likers Modal -->
+<div id="likersModal" class="fixed inset-0 z-[80] hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
+  <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="font-semibold">Оценили</h3>
+      <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">
+      <div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('likersModal');
+  const body = document.getElementById('likersBody');
+  const CURRENT_USER = "{{ request.user.username|default:''|escapejs }}";
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; body.innerHTML=''; }
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.likersClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchLikers(url, totalLikes){
+    try{
+      const res = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' });
+      const j = await res.json();
+      if (!res.ok || !j || j.ok === false) throw new Error('bad response');
+
+      const arr = Array.isArray(j.likers) ? j.likers : [];
+      const total = Number(totalLikes);
+      const guestCount = (isFinite(total) && total > arr.length) ? (total - arr.length) : 0;
+
+      const registeredHtml = arr.map(item => {
+        const avatar = item.avatar ? `<img src="${item.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${item.username}">`
+                                   : `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white grid place-items-center font-bold">${(item.name||item.username||'?').slice(0,1).toUpperCase()}</div>`;
+        const btnLabel = item.is_following ? 'Отписаться' : 'Подписаться';
+        const btnClass = item.is_following ? 'btn-ghost' : 'btn-primary';
+        const isMe = !!CURRENT_USER && !!item.username && (item.username === CURRENT_USER);
+        const rightCtrl = isMe
+          ? `<span class="px-3 py-1.5 text-xs rounded-md bg-black/10 dark:bg-white/10 text-[var(--muted)] select-none">Вы</span>`
+          : `<button class="btn ${btnClass} text-xs px-3 py-1.5 js-follow-toggle" data-username="${item.username}">${btnLabel}</button>`;
+        const profileHref = '/dashboard/profile/' + encodeURIComponent(item.username || '');
+        return `
+          <div class="flex items-center justify-between p-3 sm:p-4">
+            <div class="flex items-center gap-3 min-w-0">
+              ${avatar}
+              <div class="min-w-0">
+                <a href="${profileHref}" class="font-medium truncate hover:text-primary transition">${(item.name||'')}</a>
+                <a href="${profileHref}" class="text-xs text-[var(--muted)] truncate hover:text-primary transition">@${item.username}</a>
+              </div>
+            </div>
+            ${rightCtrl}
+          </div>
+        `;
+      }).join('');
+
+      const guestHtml = guestCount > 0
+        ? Array.from({ length: guestCount }, (_, i) => {
+            const n = i + 1;
+            return `
+              <div class="flex items-center justify-between p-3 sm:p-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-full bg-black/10 dark:bg-white/10 grid place-items-center text-[var(--muted)] shrink-0">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"></path>
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-medium truncate">Гость #${n}</div>
+                    <div class="text-xs text-[var(--muted)] truncate">@guest${n}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')
+        : '';
+
+      const html = (registeredHtml + guestHtml);
+      body.innerHTML = html || '<div class="p-4 text-sm text-[var(--muted)]">Пока нет лайков</div>';
+    }catch(_){
+      body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  // Follow toggle inside likers modal
+  body.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.js-follow-toggle');
+    if (!btn) return;
+    e.preventDefault();
+    const username = btn.getAttribute('data-username');
+    try{
+      const fd = new FormData();
+      fd.append('username', username);
+      const res = await fetch("{% url 'dashboard:api:follow_toggle' %}", {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'},
+        body: fd,
+        credentials:'same-origin'
+      });
+      const j = await res.json().catch(()=>null);
+      if (res.ok && j && j.ok !== false){
+        const following = !!j.following;
+        btn.textContent = following ? 'Отписаться' : 'Подписаться';
+        btn.classList.toggle('btn-primary', !following);
+        btn.classList.toggle('btn-ghost', following);
+      }
+    }catch(_){}
+  });
+
+  // Open on click on like counts (stop like-toggle bubbling)
+  document.addEventListener('click', (e)=>{
+    const el = e.target.closest('[data-open-likers]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    const url = el.getAttribute('data-url');
+    if (!url) return;
+    body.innerHTML = '<div class="p-4 text-sm text-[var(--muted)]">Загрузка…</div>';
+    openModal();
+
+    // Determine total likes (for guests)
+    let totalLikes = 0;
+    const ds = el.getAttribute('data-total-likes') || (el.dataset ? el.dataset.totalLikes : '');
+    if (ds) {
+      totalLikes = Number(ds);
+    }
+    if (!isFinite(totalLikes) || totalLikes <= 0) {
+      try{
+        const btn = el.closest('button');
+        const countEl = btn && btn.querySelector('[id^="like-count-"]');
+        if (countEl) totalLikes = Number((countEl.textContent || '').replace(/[^\d]/g, '')) || 0;
+      }catch(_){}
+    }
+
+    fetchLikers(url, totalLikes);
+  });
+})();
+</script>
+
+<script>
+// "Показать ещё" для трендов (20 карточек за клик), адаптивно, тёмная/светлая тема
+(function(){
+  const grid = document.getElementById('trending-photos-grid');
+  if (!grid) return;
+  const cards = Array.from(grid.querySelectorAll('article'));
+  const BATCH = 20;
+  if (cards.length <= BATCH) return;
+
+  let shown = BATCH;
+  cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+
+  const wrap = document.createElement('div');
+  wrap.className = 'mt-6 text-center';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn-outline w-full sm:w-auto';
+  btn.textContent = 'Показать ещё';
+  btn.addEventListener('click', ()=>{
+    shown += BATCH;
+    cards.forEach((el, i)=> el.classList.toggle('hidden', i >= shown));
+    if (shown >= cards.length) btn.classList.add('hidden');
+  });
+  wrap.appendChild(btn);
+  grid.parentElement.appendChild(wrap);
+})();
+</script>
+
+<script>
+/* In-place trend switcher: no network, no URL change, no scroll. */
+(function(){
+  const SORT_ID = 'sort';
+  const PILL_ACTIVE = ['bg-primary/15','text-primary','border-primary/30'];
+  const TOGGLE_ACTIVE = ['bg-primary/15','text-primary'];
+
+  function byId(id){ return document.getElementById(id); }
+  function inSortCard(el){
+    const card = el && el.closest && el.closest('.card');
+    return !!(card && card.querySelector('#'+SORT_ID));
+  }
+  function hide(el){ if (el) el.classList.add('hidden'); }
+  function show(el){ if (el) el.classList.remove('hidden'); }
+  function addActive(el){ if(!el) return; PILL_ACTIVE.forEach(c=>el.classList.add(c)); }
+  function remActive(el){ if(!el) return; PILL_ACTIVE.forEach(c=>el.classList.remove(c)); }
+
+  // Neutralize links in sort card to prevent any native navigation / address bar spinner
+  function neutralizeSortLinks(){
+    const sort = byId(SORT_ID);
+    const card = sort && sort.closest('.card');
+    if (!card) return;
+    card.querySelectorAll('a[href]').forEach(a=>{
+      if (!a.dataset.href) a.dataset.href = a.getAttribute('href') || a.href || '';
+      a.setAttribute('href','javascript:void(0)');
+      a.setAttribute('role','button');
+      a.setAttribute('rel','noopener');
+    });
+  }
+
+  function parseTarget(a){
+    const raw = (a && (a.dataset.href || a.getAttribute('href'))) || '';
+    try{
+      const u = new URL(raw, window.location.origin);
+      const mode = (u.searchParams.get('by') || 'views').toLowerCase();
+      const media = (u.pathname.includes('trending_videos') || u.pathname.includes('/trending/videos')) ? 'videos' : 'photos';
+      return { media, mode };
+    }catch(_){
+      return null;
+    }
+  }
+
+  function updateSortUI(media, mode){
+    const sort = byId(SORT_ID);
+    const card = sort && sort.closest('.card');
+    if (!card) return;
+
+    // Pills active state by ?by=...
+    const pills = card.querySelectorAll('nav a[role="button"], nav a[href], nav a');
+    pills.forEach(a=>{
+      const t = parseTarget(a) || {};
+      const on = (t.mode === mode); // show selected mode even if media is videos
+      if (on) addActive(a); else remActive(a);
+    });
+
+    // Фото/Видео toggle visuals (use toggle-specific active classes to preserve original look)
+    const toggle = card.querySelector('.inline-flex.rounded-xl.border');
+    if (toggle){
+      const photoSpan = toggle.querySelector('span');
+      const videoA = toggle.querySelector('a[role="button"], a[href]');
+
+      // remove active styles from both first
+      [photoSpan, videoA].forEach(el=>{
+        if (!el) return;
+        TOGGLE_ACTIVE.forEach(c=>el.classList.remove(c));
+        el.classList.remove('bg-primary/15','text-primary'); // ensure clean state
+      });
+
+      // also normalize borders
+      if (photoSpan) {
+        photoSpan.classList.remove('border-r','border-[var(--bord)]');
+      }
+      if (videoA) {
+        videoA.classList.remove('border-l','border-[var(--bord)]');
+      }
+
+      if (media === 'photos'){
+        // Photo active: highlight photoSpan and give it right border to match original
+        if (photoSpan){
+          TOGGLE_ACTIVE.forEach(c=>photoSpan.classList.add(c));
+          photoSpan.classList.add('border-r','border-[var(--bord)]');
+        }
+      } else {
+        // Video active: highlight videoA and give it left border to match original
+        if (videoA){
+          TOGGLE_ACTIVE.forEach(c=>videoA.classList.add(c));
+          videoA.classList.add('border-l','border-[var(--bord)]');
+        }
+      }
+    }
+
+    // Ensure pills point to the correct base (photos or videos) while preserving ?by=<mode>
+    const basePath = (media === 'videos') ? '/gallery/trending_videos' : '/gallery/trending';
+    pills.forEach(a=>{
+      const raw = a.dataset.href || a.getAttribute('href') || '';
+      try{
+        const u = new URL(raw, window.location.origin);
+        const by = (u.searchParams.get('by') || mode);
+        const newUrl = new URL(basePath, window.location.origin);
+        newUrl.searchParams.set('by', by);
+        a.dataset.href = newUrl.pathname + newUrl.search;
+      }catch(_){}
+    });
+  }
+
+  function showGroup(media, mode){
+    // Hide default grids if present
+    hide(byId('trending-photos-grid'));
+    hide(byId('trending-videos-grid'));
+
+    // Hide all pre-rendered groups
+    ['views','likes','new'].forEach(m=>{
+      hide(byId('photos-group-'+m));
+      hide(byId('videos-group-'+m));
+    });
+
+    // Show requested group
+    const id = (media === 'videos') ? ('videos-group-'+mode) : ('photos-group-'+mode);
+    const el = byId(id);
+    if (el) show(el);
+
+    // Always keep accounts search + recommendations visible
+    show(byId('accFollowSection'));
+
+    updateSortUI(media, mode);
+  }
+
+  // Photo/Video toggle click handler (works on both <span> and <a>), keeps visuals unchanged
+  function getActiveMode(){
+    try{
+      const sort = byId(SORT_ID);
+      const card = sort && sort.closest('.card');
+      const nav = card && card.querySelector('nav');
+      if (!nav) return 'views';
+      const links = Array.from(nav.querySelectorAll('a'));
+      const active = links.find(el => PILL_ACTIVE.every(c => el.classList.contains(c)));
+      if (active){
+        const t = parseTarget(active);
+        return (t && t.mode) || 'views';
+      }
+    }catch(_){}
+    return 'views';
+  }
+
+  document.addEventListener('click', (e)=>{
+    const sort = byId(SORT_ID);
+    const card = sort && sort.closest('.card');
+    const toggle = card && card.querySelector('.inline-flex.rounded-xl.border');
+    if (!toggle) return;
+
+    const target = e.target.closest('span, a');
+    if (!target || !toggle.contains(target)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const children = Array.from(toggle.children || []);
+    const left = children[0];
+    const right = children[1];
+    const mode = getActiveMode();
+
+    if (target === left){
+      // Force photos group, keep current mode
+      showGroup('photos', mode);
+    } else if (target === right){
+      // Force videos group, keep current mode
+      showGroup('videos', mode);
+    }
+  }, true);
+
+  // Prevent any navigation originating from sort card
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a');
+    if (!a || !inSortCard(a)) return;
+    e.preventDefault();
+  }, true);
+
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a');
+    if (!a || !inSortCard(a)) return;
+    e.preventDefault();
+    const t = parseTarget(a);
+    if (!t) return;
+    showGroup(t.media, t.mode);
+  });
+
+  // Init
+  neutralizeSortLinks();
+  // Ensure initial state shows current photos mode and hides duplicates
+  (function init(){
+    try {
+      const sort = byId(SORT_ID);
+      const activeMode = (sort && (sort.dataset.activeMode || '{{ active_mode|default:"views" }}')) || 'views';
+      // Hide any duplicate pre-rendered groups first
+      ['views','likes','new'].forEach(m=>{
+        hide(byId('photos-group-'+m));
+        hide(byId('videos-group-'+m));
+      });
+      // Keep existing default photos grid visible initially; sync pills
+      updateSortUI('photos', activeMode);
+    } catch(_) {}
+  })();
+})();
+</script>
+
+<!-- Pre-rendered hidden groups for instant in-place switching -->
+<div id="photos-group-views" class="hidden mt-8">
+  {% include "includes/trending_photos_grid.html" with trending_photos=photos_views liked_photo_ids=liked_photo_ids_views saved_photo_ids=saved_photo_ids_views active_mode='views' %}
+</div>
+<div id="photos-group-likes" class="hidden mt-8">
+  {% include "includes/trending_photos_grid.html" with trending_photos=photos_likes liked_photo_ids=liked_photo_ids_likes saved_photo_ids=saved_photo_ids_likes active_mode='likes' %}
+</div>
+<div id="photos-group-new" class="hidden mt-8">
+  {% include "includes/trending_photos_grid.html" with trending_photos=photos_new liked_photo_ids=liked_photo_ids_new saved_photo_ids=saved_photo_ids_new active_mode='new' %}
+</div>
+
+<div id="videos-group-views" class="hidden mt-8">
+  {% include "includes/trending_video_grid.html" with trending_videos=videos_views liked_video_ids=liked_video_ids_views saved_video_ids=saved_video_ids_views %}
+</div>
+<div id="videos-group-likes" class="hidden mt-8">
+  {% include "includes/trending_video_grid.html" with trending_videos=videos_likes liked_video_ids=liked_video_ids_likes saved_video_ids=saved_video_ids_likes %}
+</div>
+<div id="videos-group-new" class="hidden mt-8">
+  {% include "includes/trending_video_grid.html" with trending_videos=videos_new liked_video_ids=liked_video_ids_new saved_video_ids=saved_video_ids_new %}
+</div>
 
 {% endblock %}

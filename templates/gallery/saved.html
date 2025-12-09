@@ -1,0 +1,850 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load gallery_extras %}
+{% load generate_extras %}
+
+{% block title %}Сохранённое — Pixera{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/my_jobs.css' %}">
+{% endblock %}
+
+{% block content %}
+<form style="display:none">{% csrf_token %}</form>
+
+<div class="max-w-7xl mx-auto space-y-8">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold">Сохранённое</h1>
+      <p class="text-[var(--muted)] mt-2">Ваши закладки: публикации и работы</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a class="btn btn-ghost" href="{% url 'dashboard:my_jobs' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H3m6 6H3m12-12H3m15 6l3-3m0 0l-3-3m3 3H9"/>
+        </svg>
+        Мои обработки
+      </a>
+      <a class="btn btn-primary" href="{% url 'generate:new' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        Создать новое
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="inline-flex rounded-xl bg-[var(--bord)] p-1 gap-1 w-full sm:w-auto mb-6">
+    <button class="saved-tab active flex-1 sm:flex-initial px-3 xs:px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium" data-tab="photos">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      <span class="hidden xs:inline">Фото</span>
+      <span class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ photo_total }}</span>
+    </button>
+    <button class="saved-tab flex-1 sm:flex-initial px-3 xs:px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium" data-tab="videos">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      <span class="hidden xs:inline">Видео</span>
+      <span class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ video_total }}</span>
+    </button>
+  </div>
+
+  <!-- Photos -->
+  <div id="photos-grid" class="saved-content">
+    {% if photo_saves or job_photo_saves %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for s in photo_saves %}
+          {% with p=s.photo %}
+          {% if p %}
+            <article class="card overflow-hidden group">
+              <div class="relative">
+                {% if p.image %}
+                  <a href="{{ p.get_absolute_url }}" class="absolute inset-0 z-10" aria-label="Открыть публикацию"></a>
+                  <img src="{{ p.image.url }}" alt="{{ p.title|default:'Публикация' }}" class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]">
+                {% else %}
+                  <div class="w-full aspect-square bg-[var(--bord)] grid place-items-center text-[var(--muted)]">Нет изображения</div>
+                {% endif %}
+
+                {# Model badge from source job #}
+                {% with job=p.source_job %}
+                {% if job %}
+                {% if job.video_model or job.model_id %}
+                <div class="absolute top-3 left-3 pointer-events-none">
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% endwith %}
+
+                <div class="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                  <button type="button" class="w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center save-toggle"
+                          data-url="{% url 'gallery:photo_save' p.id %}" data-count-target="saved-photo-count-{{ p.id }}" aria-pressed="true" title="Убрать из сохранённых" data-remove-card="1">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="p-3 text-sm">
+                {% with desc=p.title|default:p.caption %}
+                {% if desc %}
+                  <div class="font-semibold line-clamp-1 mb-1">{{ desc }}</div>
+                {% endif %}
+                {% endwith %}
+                <div class="flex items-center gap-2 mb-2">
+                  <a href="{% url 'profile_short' p.uploaded_by.username %}" class="inline-flex items-center gap-2 text-[var(--muted)] hover:text-[var(--text)]">
+                    {% if p.uploaded_by.profile.avatar %}
+                      <img src="{{ p.uploaded_by.profile.avatar.url }}" class="w-6 h-6 rounded-full object-cover" alt="@{{ p.uploaded_by.username }}">
+                    {% else %}
+                      <span class="w-6 h-6 rounded-full bg-[var(--bord)] grid place-items-center text-[10px]">@</span>
+                    {% endif %}
+                    <span class="truncate">@{{ p.uploaded_by.username }}</span>
+                  </a>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="inline-flex items-center gap-2">
+                    <button type="button" class="like-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition {% if liked_photo_ids and p.id in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-url="{% url 'gallery:photo_like' p.id %}" data-count-target="saved-photo-like-{{ p.id }}" aria-pressed="{% if liked_photo_ids and p.id in liked_photo_ids %}true{% else %}false{% endif %}">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if liked_photo_ids and p.id in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                      </svg>
+                      <span id="saved-photo-like-{{ p.id }}">{{ p.likes_count|default:0 }}</span>
+                    </button>
+                    <span class="text-[var(--muted)]">•</span>
+                    <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
+                       href="{{ p.get_absolute_url }}#comments"
+                       data-open-comments="1"
+                       data-detail-url="{{ p.get_absolute_url }}"
+                       title="Комментарии">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      <span>{{ p.comments_count|default:0 }}</span>
+                    </a>
+                  </div>
+                  <div class="inline-flex items-center gap-3">
+                    <button type="button" class="save-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition text-[var(--muted)]"
+                            data-url="{% url 'gallery:photo_save' p.id %}" data-count-target="sv-photo-bookmark-{{ p.id }}" data-remove-card="1" aria-pressed="{% if saved_photo_ids and p.id in saved_photo_ids %}true{% else %}false{% endif %}">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if saved_photo_ids and p.id in saved_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                      <span id="sv-photo-bookmark-{{ p.id }}">{{ photo_save_counts|get_item:p.id|default:0 }}</span>
+                    </button>
+                    <a href="{{ p.get_absolute_url }}" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          {% endif %}
+          {% endwith %}
+        {% endfor %}
+
+        {# Saved Jobs of type image — show together with photos #}
+        {% if job_photo_saves %}
+          {% for s in job_photo_saves %}
+            {% with j=s.job %}
+            {% if j %}
+              {% with slug=j.prompt|default:"job"|truncatechars:60|slugify %}
+              {% url 'generate:job_detail' j.id slug as job_url %}
+              <article class="card overflow-hidden group">
+                <div class="relative">
+                  {% if j.result_image %}
+                    <a href="{{ job_url }}" class="absolute inset-0 z-10" aria-label="Открыть работу"></a>
+                    <img src="{{ j.result_image.url }}" alt="{{ j.prompt|default:'Работа' }}" class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]">
+                  {% else %}
+                    <div class="w-full aspect-square bg-[var(--bord)] grid place-items-center text-[var(--muted)]">Работа</div>
+                  {% endif %}
+
+                  {# Model badge from job #}
+                  {% if j.video_model or j.model_id %}
+                  <div class="absolute top-3 left-3 pointer-events-none">
+                    <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                      {{ j|model_display }}
+                    </div>
+                  </div>
+                  {% endif %}
+
+                  <div class="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                    <button type="button" class="w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center save-toggle"
+                            data-url="{% url 'generate:job_save' j.id %}" data-count-target="saved-job-count-{{ j.id }}" aria-pressed="true" title="Убрать из сохранённых" data-remove-card="1">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="p-3 text-sm">
+                  <div class="font-semibold line-clamp-1 mb-1">{{ j.prompt|default:"" }}</div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <a href="/dashboard/profile/{{ j.user.username }}" class="inline-flex items-center gap-2 text-[var(--muted)] hover:text-[var(--text)]">
+                      {% if j.user.profile.avatar %}
+                        <img src="{{ j.user.profile.avatar.url }}" class="w-6 h-6 rounded-full object-cover" alt="@{{ j.user.username }}">
+                      {% else %}
+                        <span class="w-6 h-6 rounded-full bg-[var(--bord)] grid place-items-center text-[10px]">@</span>
+                      {% endif %}
+                      <span class="truncate">@{{ j.user.username }}</span>
+                    </a>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="inline-flex items-center gap-2">
+                      <button type="button" class="like-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition {% if liked_job_ids and j.id in liked_job_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                              data-url="{% url 'generate:job_like' j.id %}" data-count-target="saved-job-like-{{ j.id }}" aria-pressed="{% if liked_job_ids and j.id in liked_job_ids %}true{% else %}false{% endif %}">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if liked_job_ids and j.id in liked_job_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                        <span id="saved-job-like-{{ j.id }}">{{ job_like_counts|get_item:j.id|default:0 }}</span>
+                      </button>
+                      <span class="text-[var(--muted)]">•</span>
+                      <span class="text-[var(--muted)]">Комм: {{ job_comment_counts|get_item:j.id|default:0 }}</span>
+                    </div>
+                    <div class="inline-flex items-center gap-3">
+                      <button type="button" class="save-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition text-[var(--muted)]"
+                              data-url="{% url 'generate:job_save' j.id %}" data-count-target="sv-job-bookmark-{{ j.id }}" data-remove-card="1" aria-pressed="true">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                        </svg>
+                        <span id="sv-job-bookmark-{{ j.id }}">{{ job_save_counts|get_item:j.id|default:0 }}</span>
+                      </button>
+                      <a href="{{ job_url }}" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
+                    </div>
+                  </div>
+                </div>
+              </article>
+              {% endwith %}
+            {% endif %}
+            {% endwith %}
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="card p-8 text-center text-[var(--muted)]">Нет сохранённых фото</div>
+    {% endif %}
+  </div>
+
+  <!-- Videos -->
+  <div id="videos-grid" class="saved-content hidden">
+    {% if video_saves or job_video_saves %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for s in video_saves %}
+          {% with v=s.video %}
+          {% if v %}
+            <article class="card overflow-hidden group">
+              <div class="relative">
+                <video class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02] cursor-pointer"
+                       {% if v.thumbnail %}poster="{{ v.thumbnail.url }}"{% endif %}
+                       preload="metadata" muted loop playsinline>
+                  {% if v.video_url %}<source src="{{ v.video_url }}" type="video/mp4">{% endif %}
+                </video>
+
+                <!-- Play Button Overlay (like in cabinet) -->
+                <div class="absolute inset-0 flex items-center justify-center bg-black/20 video-play-overlay cursor-pointer">
+                  <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
+                    <svg class="w-8 h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Sound Toggle -->
+                <div class="absolute bottom-2 left-2 z-10">
+                  <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                    <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                      <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                    </svg>
+                    <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M18 8l-6 6"></path>
+                      <path d="M12 8l6 6"></path>
+                    </svg>
+                  </button>
+                </div>
+
+                {# Model badge from source job #}
+                {% with job=v.source_job %}
+                {% if job %}
+                {% if job.video_model or job.model_id %}
+                <div class="absolute top-3 left-3 pointer-events-none">
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% endwith %}
+
+
+                <div class="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                  <button type="button" class="w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center save-toggle"
+                          data-url="{% url 'gallery:video_save' v.id %}" data-count-target="saved-video-count-{{ v.id }}" aria-pressed="true" title="Убрать из сохранённых" data-remove-card="1">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="p-3 text-sm">
+                {% with desc=v.title|default:v.caption %}
+                {% if desc %}
+                  <div class="font-semibold line-clamp-1 mb-1">{{ desc }}</div>
+                {% endif %}
+                {% endwith %}
+                <div class="flex items-center gap-2 mb-2">
+                  <a href="{% url 'profile_short' v.uploaded_by.username %}" class="inline-flex items-center gap-2 text-[var(--muted)] hover:text-[var(--text)]">
+                    {% if v.uploaded_by.profile.avatar %}
+                      <img src="{{ v.uploaded_by.profile.avatar.url }}" class="w-6 h-6 rounded-full object-cover" alt="@{{ v.uploaded_by.username }}">
+                    {% else %}
+                      <span class="w-6 h-6 rounded-full bg-[var(--bord)] grid place-items-center text-[10px]">@</span>
+                    {% endif %}
+                    <span class="truncate">@{{ v.uploaded_by.username }}</span>
+                  </a>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="inline-flex items-center gap-2">
+                    <button type="button" class="like-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition {% if liked_video_ids and v.id in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-url="{% url 'gallery:video_like' v.id %}" data-count-target="saved-video-like-{{ v.id }}" aria-pressed="{% if liked_video_ids and v.id in liked_video_ids %}true{% else %}false{% endif %}">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if liked_video_ids and v.id in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                      </svg>
+                      <span id="saved-video-like-{{ v.id }}">{{ v.likes_count|default:0 }}</span>
+                    </button>
+                    <span class="text-[var(--muted)]">•</span>
+                    <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
+                       href="{{ v.get_absolute_url }}#comments"
+                       data-open-comments="1"
+                       data-detail-url="{{ v.get_absolute_url }}"
+                       title="Комментарии">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      <span>{{ v.comments_count|default:0 }}</span>
+                    </a>
+                  </div>
+                  <div class="inline-flex items-center gap-3">
+                    <button type="button" class="save-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition text-[var(--muted)]"
+                            data-url="{% url 'gallery:video_save' v.id %}" data-count-target="sv-video-bookmark-{{ v.id }}" data-remove-card="1" aria-pressed="{% if saved_video_ids and v.id in saved_video_ids %}true{% else %}false{% endif %}">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if saved_video_ids and v.id in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                      <span id="sv-video-bookmark-{{ v.id }}">{{ video_save_counts|get_item:v.id|default:0 }}</span>
+                    </button>
+                    <a href="{{ v.get_absolute_url }}" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          {% endif %}
+          {% endwith %}
+        {% endfor %}
+
+        {# Saved Jobs of type video — show together with videos #}
+        {% if job_video_saves %}
+          {% for s in job_video_saves %}
+            {% with j=s.job %}
+            {% if j %}
+              {% url 'generate:job_detail_no_slug' j.id as job_detail_noslug %}
+              <article class="card overflow-hidden group">
+                <div class="relative">
+                  {% if j.result_video_url %}
+                    <video class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02] cursor-pointer"
+                           poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}"
+                           preload="metadata" muted loop playsinline>
+                      <source src="{{ j.result_video_url }}" type="video/mp4">
+                    </video>
+                  {% else %}
+                    <div class="w-full aspect-square bg-[var(--bord)] grid place-items-center text-[var(--muted)]">Видео</div>
+                  {% endif %}
+
+                  <!-- Play Overlay -->
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/20 video-play-overlay cursor-pointer">
+                    <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
+                      <svg class="w-8 h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Sound Toggle -->
+                  <div class="absolute bottom-2 left-2 z-10">
+                    <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                      <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                        <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                        <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                      </svg>
+                      <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                        <path d="M18 8l-6 6"></path>
+                        <path d="M12 8l6 6"></path>
+                      </svg>
+                    </button>
+                  </div>
+
+                  {# Model badge from job #}
+                  {% if j.video_model or j.model_id %}
+                  <div class="absolute top-3 left-3 pointer-events-none">
+                    <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                      {{ j|model_display }}
+                    </div>
+                  </div>
+                  {% endif %}
+
+
+                  <div class="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                    <button type="button" class="w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center save-toggle"
+                            data-url="{% url 'generate:job_save' j.id %}" data-count-target="saved-video-job-count-{{ j.id }}" aria-pressed="true" title="Убрать из сохранённых" data-remove-card="1">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="p-3 text-sm">
+                  <div class="font-semibold line-clamp-1 mb-1">{{ j.prompt|default:"" }}</div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <a href="{% url 'profile_short' j.user.username %}" class="inline-flex items-center gap-2 text-[var(--muted)] hover:text-[var(--text)]">
+                      {% if j.user.profile.avatar %}
+                        <img src="{{ j.user.profile.avatar.url }}" class="w-6 h-6 rounded-full object-cover" alt="@{{ j.user.username }}">
+                      {% else %}
+                        <span class="w-6 h-6 rounded-full bg-[var(--bord)] grid place-items-center text-[10px]">@</span>
+                      {% endif %}
+                      <span class="truncate">@{{ j.user.username }}</span>
+                    </a>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="inline-flex items-center gap-2">
+                      <button type="button" class="like-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg:white/10 transition {% if liked_job_ids and j.id in liked_job_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                              data-url="{% url 'generate:job_like' j.id %}" data-count-target="saved-video-job-like-{{ j.id }}" aria-pressed="{% if liked_job_ids and j.id in liked_job_ids %}true{% else %}false{% endif %}">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if liked_job_ids and j.id in liked_job_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                        <span id="saved-video-job-like-{{ j.id }}">{{ job_like_counts|get_item:j.id|default:0 }}</span>
+                      </button>
+                      <span class="text-[var(--muted)]">•</span>
+                      <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
+                         href="{{ job_detail_noslug }}#comments"
+                         data-open-comments="1"
+                         data-detail-url="{{ job_detail_noslug }}"
+                         title="Комментарии">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        <span>{{ job_comment_counts|get_item:j.id|default:0 }}</span>
+                      </a>
+                    </div>
+                    <div class="inline-flex items-center gap-3">
+                      <button type="button" class="save-toggle flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition text-[var(--muted)]"
+                              data-url="{% url 'generate:job_save' j.id %}" data-count-target="sv-video-job-bookmark-{{ j.id }}" data-remove-card="1" aria-pressed="true">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                        </svg>
+                        <span id="sv-video-job-bookmark-{{ j.id }}">{{ job_save_counts|get_item:j.id|default:0 }}</span>
+                      </button>
+                      {% if j.result_video_url %}
+                        <a href="{{ j.result_video_url }}" target="_blank" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            {% endif %}
+            {% endwith %}
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="card p-8 text-center text-[var(--muted)]">Нет сохранённых видео</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<style>
+.saved-tab { cursor:pointer; color: var(--muted); background: transparent; transition: all .2s ease; }
+.saved-tab.active { color: var(--fg); background: var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06); }
+:root[data-theme="dark"] .saved-tab.active { background: rgba(255,255,255,.1); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.saved-tab:hover:not(.active) { color: var(--fg); background: rgba(0,0,0,.05); }
+:root[data-theme="dark"] .saved-tab:hover:not(.active) { background: rgba(255,255,255,.05); }
+.saved-tab .media-count { transition: all .2s ease; }
+.saved-tab.active .media-count { background: rgba(var(--primary-rgb), .15) !important; color: var(--primary); }
+:root[data-theme="dark"] .saved-tab.active .media-count { background: rgba(var(--primary-rgb), .2) !important; }
+
+/* Saved page: video play overlay visibility when playing */
+.video-play-overlay { transition: opacity .2s ease; }
+.playing .video-play-overlay { opacity: 0; pointer-events: none; }
+</style>
+
+<script>
+// tabs
+(function(){
+  const tabs = document.querySelectorAll('.saved-tab');
+  const contents = document.querySelectorAll('.saved-content');
+  function activate(name){
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    contents.forEach(c=>c.classList.toggle('hidden', c.id !== (name+'-grid')));
+    try{ localStorage.setItem('saved_active_tab', name); }catch(_){}
+  }
+  tabs.forEach(t=>t.addEventListener('click', ()=>activate(t.dataset.tab)));
+  const urlParams = new URLSearchParams(location.search); const p=urlParams.get('tab');
+  if (p) activate(p); else {
+    try{ const s=localStorage.getItem('saved_active_tab'); if (s) activate(s); }catch(_){}
+  }
+})();
+</script>
+
+<script>
+// generic like toggle (copied lightweight)
+(function(){
+  function getCSRFCookie(){
+    const m=document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/); if(m) return decodeURIComponent(m[1]);
+    const input=document.querySelector('input[name="csrfmiddlewaretoken"]'); return input?input.value:'';
+  }
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.like-toggle'); if(!btn) return;
+    if (e.target.closest('[data-open-likers]')) return;
+    e.preventDefault(); e.stopPropagation();
+    if (btn.disabled || btn.dataset.loading==='1') return;
+    btn.dataset.loading='1'; btn.disabled=true;
+    const url=btn.dataset.url; const countId=btn.dataset.countTarget; const countEl=countId?document.getElementById(countId):null;
+    try{
+      const r=await fetch(url,{method:'POST',headers:{'X-CSRFToken':getCSRFCookie(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'});
+      const j=await r.json().catch(()=>null);
+      if(!r.ok||!j||j.ok!==true) throw new Error('like failed');
+      const heart=btn.querySelector('svg'); const isLiked=!!j.liked;
+      btn.setAttribute('aria-pressed', isLiked?'true':'false');
+      if(isLiked){ btn.classList.add('text-red-500'); btn.classList.remove('text-[var(--muted)]'); heart.setAttribute('fill','currentColor'); }
+      else { btn.classList.remove('text-red-500'); btn.classList.add('text-[var(--muted)]'); heart.setAttribute('fill','none'); }
+      if(countEl && typeof j.count==='number') countEl.textContent=j.count;
+    }catch(_){}
+    finally{ delete btn.dataset.loading; btn.disabled=false; }
+  });
+})();
+</script>
+
+<script>
+// generic save toggle (remove card on unsave on this page)
+(function(){
+  function getCSRFCookie(){
+    const m=document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/); if(m) return decodeURIComponent(m[1]);
+    const input=document.querySelector('input[name="csrfmiddlewaretoken"]'); return input?input.value:'';
+  }
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.save-toggle'); if(!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    if (btn.disabled || btn.dataset.loading==='1') return;
+    btn.dataset.loading='1'; btn.disabled=true;
+    const url=btn.dataset.url; const countId=btn.dataset.countTarget; const countEl=countId?document.getElementById(countId):null;
+    try{
+      const r=await fetch(url,{method:'POST',headers:{'X-CSRFToken':getCSRFCookie(),'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'});
+      const j=await r.json().catch(()=>null);
+      if(!r.ok||!j||j.ok!==true) throw new Error('save failed');
+      const icon=btn.querySelector('svg'); const isSaved=!!j.saved;
+      btn.setAttribute('aria-pressed', isSaved?'true':'false');
+      if(isSaved){ btn.classList.add('text-emerald-500'); btn.classList.remove('text-[var(--muted)]'); icon.setAttribute('fill','currentColor'); }
+      else {
+        btn.classList.remove('text-emerald-500'); btn.classList.add('text-[var(--muted)]'); icon.setAttribute('fill','none');
+        if (btn.dataset.removeCard==='1'){ const card=btn.closest('.card'); if(card) card.remove(); }
+      }
+      if (countEl && typeof j.count==='number') countEl.textContent=j.count;
+    }catch(_){}
+    finally{ delete btn.dataset.loading; btn.disabled=false; }
+  });
+})();
+</script>
+<script>
+// saved page: play/pause videos by clicking overlay or the video itself; auto-pause others
+(function(){
+  function pauseAll(except){
+    document.querySelectorAll('#videos-grid video').forEach(v=>{
+      if (v !== except) {
+        try { v.pause(); } catch(_){}
+        const c = v.closest('article'); if (c) c.classList.remove('playing');
+      }
+    });
+  }
+  // Click on play overlay
+  document.addEventListener('click', (e)=>{
+    const overlay = e.target.closest('.video-play-overlay');
+    if (!overlay) return;
+    const card = overlay.closest('article');
+    const video = card && card.querySelector('video');
+    if (!video) return;
+    e.preventDefault(); e.stopPropagation();
+    if (video.paused) {
+      pauseAll(video);
+      video.play().catch(()=>{});
+      if (card) card.classList.add('playing');
+    } else {
+      video.pause();
+      if (card) card.classList.remove('playing');
+    }
+  });
+  // Click on video toggles play/pause
+  document.addEventListener('click', (e)=>{
+    const video = e.target.closest('#videos-grid video');
+    if (!video) return;
+    const card = video.closest('article');
+    if (video.paused) {
+      pauseAll(video);
+      video.play().catch(()=>{});
+      if (card) card.classList.add('playing');
+    } else {
+      video.pause();
+      if (card) card.classList.remove('playing');
+    }
+  });
+  // Sync overlay on events
+  function bind(v){
+    v.addEventListener('play', ()=>{ v.closest('article')?.classList.add('playing'); });
+    v.addEventListener('pause', ()=>{ v.closest('article')?.classList.remove('playing'); });
+    v.addEventListener('ended', ()=>{ v.closest('article')?.classList.remove('playing'); });
+  }
+  document.querySelectorAll('#videos-grid video').forEach(bind);
+})();
+</script>
+
+<script>
+(function(){
+  function findCard(el){
+    return el.closest('article') || el.closest('.group') || el.parentElement;
+  }
+  function hasAudio(video){
+    if (!video) return false;
+    try {
+      if (typeof video.mozHasAudio !== 'undefined') return !!video.mozHasAudio;            // Firefox
+      if (video.audioTracks && video.audioTracks.length) return true;                      // Some browsers
+      if (typeof video.webkitAudioDecodedByteCount !== 'undefined') {
+        return video.webkitAudioDecodedByteCount > 0;                                      // Safari heuristic
+      }
+      if (typeof video.captureStream === 'function') {
+        try {
+          const s = video.captureStream();
+          if (s && s.getAudioTracks) return s.getAudioTracks().length > 0;
+        } catch(_) {}
+      }
+    } catch(_) {}
+    return false;
+  }
+  function markBtnState(btn, video){
+    const disabled = video ? !hasAudio(video) : true;
+    btn.dataset.disabled = disabled ? '1' : '0';
+    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    btn.title = disabled ? 'Нет аудио' : '';
+    btn.classList.toggle('opacity-60', disabled);
+    btn.classList.toggle('cursor-not-allowed', disabled);
+    if (disabled){
+      const onI = btn.querySelector('.icon-vol-on');
+      const offI = btn.querySelector('.icon-vol-off');
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+    }
+  }
+  function updateSoundBtn(btn, muted){
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){
+      const onI = btn.querySelector('.icon-vol-on');
+      const offI = btn.querySelector('.icon-vol-off');
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+      btn.setAttribute('aria-label', 'Нет аудио');
+      return;
+    }
+    const onI = btn.querySelector('.icon-vol-on');
+    const offI = btn.querySelector('.icon-vol-off');
+    if (onI && offI){
+      onI.classList.toggle('hidden', muted);
+      offI.classList.toggle('hidden', !muted);
+    }
+    btn.setAttribute('aria-label', muted ? 'Включить звук' : 'Выключить звук');
+  }
+  function wireVideoRecalc(btn, video){
+    if (!video) return;
+    video.addEventListener('loadedmetadata', ()=> markBtnState(btn, video));
+    video.addEventListener('play', ()=> markBtnState(btn, video));
+  }
+  function initSoundButtons(){
+    document.querySelectorAll('#videos-grid .vid-snd-btn').forEach(btn=>{
+      const card = findCard(btn);
+      const video = card && card.querySelector('video');
+      markBtnState(btn, video);
+      updateSoundBtn(btn, !video ? true : !!video.muted);
+      wireVideoRecalc(btn, video);
+    });
+  }
+
+  // Prevent clicks on disabled sound buttons (capture)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.vid-snd-btn');
+    if (btn && btn.dataset.disabled === '1'){
+      e.preventDefault(); e.stopPropagation();
+    }
+  }, true);
+
+  // Delegated click for sound toggle
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.vid-snd-btn');
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){ e.preventDefault(); e.stopPropagation(); return; }
+    e.preventDefault(); e.stopPropagation();
+    const card = findCard(btn);
+    const video = card && card.querySelector('video');
+    if (!video) return;
+    video.muted = !video.muted;
+    updateSoundBtn(btn, video.muted);
+    if (!video.paused && !video.muted){
+      try { video.play(); } catch(_){}
+    }
+  });
+
+  // Init on load
+  initSoundButtons();
+})();
+</script>
+
+<!-- Saved page: Media Modal (comments) -->
+<div id="svMediaModal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-sv-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="grid md:grid-cols-2 gap-0">
+      <div id="svModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
+      <div class="flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+          <div class="flex items-center gap-2">
+            <button id="svModalLikeBtn" type="button" class="btn btn-ghost px-3 py-1.5 like-toggle" data-url="" data-count-target="svModalLikeCount" aria-pressed="false">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span id="svModalLikeCount" class="text-sm font-medium">0</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-sv-close="1">✕</button>
+        </div>
+        <div id="svModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('svMediaModal');
+  const mediaEl = document.getElementById('svModalMedia');
+  const commentsEl = document.getElementById('svModalComments');
+  const likeBtn = document.getElementById('svModalLikeBtn');
+  const likeCountEl = document.getElementById('svModalLikeCount');
+  let currentDetailUrl = '';
+
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input && input.value ? input.value : '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); }
+
+  modal?.addEventListener('click', (e)=>{ if (e.target.dataset.svClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchDetail(url){
+    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
+    const html = await r.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  async function openVideo(detailUrl, videoUrl, poster){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline><source src="'+(videoUrl||'')+'" type="video/mp4"></video>';
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments') || doc.getElementById('commentList') || doc.querySelector('#comments, #commentList');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#video-like-count, #photo-like-count, #job-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+
+      // Bind AJAX comment forms (simple re-fetch strategy)
+      commentsEl.querySelectorAll('form[action]').forEach(form=>{
+        form.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const fd=new FormData(form);
+          const r=await fetch(form.action,{method:'POST',headers:{'X-CSRFToken':getCSRFCookie(),'X-Requested-With':'XMLHttpRequest'},body:fd,credentials:'same-origin'});
+          const j=await r.json().catch(()=>null);
+          if (r.ok && j && j.ok){ const doc2 = await fetchDetail(detailUrl); const cc = doc2.getElementById('comments') || doc2.querySelector('#comments'); if (cc) commentsEl.innerHTML = cc.innerHTML; }
+        }, { once:true });
+      });
+    }catch(_){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки комментариев</div>';
+    }
+  }
+
+  async function openPhoto(detailUrl, imageUrl){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<img class="max-w-full max-h-[75vh] object-contain" src="'+(imageUrl||'')+'" alt="">';
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments') || doc.getElementById('commentList') || doc.querySelector('#comments, #commentList');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#photo-like-count, #video-like-count, #job-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+    }catch(_){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки комментариев</div>';
+    }
+  }
+
+  likeBtn?.addEventListener('click', async ()=>{
+    const url = likeBtn.dataset.url;
+    if (!url) return;
+    try{
+      const res = await fetch(url, { method:'POST', headers:{'X-CSRFToken':getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' });
+      const j = await res.json().catch(()=>null);
+      if (res.ok && j && j.ok){
+        likeBtn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+        likeBtn.querySelector('svg').setAttribute('fill', j.liked ? 'currentColor':'none');
+        if (typeof j.count === 'number') likeCountEl.textContent = j.count;
+      }
+    }catch(_){}
+  });
+
+  // Delegation: open comments modal (handles video and photo)
+  document.addEventListener('click', (e)=>{
+    const el = e.target.closest('[data-open-comments]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    const detail = el.getAttribute('data-detail-url') || el.getAttribute('href') || '';
+    const card = el.closest('article');
+    const v = card && card.querySelector('video');
+    if (v) {
+      const src = v.querySelector('source') ? v.querySelector('source').getAttribute('src') : '';
+      const poster = v.getAttribute('poster') || '';
+      openVideo(detail, src, poster);
+      return;
+    }
+    const img = card && card.querySelector('img');
+    const srcImg = img ? img.getAttribute('src') : '';
+    openPhoto(detail, srcImg);
+  });
+})();
+</script>
+{% endblock %}

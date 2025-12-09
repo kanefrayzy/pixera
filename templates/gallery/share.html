@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
-{% block title %}Поделиться генерацией — AI Gallery{% endblock %}
+{% block title %}Поделиться генерацией — Pixera{% endblock %}
 {% block hero %}{% endblock %}
 
 {% block content %}
@@ -15,16 +15,16 @@
   </div>
 
   <div class="grid lg:grid-cols-2 gap-8">
-    
+
     <!-- Preview Section -->
     <div class="space-y-6">
       <div class="card p-6">
         <h2 class="text-lg font-semibold mb-4">Превью</h2>
-        
+
         <div class="relative">
           {% if thumb_url %}
-            <img class="w-full aspect-square object-cover rounded-2xl" 
-                 src="{{ thumb_url }}" 
+            <img class="w-full aspect-square object-cover rounded-2xl"
+                 src="{{ thumb_url }}"
                  alt="Превью генерации">
           {% else %}
             <div class="w-full aspect-square rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -36,7 +36,7 @@
               </div>
             </div>
           {% endif %}
-          
+
           <!-- Overlay Info -->
           <div class="absolute bottom-4 left-4 right-4">
             <div class="card p-3 backdrop-blur-sm bg-white/90 dark:bg-black/90">
@@ -74,16 +74,15 @@
         <!-- Title Field -->
         <div class="card p-6">
           <label class="block text-sm font-medium mb-3" for="{{ form.title.id_for_label }}">
-            Заголовок <span class="text-red-500">*</span>
+            Заголовок
           </label>
-          <input type="text" 
+          <input type="text"
                  id="{{ form.title.id_for_label }}"
                  name="{{ form.title.name }}"
                  value="{{ form.title.value|default:'' }}"
                  class="field"
                  placeholder="Например: Футуристический портрет в стиле киберпанк"
-                 maxlength="100"
-                 required>
+                 maxlength="100">
           {% if form.title.errors %}
             <div class="mt-2 text-sm text-red-600 dark:text-red-400">
               {% for error in form.title.errors %}{{ error }}{% endfor %}
@@ -118,15 +117,15 @@
         <div class="card p-6">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <label class="text-sm font-medium">
-              Категории 
+              Категории
             </label>
             <div class="relative">
               <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
-              <input type="search" 
-                     id="chipsSearch" 
-                     class="field pl-10 w-full sm:w-64 text-sm" 
+              <input type="search"
+                     id="chipsSearch"
+                     class="field pl-10 w-full sm:w-64 text-sm"
                      placeholder="Поиск категории...">
             </div>
           </div>
@@ -136,8 +135,8 @@
               {% for c in form.categories.field.queryset %}
                 {% with c.pk|stringformat:"s" as cid %}
                 <label class="chip-check group flex items-center gap-3 p-3 rounded-xl border border-[var(--bord)] hover:bg-black/[.02] dark:hover:bg-white/[.02] transition cursor-pointer{% if selected and cid in selected %} active bg-primary/10 border-primary/30{% endif %}">
-                  <input type="checkbox" 
-                         name="{{ form.categories.name }}" 
+                  <input type="checkbox"
+                         name="{{ form.categories.name }}"
                          value="{{ c.pk }}"
                          class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
                          {% if selected and cid in selected %}checked{% endif %}>
@@ -243,7 +242,7 @@
   function updatePreview() {
     const title = titleInput?.value?.trim() || 'Без названия';
     const caption = captionInput?.value?.trim() || 'Добавьте описание...';
-    
+
     if (previewTitle) previewTitle.textContent = title;
     if (previewCaption) previewCaption.textContent = caption;
   }
@@ -262,12 +261,12 @@
 
     const checkbox = label.querySelector('input[type="checkbox"]');
     const checkIcon = label.querySelector('.w-5.h-5 > svg');
-    
+
     if (!checkbox) return;
 
     // Toggle checkbox
     checkbox.checked = !checkbox.checked;
-    
+
     // Update visual state
     if (checkbox.checked) {
       label.classList.add('active', 'bg-primary/10', 'border-primary/30');
@@ -291,7 +290,7 @@
 
     const label = checkbox.closest('.chip-check');
     const checkIcon = label?.querySelector('.w-5.h-5 > svg');
-    
+
     if (checkbox.checked) {
       label?.classList.add('active', 'bg-primary/10', 'border-primary/30');
       if (checkIcon) {
@@ -316,15 +315,15 @@
       const text = label.querySelector('.chip-text')?.textContent?.toLowerCase() || '';
       const description = label.querySelector('.text-xs')?.textContent?.toLowerCase() || '';
       const matches = text.includes(query) || description.includes(query);
-      
+
       label.style.display = matches ? '' : 'none';
     });
 
     // Show "no results" message if needed
-    const visibleCategories = Array.from(categories).filter(label => 
+    const visibleCategories = Array.from(categories).filter(label =>
       label.style.display !== 'none'
     );
-    
+
     let noResultsMsg = chipsBox?.querySelector('.no-results');
     if (visibleCategories.length === 0 && query) {
       if (!noResultsMsg) {
@@ -343,26 +342,8 @@
     }
   });
 
-  // Form validation enhancement
+  // Client-side validation removed: allow empty title and categories (handled server-side)
   const form = document.querySelector('form');
-  form?.addEventListener('submit', (e) => {
-    const title = titleInput?.value?.trim();
-    const selectedCategories = chipsBox?.querySelectorAll('input[type="checkbox"]:checked') || [];
-
-    if (!title) {
-      e.preventDefault();
-      titleInput?.focus();
-      titleInput?.classList.add('border-red-500');
-      setTimeout(() => titleInput?.classList.remove('border-red-500'), 3000);
-      return;
-    }
-
-    if (selectedCategories.length === 0) {
-      e.preventDefault();
-      searchInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-  });
 
   // Auto-resize textarea
   function autoResize(textarea) {
@@ -371,7 +352,7 @@
   }
 
   captionInput?.addEventListener('input', () => autoResize(captionInput));
-  
+
   // Initialize textarea height
   if (captionInput && captionInput.value) {
     autoResize(captionInput);
@@ -432,11 +413,11 @@ textarea.field {
   .grid.lg\\:grid-cols-2 {
     grid-template-columns: 1fr;
   }
-  
+
   .chip-check {
     padding: 16px 12px;
   }
-  
+
   .btn {
     min-height: 48px;
   }

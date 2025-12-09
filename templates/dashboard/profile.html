@@ -1,0 +1,3090 @@
+﻿{% extends "base.html" %}
+{% load static i18n %}
+{% load generate_extras %}
+
+{% block meta_title %}{{ target.username }} — Профиль{% endblock %}
+{% block meta_description %}Профиль пользователя, подписчики, подписки и публикации.{% endblock %}
+{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile-responsive.css' %}">
+{% endblock %}
+
+{% block hero %}
+<section class="relative py-4 sm:py-6 mt-4 profile-header-card">
+  <div class="container">
+    <div class="card p-4 sm:p-5 relative overflow-visible">
+      <!-- Profile Header - Compact Layout -->
+      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
+        <!-- Avatar + self upload -->
+        <div class="relative flex flex-col items-center shrink-0 pt-6 sm:pt-8 profile-avatar-section">
+          <div class="group">
+            <img id="pfAvatarDisplay" src="{% if target_profile and target_profile.avatar %}{{ target_profile.avatar.url }}{% endif %}" data-avatar-url="{% if target_profile and target_profile.avatar %}{{ target_profile.avatar.url }}{% endif %}" alt="{{ target.username }}" class="js-avatar-img w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-2 ring-[var(--bord)] {% if not target_profile or not target_profile.avatar %}hidden{% endif %}">
+            <span id="pfAvatarFallback" class="js-avatar-fallback w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-lg sm:text-xl ring-2 ring-[var(--bord)] {% if target_profile and target_profile.avatar %}hidden{% endif %}">
+              {{ target.first_name|first|default:target.username|first|upper }}
+            </span>
+          </div>
+
+          {% if is_self %}
+          <!-- Overlay controls: red trash and "+" label -->
+          <div class="absolute -bottom-1 -right-1 sm:-bottom-1 sm:-right-1 z-30">
+            <button type="button"
+                    id="pfAvatarDeleteBtn"
+                    class="w-7 h-7 rounded-full grid place-items-center bg-red-600 text-white ring-2 ring-[var(--bg)] hover:bg-red-700 transition {% if not target_profile or not target_profile.avatar %}hidden{% endif %}"
+                    title="{% trans 'Удалить аватар' %}">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+            <label id="pfAvatarAddLabel" for="pfAvatarInput"
+                   class="w-7 h-7 rounded-full grid place-items-center bg-primary text-white ring-2 ring-[var(--bg)] hover:bg-primary/90 transition cursor-pointer {% if target_profile and target_profile.avatar %}hidden{% endif %}"
+                   title="{% trans 'Добавить аватар' %}">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14"/>
+              </svg>
+            </label>
+          </div>
+          <form id="pfAvatarDeleteForm" method="post" action="{% url 'dashboard:avatar_delete' %}" class="hidden">{% csrf_token %}</form>
+          {% endif %}
+
+          <!-- Upload controls: pinned badge on sm+, full-width button on mobile -->
+          <!-- Upload form -->
+          <form id="pfAvatarUploadForm" method="post" action="{% url 'dashboard:profile' target.username %}" enctype="multipart/form-data" class="z-20 w-full flex flex-col items-center gap-2 profile-avatar-controls">
+            {% csrf_token %}
+            <input id="pfAvatarInput" type="file" name="avatar" accept="image/png,image/jpeg,image/jpg,image/webp" class="sr-only" onchange="window.AvatarCropper && window.AvatarCropper.open(this)">
+            <input type="hidden" name="action" value="upload_avatar">
+            <button type="button"
+                    id="btnAvatarUpdate"
+                    class="rounded-xl border border-[var(--bord)] px-3 py-1.5 text-xs sm:text-sm text-[var(--text)] bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition inline-flex items-center gap-2 w-full sm:w-auto justify-center">
+              <svg class="w-4 h-4 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/>
+              </svg>
+              <span>{% trans "Обновить аватар" %}</span>
+            </button>
+          </form>
+
+          {% endif %}
+        </div>
+
+        <!-- Name, Username & Stats -->
+        <div class="flex-1 min-w-0 text-center sm:text-left w-full sm:w-auto relative profile-info-section">
+          <h1 class="text-lg sm:text-xl font-bold text-[var(--text)] truncate">{% if is_self %}Мой кабинет{% else %}{{ target.first_name|default:target.username }}{% endif %}</h1>
+          <p class="text-sm text-[var(--muted)] mt-0.5">@{{ target.username }}</p>
+
+          {% if not is_self and is_profile_private %}
+          <!-- Private account banner -->
+          <div class="mt-3 sm:mt-4">
+            <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-500/25 bg-red-500/10 text-red-600 dark:text-red-400">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm-3 8V7a3 3 0 116 0v3H9z"></path>
+              </svg>
+              <span class="text-sm sm:text-base font-semibold">Закрытый аккаунт</span>
+            </div>
+          </div>
+          {% else %}
+          <!-- Stats Counters - Inline & Compact -->
+          <div class="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 mt-3 profile-stats">
+            <a id="pfBtnFollowers" href="#followers" onclick="window.__pfOpen && window.__pfOpen('followers')" class="relative z-[200] pointer-events-auto text-center hover:opacity-80 transition focus:outline-none cursor-pointer select-none" aria-label="{% trans 'Подписчики' %}">
+              <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="pfFollowers">{{ followers }}</div>
+              <div class="text-xs text-[var(--muted)] leading-tight mt-0.5">{% trans "Подписчики" %}</div>
+            </a>
+
+            <a id="pfBtnFollowing" href="#following" onclick="window.__pfOpen && window.__pfOpen('following')" class="relative z-[200] pointer-events-auto text-center hover:opacity-80 transition focus:outline-none cursor-pointer select-none" aria-label="{% trans 'Подписки' %}">
+              <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="pfFollowing">{{ following }}</div>
+              <div class="text-xs text-[var(--muted)] leading-tight mt-0.5">{% trans "Подписки" %}</div>
+            </a>
+
+            <div class="text-center">
+              <div class="text-base sm:text-lg font-bold tabular-nums leading-none text-[var(--text)]" id="pfPosts">{{ posts }}</div>
+              <div class="text-xs text-[var(--muted)] leading-tight mt-0.5">{% trans "Публикации" %}</div>
+            </div>
+          </div>
+
+          <!-- Actions Button -->
+          <div class="mt-3 sm:mt-4 w-full sm:w-auto profile-actions">
+            {% if not is_self %}
+              <button type="button"
+                      class="btn {% if is_following %}btn-ghost{% else %}btn-primary{% endif %} text-sm px-6 py-2 font-semibold rounded-xl"
+                      data-follow-toggle="1"
+                      data-username="{{ target.username }}"
+                      id="followBtn"
+                      onclick="try{ if(window.__pfToggleFollow){ window.__pfToggleFollow(this); } }catch(e){} return false;">
+                {% if is_following %}{% trans "Отписаться" %}{% else %}{% trans "Подписаться" %}{% endif %}
+              </button>
+              <!-- Fallback form: if AJAX is blocked (e.g., CSP/CSRF), submit regular POST -->
+              <form id="pfFollowFallbackForm" method="post" action="{% url 'dashboard:api:follow_toggle' %}" class="hidden">
+                {% csrf_token %}
+                <input type="hidden" name="username" value="{{ target.username }}">
+              </form>
+              <script>
+              // Minimal inline fallback handler to guarantee work even if other JS fails
+              if (!window.__pfToggleFollow) {
+                window.__pfToggleFollow = (function(){
+                  function getCSRF(){
+                    var m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+                    if (m) return decodeURIComponent(m[1]);
+                    var meta = document.querySelector('meta[name="csrf-token"]');
+                    if (meta && meta.content) return meta.content;
+                    var input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+                    return (input && input.value) ? input.value : '';
+                  }
+                  return async function(btn){
+                    try{
+                      if (!btn) return false;
+                      var username = btn.getAttribute('data-username') || '';
+                      if (!username) return false;
+
+                      var token = getCSRF();
+                      var fd = new FormData();
+                      fd.append('username', username);
+                      fd.append('csrfmiddlewaretoken', token);
+
+                      var res = await fetch('{% url "dashboard:api:follow_toggle" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                        body: fd
+                      });
+
+                      var ct = res.headers.get('Content-Type') || '';
+                      var j = null;
+                      if (ct.includes('application/json')) {
+                        try { j = await res.json(); } catch(_) {}
+                      }
+
+                      if (res.ok && j && j.ok === true) {
+                        var following = !!j.following;
+                        btn.classList.toggle('btn-primary', !following);
+                        btn.classList.toggle('btn-ghost', following);
+                        btn.textContent = following ? '{{ _("Отписаться") }}' : '{{ _("Подписаться") }}';
+                        btn.setAttribute('aria-pressed', following ? 'true':'false');
+                        var cnt = document.getElementById('pfFollowers');
+                        var newCount = (typeof j.followers_count === 'number') ? j.followers_count : (typeof j.followers === 'number' ? j.followers : null);
+                        if (cnt && newCount !== null) cnt.textContent = String(newCount);
+                        return false;
+                      }
+
+                      // Hard fallback: regular form POST (may navigate)
+                      var ff = document.getElementById('pfFollowFallbackForm');
+                      if (ff) {
+                        var inp = ff.querySelector('input[name="username"]');
+                        if (inp) inp.value = username;
+                        if (ff.requestSubmit) ff.requestSubmit(); else ff.submit();
+                      }
+                    } catch (e) {
+                      var ff2 = document.getElementById('pfFollowFallbackForm');
+                      if (ff2) {
+                        var inp2 = ff2.querySelector('input[name="username"]');
+                        if (inp2) inp2.value = btn.getAttribute('data-username') || '';
+                        if (ff2.requestSubmit) ff2.requestSubmit(); else ff2.submit();
+                      }
+                    }
+                    return false;
+                  };
+                })();
+              }
+              </script>
+            {% else %}
+              <a class="btn btn-primary text-sm px-6 py-2 font-semibold rounded-xl" href="{% url 'dashboard:my_jobs' %}">{% trans "Мои публикации" %}</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- Avatar Cropper Modal (Instagram-like) -->
+<div id="avatarCropModal" class="fixed inset-0 z-[90] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-ac-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+      <h3 class="text-base sm:text-lg font-bold">Выбор области аватара</h3>
+      <button type="button" class="btn btn-ghost px-3 py-1.5" data-ac-close="1" aria-label="Закрыть">✕</button>
+    </div>
+
+    <div class="p-3 sm:p-4">
+      <div class="relative mx-auto">
+        <!-- Crop square viewport -->
+        <div class="relative w-full max-w-[min(90vw,520px)] mx-auto rounded-xl overflow-hidden bg-[var(--bg-card)] border border-[var(--bord)]" style="aspect-ratio:1/1">
+          <canvas id="acCanvas" class="w-full h-full block"></canvas>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-4 grid grid-cols-1 gap-3">
+          <!-- Modes -->
+          <div class="flex items-center justify-between gap-3">
+            <div class="inline-flex rounded-xl bg-[var(--bord)] p-1 gap-1">
+              <button type="button" id="acModeImage" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-[var(--bg-card)]">Переместить фото</button>
+              <button type="button" id="acModeFrame" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold">Переместить рамку</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="acCancel" class="btn btn-ghost">Отмена</button>
+              <button type="button" id="acApply" class="btn btn-primary">Сохранить</button>
+            </div>
+          </div>
+
+          <!-- Zoom + Frame size -->
+          <div class="flex flex-col sm:flex-row items-center gap-3">
+            <div class="flex items-center gap-2">
+              <button type="button" id="acZoomOut" class="px-3 py-2 rounded-lg border border-[var(--bord)] hover:bg-black/5 dark:hover:bg-white/10 transition" aria-label="Уменьшить масштаб">−</button>
+              <input id="acZoom" type="range" min="100" max="350" value="100" class="w-48 sm:w-56 accent-[var(--primary)]">
+              <button type="button" id="acZoomIn" class="px-3 py-2 rounded-lg border border-[var(--bord)] hover:bg-black/5 dark:hover:bg-white/10 transition" aria-label="Увеличить масштаб">+</button>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <span class="text-[11px] sm:text-xs text-[var(--muted)]">Размер рамки</span>
+              <input id="acFrame" type="range" min="60" max="98" value="90" class="flex-1 sm:w-56 accent-[var(--primary)]">
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-1 text-[11px] sm:text-xs text-[var(--muted)] text-center sm:text-left">Режимы: «Переместить фото» — двигайте и масштабируйте изображение. «Переместить рамку» — двигайте круг и меняйте его размер. Итоговый аватар будет круглым.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Avatar Cropper — Tailwind-friendly, dark/light aware, responsive to 320px */
+window.AvatarCropper = (function() {
+  const modal = () => document.getElementById('avatarCropModal');
+  const canvas = () => document.getElementById('acCanvas');
+  let ctx, dpr, W, H;
+  let CSSW = 0, CSSH = 0; // canvas CSS size (for ratio-safe radius calc)
+  let img = null;
+  let naturalW = 0, naturalH = 0;
+
+  // State
+  let baseScale = 1;   // cover-scale (fits image to cover the square)
+  let zoom = 1;        // user zoom factor (1..3.5)
+  let offX = 0;        // pan offsets in px (canvas space)
+  let offY = 0;
+  let isDragging = false;
+  let lastX = 0, lastY = 0;
+
+  // Crop frame state (user-selected)
+  let cropCX = 0, cropCY = 0, cropR = 0; // center X/Y and radius (in canvas px)
+  let moveMode = 'image'; // 'image' | 'frame'
+
+  // Refs
+  let fileInputEl = null;
+  let formEl = null;
+
+  const circlePadding = 4; // px border padding inside canvas
+  function setupCanvas() {
+    const c = canvas();
+    if (!c) return;
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    const cssSize = c.getBoundingClientRect();
+    // fallback if zero (hidden): set a default size and scale with CSS
+    const cssW = Math.max(300, Math.floor(cssSize.width || 320));
+    const cssH = cssW;
+    CSSW = cssW;
+    CSSH = cssH;
+    W = cssW * dpr;
+    H = cssH * dpr;
+    c.width = W;
+    c.height = H;
+    ctx = c.getContext('2d');
+  }
+
+  function coverScale(imgW, imgH) {
+    // fit image to cover square canvas
+    return Math.max((W / imgW), (H / imgH));
+  }
+
+  function clampPan() {
+    // Ensure the image fully covers the current circular crop
+    const dispW = naturalW * baseScale * zoom;
+    const dispH = naturalH * baseScale * zoom;
+
+    const r = cropR > 0 ? cropR : (Math.min(W, H) / 2 - circlePadding * dpr);
+
+    // Image draw origin (dx,dy) = (W - dispW)/2 + offX, (H - dispH)/2 + offY
+    // Constrain so that left <= cropCX - r and right >= cropCX + r (same for Y)
+    const halfGapX = (W - dispW) / 2;
+    const halfGapY = (H - dispH) / 2;
+
+    const minOffX = (cropCX - r) - halfGapX - dispW; // ensures right >= cropCX + r
+    const maxOffX = (cropCX + r) - halfGapX;         // ensures left <= cropCX - r
+
+    const minOffY = (cropCY - r) - halfGapY - dispH;
+    const maxOffY = (cropCY + r) - halfGapY;
+
+    offX = Math.min(Math.max(offX, minOffX), maxOffX);
+    offY = Math.min(Math.max(offY, minOffY), maxOffY);
+  }
+
+  function clampFrame() {
+    // Keep the crop circle fully inside canvas
+    const r = cropR;
+    cropCX = Math.min(Math.max(cropCX, r + circlePadding * dpr), W - r - circlePadding * dpr);
+    cropCY = Math.min(Math.max(cropCY, r + circlePadding * dpr), H - r - circlePadding * dpr);
+  }
+
+  function draw() {
+    if (!ctx || !img) return;
+    ctx.save();
+    // Clear
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw image with current transform
+    const dispW = naturalW * baseScale * zoom;
+    const dispH = naturalH * baseScale * zoom;
+    const dx = (W - dispW) / 2 + offX;
+    const dy = (H - dispH) / 2 + offY;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, dx, dy, dispW, dispH);
+
+    // Dark overlay + circular hole
+    const cx = cropCX || (W / 2);
+    const cy = cropCY || (H / 2);
+    const r = cropR || (Math.min(W, H) / 2 - circlePadding * dpr);
+
+    // Dim
+    // Dim outside the circle (preserve image inside)
+    ctx.save();
+    const bg = (getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0f1117');
+    ctx.fillStyle = bg;
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2, true);
+    try { ctx.fill('evenodd'); } catch(_) { ctx.fill(); }
+    ctx.globalAlpha = 1.0;
+    ctx.restore();
+
+    // Grid inside circle
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    // Adaptive grid color for dark/light theme
+    const bg = (getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#0f1117');
+    const isDarkBg = (function() {
+      const c = (bg || '').trim();
+      let r_ = 15, g_ = 17, b_ = 23;
+      if (c.startsWith('#')) {
+        const n = c.slice(1);
+        if (n.length === 3) { r_ = parseInt(n[0] + n[0], 16); g_ = parseInt(n[1] + n[1], 16); b_ = parseInt(n[2] + n[2], 16); }
+        else if (n.length >= 6) { r_ = parseInt(n.slice(0,2), 16); g_ = parseInt(n.slice(2,4), 16); b_ = parseInt(n.slice(4,6), 16); }
+      } else if (c.startsWith('rgb')) {
+        const m = c.match(/(\d+),\s*(\d+),\s*(\d+)/); if (m) { r_ = +m[1]; g_ = +m[2]; b_ = +m[3]; }
+      }
+      const l = (0.2126*r_ + 0.7152*g_ + 0.0722*b_) / 255;
+      return l < 0.5;
+    })();
+    const lines = 2; // 3x3 rule-of-thirds
+    ctx.strokeStyle = isDarkBg ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 1 * dpr;
+
+    for (let i = 1; i <= lines; i++) {
+      const x = cx - r + (2 * r * i) / (lines + 1);
+      ctx.beginPath();
+      ctx.moveTo(x, cy - r);
+      ctx.lineTo(x, cy + r);
+      ctx.stroke();
+      const y = cy - r + (2 * r * i) / (lines + 1);
+      ctx.beginPath();
+      ctx.moveTo(cx - r, y);
+      ctx.lineTo(cx + r, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Circle border
+    ctx.strokeStyle = isDarkBg ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.85)';
+    ctx.lineWidth = 2 * dpr;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function bindInteractions() {
+    const c = canvas();
+    if (!c) return;
+
+    // Drag
+    const onDown = (clientX, clientY) => {
+      isDragging = true;
+      lastX = clientX;
+      lastY = clientY;
+    };
+    const onMove = (clientX, clientY) => {
+      if (!isDragging) return;
+      const dx = (clientX - lastX) * dpr;
+      const dy = (clientY - lastY) * dpr;
+      lastX = clientX;
+      lastY = clientY;
+
+      if (moveMode === 'frame') {
+        // Move the circular frame itself
+        cropCX += dx;
+        cropCY += dy;
+        clampFrame();
+        clampPan();
+      } else {
+        // Move the image under the frame
+        offX += dx;
+        offY += dy;
+        clampPan();
+      }
+      draw();
+    };
+    const onUp = () => { isDragging = false; };
+
+    c.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', onUp);
+
+    // Touch
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+    function dist(t1, t2) {
+      const dx = t1.clientX - t2.clientX;
+      const dy = t1.clientY - t2.clientY;
+      return Math.hypot(dx, dy);
+    }
+    c.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        onDown(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 2) {
+        isDragging = false;
+        pinchStartDist = dist(e.touches[0], e.touches[1]);
+        pinchStartZoom = zoom;
+      }
+    }, { passive: true });
+    c.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 2 && pinchStartDist > 0) {
+        const d = dist(e.touches[0], e.touches[1]);
+        const factor = d / pinchStartDist;
+        if (moveMode === 'frame') {
+          // Pinch to resize frame
+          const minWH = Math.min(W, H);
+          const newR = Math.max(0.6 * (minWH / 2), Math.min(0.98 * (minWH / 2), cropR * factor));
+          cropR = newR;
+          clampFrame();
+          clampPan();
+          draw();
+        } else {
+          setZoom(pinchStartZoom * factor);
+        }
+      }
+    }, { passive: true });
+    window.addEventListener('touchend', () => { isDragging = false; pinchStartDist = 0; });
+
+    // Wheel zoom
+    c.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const dir = e.deltaY > 0 ? -1 : 1;
+      if (moveMode === 'frame') {
+        // Wheel changes frame size
+        const minWH = Math.min(W, H);
+        const stepR = (minWH / 2) * 0.03;
+        cropR = Math.max(0.6 * (minWH / 2), Math.min(0.98 * (minWH / 2), cropR + dir * stepR));
+        clampFrame();
+        clampPan();
+        draw();
+      } else {
+        const step = 0.08;
+        setZoom(zoom + dir * step);
+      }
+    }, { passive: false });
+
+    // Buttons + slider
+    const slider = document.getElementById('acZoom');
+    const btnIn = document.getElementById('acZoomIn');
+    const btnOut = document.getElementById('acZoomOut');
+
+    btnIn?.addEventListener('click', () => setZoom(zoom + 0.1));
+    btnOut?.addEventListener('click', () => setZoom(zoom - 0.1));
+    slider?.addEventListener('input', () => {
+      const v = Math.max(100, Math.min(350, parseInt(slider.value || '100', 10)));
+      setZoom(v / 100);
+    });
+
+    // Mode toggles
+    const mImg = document.getElementById('acModeImage');
+    const mFrm = document.getElementById('acModeFrame');
+    function setMode(m) {
+      moveMode = m === 'frame' ? 'frame' : 'image';
+      mImg?.classList.toggle('bg-[var(--bg-card)]', moveMode === 'image');
+      mFrm?.classList.toggle('bg-[var(--bg-card)]', moveMode === 'frame');
+    }
+    mImg?.addEventListener('click', () => setMode('image'));
+    mFrm?.addEventListener('click', () => setMode('frame'));
+    setMode('image');
+
+    // Frame size slider (percentage of canvas min dimension)
+    const fSlider = document.getElementById('acFrame');
+    const setFrameFromSlider = () => {
+      const pct = Math.max(60, Math.min(98, parseInt(fSlider?.value || '90', 10)));
+      const minWH = Math.min(W, H);
+      cropR = (pct / 100) * (minWH / 2);
+      clampFrame();
+      clampPan();
+      draw();
+    };
+    fSlider?.addEventListener('input', setFrameFromSlider);
+  }
+
+  function setZoom(z) {
+    const minZ = 1;
+    const maxZ = 3.5;
+    zoom = Math.max(minZ, Math.min(maxZ, z));
+    const slider = document.getElementById('acZoom');
+    if (slider) slider.value = String(Math.round(zoom * 100));
+    clampPan();
+    draw();
+  }
+
+  function open(el) {
+    // File input element
+    fileInputEl = el;
+    formEl = el.form || null;
+
+    const file = (el && el.files && el.files[0]) ? el.files[0] : null;
+    if (!file) return;
+
+    // Read file
+    const reader = new FileReader();
+    reader.onload = () => {
+      img = new Image();
+      img.onload = () => {
+        naturalW = img.naturalWidth || img.width;
+        naturalH = img.naturalHeight || img.height;
+        setupCanvas();
+        if (!ctx) return;
+        baseScale = coverScale(naturalW, naturalH);
+        zoom = 1;
+        offX = 0;
+        offY = 0;
+
+        // Initialize crop frame (centered). Match initial circle to current avatar display size.
+        cropCX = W / 2;
+        cropCY = H / 2;
+        try {
+          const dispEl = document.getElementById('pfAvatarDisplay');
+          const canvasCssW = CSSW || (canvas().getBoundingClientRect().width || (W / dpr));
+          const canvasCssH = CSSH || (canvas().getBoundingClientRect().height || (H / dpr));
+          const canvasCssMin = Math.min(canvasCssW, canvasCssH);
+          const avatarCss = dispEl ? dispEl.getBoundingClientRect().width : 80;
+          const ratio = Math.max(0.2, Math.min(0.98, avatarCss / canvasCssW));
+          // Convert CSS px radius to device px
+          cropR = ratio * (canvasCssMin / 2) * dpr;
+        } catch (_) {
+          cropR = Math.min(W, H) / 2 - circlePadding * dpr - 8 * dpr;
+        }
+
+        bindInteractions();
+        setZoom(1);
+        clampPan();
+        draw();
+        show();
+
+        // sync initial frame slider position
+        const fSlider = document.getElementById('acFrame');
+        if (fSlider) {
+          const pct = Math.round((cropR * 2) / Math.min(W, H) * 100);
+          fSlider.value = String(Math.max(60, Math.min(98, pct)));
+        }
+
+  // Open cropper for existing avatar URL (no file picker). Will submit cropped blob via hidden input.
+  async function openFromUrl(url, inputEl) {
+    try {
+      fileInputEl = inputEl || document.getElementById('pfAvatarInput');
+      formEl = (fileInputEl && fileInputEl.form) ? fileInputEl.form : null;
+      if (!url) return;
+
+      const r = await fetch(url, { credentials: 'same-origin' });
+      const blob = await r.blob();
+      const dataUrl = await new Promise((resolve) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.readAsDataURL(blob);
+      });
+
+      img = new Image();
+      img.onload = () => {
+        naturalW = img.naturalWidth || img.width;
+        naturalH = img.naturalHeight || img.height;
+        setupCanvas();
+        if (!ctx) return;
+
+        baseScale = coverScale(naturalW, naturalH);
+        zoom = 1;
+        offX = 0;
+        offY = 0;
+
+        cropCX = W / 2;
+        cropCY = H / 2;
+        // Initialize circle to match current avatar CSS size
+        try {
+          const dispEl = document.getElementById('pfAvatarDisplay');
+          const canvasCssW = CSSW || (canvas().getBoundingClientRect().width || (W / dpr));
+          const canvasCssH = CSSH || (canvas().getBoundingClientRect().height || (H / dpr));
+          const canvasCssMin = Math.min(canvasCssW, canvasCssH);
+          const avatarCss = dispEl ? dispEl.getBoundingClientRect().width : canvasCssMin * 0.5;
+          const ratio = Math.max(0.2, Math.min(0.98, avatarCss / canvasCssW));
+          cropR = ratio * (canvasCssMin / 2) * dpr;
+        } catch (_) {
+          cropR = Math.min(W, H) / 2 - circlePadding * dpr - 8 * dpr;
+        }
+
+        bindInteractions();
+        setZoom(1);
+        clampPan();
+        draw();
+        show();
+
+        // sync frame slider
+        const fSlider = document.getElementById('acFrame');
+        if (fSlider) {
+          const pct = Math.round(((cropR / dpr) * 2) / Math.min(CSSW || (W / dpr), CSSH || (H / dpr)) * 100);
+          fSlider.value = String(Math.max(60, Math.min(98, pct)));
+        }
+      };
+      img.src = dataUrl;
+    } catch (e) {
+      console.warn('openFromUrl failed', e);
+    }
+  }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function show() {
+    const m = modal();
+    if (!m) return;
+    m.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function hide() {
+    const m = modal();
+    if (!m) return;
+    m.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function exportSquareCanvas() {
+    // Render the selected circle into a square output at avatar's displayed size (CSS px * DPR)
+    const dispEl = document.getElementById('pfAvatarDisplay');
+    const cssTarget = dispEl ? dispEl.getBoundingClientRect().width : (CSSW || (W / dpr));
+    let exportSize = Math.round((cssTarget || 256) * dpr);
+    // Safety clamps
+    exportSize = Math.max(256, Math.min(1024, exportSize));
+
+    const out = document.createElement('canvas');
+    out.width = exportSize;
+    out.height = exportSize;
+    const octx = out.getContext('2d');
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = 'high';
+
+    // Current draw params on main canvas
+    const dispW = naturalW * baseScale * zoom;
+    const dispH = naturalH * baseScale * zoom;
+    const dx = (W - dispW) / 2 + offX;
+    const dy = (H - dispH) / 2 + offY;
+
+    const cx = cropCX || (W / 2);
+    const cy = cropCY || (H / 2);
+    const r = cropR || (Math.min(W, H) / 2 - circlePadding * dpr);
+
+    // Scale so that the circle diameter becomes exportSize
+    const s = exportSize / (2 * r);
+    // Transform output so that the crop circle's bounding square maps to [0..exportSize]
+    octx.setTransform(s, 0, 0, s, - (cx - r) * s, - (cy - r) * s);
+    // Draw the image using the same positioning as main canvas
+    octx.drawImage(img, dx, dy, dispW, dispH);
+
+    // Note: upload square; site displays circle via CSS (rounded-full)
+    return out;
+  }
+
+  async function apply() {
+    if (!fileInputEl || !formEl || !img) { hide(); return; }
+    try {
+      const out = exportSquareCanvas();
+      const blob = await new Promise((res) => out.toBlob(res, 'image/jpeg', 0.95));
+      if (!blob) throw new Error('Blob failed');
+
+      // Replace input file with cropped blob
+      const fileName = 'avatar.jpg';
+      const croppedFile = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+      const dt = new DataTransfer();
+      dt.items.add(croppedFile);
+      fileInputEl.files = dt.files;
+
+      // Submit the form
+      if (formEl.requestSubmit) formEl.requestSubmit();
+      else formEl.submit();
+    } catch (e) {
+      console.warn('Avatar crop apply failed', e);
+    } finally {
+      hide();
+    }
+  }
+
+  // Wire modal buttons
+  document.addEventListener('click', (e) => {
+    const closeBtn = e.target.closest('[data-ac-close]');
+    if (closeBtn && !modal().classList.contains('hidden')) {
+      hide();
+    }
+  });
+  document.getElementById('acCancel')?.addEventListener('click', hide);
+  document.getElementById('acApply')?.addEventListener('click', apply);
+
+  // Recalculate canvas on resize (maintain composition)
+  window.addEventListener('resize', () => {
+    if (!img || modal().classList.contains('hidden')) return;
+    const prevW = W, prevH = H, prevDispW = naturalW * baseScale * zoom, prevDispH = naturalH * baseScale * zoom;
+    const prevDx = (prevW - prevDispW) / 2 + offX;
+    const prevDy = (prevH - prevDispH) / 2 + offY;
+
+    setupCanvas();
+    baseScale = coverScale(naturalW, naturalH);
+    // Recompute offsets to keep top-left anchored proportionally
+    const newDispW = naturalW * baseScale * zoom;
+    const newDispH = naturalH * baseScale * zoom;
+    // Maintain same relative dx,dy proportionally
+    const kx = newDispW / prevDispW;
+    const ky = newDispH / prevDispH;
+    const newDx = prevDx * (W / prevW);
+    const newDy = prevDy * (H / prevH);
+    offX = newDx - (W - newDispW) / 2;
+    offY = newDy - (H - newDispH) / 2;
+    clampPan();
+    draw();
+  });
+
+  // Top-level re-crop function (open from existing avatar URL)
+  async function openFromUrl(url, inputEl) {
+    try {
+      fileInputEl = inputEl || document.getElementById('pfAvatarInput');
+      formEl = (fileInputEl && fileInputEl.form) ? fileInputEl.form : null;
+      if (!url) return;
+
+      const r = await fetch(url, { credentials: 'same-origin' });
+      const blob = await r.blob();
+      const dataUrl = await new Promise((resolve) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.readAsDataURL(blob);
+      });
+
+      img = new Image();
+      img.onload = () => {
+        naturalW = img.naturalWidth || img.width;
+        naturalH = img.naturalHeight || img.height;
+        setupCanvas();
+        if (!ctx) return;
+
+        baseScale = coverScale(naturalW, naturalH);
+        zoom = 1;
+        offX = 0;
+        offY = 0;
+
+        cropCX = W / 2;
+        cropCY = H / 2;
+        try {
+          const canvasCssW = CSSW || (canvas().getBoundingClientRect().width || (W / dpr));
+          const canvasCssH = CSSH || (canvas().getBoundingClientRect().height || (H / dpr));
+          const canvasCssMin = Math.min(canvasCssW, canvasCssH);
+          const dispEl = document.getElementById('pfAvatarDisplay');
+          const avatarCss = dispEl ? dispEl.getBoundingClientRect().width : canvasCssMin * 0.5;
+          const ratio = Math.max(0.2, Math.min(0.98, avatarCss / canvasCssW));
+          cropR = ratio * (canvasCssMin / 2) * dpr;
+        } catch (_) {
+          cropR = Math.min(W, H) / 2 - circlePadding * dpr - 8 * dpr;
+        }
+
+        bindInteractions();
+        setZoom(1);
+        clampPan();
+        draw();
+        show();
+
+        // sync slider
+        const fSlider = document.getElementById('acFrame');
+        if (fSlider) {
+          const pct = Math.round(((cropR / dpr) * 2) / Math.min(CSSW || (W / dpr), CSSH || (H / dpr)) * 100);
+          fSlider.value = String(Math.max(60, Math.min(98, pct)));
+        }
+      };
+      img.src = dataUrl;
+    } catch (e) {
+      console.warn('openFromUrl failed', e);
+    }
+  }
+
+  return { open, openFromUrl };
+})();
+</script>
+<script>
+// Robust binding: ensure modal opens on avatar file change even after reload
+document.addEventListener('DOMContentLoaded', function() {
+  var inp = document.getElementById('pfAvatarInput');
+  if (inp) {
+    inp.addEventListener('change', function() {
+      if (window.AvatarCropper && this.files && this.files[0]) {
+        try { window.AvatarCropper.open(this); } catch(_) {}
+      }
+    });
+    // Desktop explicit "Обновить аватар" button -> open file picker
+    var upBtn = document.getElementById('btnAvatarUpdate');
+    var fabBtn = document.getElementById('pfAvatarFabUpdate');
+    function triggerPick(e){
+      e && e.preventDefault && e.preventDefault();
+      try { inp.click(); } catch(_) {}
+    }
+    if (upBtn) upBtn.addEventListener('click', triggerPick);
+    if (fabBtn) fabBtn.addEventListener('click', triggerPick);
+  }
+
+  // Allow recropping existing avatar by clicking avatar itself (prevents file dialog)
+  var disp = document.getElementById('pfAvatarDisplay');
+  if (disp && disp.dataset && disp.dataset.avatarUrl) {
+    disp.addEventListener('click', function(e) {
+      try {
+        // Prevent label click from opening file picker; open cropper with existing image instead
+        e.preventDefault(); e.stopPropagation();
+        var inputEl = document.getElementById('pfAvatarInput');
+        if (window.AvatarCropper && disp.dataset.avatarUrl) {
+          window.AvatarCropper.openFromUrl(disp.dataset.avatarUrl, inputEl);
+        }
+      } catch(_) {}
+    }, true);
+  }
+
+  // Red trash delete handler (AJAX)
+  function getCSRFCookie(){
+    var m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    var input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input && input.value ? input.value : '';
+  }
+  var delBtn = document.getElementById('pfAvatarDeleteBtn');
+  var plusLbl = document.getElementById('pfAvatarAddLabel');
+  if (delBtn){
+    delBtn.addEventListener('click', async function(e){
+      e.preventDefault(); e.stopPropagation();
+      try{
+        var form = document.getElementById('pfAvatarDeleteForm');
+        var fd = form ? new FormData(form) : new FormData();
+        var r = await fetch("{% url 'dashboard:avatar_delete' %}", {
+          method:'POST',
+          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+          credentials:'same-origin',
+          body: fd
+        });
+        var j = await r.json().catch(()=>null);
+        // Accept JSON success or any OK (HTML/204) as success to match server behavior
+        if (r.ok && (!j || j.success)){
+          document.querySelectorAll('.js-avatar-img').forEach(function(el){ el.src=''; el.classList.add('hidden'); });
+          document.querySelectorAll('.js-avatar-fallback').forEach(function(el){ el.classList.remove('hidden'); });
+          if (plusLbl) plusLbl.classList.remove('hidden');
+          delBtn.classList.add('hidden');
+        } else if (form) {
+          // Fallback: regular POST form submit (in case fetch blocked/CSRF mismatch)
+          if (form.requestSubmit) form.requestSubmit(); else form.submit();
+        }
+      }catch(_){
+        // Network/JS error fallback
+        var form = document.getElementById('pfAvatarDeleteForm');
+        if (form){ if (form.requestSubmit) form.requestSubmit(); else form.submit(); }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container space-y-6 pb-8">
+  <!-- Follow Modal -->
+  <div id="pfFollowModal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="modal-backdrop absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm" onclick="Modal.close('pfFollowModal')"></div>
+    <div class="relative pf-follow-modal-panel w-full max-w-[min(95vw,480px)] rounded-2xl bg-[var(--bg)] border-2 border-[var(--bord)] shadow-2xl overflow-hidden max-h-[min(90vh,680px)] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-4 sm:p-5 border-b-2 border-[var(--bord)] flex-shrink-0 bg-gradient-to-b from-black/[.02] dark:from-white/[.02] to-transparent">
+        <h3 id="pfFollowModalTitle" class="text-base sm:text-lg md:text-xl font-bold text-[var(--text)]"></h3>
+        <button type="button" class="btn btn-ghost p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all flex-shrink-0 active:scale-95" onclick="Modal.close('pfFollowModal')" aria-label="Close">
+          <svg class="w-5 h-5 text-[var(--muted)] hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <nav class="flex justify-center p-3 sm:p-4 border-b border-[var(--bord)] flex-shrink-0">
+        <div class="inline-flex rounded-xl bg-black/5 dark:bg-white/5 p-1 gap-1 w-full max-w-sm">
+          <button id="pfTabFollowers" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-all">
+            Подписчики
+          </button>
+          <button id="pfTabFollowing" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-all">
+            Подписки
+          </button>
+        </div>
+      </nav>
+
+      <!-- Search Bar v2.0 UPDATED -->
+      <div class="px-3 sm:px-4 py-3 border-b border-[var(--bord)] flex-shrink-0">
+        <div class="relative">
+          <input
+            type="text"
+            id="pfFollowSearch"
+            placeholder="Поиск по нику..."
+            class="w-full px-3 sm:px-4 py-2 sm:py-2.5 pl-9 sm:pl-10 pr-9 sm:pr-10 rounded-xl border border-[var(--bord)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all text-sm sm:text-base"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <!-- Search Icon -->
+          <svg class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[var(--muted)] pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <!-- Clear Button -->
+          <button
+            type="button"
+            id="pfSearchClear"
+            class="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[var(--muted)]/20 hover:bg-[var(--muted)]/30 flex items-center justify-center transition-all opacity-0 pointer-events-none"
+            aria-label="Очистить поиск"
+          >
+            <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Search Results Counter -->
+        <div id="pfSearchResults" class="mt-2 text-xs sm:text-sm text-[var(--muted)] text-center hidden">
+          <span id="pfSearchCount">0</span> результатов
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div id="pfFollowModalBody" class="overflow-y-auto flex-1 min-h-0 px-3 sm:px-4 py-2" style="max-height: calc(min(90vh,680px) - 150px);"></div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    // Modal polyfill: ensure Modal is available even if main.js not yet loaded or overridden
+    if (typeof window.Modal === 'undefined') {
+      const fallbackModal = {
+        open: (modalId) => {
+          const m = document.getElementById(modalId);
+          if (!m) return;
+          m.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        },
+        close: (modalId) => {
+          const m = document.getElementById(modalId);
+          if (!m) return;
+          m.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      };
+      try {
+        window.Modal = (window.AIGallery && window.AIGallery.Modal) ? window.AIGallery.Modal : fallbackModal;
+      } catch (_) {
+        window.Modal = fallbackModal;
+      }
+    }
+
+    const targetUsername = "{{ target.username }}";
+    const currentUser = "{{ request.user.username }}";
+    const elFollowers = document.getElementById('pfBtnFollowers');
+    const elFollowing = document.getElementById('pfBtnFollowing');
+    const modalId = 'pfFollowModal';
+    const titleEl = document.getElementById('pfFollowModalTitle');
+    const bodyEl = document.getElementById('pfFollowModalBody');
+    const urls = {
+      followers: "{% url 'dashboard:api:follow_list_followers' %}?username=" + encodeURIComponent(targetUsername),
+      following: "{% url 'dashboard:api:follow_list_following' %}?username=" + encodeURIComponent(targetUsername),
+      recs: "{% url 'dashboard:api:follow_recommendations' %}?limit=5"
+    };
+
+    function renderUsers(users){
+      if (!users || !users.length){
+        return '<div class="text-sm text-[var(--muted)] py-6 text-center">Список пуст</div>';
+      }
+      return '<ul class="divide-y divide-[var(--bord)]">' + users.map(u => `
+        <li class="py-3 px-3 sm:px-4 flex items-center gap-3">
+          <img src="${u.avatar_url || ''}" alt="" class="w-9 h-9 rounded-full object-cover ${u.avatar_url ? '' : 'hidden'}">
+          <div class="${u.avatar_url ? 'hidden' : ''} w-9 h-9 rounded-full grid place-items-center bg-[var(--bord)]">
+            <svg class="w-5 h-5 text-primary/40" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+            </svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <a href="/dashboard/profile/${encodeURIComponent(u.username)}" class="font-medium truncate hover:underline">${u.name || u.username}</a>
+            <div class="text-xs text-[var(--muted)]">@${u.username}</div>
+          </div>
+          <button class="btn ${u.is_following ? 'btn-ghost' : 'btn-primary'} text-xs whitespace-nowrap" data-follow-toggle="1" data-username="${u.username}">
+            ${u.is_following ? 'Отписаться' : 'Подписаться'}
+          </button>
+        </li>`).join('') + '</ul>';
+    }
+
+    function renderRecommendations(recs){
+      if (!recs || !recs.length) return '';
+      return `
+        <div class="mt-4 pt-3 border-t border-[var(--bord)]">
+          <div class="text-sm font-semibold mb-2">Рекомендации</div>
+          <ul class="divide-y divide-[var(--bord)]">
+            ${recs.map(u => `
+              <li class="py-3 px-3 sm:px-4 flex items-center gap-3">
+                <img src="${u.avatar_url || ''}" alt="" class="w-9 h-9 rounded-full object-cover ${u.avatar_url ? '' : 'hidden'}">
+                <div class="${u.avatar_url ? 'hidden' : ''} w-9 h-9 rounded-full grid place-items-center bg-[var(--bord)]">
+                  <svg class="w-5 h-5 text-primary/40" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                  </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <a href="/dashboard/profile/${encodeURIComponent(u.username)}" class="font-medium truncate hover:underline">${u.name || u.username}</a>
+                  <div class="text-xs text-[var(--muted)]">@${u.username}</div>
+                </div>
+                <button class="btn btn-primary text-xs whitespace-nowrap" data-follow-toggle="1" data-username="${u.username}">
+                  Подписаться
+                </button>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    function setActiveTab(kind){
+      const f1 = document.getElementById('pfTabFollowers');
+      const f2 = document.getElementById('pfTabFollowing');
+      const activeCls = ['bg-black/[.06]','dark:bg-white/10','text-[var(--text)]','shadow'];
+      [f1,f2].forEach(el => el && el.classList.remove(...activeCls));
+      (kind === 'followers' ? f1 : f2)?.classList.add(...activeCls);
+    }
+
+    async function resJson(res){ try { return await res.json(); } catch(_) { return null; } }
+
+    async function loadFollowList(kind){
+      titleEl.textContent = kind === 'followers' ? 'Подписчики' : 'Подписки';
+      bodyEl.innerHTML = '';
+      try{
+        const res = await fetch(kind === 'followers' ? urls.followers : urls.following, { headers: { 'X-Requested-With': 'fetch' }});
+        const data = await resJson(res);
+        if (data && data.ok){
+          bodyEl.innerHTML = renderUsers(data.users);
+        } else {
+          bodyEl.innerHTML = '<div class="py-6 text-center text-sm text-red-500">Ошибка загрузки</div>';
+        }
+      } catch(e){
+        bodyEl.innerHTML = '<div class="py-6 text-center text-sm text-red-500">Ошибка сети</div>';
+      }
+
+      try {
+        const recRes = await fetch(urls.recs, { headers: { 'X-Requested-With': 'fetch' }});
+        const recData = await resJson(recRes);
+        if (recData && recData.ok && Array.isArray(recData.users) && recData.users.length) {
+          bodyEl.insertAdjacentHTML('beforeend', renderRecommendations(recData.users));
+        }
+      } catch(e) {}
+
+      bodyEl.onclick = async function(ev) {
+        const btn = ev.target.closest('[data-follow-toggle="1"]');
+        if (!btn) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const username = btn.getAttribute('data-username');
+        if (!username) return;
+
+        try {
+          const fd = new FormData();
+          fd.append('username', username);
+          const csrf = (document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/) || [])[1] || '';
+          const res = await fetch('{% url "dashboard:api:follow_toggle" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'fetch' },
+            body: fd
+          });
+          const j = await res.json();
+          if (j && j.ok) {
+            const nowFollowing = !!j.following;
+            btn.textContent = nowFollowing ? 'Отписаться' : 'Подписаться';
+            btn.classList.toggle('btn-primary', !nowFollowing);
+            btn.classList.toggle('btn-ghost', nowFollowing);
+          }
+        } catch(e) {}
+      };
+    }
+
+    // Экспортируем в глобальную область, чтобы кнопки могли работать даже при срыве навешивания слушателей
+    window.__pfLoad = loadFollowList;
+    async function openModal(kind){
+      // Установить заголовок и показать лоадер ДО загрузки (моментальный отклик)
+      setActiveTab(kind);
+      titleEl.textContent = (kind === 'followers') ? 'Подписчики' : 'Подписки';
+      bodyEl.innerHTML = '';
+
+      // Открыть модалку немедленно
+      if (typeof Modal !== 'undefined' && Modal.open) {
+        Modal.open(modalId);
+      } else {
+        const m = document.getElementById(modalId);
+        if (m) { m.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+      }
+
+      // Дозагрузить данные и привязать табы
+      await loadFollowList(kind);
+      const t1 = document.getElementById('pfTabFollowers');
+      const t2 = document.getElementById('pfTabFollowing');
+      if (t1) t1.onclick = async ()=>{ setActiveTab('followers'); titleEl.textContent = 'Подписчики'; await loadFollowList('followers'); };
+      if (t2) t2.onclick = async ()=>{ setActiveTab('following'); titleEl.textContent = 'Подписки'; await loadFollowList('following'); };
+    }
+
+    // Экспортируем публичный открыватель
+    window.__pfOpen = (kind) => openModal(kind);
+
+    // Основные обработчики клика (если JS отработал — используем их)
+    elFollowers?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openModal('followers'); });
+    elFollowing?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openModal('following'); });
+
+    // Фолбек на уровне документа в capture-фазе (если что-то перехватывает/накрывает сверху)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest && e.target.closest('#pfBtnFollowers, #pfBtnFollowing');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const kind = btn.id === 'pfBtnFollowers' ? 'followers' : 'following';
+      if (window.__pfOpen) window.__pfOpen(kind);
+    }, true);
+
+    // Open from URL hash (#followers or #following) — позволяет переходить по ссылке и сразу открывать модалку
+    try {
+      if (location.hash === '#followers' || location.hash === '#following') {
+        const kind = location.hash.slice(1);
+        setTimeout(() => { if (window.__pfOpen) window.__pfOpen(kind); }, 0);
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+    } catch(_) {}
+
+    // Search functionality
+    const searchInput = document.getElementById('pfFollowSearch');
+    const searchClear = document.getElementById('pfSearchClear');
+    const searchResults = document.getElementById('pfSearchResults');
+    const searchCount = document.getElementById('pfSearchCount');
+
+    function normalizeText(text) {
+      return (text || '').toLowerCase().trim();
+    }
+
+    function filterUsers(query) {
+      const normalizedQuery = normalizeText(query);
+      let visibleCount = 0;
+
+      bodyEl.querySelectorAll('li').forEach(li => {
+        // Display name (e.g. "Galyna")
+        const nameEl = li.querySelector('.font-medium');
+        const name = normalizeText(nameEl ? nameEl.textContent : '');
+
+        // Username line (e.g. "@Galyna")
+        const usernameLineEl = li.querySelector('.text-xs');
+        const usernameLine = normalizeText(usernameLineEl ? usernameLineEl.textContent : '');
+        const plainUsername = usernameLine.startsWith('@') ? usernameLine.slice(1) : usernameLine;
+
+        const haystack = (name + ' ' + plainUsername).trim();
+        const matches = !normalizedQuery || haystack.includes(normalizedQuery);
+
+        li.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+      });
+
+      if (!normalizedQuery) {
+        // No query -> hide counter
+        if (searchResults) searchResults.classList.add('hidden');
+      } else {
+        if (searchResults) searchResults.classList.remove('hidden');
+        if (searchCount) searchCount.textContent = visibleCount;
+      }
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value || '';
+
+        // Show/hide clear button
+        if (query.length) {
+          searchClear?.classList.remove('opacity-0', 'pointer-events-none');
+          searchClear?.classList.add('opacity-100', 'pointer-events-auto');
+        } else {
+          searchClear?.classList.add('opacity-0', 'pointer-events-none');
+          searchClear?.classList.remove('opacity-100', 'pointer-events-auto');
+        }
+
+        filterUsers(query);
+      });
+
+      // Clear button
+      searchClear?.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.classList.add('opacity-0', 'pointer-events-none');
+        searchClear.classList.remove('opacity-100', 'pointer-events-auto');
+        filterUsers('');
+        searchInput.focus();
+      });
+
+      // Reset search when switching tabs (and after list reload)
+      const originalLoadFollowList = loadFollowList;
+      loadFollowList = async function(kind) {
+        await originalLoadFollowList(kind);
+
+        // Reset search UI
+        searchInput.value = '';
+        searchClear?.classList.add('opacity-0', 'pointer-events-none');
+        searchClear?.classList.remove('opacity-100', 'pointer-events-auto');
+        searchResults?.classList.add('hidden');
+
+        // Ensure all items are visible after reload
+        bodyEl.querySelectorAll('li').forEach(li => {
+          li.style.display = '';
+        });
+      };
+    }
+  })();
+  </script>
+
+  <!-- Media Type Tabs -->
+  <div class="media-tabs-wrapper inline-flex rounded-xl bg-[var(--bord)] p-1 gap-1 w-full sm:w-auto">
+    <button class="media-tab active flex-1 sm:flex-initial px-3 xs:px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium"
+            data-tab="photos">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      <span class="hidden xs:inline">Фото</span>
+      <span class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ photos_total }}</span>
+    </button>
+    <button class="media-tab flex-1 sm:flex-initial px-3 xs:px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium"
+            data-tab="videos">
+      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      <span class="hidden xs:inline">Видео</span>
+      <span class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ videos_total }}</span>
+    </button>
+  </div>
+
+  <!-- Photos Grid -->
+  {% if not is_self and is_profile_private %}
+    <div id="photos-grid" class="media-content">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {% for p in pub_photos %}
+          {% url 'gallery:photo_detail' p.pk as pub_detail_url %}
+          <article class="group cursor-pointer js-open-photo" data-detail-url="{{ pub_detail_url }}" data-media-url="{{ p.image.url }}" data-title="{{ p.title|escapejs }}">
+            <div class="card overflow-hidden">
+              <div class="relative">
+                {% if p.image %}
+                  <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]"
+                       src="{{ p.image.url }}"
+                       alt="{{ p.title|default:'Фото' }}"
+                       loading="lazy">
+                {% endif %}
+                <a class="absolute inset-0 cursor-zoom-in" href="{{ pub_detail_url }}" aria-label="Открыть"></a>
+
+                <!-- Model Badge (from source_job) -->
+                {% with job=p.source_job %}
+                {% if job %}
+                <div class="absolute top-3 right-3">
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <div class="absolute bottom-3 right-3">
+                  <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ p.created_at|date:'c' }}">
+                    {{ p.created_at|date:"d.m.Y H:i" }}
+                  </time>
+                </div>
+              </div>
+
+              <div class="p-4">
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ p.title|default:"Без названия" }}</h3>
+                <!-- Author -->
+                <div class="flex items-center gap-2 mb-3">
+                  {% if target_profile and target_profile.avatar %}
+                    <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {{ target.username|default:"U"|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  <a href="/profile-{{ target.username }}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                     aria-label="@{{ target.username }}">
+                    @{{ target.username }}
+                  </a>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <!-- Like -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if p.pk in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-photo-id="{{ p.pk }}"
+                          data-url="{% url 'gallery:photo_like' p.pk %}"
+                          data-count-target="like-count-{{ p.pk }}"
+                          aria-pressed="{% if p.pk in liked_photo_ids %}true{% else %}false{% endif %}"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if p.pk in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <span id="like-count-{{ p.pk }}" class="text-sm font-medium">{{ p.likes_count|default:0 }}</span>
+                    <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="{{ p.likes_count|default:0 }}" data-url="{% url 'gallery:photo_likers' p.pk %}" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+                  <!-- Comments -->
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="{{ pub_detail_url }}#comments"
+                     data-open-comments="1"
+                     title="Комментарии"
+                     aria-label="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm font-medium">{{ p.comments_count|default:0 }}</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="card p-12 text-center w-full col-span-full">
+            <h2 class="text-xl font-semibold mb-3">Пока нет фото</h2>
+            <p class="text-[var(--muted)]">У пользователя нет опубликованных фотографий</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% elif jobs_cards %}
+    <div id="photos-grid" class="media-content">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {% for c in jobs_cards %}
+          {% with j=c.obj %}
+          {% if c.pub %}
+            {% url 'gallery:photo_detail' c.pub.id as pub_detail_url %}
+          {% endif %}
+
+          <article class="group cursor-pointer {% if c.pub %}js-open-photo{% endif %}" {% if c.pub %}data-detail-url="{{ pub_detail_url }}" data-media-url="{% if j.result_image %}{{ j.result_image.url }}{% endif %}" data-title="{{ j.prompt|default:'Результат генерации'|escapejs }}"{% endif %}>
+
+            <div class="card overflow-hidden">
+              <!-- Image/Thumbnail -->
+              <div class="relative">
+                {% if j.result_image %}
+                  <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]"
+                       src="{{ j.result_image.url }}"
+                       alt="{{ j.prompt|default:'Результат генерации'|truncatechars:120 }}"
+                       loading="lazy"
+                       onerror="this.onerror=null; this.src='{% static 'images/placeholder.jpg' %}';">
+
+                  <!-- Published Badge -->
+                  {% if j.status == 'PENDING_MODERATION' %}
+                    <div class="absolute top-3 left-3">
+                      <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500/90 text-white text-xs font-medium">
+                        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Ожидает модерации
+                      </div>
+                    </div>
+                  {% endif %}
+
+                  {% if c.pub %}
+                  <a class="absolute inset-0 cursor-zoom-in" href="{{ pub_detail_url }}" aria-label="Открыть"></a>
+                  {% else %}
+                  <div class="absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+                  {% endif %}
+
+                  <!-- Model Badge (from job fields) -->
+                  {% if j %}
+                  <div class="absolute top-3 right-3">
+                    <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                      {{ j|model_display }}
+                    </div>
+                  </div>
+                  {% endif %}
+
+                  <!-- Time Badge -->
+                  <div class="absolute bottom-3 right-3">
+                    <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ j.created_at|date:'c' }}">
+                      {{ j.created_at|date:"d.m.Y H:i" }}
+                    </time>
+                  </div>
+                {% else %}
+                  <!-- Empty State -->
+                  <div class="w-full aspect-square bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center">
+                    <svg class="w-12 h-12 text-gray-400 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <div class="text-sm text-center text-gray-500 px-4">
+                      {{ j.prompt|default:"Без названия"|truncatechars:40 }}
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Card Content -->
+              <div class="p-4">
+                <!-- Meta: created time only -->
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
+                  {% if c.pub %}
+                    {{ c.pub.title|default:"Без названия" }}
+                  {% else %}
+                    {{ j.prompt|default:"Без названия" }}
+                  {% endif %}
+                </h3>
+                <!-- Author -->
+                <div class="flex items-center gap-2 mb-3">
+                  {% if target_profile and target_profile.avatar %}
+                    <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {{ target.username|default:"U"|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  <a href="/profile-{{ target.username }}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                     aria-label="@{{ target.username }}">
+                    @{{ target.username }}
+                  </a>
+                </div>
+                <!-- Actions (like/comments) for published -->
+                {% if c.pub %}
+                  {% url 'gallery:photo_detail' c.pub.id as pub_detail_url %}
+                  <div class="flex items-center justify-between gap-2">
+                    <!-- Like -->
+                    <button type="button"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if c.pub.id in liked_photo_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-photo-id="{{ c.pub.id }}"
+                            data-url="{% url 'gallery:photo_like' c.pub.id %}"
+                            data-count-target="like-count-{{ c.pub.id }}"
+                            aria-pressed="{% if c.pub.id in liked_photo_ids %}true{% else %}false{% endif %}"
+                            aria-label="Лайк">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pub.id in liked_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                      </svg>
+                      <span id="like-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.likes_count|default:c.pub.likes|default:0 }}</span>
+                      <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="{{ c.pub.likes_count|default:c.pub.likes|default:0 }}" data-url="{% url 'gallery:photo_likers' c.pub.id %}" aria-label="Кто лайкнул">…</span>
+                    </button>
+
+                    <!-- Comments -->
+                    <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                       href="{{ pub_detail_url }}#comments"
+                       title="Комментарии"
+                       aria-label="Комментарии">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      <span class="text-sm font-medium">{{ c.pub.comments_count|default:c.pub.comments|default:0 }}</span>
+                    </a>
+
+                    <!-- Save -->
+                    <button type="button"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if c.pub.id in saved_photo_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-url="{% url 'gallery:photo_save' c.pub.id %}"
+                            data-count-target="save-count-{{ c.pub.id }}"
+                            aria-pressed="{% if c.pub.id in saved_photo_ids %}true{% else %}false{% endif %}"
+                            aria-label="Сохранить">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pub.id in saved_photo_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                      <span id="save-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.saves_count|default:c.pub.saves|default:0 }}</span>
+                    </button>
+                  </div>
+                {% endif %}
+                {% if is_self and not c.pub %}
+                <div class="pt-3 border-t border-[var(--bord)]">
+                  <button type="button" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition hide-toggle"
+                          data-job-id="{{ j.id }}"
+                          data-hidden="{% if hidden_job_ids and j.id in hidden_job_ids %}1{% else %}0{% endif %}"
+                          data-url="{% url 'dashboard:api:job_toggle_hidden' j.id %}">
+                    <div class="flex items-center gap-2 text-sm min-w-0">
+                      <span data-hide-dot class="inline-flex w-2.5 h-2.5 rounded-full {% if hidden_job_ids and j.id in hidden_job_ids %}bg-red-500{% else %}bg-emerald-500{% endif %}"></span>
+                      <span data-hide-label="" class="font-medium">
+                        {% if hidden_job_ids and j.id in hidden_job_ids %}Скрыто{% else %}Не скрыто{% endif %}
+                      </span>
+                    </div>
+                    <span class="relative inline-flex items-center shrink-0">
+                      <span class="sr-only">Toggle hidden</span>
+                      <span class="w-10 h-6 bg-gray-300 dark:bg-gray-600 rounded-full transition-all pointer-events-none"></span>
+                      <span data-hide-knob class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all {% if hidden_job_ids and j.id in hidden_job_ids %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
+                    </span>
+                  </button>
+                </div>
+                <div class="mt-2">
+                  <a class="btn btn-primary w-full text-sm" href="{% url 'gallery:share_photo_from_job' j.id %}" onclick="event.stopPropagation();">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                    Поделиться в галерее
+                  </a>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div id="photos-grid" class="media-content">
+      <div class="card p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold mb-3">Пока нет фото</h2>
+        <p class="text-[var(--muted)] max-w-md mx-auto">
+          У этого пользователя пока нет опубликованных фотографий
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Videos Grid -->
+  {% if not is_self and is_profile_private %}
+    <div id="videos-grid" class="media-content hidden">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {% for v in pub_videos %}
+          {% url 'gallery:video_detail' v.pk as pub_video_url %}
+          <article class="group cursor-pointer video-card js-open-video" data-detail-url="{{ pub_video_url }}" data-video-url="{{ v.video_url }}" data-poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}">
+            <div class="card overflow-hidden">
+              <div class="relative">
+                <video class="video-element w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]"
+                       poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}"
+                       preload="metadata"
+                       muted
+                       loop
+                       playsinline>
+                  <source src="{{ v.video_url }}" type="video/mp4">
+                </video>
+
+                <a class="absolute inset-0 cursor-zoom-in z-10" href="{{ pub_video_url }}" aria-label="Открыть"></a>
+
+                <div class="absolute inset-0 z-[100] flex items-center justify-center bg-black/20 pointer-events-auto cursor-pointer video-play-overlay video-play-btn transition-opacity duration-200 group-hover:bg-black/30">
+                  <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
+                    <svg class="play-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg class="pause-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Sound Toggle + Volume -->
+                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                  <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                    <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                      <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                    </svg>
+                    <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M18 8l-6 6"></path>
+                      <path d="M12 8l6 6"></path>
+                    </svg>
+                  </button>
+                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                </div>
+
+                <!-- Model Badge (from source_job) -->
+                {% with job=v.source_job %}
+                {% if job %}
+                <div class="absolute top-3 right-3">
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ job|model_display }}
+                  </div>
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <div class="absolute bottom-3 right-3">
+                  <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ v.created_at|date:'c' }}">
+                    {{ v.created_at|date:"d.m.Y H:i" }}
+                  </time>
+                </div>
+              </div>
+
+              <div class="p-4">
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ v.title|default:"Без названия" }}</h3>
+                <!-- Author -->
+                <div class="flex items-center gap-2 mb-3">
+                  {% if target_profile and target_profile.avatar %}
+                    <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {{ target.username|default:"U"|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  <a href="/profile-{{ target.username }}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                     aria-label="@{{ target.username }}">
+                    @{{ target.username }}
+                  </a>
+                </div>
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <!-- Like -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if v.pk in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-video-id="{{ v.pk }}"
+                          data-url="{% url 'gallery:video_like' v.pk %}"
+                          data-count-target="video-like-count-{{ v.pk }}"
+                          aria-pressed="{% if v.pk in liked_video_ids %}true{% else %}false{% endif %}"
+                          aria-label="Лайк">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if v.pk in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <span id="video-like-count-{{ v.pk }}" class="text-sm font-medium">{{ v.likes_count|default:0 }}</span>
+                    <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="{{ v.likes_count|default:0 }}" data-url="{% url 'gallery:video_likers' v.pk %}" aria-label="Кто лайкнул">…</span>
+                  </button>
+
+                  <!-- Comments -->
+                  <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                     href="{{ pub_video_url }}#comments"
+                     data-open-comments="1"
+                     title="Комментарии"
+                     aria-label="Комментарии">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm font-medium">{{ v.comments_count|default:0 }}</span>
+                  </a>
+
+                  <!-- Save -->
+                  <button type="button"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if v.pk in saved_video_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                          data-url="{% url 'gallery:video_save' v.pk %}"
+                          data-count-target="video-save-count-{{ v.pk }}"
+                          aria-pressed="{% if v.pk in saved_video_ids %}true{% else %}false{% endif %}"
+                          aria-label="Сохранить">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if v.pk in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                    </svg>
+                    <span id="video-save-count-{{ v.pk }}" class="text-sm font-medium">{{ v.saves_count|default:0 }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="card p-12 text-center w-full col-span-full">
+            <h2 class="text-xl font-semibold mb-3">Пока нет видео</h2>
+            <p class="text-[var(--muted)]">У пользователя нет опубликованных видео</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% elif videos_cards %}
+    <div id="videos-grid" class="media-content hidden">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {% for c in videos_cards %}
+        {% with j=c.obj %}
+        {% if c.pub %}
+          {% url 'gallery:video_detail' c.pub.id as pub_video_url %}
+        {% endif %}
+
+          <article class="group cursor-pointer video-card {% if c.pub %}js-open-video{% endif %}" {% if c.pub %}data-detail-url="{{ pub_video_url }}" data-video-url="{{ j.result_video_url }}" data-poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}"{% endif %}>
+            <div class="card overflow-hidden">
+              <!-- Video Preview -->
+              <div class="relative">
+                {% if j.result_video_url %}
+                <video class="video-element w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]"
+                       poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}"
+                       preload="metadata"
+                       muted
+                       loop
+                       playsinline>
+                  <source src="{{ j.result_video_url }}" type="video/mp4">
+                </video>
+
+                {% if c.pub %}
+                <a class="absolute inset-0 cursor-zoom-in z-10" href="{{ pub_video_url }}" aria-label="Открыть"></a>
+                {% else %}
+                <div class="absolute inset-0 pointer-events-none" aria-hidden="true"></div>
+                {% endif %}
+
+                <!-- Play/Pause Overlay -->
+                <div class="absolute inset-0 z-[100] flex items-center justify-center bg-black/20 pointer-events-auto cursor-pointer video-play-overlay video-play-btn transition-opacity duration-200 group-hover:bg-black/30">
+                  <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
+                    <svg class="play-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg class="pause-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Sound Toggle + Volume -->
+                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                  <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                    <svg class="icon-vol-on w-4 h-4 sm:w-5 sm:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                      <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                    </svg>
+                    <svg class="icon-vol-off w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                      <path d="M18 8l-6 6"></path>
+                      <path d="M12 8l6 6"></path>
+                    </svg>
+                  </button>
+                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                </div>
+
+                <!-- Model Badge (from job fields) -->
+                {% if j %}
+                <div class="absolute top-3 right-3">
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ j|model_display }}
+                  </div>
+                </div>
+                {% endif %}
+
+                <!-- Published Badge -->
+                {% if j.status == 'PENDING_MODERATION' %}
+                  <div class="absolute top-3 left-3">
+                    <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-500/90 text-white text-xs font-medium">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      Ожидает модерации
+                    </div>
+                  </div>
+                {% endif %}
+
+                <!-- Time Badge -->
+                <div class="absolute bottom-3 right-3">
+                  <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ j.created_at|date:'c' }}">
+                    {{ j.created_at|date:"d.m.Y H:i" }}
+                  </time>
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- Card Content -->
+              <div class="p-4">
+                <!-- Meta: created time only -->
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
+                  {% if c.pub %}
+                    {{ c.pub.title|default:"Без названия" }}
+                  {% else %}
+                    {{ j.prompt|default:"Без названия" }}
+                  {% endif %}
+                </h3>
+                <!-- Author -->
+                <div class="flex items-center gap-2 mb-3">
+                  {% if target_profile and target_profile.avatar %}
+                    <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {{ target.username|default:"U"|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  <a href="/profile-{{ target.username }}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
+                     aria-label="@{{ target.username }}">
+                    @{{ target.username }}
+                  </a>
+                </div>
+                <!-- Actions (like/comments) for published video -->
+                {% if c.pub %}
+                  {% url 'gallery:video_detail' c.pub.id as pub_video_url %}
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <!-- Like -->
+                    <button type="button"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if c.pub.id in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-video-id="{{ c.pub.id }}"
+                            data-url="{% url 'gallery:video_like' c.pub.id %}"
+                            data-count-target="video-like-count-{{ c.pub.id }}"
+                            aria-pressed="{% if c.pub.id in liked_video_ids %}true{% else %}false{% endif %}"
+                            aria-label="Лайк">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pub.id in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                      </svg>
+                      <span id="video-like-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.likes_count|default:c.pub.likes|default:0 }}</span>
+                      <span class="px-1 text-[var(--muted)] hover:text-[var(--text)]" data-open-likers="1" data-total-likes="{{ c.pub.likes_count|default:c.pub.likes|default:0 }}" data-url="{% url 'gallery:video_likers' c.pub.id %}" aria-label="Кто лайкнул">…</span>
+                    </button>
+
+                    <!-- Comments -->
+                    <a class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition text-[var(--muted)]"
+                       href="{{ pub_video_url }}#comments"
+                       title="Комментарии"
+                       aria-label="Комментарии">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      <span class="text-sm font-medium">{{ c.pub.comments_count|default:c.pub.comments|default:0 }}</span>
+                    </a>
+
+                    <!-- Save -->
+                    <button type="button"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition save-toggle {% if c.pub.id in saved_video_ids %}text-emerald-500{% else %}text-[var(--muted)]{% endif %}"
+                            data-url="{% url 'gallery:video_save' c.pub.id %}"
+                            data-count-target="video-save-count-{{ c.pub.id }}"
+                            aria-pressed="{% if c.pub.id in saved_video_ids %}true{% else %}false{% endif %}"
+                            aria-label="Сохранить">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if c.pub.id in saved_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
+                      </svg>
+                      <span id="video-save-count-{{ c.pub.id }}" class="text-sm font-medium">{{ c.pub.saves_count|default:c.pub.saves|default:0 }}</span>
+                    </button>
+                  </div>
+                {% endif %}
+                {% if is_self and not c.pub %}
+                  <!-- Hide/Show Toggle -->
+                  <button type="button" class="w-full flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition hide-toggle"
+                          data-job-id="{{ j.id }}"
+                          data-hidden="{% if hidden_job_ids and j.id in hidden_job_ids %}1{% else %}0{% endif %}"
+                          data-url="{% url 'dashboard:api:job_toggle_hidden' j.id %}">
+                    <div class="flex items-center gap-2 text-sm min-w-0">
+                      <span data-hide-dot class="inline-flex w-2.5 h-2.5 rounded-full {% if hidden_job_ids and j.id in hidden_job_ids %}bg-red-500{% else %}bg-emerald-500{% endif %}"></span>
+                      <span data-hide-label="" class="font-medium">
+                        {% if hidden_job_ids and j.id in hidden_job_ids %}Скрыто{% else %}Не скрыто{% endif %}
+                      </span>
+                    </div>
+                    <span class="relative inline-flex items-center shrink-0">
+                      <span class="sr-only">Toggle hidden</span>
+                      <span class="w-10 h-6 bg-gray-300 dark:bg-gray-600 rounded-full transition-all pointer-events-none"></span>
+                      <span data-hide-knob class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all {% if hidden_job_ids and j.id in hidden_job_ids %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
+                    </span>
+                  </button>
+
+                  <!-- Share Button -->
+                  <a class="btn btn-primary w-full text-sm flex items-center justify-center gap-2" href="{% url 'gallery:share_video_from_job' j.id %}" onclick="event.stopPropagation();">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                    Поделиться в галерее
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+
+        {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div id="videos-grid" class="media-content hidden">
+      <div class="card p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold mb-3">Пока нет видео</h2>
+        <p class="text-[var(--muted)] max-w-md mx-auto">
+          У этого пользователя пока нет опубликованных видео
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+<style>
+/* Follow modal responsive layout */
+.pf-follow-modal-panel {
+  max-width: min(95vw, 480px);
+}
+
+@media (max-width: 480px) {
+  #pfFollowModal {
+    align-items: flex-start;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+  }
+  .pf-follow-modal-panel {
+    border-radius: 1.125rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .pf-follow-modal-panel .flex.items-center.justify-between.p-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .pf-follow-modal-panel nav {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  #pfFollowSearch {
+    font-size: 0.8125rem;
+  }
+}
+
+/* Media tabs - modern toggle style */
+.media-tab {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--muted);
+  background: transparent;
+  position: relative;
+}
+
+/* Responsive wrapper for media tabs (photo/video/published) */
+.media-tabs-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 0.25rem;
+}
+
+/* Base: make tabs fluid and allow wrapping */
+.media-tabs-wrapper .media-tab {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Phones: two tabs on first row, "Опубликованные" goes to second row if present */
+@media (max-width: 480px) {
+  .media-tabs-wrapper .media-tab {
+    flex: 1 1 calc(50% - 0.125rem);
+  }
+  .media-tabs-wrapper .media-tab[data-tab="published"] {
+    flex-basis: 100%;
+  }
+}
+
+/* Tablets/desktop: keep everything in a single row but ensure all tabs are visible */
+@media (min-width: 640px) {
+  .media-tabs-wrapper {
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+  .media-tabs-wrapper .media-tab {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.media-tab.active {
+  color: var(--fg);
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="dark"] .media-tab.active {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.media-tab:hover:not(.active) {
+  color: var(--fg);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="dark"] .media-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.media-tab .media-count {
+  transition: all 0.2s ease;
+}
+
+.media-tab.active .media-count {
+  background: rgba(var(--primary-rgb), 0.15) !important;
+  color: var(--primary);
+}
+
+:root[data-theme="dark"] .media-tab.active .media-count {
+  background: rgba(var(--primary-rgb), 0.2) !important;
+}
+
+/* Video overlay */
+.video-play-overlay {
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+video:not([controls]):hover ~ .video-play-overlay {
+  opacity: 1;
+}
+
+.video-play-overlay:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+.video-play-overlay:active {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive breakpoint for xs (475px+) */
+@media (min-width: 475px) {
+  .xs\:inline {
+    display: inline !important;
+  }
+  .xs\:px-4 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
+/* Адаптивность для очень маленьких экранов (320px+) */
+@media (max-width: 374px) {
+  .card {
+    padding: 0.75rem !important;
+  }
+
+  .media-tab {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.5rem;
+  }
+
+  .media-count {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.375rem;
+  }
+}
+
+/* Улучшенная читаемость текста в темной теме */
+:root[data-theme="dark"] .text-gray-400 {
+  color: #9ca3af;
+}
+
+:root[data-theme="dark"] .text-gray-500 {
+  color: #6b7280;
+}
+
+/* Контрастность для бейджей */
+.bg-green-500\/90 {
+  background-color: rgba(34, 197, 94, 0.9);
+}
+
+.bg-blue-500\/90 {
+  background-color: rgba(59, 130, 246, 0.9);
+}
+
+.bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="dark"] .bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+/* Профессиональные стили видео карточек - адаптивные и совместимые с темами */
+.video-card .video-element {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+  display: block;
+}
+
+.video-card:hover .video-element {
+  transform: scale(1.02);
+}
+
+.video-card .video-link {
+  position: absolute;
+  inset: 0;
+  cursor: zoom-in;
+  z-index: 10;
+}
+
+.video-card .video-play-btn {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.video-card:hover .video-play-btn {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.video-card .video-play-btn:active {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.video-card .play-btn-circle {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-center;
+  transform: scale(1);
+  transition: transform 0.2s ease;
+}
+
+.video-card:hover .play-btn-circle {
+  transform: scale(1.1);
+}
+
+.video-card .play-icon,
+.video-card .pause-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: white;
+}
+
+.video-card .play-icon {
+  margin-left: 0.25rem;
+}
+
+.video-card .pause-icon {
+  display: none;
+}
+
+.video-card video:not(.paused) ~ .video-play-btn .play-icon {
+  display: none;
+}
+
+.video-card video:not(.paused) ~ .video-play-btn .pause-icon {
+  display: block;
+}
+
+.video-card video:not(.paused) ~ .video-play-btn {
+  opacity: 0;
+  pointer-events: auto;
+}
+
+.video-card video:not(.paused):hover ~ .video-play-btn {
+  opacity: 1;
+}
+
+/* Responsive video play button sizes */
+@media (min-width: 640px) {
+  .video-card .play-btn-circle {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+  .video-card .play-icon,
+  .video-card .pause-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .video-card .play-btn-circle {
+    width: 4rem;
+    height: 4rem;
+  }
+  .video-card .play-icon,
+  .video-card .pause-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+/* Ensure video card content area matches photo cards exactly */
+.video-card .card {
+  background: var(--bg-card);
+  border: 1px solid var(--bord);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.video-card:hover .card {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="dark"] .video-card:hover .card {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Fix buttons in video cards for both light and dark themes */
+.video-card .hide-toggle,
+.video-card .btn {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+@media (max-width: 320px) {
+  .video-card .hide-toggle,
+  .video-card .btn {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Ensure consistent spacing and text readability */
+.video-card h3,
+.video-card .font-semibold {
+  color: var(--text);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.video-card time,
+.video-card .text-\\[var\\(--muted\\)\\] {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .video-card h3,
+:root[data-theme="dark"] .video-card .font-semibold {
+  color: var(--text);
+}
+
+/* Video container positioning */
+.video-card .video-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+</style>
+
+<script>
+(function() {
+  // Tab switching
+  const tabs = document.querySelectorAll('.media-tab');
+  const contents = document.querySelectorAll('.media-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      contents.forEach(content => {
+        if (content.id === `${targetTab}-grid`) {
+          content.classList.remove('hidden');
+        } else {
+          content.classList.add('hidden');
+        }
+      });
+
+      try {
+        localStorage.setItem('profile_active_tab', targetTab);
+      } catch(e) {}
+    });
+  });
+
+  // Restore last tab from localStorage
+  try {
+    const savedTab = localStorage.getItem('profile_active_tab');
+    if (savedTab) {
+      const savedTabEl = document.querySelector(`.media-tab[data-tab="${savedTab}"]`);
+      if (savedTabEl) savedTabEl.click();
+    }
+  } catch(e) {}
+
+  // Video play/pause handlers
+  // Disabled legacy delegate (explicit per-element bindings added below)
+  // document.addEventListener('click', videoPlayDelegate, true);
+
+  function findOverlayForVideo(video){
+    const card = video.closest('.group, article') || video.parentElement;
+    return card ? card.querySelector('.video-play-overlay') : null;
+  }
+  function setOverlayState(video, playing){
+    const overlay = findOverlayForVideo(video);
+    if (!overlay) return;
+    overlay.style.opacity = playing ? '0' : '1';
+    const playI = overlay.querySelector('.play-icon');
+    const pauseI = overlay.querySelector('.pause-icon');
+    if (playI && pauseI){
+      playI.classList.toggle('hidden', !!playing);
+      pauseI.classList.toggle('hidden', !playing);
+    }
+  }
+  function pauseAllExcept(current){
+    document.querySelectorAll('#videos-grid video').forEach(v=>{
+      if (v !== current){
+        try { v.pause(); } catch(_){}
+        setOverlayState(v, false);
+      }
+    });
+  }
+  document.querySelectorAll('#videos-grid video').forEach(video => {
+    video.addEventListener('play', () => { pauseAllExcept(video); setOverlayState(video, true); });
+    video.addEventListener('pause', () => { setOverlayState(video, false); });
+    video.addEventListener('ended', () => { setOverlayState(video, false); });
+  });
+})();
+</script>
+
+<script>
+(function(){
+  // Explicit play/pause binding for profile videos (robust, overrides any global handlers)
+  const root = document.getElementById('videos-grid');
+  if (root) {
+    function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
+    function findOverlay(video){
+      const card = findCard(video);
+      return card ? card.querySelector('.video-play-overlay') : null;
+    }
+    function setOverlay(video, playing){
+      const ov = findOverlay(video);
+      if (!ov) return;
+      ov.style.opacity = playing ? '0' : '1';
+      const playI = ov.querySelector('.play-icon');
+      const pauseI = ov.querySelector('.pause-icon');
+      if (playI && pauseI){
+        playI.classList.toggle('hidden', !!playing);
+        pauseI.classList.toggle('hidden', !playing);
+      }
+    }
+    function pauseAll(except){
+      root.querySelectorAll('video').forEach(v=>{
+        if (v !== except){
+          try { v.pause(); } catch(_){}
+          setOverlay(v, false);
+        }
+      });
+    }
+    // Bind videos
+    root.querySelectorAll('video').forEach(v=>{
+      v.addEventListener('click', function(ev){
+        // Ensure click never reaches anchors/modals
+        ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+        if (this.paused){ pauseAll(this); this.play().catch(()=>{}); } else { this.pause(); }
+      });
+      v.addEventListener('play',  ()=> setOverlay(v, true));
+      v.addEventListener('pause', ()=> setOverlay(v, false));
+      v.addEventListener('ended', ()=> setOverlay(v, false));
+      // Initialize overlay state on load
+      setOverlay(v, !v.paused && !v.ended);
+    });
+    // Bind play overlays
+    root.querySelectorAll('.video-play-overlay').forEach(ov=>{
+      ov.addEventListener('click', function(ev){
+        ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+        const card = findCard(this);
+        const v = card && card.querySelector('video');
+        if (!v) return;
+        if (v.paused){ pauseAll(v); v.play().catch(()=>{}); } else { v.pause(); }
+      });
+    });
+  }
+})();
+</script>
+
+<script>
+(function(){
+  // Sound toggle + Volume slider for Profile videos
+  const VOL_KEY = 'gallery_video_volume_pct';
+
+  function findCard(el){
+    return el.closest('article') || el.closest('.group') || el.parentElement;
+  }
+  function hasAudio(video){
+    if (!video) return false;
+    try {
+      if (typeof video.mozHasAudio !== 'undefined') return !!video.mozHasAudio;            // Firefox
+      if (video.audioTracks && video.audioTracks.length) return true;                      // Some browsers
+      if (typeof video.webkitAudioDecodedByteCount !== 'undefined') {                      // Safari heuristic
+        return video.webkitAudioDecodedByteCount > 0;
+      }
+      if (typeof video.captureStream === 'function') {
+        try {
+          const s = video.captureStream();
+          if (s && s.getAudioTracks) return s.getAudioTracks().length > 0;
+        } catch(_) {}
+      }
+    } catch(_) {}
+    return false;
+  }
+  function getSavedVol(){ try{ const v = localStorage.getItem(VOL_KEY); const n = Number(v); return isFinite(n) ? Math.max(0, Math.min(100, n)) : null; }catch(_){ return null; } }
+  function setSavedVol(p){ try{ localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, p)))); }catch(_){ } }
+
+  function markBtnState(btn, video){
+    const disabled = video ? !hasAudio(video) : true;
+    btn.dataset.disabled = disabled ? '1' : '0';
+    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    btn.title = disabled ? 'Нет аудио' : '';
+    btn.classList.toggle('opacity-60', disabled);
+    btn.classList.toggle('cursor-not-allowed', disabled);
+    const onI = btn.querySelector('.icon-vol-on');
+    const offI = btn.querySelector('.icon-vol-off');
+    if (disabled){
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+    } else if (onI && offI) {
+      const muted = !!video?.muted;
+      onI.classList.toggle('hidden', muted);
+      offI.classList.toggle('hidden', !muted);
+    }
+    // Slider visibility
+    const card = findCard(btn);
+    const slider = card && card.querySelector('.vid-vol');
+    if (slider){
+      slider.classList.toggle('hidden', disabled);
+      slider.disabled = !!disabled;
+    }
+  }
+  function updateSoundBtn(btn, muted){
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){
+      const onI = btn.querySelector('.icon-vol-on');
+      const offI = btn.querySelector('.icon-vol-off');
+      if (onI) onI.classList.add('hidden');
+      if (offI) offI.classList.remove('hidden');
+      btn.setAttribute('aria-label', 'Нет аудио');
+      return;
+    }
+    const onI = btn.querySelector('.icon-vol-on');
+    const offI = btn.querySelector('.icon-vol-off');
+    if (onI && offI){
+      onI.classList.toggle('hidden', muted);
+      offI.classList.toggle('hidden', !muted);
+    }
+    btn.setAttribute('aria-label', muted ? 'Включить звук' : 'Выключить звук');
+  }
+  function syncSliderFromVideo(card, video){
+    const slider = card && card.querySelector('.vid-vol');
+    if (!slider || !video) return;
+    const pct = Math.round((video.muted ? 0 : (video.volume || 0)) * 100);
+    slider.value = isFinite(pct) ? pct : 0;
+  }
+  function wireVideoRecalc(btn, video){
+    if (!video) return;
+    video.addEventListener('loadedmetadata', ()=> markBtnState(btn, video));
+    video.addEventListener('play', ()=> markBtnState(btn, video));
+  }
+  function bindSlider(btn, card, video){
+    const slider = card && card.querySelector('.vid-vol');
+    if (!slider) return;
+    slider.addEventListener('input', ()=>{
+      const pct = Math.max(0, Math.min(100, Number(slider.value)||0));
+      setSavedVol(pct);
+      if (video){
+        video.volume = pct/100;
+        video.muted = pct === 0;
+        if (!video.muted){
+          try { video.play(); } catch(_){}
+        }
+        updateSoundBtn(btn, video.muted);
+      }
+    });
+  }
+  function initSoundButtons(){
+    document.querySelectorAll('#videos-grid .vid-snd-btn').forEach(btn=>{
+      const card = findCard(btn);
+      const video = card && card.querySelector('video');
+      const slider = card && card.querySelector('.vid-vol');
+      // apply saved volume
+      const saved = getSavedVol();
+      if (video && saved !== null){
+        video.volume = saved/100;
+        if (saved > 0) video.muted = false;
+      }
+      markBtnState(btn, video);
+      updateSoundBtn(btn, !video ? true : !!video.muted);
+      if (slider){
+        slider.value = saved !== null ? saved : Math.round((video?.volume || 0.6)*100);
+      }
+      bindSlider(btn, card, video);
+      wireVideoRecalc(btn, video);
+    });
+  }
+
+  // Prevent clicks on disabled sound buttons (capture)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.vid-snd-btn');
+    if (btn && btn.dataset.disabled === '1'){
+      e.preventDefault(); e.stopPropagation();
+    }
+  }, true);
+
+  // Delegated click for sound toggle (ensure playback with sound on unmute)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.vid-snd-btn');
+    if (!btn) return;
+    if (btn.dataset.disabled === '1'){ e.preventDefault(); e.stopPropagation(); return; }
+    e.preventDefault(); e.stopPropagation();
+    const card = findCard(btn);
+    const video = card && card.querySelector('video');
+    if (!video) return;
+
+    if (video.muted){
+      const slider = card && card.querySelector('.vid-vol');
+      let pct = Number(slider?.value);
+      if (!isFinite(pct) || pct === 0){
+        pct = getSavedVol();
+        if (pct === null || pct === 0) pct = 60;
+        if (slider) slider.value = pct;
+        setSavedVol(pct);
+      }
+      video.volume = pct/100;
+      video.muted = false;
+      try { video.play(); } catch(_){}
+    } else {
+      video.muted = true;
+    }
+    updateSoundBtn(btn, video.muted);
+    syncSliderFromVideo(card, video);
+  });
+
+  // Init on load
+  initSoundButtons();
+})();
+</script>
+
+<!-- Like functionality (copied from gallery/index.html) -->
+<script>
+(function(){
+  function getCSRFCookie(){
+    // Try cookie first
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    // Fallback to meta tag
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    // Fallback to hidden input rendered on this page
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return "";
+  }
+
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.like-toggle');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+
+    try{
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      });
+
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('like failed');
+
+      const heart = btn.querySelector('svg');
+      const isLiked = !!j.liked;
+
+      btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+
+      if (isLiked) {
+        btn.classList.add('text-red-500');
+        btn.classList.remove('text-[var(--muted)]');
+        heart.setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('text-red-500');
+        btn.classList.add('text-[var(--muted)]');
+        heart.setAttribute('fill', 'none');
+      }
+
+      if (countEl && typeof j.count === 'number'){
+        countEl.textContent = j.count;
+      }
+    }catch(err){
+      console.warn('Like failed:', err);
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+<!-- Save toggle (profile) -->
+<script>
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return "";
+  }
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.save-toggle');
+    if (!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+    const url = btn.dataset.url;
+    const countId = btn.dataset.countTarget;
+    const countEl = countId ? document.getElementById(countId) : null;
+    try{
+      const r = await fetch(url, {
+        method:'POST',
+        headers:{
+          'X-CSRFToken': getCSRFCookie(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials:'same-origin'
+      });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error('save failed');
+      const icon = btn.querySelector('svg');
+      const isSaved = !!j.saved;
+      btn.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
+      if (isSaved){
+        btn.classList.add('text-emerald-500');
+        btn.classList.remove('text-[var(--muted)]');
+        if (icon) icon.setAttribute('fill','currentColor');
+      } else {
+        btn.classList.remove('text-emerald-500');
+        btn.classList.add('text-[var(--muted)]');
+        if (icon) icon.setAttribute('fill','none');
+      }
+      if (countEl && typeof j.count === 'number'){
+        countEl.textContent = j.count;
+      }
+    }catch(_){
+      // ignore
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+<!-- Hide/Show toggle (owner) -->
+<script>
+(function(){
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input && input.value ? input.value : '';
+  }
+  function ensureHiddenBadge(container){
+    let b = container.querySelector('[data-hide-badge="1"]');
+    if (!b){
+      b = document.createElement('div');
+      b.setAttribute('data-hide-badge','1');
+      b.className = 'absolute top-3 left-3';
+      b.innerHTML = '<div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">Скрыто</div>';
+      container.appendChild(b);
+    }
+    return b;
+  }
+  function removeHiddenBadge(container){
+    const b = container.querySelector('[data-hide-badge="1"]');
+    if (b) b.remove();
+  }
+  function setBtnIcon(btn, hidden){
+    btn.dataset.hidden = hidden ? '1' : '0';
+    const dot = btn.querySelector('[data-hide-dot]');
+    const label = btn.querySelector('[data-hide-label]');
+    const knob = btn.querySelector('[data-hide-knob]');
+    if (dot){ dot.classList.toggle('bg-red-500', !!hidden); dot.classList.toggle('bg-emerald-500', !hidden); }
+    if (label){ label.textContent = hidden ? 'Скрыто' : 'Не скрыто'; }
+    if (knob){ knob.classList.toggle('translate-x-5', !!hidden); knob.classList.toggle('translate-x-0', !hidden); }
+  }
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.hide-toggle');
+    if (!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    const url = btn.dataset.url;
+    const card = btn.closest('article');
+    const rel = card ? card.querySelector('.relative') : null;
+    try{
+      btn.dataset.loading = '1';
+      btn.disabled = true;
+      const r = await fetch(url, { method:'POST', headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'fetch'}, credentials:'same-origin' });
+      const j = await r.json().catch(()=>null);
+      if (!r.ok || !j || j.ok !== true) throw new Error((j && j.error) || 'toggle failed');
+      const hidden = !!j.hidden;
+      setBtnIcon(btn, hidden);
+      if (rel){ if (hidden) ensureHiddenBadge(rel); else removeHiddenBadge(rel); }
+    }catch(_){}
+    finally{ delete btn.dataset.loading; btn.disabled = false; }
+  });
+})();
+</script>
+
+<!-- Profile Media Modal (Instagram-like) -->
+<div id="pfMediaModal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-pf-close="1"></div>
+  <div class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+    <div class="grid md:grid-cols-2 gap-0">
+      <!-- Media -->
+      <div id="pfModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
+      <!-- Right pane -->
+      <div class="flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
+          <div class="flex items-center gap-2">
+            <button id="pfModalLikeBtn" type="button" class="btn btn-ghost px-3 py-1.5 like-toggle" data-url="" data-count-target="pfModalLikeCount" aria-pressed="false">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span id="pfModalLikeCount" class="text-sm font-medium">0</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-pf-close="1">✕</button>
+        </div>
+        <div id="pfModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('pfMediaModal');
+  const mediaEl = document.getElementById('pfModalMedia');
+  const commentsEl = document.getElementById('pfModalComments');
+  const likeBtn = document.getElementById('pfModalLikeBtn');
+  const likeCountEl = document.getElementById('pfModalLikeCount');
+  let currentDetailUrl = '';
+
+  function getCSRFCookie(){
+    // Try cookie first
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    // Fallback to meta tag
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    // Fallback to hidden input on page
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    return '';
+  }
+  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); }
+
+  modal.addEventListener('click', (e)=>{ if (e.target.dataset.pfClose==='1') closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function fetchDetail(url){
+    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
+    const html = await r.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  async function openPhoto(detailUrl, mediaUrl, title){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<img class="max-w-full max-h-[75vh] object-contain" alt="'+(title||'')+'" src="'+mediaUrl+'"/>';
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.getElementById('photo-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+      bindDynamicHandlers();
+    }catch(e){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  async function openVideo(detailUrl, videoUrl, poster){
+    currentDetailUrl = detailUrl || '';
+    openModal();
+    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline><source src="'+videoUrl+'" type="video/mp4"></video>';
+    try{
+      const doc = await fetchDetail(detailUrl);
+      const c = doc.getElementById('comments');
+      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
+      const like = doc.querySelector('.like-toggle[data-url]');
+      const cnt = doc.querySelector('#video-like-count, #photo-like-count');
+      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
+      const liked = like && like.getAttribute('aria-pressed') === 'true';
+      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
+      bindDynamicHandlers();
+    }catch(e){
+      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
+    }
+  }
+
+  // Like in modal
+  likeBtn.addEventListener('click', async ()=>{
+    const url = likeBtn.dataset.url;
+    if (!url) return;
+    try{
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+        credentials:'same-origin'
+      });
+      const j = await res.json();
+      if (j && j.ok){
+        likeBtn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+        likeBtn.querySelector('svg').setAttribute('fill', j.liked ? 'currentColor':'none');
+        if (typeof j.count === 'number') likeCountEl.textContent = j.count;
+      }
+    }catch(_){}
+  });
+
+  function bindDynamicHandlers(){
+    // Like comment inside modal
+    commentsEl.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('.js-like-comment');
+      if (!btn) return;
+      e.preventDefault();
+      try{
+        const res = await fetch(btn.dataset.url, {
+          method:'POST',
+          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+          credentials:'same-origin'
+        });
+        const j = await res.json();
+        if (j && j.ok){
+          const id = btn.dataset.countId;
+          const el = id && document.getElementById(id);
+          if (el && typeof j.count === 'number') el.textContent = j.count;
+          const heart = btn.querySelector('svg');
+          btn.setAttribute('aria-pressed', j.liked ? 'true':'false');
+          heart && heart.setAttribute('fill', j.liked ? 'currentColor':'none');
+          btn.classList.toggle('text-red-500', !!j.liked);
+          btn.classList.toggle('text-[var(--muted)]', !j.liked);
+        }
+      }catch(_){}
+    });
+
+    // Submit root/reply comment via AJAX
+    commentsEl.querySelectorAll('form[data-comment-form]').forEach(form=>{
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const fd = new FormData(form);
+        try{
+          const res = await fetch(form.action, {
+            method:'POST',
+            headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
+            body: fd,
+            credentials:'same-origin'
+          });
+          const j = await res.json().catch(()=>null);
+          if (res.ok && j && j.ok){
+            // Re-fetch comments to reflect new state
+            const doc = await fetchDetail(currentDetailUrl);
+            const c = doc.getElementById('comments');
+            commentsEl.innerHTML = c ? c.innerHTML : commentsEl.innerHTML;
+            bindDynamicHandlers();
+          }
+        }catch(_){}
+      }, { once:true });
+    });
+  }
+
+  // Wire profile cards
+  document.addEventListener('click', (e)=>{
+    // Block modal on play overlay/video clicks
+    if (e.target.closest('.video-play-overlay') || e.target.closest('video')) { e.stopPropagation(); return; }
+    // Prefer explicit opener overlay if present
+    const opener = e.target.closest('[data-open-media]');
+    // Do not open modal when clicking interactive controls unless explicit opener was clicked
+    if (!opener && e.target.closest('button, a[href], input, textarea, select, .like-toggle, .js-like-comment, [data-pf-close]')) {
+      return;
+    }
+    const a = (opener && opener.closest('.js-open-photo')) || e.target.closest('.js-open-photo');
+    if (a){
+      e.preventDefault();
+      currentDetailUrl = a.getAttribute('data-detail-url') || '';
+      openPhoto(currentDetailUrl, a.getAttribute('data-media-url') || '', a.getAttribute('data-title') || '');
+    }
+    const v = e.target.closest('.js-open-video');
+    if (v){
+      e.preventDefault();
+      currentDetailUrl = v.getAttribute('data-detail-url') || '';
+      openVideo(currentDetailUrl, v.getAttribute('data-video-url') || '', v.getAttribute('data-poster') || '');
+    }
+  });
+})();
+</script>
+
+<script>
+(function(){
+  // Global follow/unfollow toggle (header button and any [data-follow-toggle])
+  function getCSRF(){
+    // cookie -> meta -> input
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return (input && input.value) ? input.value : '';
+  }
+
+  async function toggleFollow(btn){
+    const username = btn.getAttribute('data-username');
+    if (!username) return;
+
+    if (btn.disabled || btn.dataset.loading === '1') return;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+
+    try{
+      const token = getCSRF();
+      const fd = new FormData();
+      fd.append('username', username);
+      fd.append('csrfmiddlewaretoken', token);
+
+      const res = await fetch('{% url "dashboard:api:follow_toggle" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': token,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: fd
+      });
+
+      // If server redirected to login, bail
+      const ct = res.headers.get('Content-Type') || '';
+      let j = null;
+      if (ct.includes('application/json')) {
+        j = await res.json().catch(()=>null);
+      }
+      if (!res.ok || !j || j.ok !== true) {
+        const ff = document.getElementById('pfFollowFallbackForm');
+        if (ff) {
+          const inp = ff.querySelector('input[name="username"]');
+          if (inp) inp.value = username;
+          if (ff.requestSubmit) ff.requestSubmit(); else ff.submit();
+        }
+        return;
+      }
+
+      const nowFollowing = !!j.following;
+      // Toggle styles/text
+      btn.classList.toggle('btn-primary', !nowFollowing);
+      btn.classList.toggle('btn-ghost', nowFollowing);
+      btn.textContent = nowFollowing ? '{% trans "Отписаться" %}' : '{% trans "Подписаться" %}';
+      btn.setAttribute('aria-pressed', nowFollowing ? 'true' : 'false');
+
+      // Update followers counter if provided (backend uses followers_count)
+      const cnt = document.getElementById('pfFollowers');
+      const newCount = (typeof j.followers_count === 'number') ? j.followers_count : (typeof j.followers === 'number' ? j.followers : null);
+      if (cnt && newCount !== null) cnt.textContent = String(newCount);
+    }catch(_){
+      // ignore
+    }finally{
+      delete btn.dataset.loading;
+      btn.disabled = false;
+    }
+  }
+
+  // Capture-phase listener to beat other handlers that may stop propagation
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('[data-follow-toggle="1"]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFollow(btn);
+  }, true);
+
+  // Bubble-phase fallback (in case capture is blocked in some browsers)
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('[data-follow-toggle="1"]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFollow(btn);
+  });
+})();
+</script>
+
+<script>
+(function(){
+  // Sync real counts from gallery for likes (incl. guests) and saves (if present)
+  function syncPublishedCounts(root){
+    root = root || document;
+
+    function json(r){ try { return r.json(); } catch(_){ return null; } }
+    function setCount(el, val){
+      if (!el) return;
+      if (typeof val === 'number' || (typeof val === 'string' && val.trim() !== '')){
+        el.textContent = String(val);
+      }
+    }
+    function deriveLikersUrl(btn){
+      // Prefer explicit span[data-open-likers]
+      var likerSpan = btn.querySelector && btn.querySelector('[data-open-likers][data-url]');
+      if (likerSpan) return likerSpan.getAttribute('data-url') || '';
+      var likeUrl = btn.getAttribute('data-url') || '';
+      var vid = btn.getAttribute('data-video-id') || '';
+      var pid = btn.getAttribute('data-photo-id') || '';
+      if (vid) return '/gallery/video/' + vid + '/likers';
+      if (pid) return '/gallery/photo/' + pid + '/likers';
+      if (likeUrl.indexOf('/gallery/photo/') !== -1) return likeUrl.replace(/\/like.*/, '/likers');
+      if (likeUrl.indexOf('/gallery/video/') !== -1) return likeUrl.replace(/\/like.*/, '/likers');
+      return '';
+    }
+    function deriveSaversUrl(btn){
+      // No savers endpoint in gallery. Skip network sync; rely on server-rendered counts
+      // and JSON response from save toggles which updates the count inline.
+      return '';
+    }
+
+    try{
+      // Likes
+      root.querySelectorAll('.like-toggle').forEach(function(btn){
+        var url = deriveLikersUrl(btn);
+        if (!url) return;
+        var countId = btn.getAttribute('data-count-target');
+        var countEl = countId ? document.getElementById(countId) : (btn.querySelector && btn.querySelector('span[id]'));
+        if (!countEl) return;
+        fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' })
+          .then(json)
+          .then(function(j){
+            if (!j) return;
+            var arr = Array.isArray(j.likers) ? j.likers : (Array.isArray(j.users) ? j.users : null);
+            if (arr) setCount(countEl, arr.length);
+            else if (typeof j.count === 'number') setCount(countEl, j.count);
+          })
+          .catch(function(){});
+      });
+
+      // Saves: no '/savers' endpoint; counts come from context and update via toggle JSON. No-op here.
+    }catch(_){}
+  }
+
+  // Initial sync on load
+  try { syncPublishedCounts(document); } catch(_){}
+})();
+</script>
+
+{% endblock %}

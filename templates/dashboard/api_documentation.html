@@ -1,0 +1,367 @@
+﻿{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}API Документация — Pixera{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <!-- Заголовок -->
+    <div class="mb-8">
+        <h1 class="text-3xl sm:text-4xl font-bold mb-3">API Документация</h1>
+        <p class="text-[var(--muted)] text-sm sm:text-base">
+            Интегрируйте генерацию изображений Pixera в ваши приложения
+        </p>
+    </div>
+
+    <!-- Баланс и стоимость -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div class="card p-6">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-xs text-[var(--muted)]">Ваш баланс</div>
+                    <div class="text-2xl font-bold">${{ balance.balance }}</div>
+                </div>
+            </div>
+            <a href="{% url 'dashboard:api:balance' %}" class="text-xs text-primary hover:underline">
+                Пополнить баланс →
+            </a>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-xs text-[var(--muted)]">Стоимость генерации</div>
+                    <div class="text-2xl font-bold">${{ cost_per_generation }}</div>
+                </div>
+            </div>
+            <div class="text-xs text-[var(--muted)]">
+                За одно изображение
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрый старт -->
+    <div class="card p-6 sm:p-8 mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-primary text-darkbg flex items-center justify-center text-sm font-bold">1</span>
+            Быстрый старт
+        </h2>
+        
+        <div class="space-y-4">
+            <div>
+                <h3 class="font-semibold mb-2">Получите API токен</h3>
+                <p class="text-sm text-[var(--muted)] mb-3">
+                    Создайте токен в <a href="{% url 'dashboard:api:dashboard' %}" class="text-primary hover:underline">панели управления API</a>
+                </p>
+                <a href="{% url 'dashboard:api:dashboard' %}" class="btn btn-primary">
+                    Создать токен
+                </a>
+            </div>
+
+            <div>
+                <h3 class="font-semibold mb-2">Пополните баланс</h3>
+                <p class="text-sm text-[var(--muted)] mb-3">
+                    Добавьте средства для оплаты генераций (${{ cost_per_generation }} за изображение)
+                </p>
+                <a href="{% url 'dashboard:api:balance' %}" class="btn btn-ghost">
+                    Пополнить баланс
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Аутентификация -->
+    <div class="card p-6 sm:p-8 mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-primary text-darkbg flex items-center justify-center text-sm font-bold">2</span>
+            Аутентификация
+        </h2>
+        
+        <p class="text-sm text-[var(--muted)] mb-4">
+            Используйте Bearer токен в заголовке Authorization для всех запросов:
+        </p>
+
+        <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 overflow-x-auto">
+            <pre class="text-xs sm:text-sm"><code>Authorization: Bearer YOUR_API_TOKEN</code></pre>
+        </div>
+    </div>
+
+    <!-- Endpoints -->
+    <div class="card p-6 sm:p-8 mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-primary text-darkbg flex items-center justify-center text-sm font-bold">3</span>
+            API Endpoints
+        </h2>
+
+        <!-- Генерация изображения -->
+        <div class="mb-8 pb-8 border-b border-[var(--bord)]">
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+                <span class="badge bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">POST</span>
+                <code class="text-sm font-mono">/api/v1/generate</code>
+            </div>
+            
+            <h3 class="font-semibold mb-2">Генерация изображения</h3>
+            <p class="text-sm text-[var(--muted)] mb-4">
+                Создает новое изображение на основе текстового описания
+            </p>
+
+            <h4 class="text-sm font-semibold mb-2">Параметры запроса:</h4>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 mb-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>{
+  "prompt": "beautiful sunset over mountains",
+  "width": 1024,
+  "height": 1024,
+  "steps": 28,
+  "cfg_scale": 7.0,
+  "model": "runware:101@1"
+}</code></pre>
+            </div>
+
+            <h4 class="text-sm font-semibold mb-2">Пример ответа:</h4>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>{
+  "success": true,
+  "job_id": "abc123...",
+  "status": "processing",
+  "cost": {{ cost_per_generation }},
+  "balance_remaining": 100.00
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- Проверка статуса -->
+        <div class="mb-8 pb-8 border-b border-[var(--bord)]">
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+                <span class="badge bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">GET</span>
+                <code class="text-sm font-mono">/api/v1/status/{job_id}</code>
+            </div>
+            
+            <h3 class="font-semibold mb-2">Проверка статуса генерации</h3>
+            <p class="text-sm text-[var(--muted)] mb-4">
+                Получает текущий статус задачи генерации
+            </p>
+
+            <h4 class="text-sm font-semibold mb-2">Пример ответа (в процессе):</h4>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 mb-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>{
+  "success": true,
+  "status": "processing",
+  "progress": 45
+}</code></pre>
+            </div>
+
+            <h4 class="text-sm font-semibold mb-2">Пример ответа (завершено):</h4>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>{
+  "success": true,
+  "status": "completed",
+  "image_url": "https://example.com/image.jpg",
+  "prompt": "beautiful sunset over mountains"
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- Проверка баланса -->
+        <div>
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+                <span class="badge bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">GET</span>
+                <code class="text-sm font-mono">/dashboard/api/check-balance/</code>
+            </div>
+            
+            <h3 class="font-semibold mb-2">Проверка баланса</h3>
+            <p class="text-sm text-[var(--muted)] mb-4">
+                Получает информацию о текущем балансе и статистике использования
+            </p>
+
+            <h4 class="text-sm font-semibold mb-2">Пример ответа:</h4>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>{
+  "balance": 100.00,
+  "total_spent": 50.00,
+  "total_requests": 125,
+  "total_generations": 5
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Примеры кода -->
+    <div class="card p-6 sm:p-8 mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-primary text-darkbg flex items-center justify-center text-sm font-bold">4</span>
+            Примеры кода
+        </h2>
+
+        <!-- Python -->
+        <div class="mb-6">
+            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
+                </svg>
+                Python
+            </h3>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>import requests
+
+API_TOKEN = "your_api_token_here"
+API_URL = "{{ request.scheme }}://{{ request.get_host }}/api/v1"
+
+headers = {
+    "Authorization": f"Bearer {API_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+# Генерация изображения
+response = requests.post(
+    f"{API_URL}/generate",
+    headers=headers,
+    json={
+        "prompt": "beautiful sunset over mountains",
+        "width": 1024,
+        "height": 1024
+    }
+)
+
+result = response.json()
+job_id = result["job_id"]
+
+# Проверка статуса
+status_response = requests.get(
+    f"{API_URL}/status/{job_id}",
+    headers=headers
+)
+
+print(status_response.json())</code></pre>
+            </div>
+        </div>
+
+        <!-- JavaScript -->
+        <div class="mb-6">
+            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M0 0h24v24H0V0zm22.034 18.276c-.175-1.095-.888-2.015-3.003-2.873-.736-.345-1.554-.585-1.797-1.14-.091-.33-.105-.51-.046-.705.15-.646.915-.84 1.515-.66.39.12.75.42.976.9 1.034-.676 1.034-.676 1.755-1.125-.27-.42-.404-.601-.586-.78-.63-.705-1.469-1.065-2.834-1.034l-.705.089c-.676.165-1.32.525-1.71 1.005-1.14 1.291-.811 3.541.569 4.471 1.365 1.02 3.361 1.244 3.616 2.205.24 1.17-.87 1.545-1.966 1.41-.811-.18-1.26-.586-1.755-1.336l-1.83 1.051c.21.48.45.689.81 1.109 1.74 1.756 6.09 1.666 6.871-1.004.029-.09.24-.705.074-1.65l.046.067zm-8.983-7.245h-2.248c0 1.938-.009 3.864-.009 5.805 0 1.232.063 2.363-.138 2.711-.33.689-1.18.601-1.566.48-.396-.196-.597-.466-.83-.855-.063-.105-.11-.196-.127-.196l-1.825 1.125c.305.63.75 1.172 1.324 1.517.855.51 2.004.675 3.207.405.783-.226 1.458-.691 1.811-1.411.51-.93.402-2.07.397-3.346.012-2.054 0-4.109 0-6.179l.004-.056z"/>
+                </svg>
+                JavaScript / Node.js
+            </h3>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>const API_TOKEN = 'your_api_token_here';
+const API_URL = '{{ request.scheme }}://{{ request.get_host }}/api/v1';
+
+// Генерация изображения
+const response = await fetch(`${API_URL}/generate`, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${API_TOKEN}`,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        prompt: 'beautiful sunset over mountains',
+        width: 1024,
+        height: 1024
+    })
+});
+
+const result = await response.json();
+const jobId = result.job_id;
+
+// Проверка статуса
+const statusResponse = await fetch(
+    `${API_URL}/status/${jobId}`,
+    {
+        headers: {
+            'Authorization': `Bearer ${API_TOKEN}`
+        }
+    }
+);
+
+const status = await statusResponse.json();
+console.log(status);</code></pre>
+            </div>
+        </div>
+
+        <!-- cURL -->
+        <div>
+            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                cURL
+            </h3>
+            <div class="bg-black/5 dark:bg-white/5 rounded-xl p-4 overflow-x-auto">
+                <pre class="text-xs sm:text-sm"><code>curl -X POST {{ request.scheme }}://{{ request.get_host }}/api/v1/generate \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "beautiful sunset over mountains",
+    "width": 1024,
+    "height": 1024
+  }'</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Коды ошибок -->
+    <div class="card p-6 sm:p-8 mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold mb-4">Коды ошибок</h2>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-[var(--bord)]">
+                        <th class="text-left py-3 px-2">Код</th>
+                        <th class="text-left py-3 px-2">Описание</th>
+                    </tr>
+                </thead>
+                <tbody class="text-[var(--muted)]">
+                    <tr class="border-b border-[var(--bord)]">
+                        <td class="py-3 px-2"><code>400</code></td>
+                        <td class="py-3 px-2">Неверные параметры запроса</td>
+                    </tr>
+                    <tr class="border-b border-[var(--bord)]">
+                        <td class="py-3 px-2"><code>401</code></td>
+                        <td class="py-3 px-2">Неверный или отсутствующий токен</td>
+                    </tr>
+                    <tr class="border-b border-[var(--bord)]">
+                        <td class="py-3 px-2"><code>402</code></td>
+                        <td class="py-3 px-2">Недостаточно средств на балансе</td>
+                    </tr>
+                    <tr class="border-b border-[var(--bord)]">
+                        <td class="py-3 px-2"><code>429</code></td>
+                        <td class="py-3 px-2">Превышен лимит запросов</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-2"><code>500</code></td>
+                        <td class="py-3 px-2">Внутренняя ошибка сервера</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Поддержка -->
+    <div class="card p-6 sm:p-8 bg-gradient-to-br from-primary/5 to-pink-500/5">
+        <h2 class="text-xl font-bold mb-3">Нужна помощь?</h2>
+        <p class="text-sm text-[var(--muted)] mb-4">
+            Если у вас возникли вопросы или проблемы с интеграцией API, свяжитесь с нашей службой поддержки
+        </p>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'pages:contact' %}" class="btn btn-primary">
+                Связаться с поддержкой
+            </a>
+            <a href="{% url 'dashboard:api:dashboard' %}" class="btn btn-ghost">
+                Управление токенами
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
