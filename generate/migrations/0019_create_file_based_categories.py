@@ -9,7 +9,7 @@ import os
 def create_categories_from_files(apps, schema_editor):
     """Обновляет существующие категории промптов"""
     PromptCategory = apps.get_model('generate', 'PromptCategory')
-    
+
     # Список категорий из файлов
     category_names = [
         'абстракция', 'Архитектура', 'будущее', 'винтаж', 'времена года', 'города',
@@ -20,7 +20,7 @@ def create_categories_from_files(apps, schema_editor):
         'спорт', 'текстуры', 'технологии', 'транспорт', 'уют', 'Фэнтези', 'экстрим',
         'эмоции', 'Эстетика'
     ]
-    
+
     # Описания для категорий
     descriptions = {
         'абстракция': 'Абстрактные формы и композиции',
@@ -64,7 +64,7 @@ def create_categories_from_files(apps, schema_editor):
         'эмоции': 'Выражение чувств и эмоций',
         'Эстетика': 'Визуальная гармония и красота'
     }
-    
+
     print('Обновление категорий...')
     for order, name in enumerate(category_names, start=1):
         # Обновляем или создаем категорию
@@ -83,7 +83,7 @@ def create_categories_from_files(apps, schema_editor):
                 category.order = order
                 category.is_active = True
                 category.save()
-            
+
             if created:
                 print(f'✅ Создана категория: {name}')
             else:
@@ -95,7 +95,7 @@ def create_categories_from_files(apps, schema_editor):
 def reverse_migration(apps, schema_editor):
     """Откат миграции - удаляет созданные категории"""
     PromptCategory = apps.get_model('generate', 'PromptCategory')
-    
+
     category_names = [
         'абстракция', 'Архитектура', 'будущее', 'винтаж', 'времена года', 'города',
         'детство', 'для разработки', 'еда', 'животные', 'интерьер', 'исскуство',
@@ -105,7 +105,7 @@ def reverse_migration(apps, schema_editor):
         'спорт', 'текстуры', 'технологии', 'транспорт', 'уют', 'Фэнтези', 'экстрим',
         'эмоции', 'Эстетика'
     ]
-    
+
     PromptCategory.objects.filter(name__in=category_names).delete()
 
 

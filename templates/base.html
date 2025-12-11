@@ -9,33 +9,27 @@
   <meta name="format-detection" content="telephone=no,email=no,address=no">
   <meta name="color-scheme" content="dark light">
 
-  <title>{% block meta_title %}{% block title %}{% trans "Pixera — ИИ-галерея и генерация" %}{% endblock %}{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}{% trans "Pixera — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды." %}{% endblock %}">
+  <title>{% block meta_title %}{% block title %}{% trans "AI Gallery — ИИ-галерея и генерация" %}{% endblock %}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{% trans "AI Gallery — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды." %}{% endblock %}">
   <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
-
-  <!-- БЛОКИРОВКА ИНДЕКСАЦИИ -->
-  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
-  <meta name="googlebot" content="noindex, nofollow">
-  <meta name="bingbot" content="noindex, nofollow">
-  <meta name="yandex" content="noindex, nofollow">
-
+  <meta name="robots" content="{% block robots %}index,follow,max-image-preview:large{% endblock %}">
   <meta id="themeColor" name="theme-color" content="#0B0E14">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
 
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Pixera">
-  <meta property="og:title" content="{% block og_title %}{% trans "Pixera — генерация и галерея" %}{% endblock %}">
+  <meta property="og:site_name" content="AI Gallery">
+  <meta property="og:title" content="{% block og_title %}{% trans "AI Gallery — генерация и галерея" %}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{% trans "Минималистичный UI, плавные градиенты и качественная генерация изображений ИИ." %}{% endblock %}">
   <meta property="og:url" content="{{ request.build_absolute_uri }}">
   <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-default.jpg' %}{% endblock %}">
   <meta name="twitter:card" content="summary_large_image">
 
 
-  <link rel="icon" href="{% static 'img/favicon/favicon.svg' %}" type="image/svg+xml">
-  <link rel="icon" href="{% static 'img/favicon/favicon.ico' %}" sizes="any">
-  <link rel="apple-touch-icon" href="{% static 'img/favicon/apple-touch-icon.png' %}">
-  <link rel="manifest" href="{% static 'img/favicon/site.webmanifest' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="manifest" href="{% static 'site.webmanifest' %}">
 
 
   <link rel="dns-prefetch" href="//api.runware.ai">
@@ -47,10 +41,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 
-  <!-- Tailwind CSS -->
-  <link rel="stylesheet" href="{% static 'css/tailwind.min.css' %}">
-
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <link rel="stylesheet" href="{% static 'css/components.css' %}">
   <link rel="stylesheet" href="{% static 'css/gallery.css' %}">
@@ -59,6 +49,136 @@
 
   {% block extra_css %}{% endblock %}
 
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        container: {
+          center: true,
+          padding: { DEFAULT: "0.75rem" },
+          screens: {
+            sm: "640px",
+            md: "768px",
+            lg: "1024px",
+            xl: "1120px",
+            "2xl": "1280px"
+          }
+        },
+        extend: {
+          screens: {
+            xs: '320px'
+          },
+          colors: {
+            primary: '#01D1FB',
+            accent: '#01D1FB',
+            darkbg: '#0B0E14',
+            lightbg: '#F7F8FA',
+            ink: '#0F172A',
+            mobilemenu: {
+              light: '#FFFFFF',
+              dark: '#1A1F2E'
+            }
+          },
+          boxShadow: {
+            soft: "0 8px 30px rgba(0,0,0,.18)",
+            ring: "0 0 0 2px rgba(1,209,251,.4)"
+          },
+          dropShadow: {
+            glow: "0 10px 25px rgba(1,209,251,.5)"
+          },
+          backdropBlur: {
+            xs: "2px"
+          },
+          fontSize: {
+            lg: ['1rem', { lineHeight: '1rem' }]
+          }
+        },
+        fontFamily: {
+          sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "Apple Color Emoji", "Segoe UI Emoji"]
+        }
+      },
+      darkMode: ["class", '[data-theme="dark"]']
+    }
+  </script>
+
+
+  <style type="text/tailwindcss">
+    @layer base {
+      :root {
+        --bg: theme(colors.lightbg);
+        --bg-rgb: 247, 248, 250;
+        --text: theme(colors.ink);
+        --card: #ffffff;
+        --bord: #e5e7eb;
+        --muted: #475569;
+        --mobilemenu: #FFFFFF;
+        /* added to satisfy usages across templates and avoid unresolved vars */
+        --bg-card: var(--card);
+        --primary-hover: #12b7e0;
+      }
+      [data-theme="dark"] {
+        --bg: theme(colors.darkbg);
+        --bg-rgb: 11, 14, 20;
+        --text: rgb(255 255 255 / .9);
+        --card: rgb(255 255 255 / .04);
+        --bord: rgb(255 255 255 / .10);
+        --muted: rgb(255 255 255 / .65);
+        --mobilemenu: #13192c;
+        /* keep parity with light for custom props used in CSS/JS */
+        --bg-card: var(--card);
+        --primary-hover: #13c0e6;
+      }
+      body {
+        @apply bg-[var(--bg)] text-[var(--text)] font-sans antialiased selection:bg-primary/30 selection:text-[var(--bg)];
+        height: 100%;
+        /* Reserve space for fixed header only. On sticky header (desktop) offset is 0. */
+        padding-top: calc(var(--nav-h, 0px) + env(safe-area-inset-top, 0px));
+      }
+      html { height: 100%; }
+    }
+
+    @layer components {
+      .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:scale-[.98];
+      }
+      .btn-primary {
+        @apply bg-primary text-darkbg hover:bg-primary/90 shadow-soft;
+      }
+      .btn-ghost {
+        @apply bg-white/0 text-[var(--text)] hover:bg-black/[.04] dark:hover:bg-white/10 border border-[var(--bord)];
+      }
+      .badge {
+        @apply inline-flex items-center rounded-full border border-[var(--bord)] bg-black/[.03] dark:bg-white/5 px-2.5 py-1 text-xs font-medium;
+      }
+      .card {
+        @apply rounded-3xl border border-[var(--bord)] bg-[var(--card)] backdrop-blur-xs shadow-soft;
+      }
+      .field {
+        @apply w-full rounded-xl border border-[var(--bord)] bg-white/70 dark:bg-white/5 px-3.5 py-2.5 outline-none placeholder:text-slate-400 focus:border-primary/60 focus:ring-2 focus:ring-primary/30;
+      }
+      .pill {
+        @apply rounded-full bg-black/[.04] dark:bg-white/5 px-3 py-1 text-xs border border-[var(--bord)];
+      }
+      .nav-link {
+        @apply text-sm font-medium hover:text-black dark:hover:text-white text-ink/80 dark:text-white/70 transition;
+      }
+      .heading-xl {
+        @apply text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.05] tracking-tight;
+      }
+      .glassframe {
+      @apply ring-1 ring-black/5 dark:ring-white/10 bg-white/30 dark:bg-white/5;
+      }
+    }
+
+    @layer utilities {
+      .grid-auto-fit { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+      .mask-fade { -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent); mask-image: linear-gradient(to bottom, black 70%, transparent); }
+      .bg-noise {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+      }
+    }
+  </style>
 
   <style>
     /* Header visual polish and stability:
@@ -70,6 +190,7 @@
       -webkit-backdrop-filter: none !important; /* без blur, чтобы оттенок не зависел от контента */
       backdrop-filter: none !important;
       will-change: auto;
+      position: relative; /* для псевдо-элемента */
     }
     /* Псевдо-фон: повторяет фон сайта (noise + радиальные градиенты + базовый цвет),
        но закреплён за самим header и не зависит от контента под ним */
@@ -305,8 +426,8 @@
 
       <a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}"
          rel="home" class="flex items-center gap-2.5 group" aria-label="{% trans 'На главную' %}">
-        <img src="{% static 'img/logo.png' %}" alt="Pixera" class="h-8 w-auto transition-transform group-hover:scale-105" loading="eager">
-        <span class="text-lg font-semibold text-[var(--text)]">Pixera</span>
+        <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-darkbg font-extrabold drop-shadow-glow transition-transform group-hover:scale-105">AI</span>
+        <span class="text-lg font-semibold text-[var(--text)]">Gallery</span>
       </a>
 
 
@@ -441,7 +562,7 @@
       </button>
 
       <button class="btn btn-ghost border-0 p-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" type="button" data-open-dashboard="1" aria-label="{% trans 'Открыть профиль' %}">
-        <span class="w-8 h-8 rounded-full overflow-hidden ring-2 ring-transparent hover:ring-primary/30 transition-all">
+        <span class="w-7 h-7 rounded-full overflow-hidden ring-2 ring-transparent hover:ring-primary/30 transition-all">
           {% if user_profile and user_profile.avatar %}
             <img
               src="{{ user_profile.avatar.url }}"
@@ -597,7 +718,7 @@
       <div class="grid grid-auto-fit gap-6">
         <div>
           <div class="flex items-center gap-2">
-            <img src="{% static 'img/logo.png' %}" alt="Pixera" class="h-9 w-auto" loading="lazy">
+            <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-darkbg font-extrabold">AI</span>
             <span class="text-lg font-semibold">Gallery</span>
           </div>
           <p class="mt-3 text-sm text-[var(--muted)]">{% trans "Галерея и генерация ИИ-изображений. Адаптив до 320 px, тёмная/светлая тема." %}</p>
@@ -631,7 +752,7 @@
         </div>
       </div>
       <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--bord)] pt-6 text-xs text-[var(--muted)]">
-        <span>© {% now "Y" %} Pixera — {% trans "все права защищены" %}.</span>
+        <span>© {% now "Y" %} AI Gallery — {% trans "все права защищены" %}.</span>
         <div class="flex items-center gap-4">
           <a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">Terms</a>
           <a href="{% url 'pages:privacy' %}" class="hover:text-[var(--text)] transition">Privacy</a>
