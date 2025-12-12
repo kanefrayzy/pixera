@@ -301,8 +301,8 @@
 
       <a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}"
          rel="home" class="flex items-center gap-2.5 group" aria-label="{% trans 'На главную' %}">
-        <img src="{% static 'img/logo.png' %}" alt="Pixera" class="h-8 w-auto transition-transform group-hover:scale-105" loading="eager">
-        <span class="text-lg font-semibold text-[var(--text)]">Pixera</span>
+        <img src="{% static 'img/logo.png' %}" alt="Pixera" class="h-10 w-auto transition-transform group-hover:scale-105" loading="eager">
+        <span class="text-lg font-semibold text-[var(--text)]">Pixera.net</span>
       </a>
 
 
@@ -329,7 +329,7 @@
         {% if not request.user.is_authenticated %}
         <details class="relative" id="langSwitch">
           <summary class="btn btn-ghost p-2 rounded-2xl border-0 cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
-            <img id="currentLangFlag" class="w-7 h-7 rounded-full object-cover" src="{% static 'img/flags/ru.svg' %}" alt="">
+            <img id="currentLangFlag" class="w-6 h-6 rounded-full object-cover" src="{% static 'img/flags/ru.svg' %}" alt="">
           </summary>
           <div class="absolute right-0 top-full mt-2 rounded-3xl border border-[var(--bord)] bg-white dark:bg-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50" id="langMenu" role="menu" aria-label="{% trans 'Выбрать язык' %}">
             <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
@@ -501,7 +501,7 @@
         <div>
           <div class="flex items-center gap-2">
             <img src="{% static 'img/logo.png' %}" alt="Pixera" class="h-9 w-auto" loading="lazy">
-            <span class="text-lg font-semibold">Gallery</span>
+            <span class="text-lg font-semibold">Pixera.net</span>
           </div>
           <p class="mt-3 text-sm text-[var(--muted)]">{% trans "Галерея и генерация ИИ-изображений. Адаптив до 320 px, тёмная/светлая тема." %}</p>
         </div>
