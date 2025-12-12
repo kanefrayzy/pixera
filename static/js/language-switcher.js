@@ -15,7 +15,7 @@ const LanguageSwitcher = {
     this.initSwitcher('langSwitch', 'langMenu', 'currentLangFlag');
     this.initSwitcher('langSwitchMobile', 'langMenuMobile', 'currentLangFlagM');
     this.initSwitcher('langSwitchDrawer', 'langMenuDrawer', 'currentLangFlagDrawer');
-    
+
     // Обновляем флаг при загрузке
     const currentLang = this.getCurrentLanguage();
     this.updateFlagIcon(currentLang);
@@ -23,14 +23,14 @@ const LanguageSwitcher = {
 
   updateFlagIcon(lang) {
     const flagUrl = this.langFlags[lang] || this.langFlags[this.defaultLang];
-    
+
     const flags = [
       'currentLangFlag',
       'currentLangFlagM',
       'currentLangFlagDrawer',
       'currentLangFlagDrawerGuest'
     ];
-    
+
     flags.forEach(id => {
       const el = document.getElementById(id);
       if (el && el.tagName === 'IMG') {
