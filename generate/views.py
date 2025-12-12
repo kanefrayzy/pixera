@@ -268,66 +268,26 @@ def _create_grant_if_fp(
 
 def _ensure_grant(request: HttpRequest) -> Tuple[Optional[FreeGrant], Optional[str]]:
     """
-    Создаёт/находит FreeGrant так, чтобы инкогнито НЕ получало новый бонус.
+    ОБНОВЛЁННАЯ СИСТЕМА: Использует ensure_guest_grant_with_security
+    с полной защитой от Tor/VPN обхода через кластеризацию по UA_HASH.
+    
     Возвращает (grant|None, set_cookie_gid_if_needed|None).
     """
-    _ensure_session_key(request)
-
-    # исходные маркеры
-    session_key = request.session.session_key or ""
-    gid = _guest_cookie_id(request) or ""
-    fp_soft = _get_fp_from_request(request)  # мягкий fp (cookie/hdr/middleware)
-    ua = _ua_hash(request)
-    ip = _ip_hash(request)
-    first_ip = (request.META.get("REMOTE_ADDR") or "").strip() or None
-
-    # Если gid отсутствует — сгенерируем, но поставим cookie только если грант реально появится
-    set_cookie_gid: Optional[str] = None
-    if not gid:
-        gid = uuid4().hex
-        set_cookie_gid = gid
-
-    # 1) Сначала ТОЛЬКО ПОИСК — без создания
-    grant = _find_grant_only(
-        fp=fp_soft, gid=gid, session_key=session_key, ua_hash=ua, ip_hash=ip, first_ip=first_ip
-    )
-    if grant:
-        # допривязываем недостающие маркеры (молча)
-        updated = []
-        if fp_soft and _has_field(FreeGrant, "fp") and not getattr(grant, "fp", ""):
-            grant.fp = fp_soft
-            updated.append("fp")
-        if gid and _has_field(FreeGrant, "gid") and not getattr(grant, "gid", ""):
-            grant.gid = gid
-            updated.append("gid")
-        if session_key and _has_field(FreeGrant, "session_key") and not getattr(grant, "session_key", ""):
-            grant.session_key = session_key
-            updated.append("session_key")
-        if ip and _has_field(FreeGrant, "ip_hash") and not getattr(grant, "ip_hash", ""):
-            grant.ip_hash = ip
-            updated.append("ip_hash")
-        if ua and _has_field(FreeGrant, "ua_hash") and not getattr(grant, "ua_hash", ""):
-            grant.ua_hash = ua
-            updated.append("ua_hash")
-        if first_ip and _has_field(FreeGrant, "first_ip") and not getattr(grant, "first_ip", None):
-            grant.first_ip = first_ip
-            updated.append("first_ip")
-        if updated:
-            try:
-                grant.save(update_fields=updated)
-            except Exception:
-                pass
-        return grant, set_cookie_gid
-
-    # 2) Не нашли — СОЗДАЁМ ТОЛЬКО если есть fp (cookie/hdr/middleware)
-    new_grant = _create_grant_if_fp(
-        fp=fp_soft, gid=gid, session_key=session_key, ua_hash=ua, ip_hash=ip, first_ip=first_ip
-    )
-    if new_grant:
-        return new_grant, set_cookie_gid
-
-    # 3) Нет fp → не создаём (инкогнито-первый-заход). Вернём None.
-    return None, None
+    from .security import ensure_guest_grant_with_security
+    
+    # Получаем грант через новую систему безопасности
+    grant, device, error = ensure_guest_grant_with_security(request)
+    
+    if error:
+        # Ошибка безопасности - не даём токены
+        return None, None
+    
+    if not grant:
+        # Не удалось получить грант
+        return None, None
+    
+    # GID уже управляется middleware, не нужно ставить cookie здесь
+    return grant, None
 
 
 def _claim_guest_jobs_for_user(request: HttpRequest) -> None:

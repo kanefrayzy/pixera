@@ -147,19 +147,21 @@ def _guest_cookie_id(request: HttpRequest) -> str:
 
 def _ensure_grant(request: HttpRequest) -> FreeGrant:
     """
-    Ищем/создаём FreeGrant по нескольким идентификаторам.
-    Cookie «gid» ставится при отдаче формы (views.new), здесь лишь используем.
+    ОБНОВЛЁННАЯ СИСТЕМА: Использует ensure_guest_grant_with_security
+    для защиты от Tor/VPN обхода.
     """
-    _ensure_session_key(request)
-    gid = _guest_cookie_id(request)
-    grant = FreeGrant.ensure_for(
-        fp=_hard_fingerprint(request),
-        gid=gid,
-        session_key=request.session.session_key,
-        ip_hash=_ip_hash(request),
-        ua_hash=_ua_hash(request),
-        first_ip=(request.META.get("REMOTE_ADDR") or "").strip() or None,
-    )
+    from .security import ensure_guest_grant_with_security
+    
+    grant, device, error = ensure_guest_grant_with_security(request)
+    
+    if error:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied(error)
+    
+    if not grant:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Не удалось получить токены")
+    
     return grant
 
 

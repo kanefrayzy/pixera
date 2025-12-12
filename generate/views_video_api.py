@@ -374,19 +374,17 @@ def video_submit(request):
                         'error': f'Недостаточно токенов. Требуется: {token_cost} TOK'
                     }, status=402)
             elif not user:
-                try:
-                    _ensure_session_key(request)
-                except Exception:
-                    pass
-                hard_fp = _hard_fingerprint(request)
-                gid = request.COOKIES.get('gid', '')
-
-                grant = FreeGrant.objects.filter(
-                    Q(fp=hard_fp) | Q(gid=gid),
-                    user__isnull=True
-                ).first()
-
-                if not grant or grant.left < token_cost:
+                from .security import ensure_guest_grant_with_security
+                
+                grant, device, error = ensure_guest_grant_with_security(request)
+                
+                if error or not grant:
+                    return JsonResponse({
+                        'success': False,
+                        'error': error or 'Ошибка получения токенов'
+                    }, status=403)
+                
+                if grant.left < token_cost:
                     return JsonResponse({
                         'success': False,
                         'error': f'Недостаточно токенов. Требуется: {token_cost} TOK'
