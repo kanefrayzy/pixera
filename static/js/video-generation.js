@@ -2864,7 +2864,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (aspectText) { try { tile.dataset.aspectText = aspectText; } catch (_) { } }
 
     tile.innerHTML = `
-      <div class="relative aspect-square group ${hasPreview ? '' : 'bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-2)]'}">
+      <div class="relative aspect-video group ${hasPreview ? '' : 'bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-2)]'}">
         ${badgesHtml}
         ${hasPreview ? `<img src="${pic}" alt="Источник" class="absolute inset-0 w-full h-full object-cover">` : ''}
 
