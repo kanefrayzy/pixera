@@ -306,16 +306,21 @@ class LanguagePrefixRedirectMiddleware:
 
 class DeviceFingerprintMiddleware:
     """
-    • Гарантирует session_key.
-    • Ставит стойкий cookie 'gid' (HttpOnly) если его нет.
+    УЛУЧШЕННАЯ СИСТЕМА FINGERPRINT:
+    • Приоритет клиентскому fingerprint (canvas+WebGL)
+    • Серверный FP используется как fallback
+    • Гарантирует session_key
+    • Ставит стойкий cookie 'gid' (HttpOnly)
     • Вычисляет:
+        client_fp = от браузера (cookie/заголовок)
         ua_hash = H(UA|Accept-Language)
         ip_hash = H(IP|SECRET_KEY)
-        fp      = H(ua_hash|ip_hash|SECRET_KEY)
-    • Кладёт значения в request (совместимость: request.fp):
-        request.device_gid, request.device_fp, request.fp,
+        server_fp = H(ua_hash|ip_hash|SECRET_KEY) - только fallback
+    • Кладёт значения в request:
+        request.device_gid, request.device_fp (client_fp),
+        request.device_client_fp, request.device_server_fp,
         request.device_ip_hash, request.device_ua_hash, request.device_session_key
-    • Добавляет ответные заголовки X-Device-Fingerprint, X-Device-GID (для логов).
+    • НЕ перезаписывает клиентский cookie!
     """
 
     def __init__(self, get_response):
@@ -329,36 +334,58 @@ class DeviceFingerprintMiddleware:
         gid_cookie_name = _cookie_name_gid()
         gid = (request.COOKIES.get(gid_cookie_name) or "").strip()
         if not gid:
-            # 22–32 urlsafe символа — достаточно стойко, <=64 (ограничение у модели)
             gid = secrets.token_urlsafe(22)
 
-        # вычисляем отпечатки
+        # вычисляем серверные отпечатки
         ua_h = _ua_hash(request)
         ip_h = _ip_hash(request)
-        fp = _hard_fp(request)
+        server_fp = _hard_fp(request)
+
+        # ПРИОРИТЕТ: клиентский fingerprint из браузера
+        fp_cookie_name = _cookie_name_fp()
+        client_fp = ""
+        
+        # 1) Проверяем cookie от клиента
+        if fp_cookie_name:
+            client_fp = (request.COOKIES.get(fp_cookie_name) or "").strip()
+        
+        # 2) Проверяем заголовок (если фронт его шлёт)
+        if not client_fp:
+            fp_header = getattr(settings, "FP_HEADER_NAME", "X-Device-Fingerprint")
+            client_fp = (request.META.get(f"HTTP_{fp_header.upper().replace('-', '_')}", "") or "").strip()
+
+        # 3) Fallback на серверный FP (только если клиент не предоставил)
+        primary_fp = client_fp if client_fp else server_fp
 
         # прокинем в request
         request.device_gid = gid
-        request.device_fp = fp
-        request.fp = fp  # важно для старого кода
+        request.device_fp = primary_fp  # основной FP (клиентский или серверный)
+        request.fp = primary_fp  # совместимость со старым кодом
+        request.device_client_fp = client_fp  # клиентский FP (может быть пустым)
+        request.device_server_fp = server_fp  # серверный FP (всегда есть)
         request.device_ip_hash = ip_h
         request.device_ua_hash = ua_h
         request.device_session_key = sess
 
-        # пропускаем дальше и устанавливаем cookie в ответе
+        # пропускаем дальше
         response = self.get_response(request)
 
-        # гарантируем наличие cookie gid (HttpOnly) и вспомогательный cookie с fp (не HttpOnly)
+        # гарантируем наличие cookie gid (HttpOnly)
         if request.COOKIES.get(gid_cookie_name) != gid:
             _set_cookie(response, gid_cookie_name, gid, years=5, http_only=True)
 
-        fp_cookie_name = _cookie_name_fp()
-        if fp_cookie_name and request.COOKIES.get(fp_cookie_name) != fp:
-            _set_cookie(response, fp_cookie_name, fp, years=3, http_only=False)
+        # ВАЖНО: НЕ перезаписываем клиентский fp_cookie!
+        # Клиент сам управляет этим cookie через JavaScript
+        # Мы только ставим его при первом заходе, если его нет
+        if fp_cookie_name and not request.COOKIES.get(fp_cookie_name):
+            # Только если cookie полностью отсутствует - ставим server_fp как fallback
+            _set_cookie(response, fp_cookie_name, server_fp, years=3, http_only=False)
 
         # диагностические заголовки
         try:
-            response["X-Device-Fingerprint"] = fp[:32]  # усечённый
+            response["X-Device-Fingerprint"] = primary_fp[:32]
+            response["X-Device-Client-FP"] = (client_fp[:32] if client_fp else "none")
+            response["X-Device-Server-FP"] = server_fp[:32]
             response["X-Device-GID"] = gid
         except Exception:
             pass

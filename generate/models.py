@@ -1002,17 +1002,18 @@ class GenerationJob(models.Model):
 
 class DeviceFingerprint(models.Model):
     """
-    Жёсткое отслеживание устройства с 4-этапной защитой.
-    Уровень 1: FP (жёсткий отпечаток браузера)
+    УЛУЧШЕННОЕ отслеживание устройства с гибридной защитой.
+    Уровень 1: FP (клиентский отпечаток: canvas+WebGL+browser API)
     Уровень 2: GID (стойкий cookie)
-    Уровень 3: IP hash (защита от VPN)
-    Уровень 4: UA hash (отпечаток User-Agent)
+    Уровень 3: UA hash (отпечаток User-Agent)
+    Уровень 4: IP hash (защита от VPN, не для идентификации)
     """
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     # 4 уровня защиты
-    fp = models.CharField(max_length=64, unique=True, db_index=True, help_text='Жёсткий отпечаток браузера')
+    fp = models.CharField(max_length=64, db_index=True, help_text='Клиентский отпечаток браузера (canvas+WebGL)')
+    server_fp = models.CharField(max_length=64, db_index=True, blank=True, default='', help_text='Серверный отпечаток (fallback)')
     gid = models.CharField(max_length=64, db_index=True, help_text='Стойкий cookie идентификатор')
     ip_hash = models.CharField(max_length=64, db_index=True, help_text='Хеш IP адреса')
     ua_hash = models.CharField(max_length=64, db_index=True, help_text='Хеш User-Agent')
@@ -1045,7 +1046,9 @@ class DeviceFingerprint(models.Model):
         verbose_name_plural = 'Отпечатки устройств'
         indexes = [
             models.Index(fields=['fp', 'is_blocked']),
+            models.Index(fields=['server_fp', 'is_blocked']),
             models.Index(fields=['gid', 'is_blocked']),
+            models.Index(fields=['gid', 'ua_hash']),
             models.Index(fields=['ip_hash', 'is_blocked']),
             models.Index(fields=['ua_hash', 'is_blocked']),
             models.Index(fields=['is_blocked', 'created_at']),
@@ -1063,100 +1066,159 @@ class DeviceFingerprint(models.Model):
         gid: str,
         ip_hash: str,
         ua_hash: str,
+        server_fp: str = "",
         first_ip: Optional[str] = None,
         session_key: Optional[str] = None,
     ) -> tuple["DeviceFingerprint", bool]:
         """
-        Получить или создать устройство по 4-этапной проверке.
+        УЛУЧШЕННАЯ ЛОГИКА: приоритет клиентскому fingerprint.
         Возвращает (device, created).
 
-        ЖЕЛЕЗНАЯ ЛОГИКА:
-        1. Ищем по FP (самый жёсткий идентификатор)
-        2. Если не найдено - проверяем комбинацию GID + IP_HASH + UA_HASH
-        3. Если найдено совпадение по 3 параметрам - это то же устройство
-        4. Иначе создаём новое устройство
+        СТРАТЕГИЯ ПОИСКА:
+        1. Ищем по клиентскому FP (canvas+WebGL - самый надёжный)
+        2. Если не найдено - ищем по GID + UA_HASH (игнорируем IP!)
+        3. Если найдено по GID+UA но с другим FP = обновляем FP (VPN/Tor)
+        4. Если не найдено - проверяем server_fp как fallback
+        5. Иначе создаём новое устройство
+        
+        IP НЕ используется для идентификации (только для VPN-детекта)!
         """
         fp = (fp or "").strip()
         gid = (gid or "").strip()
         ip_hash = (ip_hash or "").strip()
         ua_hash = (ua_hash or "").strip()
+        server_fp = (server_fp or "").strip()
 
-        if not fp:
-            raise ValueError("FP is required for device tracking")
+        if not fp and not server_fp:
+            raise ValueError("Either client FP or server FP is required")
 
-        # Уровень 1: Поиск по FP (самый надёжный)
-        device = cls.objects.filter(fp=fp).first()
-        if device:
-            # Обновляем дополнительные данные если нужно
-            updated = False
-            if gid and not device.gid:
-                device.gid = gid
-                updated = True
-            if ip_hash and device.ip_hash != ip_hash:
-                # IP изменился - возможно VPN
-                if device.ip_hash and device.ip_hash != ip_hash:
-                    device.is_vpn_detected = True
-                device.ip_hash = ip_hash
-                updated = True
-            if ua_hash and not device.ua_hash:
-                device.ua_hash = ua_hash
-                updated = True
-            if first_ip and not device.first_ip:
-                device.first_ip = first_ip
-                updated = True
-            if session_key:
-                keys = device.session_keys or []
-                if session_key not in keys:
-                    keys.append(session_key)
-                    device.session_keys = keys[-10:]  # Храним последние 10
+        # Уровень 1: Поиск по клиентскому FP (приоритет)
+        if fp:
+            device = cls.objects.filter(fp=fp, is_blocked=False).first()
+            if device:
+                # Найдено по клиентскому FP - обновляем метаданные
+                updated = False
+                
+                if gid and device.gid != gid:
+                    device.gid = gid
                     updated = True
+                
+                if server_fp and device.server_fp != server_fp:
+                    device.server_fp = server_fp
+                    updated = True
+                    
+                if ip_hash and device.ip_hash != ip_hash:
+                    # IP изменился - возможно VPN/Tor (это нормально!)
+                    if device.ip_hash:
+                        device.is_vpn_detected = True
+                    device.ip_hash = ip_hash
+                    updated = True
+                    
+                if ua_hash and device.ua_hash != ua_hash:
+                    device.ua_hash = ua_hash
+                    updated = True
+                    
+                if first_ip and not device.first_ip:
+                    device.first_ip = first_ip
+                    updated = True
+                    
+                if session_key:
+                    keys = device.session_keys or []
+                    if session_key not in keys:
+                        keys.append(session_key)
+                        device.session_keys = keys[-10:]
+                        updated = True
 
-            if updated:
-                device.save()
+                if updated:
+                    device.save()
 
-            return device, False
+                return device, False
 
-        # Уровень 2-4: Проверка по комбинации GID + IP + UA
-        # Если совпадают все 3 - это попытка обхода через инкогнито
-        if gid and ip_hash and ua_hash:
+        # Уровень 2: Поиск по GID + UA_HASH (игнорируем IP!)
+        # Это позволяет находить устройство даже при смене IP через VPN/Tor
+        if gid and ua_hash:
             similar = cls.objects.filter(
                 gid=gid,
-                ip_hash=ip_hash,
-                ua_hash=ua_hash
+                ua_hash=ua_hash,
+                is_blocked=False
             ).first()
 
             if similar:
-                # Обнаружена попытка обхода через инкогнито!
-                similar.is_incognito_detected = True
-                similar.bypass_attempts += 1
-                similar.last_bypass_attempt = timezone.now()
-
-                # Блокируем после 3 попыток
-                if similar.bypass_attempts >= 3:
-                    similar.is_blocked = True
-
+                # Найдено устройство с тем же GID+UA но другим клиентским FP
+                # Это может быть:
+                # 1) Нормальная смена IP через VPN/Tor
+                # 2) Попытка обхода через инкогнито
+                
+                # Проверяем: если клиентский FP сильно отличается - подозрительно
+                if fp and similar.fp != fp:
+                    # Клиент прислал новый FP - это может быть инкогнито
+                    similar.bypass_attempts += 1
+                    similar.last_bypass_attempt = timezone.now()
+                    similar.is_incognito_detected = True
+                    
+                    # НЕ блокируем сразу, даем шанс (может быть смена браузера)
+                    # Блокируем только после многих попыток
+                    if similar.bypass_attempts >= 5:
+                        similar.is_blocked = True
+                        similar.save()
+                        
+                        TokenGrantAttempt.objects.create(
+                            fp=fp,
+                            gid=gid,
+                            ip_hash=ip_hash,
+                            ua_hash=ua_hash,
+                            session_key=session_key or '',
+                            ip_address=first_ip,
+                            was_granted=False,
+                            was_blocked=True,
+                            block_reason='Множественные попытки обхода обнаружены',
+                            device=similar
+                        )
+                        return similar, False
+                    
+                    # Обновляем FP (разрешаем использование)
+                    similar.fp = fp
+                
+                # Обновляем остальные данные
+                similar.server_fp = server_fp
+                if ip_hash and similar.ip_hash != ip_hash:
+                    similar.is_vpn_detected = True
+                    similar.ip_hash = ip_hash
+                if first_ip and not similar.first_ip:
+                    similar.first_ip = first_ip
+                if session_key:
+                    keys = similar.session_keys or []
+                    if session_key not in keys:
+                        keys.append(session_key)
+                        similar.session_keys = keys[-10:]
+                        
                 similar.save()
-
-                # Логируем попытку
-                TokenGrantAttempt.objects.create(
-                    fp=fp,
-                    gid=gid,
-                    ip_hash=ip_hash,
-                    ua_hash=ua_hash,
-                    session_key=session_key or '',
-                    ip_address=first_ip,
-                    was_granted=False,
-                    was_blocked=True,
-                    block_reason='Обнаружена попытка обхода через инкогнито',
-                    device=similar
-                )
-
-                # Возвращаем существующее устройство (заблокированное)
                 return similar, False
+
+        # Уровень 3: Fallback на серверный FP (если клиентского нет)
+        if server_fp and not fp:
+            device = cls.objects.filter(server_fp=server_fp, is_blocked=False).first()
+            if device:
+                # Обновляем метаданные
+                updated = False
+                if gid and device.gid != gid:
+                    device.gid = gid
+                    updated = True
+                if ip_hash and device.ip_hash != ip_hash:
+                    device.is_vpn_detected = True
+                    device.ip_hash = ip_hash
+                    updated = True
+                if ua_hash and device.ua_hash != ua_hash:
+                    device.ua_hash = ua_hash
+                    updated = True
+                if updated:
+                    device.save()
+                return device, False
 
         # Создаём новое устройство
         device = cls.objects.create(
-            fp=fp,
+            fp=fp or server_fp,  # Используем клиентский или fallback на серверный
+            server_fp=server_fp,
             gid=gid,
             ip_hash=ip_hash,
             ua_hash=ua_hash,

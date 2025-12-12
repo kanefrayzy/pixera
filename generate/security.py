@@ -22,9 +22,12 @@ def get_device_identifiers(request: HttpRequest) -> dict:
     """
     Извлечь все идентификаторы устройства из request.
     Использует данные из DeviceFingerprintMiddleware.
+    Приоритет клиентскому fingerprint.
     """
     return {
-        'fp': getattr(request, 'device_fp', ''),
+        'fp': getattr(request, 'device_fp', ''),  # Основной FP (клиентский или fallback)
+        'client_fp': getattr(request, 'device_client_fp', ''),  # Клиентский FP
+        'server_fp': getattr(request, 'device_server_fp', ''),  # Серверный FP
         'gid': getattr(request, 'device_gid', ''),
         'ip_hash': getattr(request, 'device_ip_hash', ''),
         'ua_hash': getattr(request, 'device_ua_hash', ''),
@@ -96,7 +99,9 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
     """
     ids = get_device_identifiers(request)
 
-    fp = ids['fp']
+    fp = ids['fp']  # Основной FP (приоритет клиентскому)
+    client_fp = ids['client_fp']
+    server_fp = ids['server_fp']
     gid = ids['gid']
     ip_hash = ids['ip_hash']
     ua_hash = ids['ua_hash']
@@ -104,6 +109,7 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
     first_ip = ids['first_ip']
 
     # Кластерный идентификатор посетителя (объединяем разные браузеры/режимы)
+    # Используем GID+UA для кластеризации (не IP!)
     try:
         cluster = AbuseCluster.ensure_for(
             fp=fp, gid=gid, ip_hash=ip_hash, ua_hash=ua_hash
@@ -112,18 +118,19 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
         log.error(f"Error ensuring cluster: {e}")
         cluster = None
 
-    # Валидация: FP обязателен
+    # Валидация: хотя бы один FP должен быть
     if not fp:
         log.error("FP is missing - cannot track device")
         return None, None, "Ошибка идентификации устройства"
 
-    # Шаг 1: Получить или создать устройство с проверкой на обход
+    # Шаг 1: Получить или создать устройство с улучшенной логикой
     try:
         device, created = DeviceFingerprint.get_or_create_device(
             fp=fp,
             gid=gid,
             ip_hash=ip_hash,
             ua_hash=ua_hash,
+            server_fp=server_fp,
             first_ip=first_ip,
             session_key=session_key
         )
