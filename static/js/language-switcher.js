@@ -40,8 +40,6 @@ const LanguageSwitcher = {
   },
 
   initSwitcher(switchId, menuId, flagId) {
-
-  initSwitcher(switchId, menuId) {
     const switcher = document.getElementById(switchId);
     const menu = document.getElementById(menuId);
 
@@ -76,13 +74,29 @@ const LanguageSwitcher = {
       const lang = (item.getAttribute('data-lang') || '').toLowerCase();
       this.setLanguage(lang, switcher, menu, flagId);
     });
-  },  getCurrentLanguage() {
+  },
+
+  getCurrentLanguage() {
+    // 1. Проверяем cookie django_language
+    const cookieMatch = document.cookie.match(/(?:^|;\s*)django_language=([^;]+)/);
+    if (cookieMatch) {
+      const cookieLang = cookieMatch[1].toLowerCase();
+      if (this.supportedLangs.includes(cookieLang)) return cookieLang;
+    }
+
+    // 2. Проверяем URL
     const urlMatch = location.pathname.match(/^\/(en|es|pt|de|ru)(?:\/|$)/);
     if (urlMatch) return urlMatch[1];
 
+    // 3. Проверяем HTML lang атрибут
     const htmlLang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
-    return this.supportedLangs.includes(htmlLang) ? htmlLang : this.defaultLang;
-  },  markActiveLanguage(menu, activeLanguage) {
+    if (this.supportedLangs.includes(htmlLang)) return htmlLang;
+
+    // 4. Возвращаем язык по умолчанию
+    return this.defaultLang;
+  },
+
+  markActiveLanguage(menu, activeLanguage) {
     menu.querySelectorAll('button[data-lang]').forEach(btn => {
       const btnLang = (btn.getAttribute('data-lang') || '').toLowerCase();
       const isActive = btnLang === activeLanguage;
