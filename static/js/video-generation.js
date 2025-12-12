@@ -979,6 +979,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         this.saveClearedJobs?.();
         // Фикс: глобально помечаем момент очистки и убираем возможные «залипшие» pending-флаги
         this.clearedAt = Date.now();
+        this.saveClearedJobs();
         try {
           localStorage.removeItem('gen.video.pendingJob');
           localStorage.removeItem('gen.video.inflight');
@@ -991,6 +992,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
   addOrUpdateQueueEntry(jobId, patch) {
     if (!jobId) return;
     const id = String(jobId);
+    
+    // НЕ добавляем задачи, которые пользователь явно удалил
+    if (this.clearedJobs && this.clearedJobs.has(id)) {
+      console.log('[addOrUpdateQueueEntry] BLOCKED - job is in clearedJobs:', id);
+      return;
+    }
+    
     const idx = this.queue.findIndex(e => String(e.job_id) === id);
     if (idx >= 0) {
       this.queue[idx] = { ...this.queue[idx], ...patch, job_id: id };
@@ -1116,7 +1124,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
         // 3. Skip legacy mixed-in IMAGE entries (no video_url but has image_url)
         if (item && !item.video_url && item.image_url) {
-          try { this.clearedJobs.add(String(item.job_id)); this.saveClearedJobs?.(); } catch (_) { }
+          try { this.clearedJobs.add(String(item.job_id)); this.saveClearedJobs(); } catch (_) { }
           return;
         }
         let tile = this.createPendingTile(item.preview || null);
@@ -1135,7 +1143,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       if (toRemove.length > 0) {
         this.queue = this.queue.filter(item => !toRemove.includes(item.job_id));
         this.saveQueue();
-        this.saveClearedJobs?.();
+        this.saveClearedJobs();
       }
 
       grid.appendChild(frag);
@@ -1158,11 +1166,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       this.queue.forEach(e => {
         if (e.job_id) this.clearedJobs.add(String(e.job_id));
       });
-      this.saveClearedJobs?.();
+      this.saveClearedJobs();
+      console.log('[clearQueue] Saved clearedJobs:', Array.from(this.clearedJobs));
 
       // 2) Глобально запоминаем момент очистки и сбрасываем возможные «залипшие» pending-флаги
       this.clearedAt = Date.now();
-      this.saveClearedAt?.(this.clearedAt);
+      this.saveClearedAt(this.clearedAt);
+      console.log('[clearQueue] Saved clearedAt:', this.clearedAt);
       try {
         localStorage.removeItem('gen.video.pendingJob');
         localStorage.removeItem('gen.video.inflight');
@@ -2047,7 +2057,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             });
           } catch (_) { }
           this.clearedJobs.add(String(jid));
-          this.saveClearedJobs?.();
+          this.saveClearedJobs();
         } else {
           this.clearedTiles?.add(tile);
         }
@@ -2660,7 +2670,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const response = await fetch(`/generate/api/video/status/${jobId}`);
       if (response.status === 404 || response.status === 403) {
-        try { this.clearedJobs.add(String(jobId)); this.saveClearedJobs?.(); } catch (_) { }
+        try { this.clearedJobs.add(String(jobId)); this.saveClearedJobs(); } catch (_) { }
         try { if (tile && tile.isConnected) tile.remove(); } catch (_) { }
         return;
       }
@@ -2808,11 +2818,21 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       // Show only completed VIDEO jobs for current user; ignore images and cleared-at or older
       j.jobs.forEach(job => {
         const jid = String(job.job_id);
-        if (this.clearedJobs.has(jid) || this.queue.some(e => String(e.job_id) === jid)) return;
+        if (this.clearedJobs.has(jid)) {
+          console.log('[bootstrapCompletedJobs] SKIP - in clearedJobs:', jid);
+          return;
+        }
+        if (this.queue.some(e => String(e.job_id) === jid)) {
+          console.log('[bootstrapCompletedJobs] SKIP - already in queue:', jid);
+          return;
+        }
 
         // respect last clear moment (skip items created before/at clear)
         const createdAtTs = job.created_at ? Date.parse(job.created_at) : 0;
-        if (this.clearedAt && createdAtTs && createdAtTs <= this.clearedAt) return;
+        if (this.clearedAt && createdAtTs && createdAtTs <= this.clearedAt) {
+          console.log('[bootstrapCompletedJobs] SKIP - older than clearedAt:', jid, createdAtTs, this.clearedAt);
+          return;
+        }
 
         // Only include videos in video queue
         if ((job.generation_type || 'image') !== 'video') return;
