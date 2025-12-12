@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% load i18n socialaccount static %}
+{% load i18n static %}
 
 {% block title %}Завершение регистрации — Pixera{% endblock %}
-{% block meta_description %}Завершите регистрацию через {{ account.get_provider.name }} на Pixera.{% endblock %}
+{% block meta_description %}Завершите регистрацию на Pixera.{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 
 {% block hero %}
@@ -21,7 +21,164 @@
   <div class="card p-6 sm:p-8">
     <div class="text-center mb-8">
       <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
-        {% if account.provider == 'google' %}
+        <svg class="w-10 h-10 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-semibold mb-2">Вход выполнен успешно!</h2>
+      <p class="text-sm text-[var(--muted)]">Теперь создайте уникальное имя пользователя</p>
+    </div>
+
+    <!-- Account Info Box (hidden, keeping simple) -->
+    <div class="mb-6 p-4 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20" style="display:none;">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        <div class="text-sm text-green-800 dark:text-green-200">
+          <div class="font-medium mb-1">Социальный аккаунт подключен</div>
+          <p class="text-xs opacity-90">Завершите регистрацию ниже</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    {% include "includes/messages.html" %}
+
+    <!-- Signup Form -->
+    <form method="post" action="{% url 'socialaccount_signup' %}" novalidate class="space-y-6">
+      {% csrf_token %}
+
+      {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+      {% endif %}
+
+      <!-- Username Field -->
+      <div>
+        <label class="block text-sm font-medium mb-2" for="id_username">
+          Имя пользователя
+        </label>
+        <input class="field {% if form.username.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}"
+               type="text"
+               name="username"
+               id="id_username"
+               value="{{ form.username.value|default_if_none:'' }}"
+               placeholder="Введите имя пользователя"
+               autofocus
+               required>
+        {% if form.username.errors %}
+          <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+            {% for error in form.username.errors %}{{ error }}{% endfor %}
+          </div>
+        {% else %}
+          <p class="mt-2 text-xs text-[var(--muted)]">
+            Будет видно в вашем профиле. Используйте только буквы, цифры и символы @.+-_
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Email Field (if available) -->
+      {% if form.email %}
+        <div>
+          <label class="block text-sm font-medium mb-2" for="id_email">
+            Email
+          </label>
+          <input class="field {% if form.email.errors %}border-red-500 focus:border-red-500 focus:ring-red-500/30{% endif %}"
+                 type="email"
+                 name="email"
+                 id="id_email"
+                 value="{{ form.email.value|default_if_none:'' }}"
+                 placeholder="Введите email"
+                 required>
+          {% if form.email.errors %}
+            <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+              {% for error in form.email.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- Submit Button -->
+      <button class="btn btn-primary w-full text-base py-3" type="submit">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Завершить регистрацию
+      </button>
+    </form>
+  </div>
+
+  <!-- Info Notice -->
+  <div class="card p-4 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 9H11V7H13M13 17H11V11H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+      </svg>
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        <div class="font-medium mb-1">Почему нужно имя пользователя?</div>
+        <p>Имя пользователя используется для создания уникальной ссылки на ваш профиль и отображается в ваших работах.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Form submission loading state
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const usernameInput = document.getElementById('id_username');
+  const originalText = submitBtn.innerHTML;
+
+  // Real-time validation for username
+  if (usernameInput) {
+    usernameInput.addEventListener('input', () => {
+      // Clear error state when user starts typing
+      if (usernameInput.classList.contains('border-red-500')) {
+        usernameInput.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+      }
+    });
+
+    usernameInput.addEventListener('blur', () => {
+      const value = usernameInput.value.trim();
+      if (value && !/^[\w.@+-]+$/.test(value)) {
+        usernameInput.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+      }
+    });
+  }
+
+  form.addEventListener('submit', (e) => {
+    const inputs = form.querySelectorAll('input[required]');
+    let isValid = true;
+
+    inputs.forEach(input => {
+      if (!input.value.trim()) {
+        isValid = false;
+        input.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/30');
+      }
+    });
+
+    if (isValid) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Создание профиля...
+      `;
+
+      // Reset after timeout (in case of errors)
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }, 10000);
+    } else {
+      e.preventDefault();
+    }
+  });
+});
+</script>
+{% endblock %}
           <svg class="w-10 h-10" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.6 20.5h-1.6V20H24v8h11.3C33.6 31.9 29.2 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.4 7 28.9 5 24 5 12.4 5 3 14.4 3 26s9.4 21 21 21 21-9.4 21-21c0-1.2-.1-2.4-.4-3.5z"/>
             <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.8 16.2 18.9 13.5 24 13.5c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.4 7 28.9 5 24 5 16.1 5 9.2 9.9 6.3 14.7z"/>
