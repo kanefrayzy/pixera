@@ -424,6 +424,15 @@
         {% trans "Создать" %}
       </a>
     </div>
+    {% else %}
+        <div class="p-4 mt-auto border-t border-[var(--bord)] sm:hidden">
+      <a class="btn btn-primary w-full text-sm" href="{% url 'account_login' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        {% trans "Создать" %}
+      </a>
+    </div>
     {% endif %}
   </div>
 </aside>
