@@ -59,14 +59,14 @@ try:
     from generate.models import DeviceFingerprint
     print("   ✅ DeviceFingerprint модель импортируется")
     print(f"   📊 Полей в модели: {len(DeviceFingerprint._meta.get_fields())}")
-    
+
     # Проверяем наличие поля server_fp
     fields = [f.name for f in DeviceFingerprint._meta.get_fields()]
     if 'server_fp' in fields:
         print("   ✅ Поле 'server_fp' существует")
     else:
         print("   ❌ Поле 'server_fp' ОТСУТСТВУЕТ! Миграция не применена!")
-    
+
 except ImportError as e:
     print(f"   ❌ Ошибка импорта: {e}")
 print()
@@ -76,7 +76,7 @@ print("🔍 Проверка использования security функций:
 try:
     import inspect
     from generate import views
-    
+
     # Ищем вызовы ensure_guest_grant_with_security
     source = inspect.getsource(views)
     if 'ensure_guest_grant_with_security' in source:

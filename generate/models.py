@@ -1080,7 +1080,7 @@ class DeviceFingerprint(models.Model):
         3. Если найдено по GID+UA но с другим FP = обновляем FP (VPN/Tor)
         4. Если не найдено - проверяем server_fp как fallback
         5. Иначе создаём новое устройство
-        
+
         IP НЕ используется для идентификации (только для VPN-детекта)!
         """
         fp = (fp or "").strip()
@@ -1098,30 +1098,30 @@ class DeviceFingerprint(models.Model):
             if device:
                 # Найдено по клиентскому FP - обновляем метаданные
                 updated = False
-                
+
                 if gid and device.gid != gid:
                     device.gid = gid
                     updated = True
-                
+
                 if server_fp and device.server_fp != server_fp:
                     device.server_fp = server_fp
                     updated = True
-                    
+
                 if ip_hash and device.ip_hash != ip_hash:
                     # IP изменился - возможно VPN/Tor (это нормально!)
                     if device.ip_hash:
                         device.is_vpn_detected = True
                     device.ip_hash = ip_hash
                     updated = True
-                    
+
                 if ua_hash and device.ua_hash != ua_hash:
                     device.ua_hash = ua_hash
                     updated = True
-                    
+
                 if first_ip and not device.first_ip:
                     device.first_ip = first_ip
                     updated = True
-                    
+
                 if session_key:
                     keys = device.session_keys or []
                     if session_key not in keys:
@@ -1148,20 +1148,20 @@ class DeviceFingerprint(models.Model):
                 # Это может быть:
                 # 1) Нормальная смена IP через VPN/Tor
                 # 2) Попытка обхода через инкогнито
-                
+
                 # Проверяем: если клиентский FP сильно отличается - подозрительно
                 if fp and similar.fp != fp:
                     # Клиент прислал новый FP - это может быть инкогнито
                     similar.bypass_attempts += 1
                     similar.last_bypass_attempt = timezone.now()
                     similar.is_incognito_detected = True
-                    
+
                     # НЕ блокируем сразу, даем шанс (может быть смена браузера)
                     # Блокируем только после многих попыток
                     if similar.bypass_attempts >= 5:
                         similar.is_blocked = True
                         similar.save()
-                        
+
                         TokenGrantAttempt.objects.create(
                             fp=fp,
                             gid=gid,
@@ -1175,10 +1175,10 @@ class DeviceFingerprint(models.Model):
                             device=similar
                         )
                         return similar, False
-                    
+
                     # Обновляем FP (разрешаем использование)
                     similar.fp = fp
-                
+
                 # Обновляем остальные данные
                 similar.server_fp = server_fp
                 if ip_hash and similar.ip_hash != ip_hash:
@@ -1191,7 +1191,7 @@ class DeviceFingerprint(models.Model):
                     if session_key not in keys:
                         keys.append(session_key)
                         similar.session_keys = keys[-10:]
-                        
+
                 similar.save()
                 return similar, False
 

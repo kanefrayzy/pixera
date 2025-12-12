@@ -130,14 +130,14 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
 
     # ШАГ 2: Ищем существующий грант в кластере
     grant = _find_cluster_grant(cluster)
-    
+
     if grant:
         # Найден существующий грант в кластере
         # Проверяем доступность
         if grant.is_bound_to_user:
             log.warning(f"Grant {grant.pk} is bound to user, cluster {cluster.pk}")
             return None, None, "Грант уже привязан к пользователю"
-        
+
         # Обновляем метаданные гранта (актуализируем)
         if fp and grant.fp != fp:
             grant.fp = fp
@@ -148,9 +148,9 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
         if ua_hash and grant.ua_hash != ua_hash:
             grant.ua_hash = ua_hash
         grant.save()
-        
+
         log.info(f"Using existing grant {grant.pk} from cluster {cluster.pk}")
-        
+
         # Создаём/обновляем устройство (для статистики)
         device = None
         try:
@@ -168,7 +168,7 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
                 device.save()
         except Exception as e:
             log.error(f"Error updating device: {e}")
-        
+
         return grant, device, ""
 
     # ШАГ 3: Создаём устройство
@@ -215,11 +215,11 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
             total=30,
             consumed=0
         )
-        
+
         # Привязываем грант к устройству
         device.free_grant = grant
         device.save(update_fields=['free_grant', 'updated_at'])
-        
+
         # Логируем создание нового гранта
         TokenGrantAttempt.objects.create(
             fp=fp,
@@ -233,10 +233,10 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
             block_reason='',
             device=device
         )
-        
+
         log.info(f"Created new grant {grant.pk} for cluster {cluster.pk}, device {device.pk}")
         return grant, device, ""
-        
+
     except Exception as e:
         log.error(f"Failed to create grant: {e}")
         return None, device, "Не удалось создать грант"

@@ -270,22 +270,22 @@ def _ensure_grant(request: HttpRequest) -> Tuple[Optional[FreeGrant], Optional[s
     """
     ОБНОВЛЁННАЯ СИСТЕМА: Использует ensure_guest_grant_with_security
     с полной защитой от Tor/VPN обхода через кластеризацию по UA_HASH.
-    
+
     Возвращает (grant|None, set_cookie_gid_if_needed|None).
     """
     from .security import ensure_guest_grant_with_security
-    
+
     # Получаем грант через новую систему безопасности
     grant, device, error = ensure_guest_grant_with_security(request)
-    
+
     if error:
         # Ошибка безопасности - не даём токены
         return None, None
-    
+
     if not grant:
         # Не удалось получить грант
         return None, None
-    
+
     # GID уже управляется middleware, не нужно ставить cookie здесь
     return grant, None
 

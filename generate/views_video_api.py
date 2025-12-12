@@ -375,15 +375,15 @@ def video_submit(request):
                     }, status=402)
             elif not user:
                 from .security import ensure_guest_grant_with_security
-                
+
                 grant, device, error = ensure_guest_grant_with_security(request)
-                
+
                 if error or not grant:
                     return JsonResponse({
                         'success': False,
                         'error': error or 'Ошибка получения токенов'
                     }, status=403)
-                
+
                 if grant.left < token_cost:
                     return JsonResponse({
                         'success': False,

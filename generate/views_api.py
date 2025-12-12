@@ -151,17 +151,17 @@ def _ensure_grant(request: HttpRequest) -> FreeGrant:
     для защиты от Tor/VPN обхода.
     """
     from .security import ensure_guest_grant_with_security
-    
+
     grant, device, error = ensure_guest_grant_with_security(request)
-    
+
     if error:
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied(error)
-    
+
     if not grant:
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Не удалось получить токены")
-    
+
     return grant
 
 

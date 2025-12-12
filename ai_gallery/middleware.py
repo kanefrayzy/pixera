@@ -344,11 +344,11 @@ class DeviceFingerprintMiddleware:
         # ПРИОРИТЕТ: клиентский fingerprint из браузера
         fp_cookie_name = _cookie_name_fp()
         client_fp = ""
-        
+
         # 1) Проверяем cookie от клиента
         if fp_cookie_name:
             client_fp = (request.COOKIES.get(fp_cookie_name) or "").strip()
-        
+
         # 2) Проверяем заголовок (если фронт его шлёт)
         if not client_fp:
             fp_header = getattr(settings, "FP_HEADER_NAME", "X-Device-Fingerprint")
