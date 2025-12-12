@@ -3,11 +3,43 @@ const LanguageSwitcher = {
   defaultLang: 'ru',
   prefixDefault: false,
 
-  init() {
-    this.initSwitcher('langSwitch', 'langMenu');
-    this.initSwitcher('langSwitchMobile', 'langMenuMobile');
-    this.initSwitcher('langSwitchDrawer', 'langMenuDrawer');
+  langFlags: {
+    'en': '/static/img/flags/gb.svg',
+    'ru': '/static/img/flags/ru.svg',
+    'de': '/static/img/flags/de.svg',
+    'es': '/static/img/flags/es.svg',
+    'pt': '/static/img/flags/pt.svg'
   },
+
+  init() {
+    this.initSwitcher('langSwitch', 'langMenu', 'currentLangFlag');
+    this.initSwitcher('langSwitchMobile', 'langMenuMobile', 'currentLangFlagM');
+    this.initSwitcher('langSwitchDrawer', 'langMenuDrawer', 'currentLangFlagDrawer');
+    
+    // Обновляем флаг при загрузке
+    const currentLang = this.getCurrentLanguage();
+    this.updateFlagIcon(currentLang);
+  },
+
+  updateFlagIcon(lang) {
+    const flagUrl = this.langFlags[lang] || this.langFlags[this.defaultLang];
+    
+    const flags = [
+      'currentLangFlag',
+      'currentLangFlagM',
+      'currentLangFlagDrawer',
+      'currentLangFlagDrawerGuest'
+    ];
+    
+    flags.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.tagName === 'IMG') {
+        el.src = flagUrl;
+      }
+    });
+  },
+
+  initSwitcher(switchId, menuId, flagId) {
 
   initSwitcher(switchId, menuId) {
     const switcher = document.getElementById(switchId);
@@ -42,7 +74,7 @@ const LanguageSwitcher = {
 
       e.preventDefault();
       const lang = (item.getAttribute('data-lang') || '').toLowerCase();
-      this.setLanguage(lang, switcher, menu);
+      this.setLanguage(lang, switcher, menu, flagId);
     });
   },  getCurrentLanguage() {
     const urlMatch = location.pathname.match(/^\/(en|es|pt|de|ru)(?:\/|$)/);
@@ -83,10 +115,11 @@ const LanguageSwitcher = {
     return match ? decodeURIComponent(match[2]) : '';
   },
 
-  async setLanguage(language, switcher, menu) {
+  async setLanguage(language, switcher, menu, flagId) {
     if (!this.supportedLangs.includes(language)) return;
 
     this.markActiveLanguage(menu, language);
+    this.updateFlagIcon(language);
     switcher.removeAttribute('open');
 
     const nextUrl = this.buildLanguageUrl(language);

@@ -329,7 +329,7 @@
         {% if not request.user.is_authenticated %}
         <details class="relative" id="langSwitch">
           <summary class="btn btn-ghost p-2 rounded-2xl border-0 cursor-pointer" aria-controls="langMenu" aria-haspopup="menu" aria-expanded="false" aria-label="{% trans 'Выбрать язык' %}">
-            🌐
+            <img id="currentLangFlag" class="w-5 h-5 rounded" src="{% static 'img/flags/ru.svg' %}" alt="">
           </summary>
           <div class="absolute right-0 top-full mt-2 rounded-3xl border border-[var(--bord)] bg-white dark:bg-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50" id="langMenu" role="menu" aria-label="{% trans 'Выбрать язык' %}">
             <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">

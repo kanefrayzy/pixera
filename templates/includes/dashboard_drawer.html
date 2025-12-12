@@ -136,10 +136,10 @@
         <div class="grid grid-cols-2 gap-2">
           <!-- Language -->
           <details class="relative" id="langSwitchDrawer">
-            <summary class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] text-xl leading-none flex items-center justify-center"
+            <summary class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] flex items-center justify-center"
                      aria-controls="langMenuDrawer" aria-haspopup="menu" aria-expanded="false"
                      aria-label="{% trans 'Выбрать язык' %}">
-              <span aria-hidden="true">🌐</span>
+              <img id="currentLangFlagDrawer" class="w-6 h-6 rounded" src="{% static 'img/flags/ru.svg' %}" alt="">
             </summary>
             <div class="absolute left-0 top-full mt-1 rounded-xl border border-[var(--bord)] bg-[var(--bg)] shadow-lg p-1 min-w-[160px] z-50"
                  id="langMenuDrawer" role="menu" aria-label="{% trans 'Выбрать язык' %}">
@@ -222,10 +222,10 @@
         <div class="grid grid-cols-2 gap-2">
           <!-- Language -->
           <details class="relative" id="langSwitchDrawer">
-            <summary class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] text-xl leading-none flex items-center justify-center"
+            <summary class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] flex items-center justify-center"
                      aria-controls="langMenuDrawer" aria-haspopup="menu" aria-expanded="false"
                      aria-label="{% trans 'Выбрать язык' %}">
-              <span aria-hidden="true">🌐</span>
+              <img id="currentLangFlagDrawerGuest" class="w-6 h-6 rounded" src="{% static 'img/flags/ru.svg' %}" alt="">
             </summary>
             <div class="absolute left-0 top-full mt-1 rounded-xl border border-[var(--bord)] bg-[var(--bg)] shadow-lg p-1 min-w-[160px] z-50"
                  id="langMenuDrawer" role="menu" aria-label="{% trans 'Выбрать язык' %}">
