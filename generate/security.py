@@ -81,25 +81,25 @@ def _find_cluster_grant(cluster: AbuseCluster) -> Optional[FreeGrant]:
 @transaction.atomic
 def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[FreeGrant], Optional[DeviceFingerprint], str]:
     """
-    ЖЕЛЕЗНАЯ ЛОГИКА получения/создания гранта для гостя.
+    УЛУЧШЕННАЯ ЛОГИКА получения/создания гранта для гостя.
 
     Возвращает: (grant, device, error_message)
 
-    4-ЭТАПНАЯ ЗАЩИТА:
-    1. Проверка по FP (жёсткий отпечаток браузера)
-    2. Проверка по GID (стойкий cookie)
-    3. Проверка по IP hash (защита от VPN)
-    4. Проверка по UA hash (отпечаток User-Agent)
+    СТРАТЕГИЯ (защита от Tor/VPN):
+    1. Создаём/находим КЛАСТЕР по UA_HASH (самый стабильный параметр)
+    2. Ищем существующий ГРАНТ в кластере
+    3. Если грант найден - используем его (даже если IP/FP изменились)
+    4. Если грант не найден - создаём ОДИН грант на весь кластер
+    5. Устройства привязываем к кластеру (для статистики)
 
-    ПРАВИЛА:
-    - Если найдено устройство с такими же GID+IP+UA но другим FP = ИНКОГНИТО
-    - Если устройство заблокировано = НЕТ ДОСТУПА
-    - Если токены закончились = НЕТ ДОСТУПА
-    - Новое устройство = НОВЫЙ ГРАНТ с 30 токенами
+    КЛЮЧЕВОЕ ОТЛИЧИЕ:
+    - UA_HASH не меняется в Tor Browser (один и тот же браузер)
+    - Один грант на кластер UA_HASH (а не на каждый IP/FP)
+    - IP и FP только для статистики и VPN-детекта
     """
     ids = get_device_identifiers(request)
 
-    fp = ids['fp']  # Основной FP (приоритет клиентскому)
+    fp = ids['fp']
     client_fp = ids['client_fp']
     server_fp = ids['server_fp']
     gid = ids['gid']
@@ -108,25 +108,73 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
     session_key = ids['session_key']
     first_ip = ids['first_ip']
 
-    # Кластерный идентификатор посетителя (объединяем разные браузеры/режимы)
-    # Используем GID+UA для кластеризации (не IP!)
+    # КЛЮЧЕВАЯ ПРОВЕРКА: UA_HASH обязателен (он не меняется в Tor!)
+    if not ua_hash:
+        log.error("UA_HASH is missing - cannot track user")
+        return None, None, "Ошибка идентификации браузера"
+
+    # ШАГ 1: КЛАСТЕР - главный механизм идентификации
+    # Используем UA_HASH как основной идентификатор (стабилен в Tor)
+    # FP и GID могут меняться (Tor очищает), но UA остаётся
     try:
+        # Создаём кластер по UA_HASH (+ FP, GID если есть)
         cluster = AbuseCluster.ensure_for(
-            fp=fp, gid=gid, ip_hash=ip_hash, ua_hash=ua_hash
+            ua_hash=ua_hash,
+            fp=fp if fp else None,
+            gid=gid if gid else None,
+            ip_hash=None,  # НЕ используем IP для кластеризации!
         )
     except Exception as e:
         log.error(f"Error ensuring cluster: {e}")
-        cluster = None
+        return None, None, "Ошибка системы безопасности"
 
-    # Валидация: хотя бы один FP должен быть
-    if not fp:
-        log.error("FP is missing - cannot track device")
-        return None, None, "Ошибка идентификации устройства"
+    # ШАГ 2: Ищем существующий грант в кластере
+    grant = _find_cluster_grant(cluster)
+    
+    if grant:
+        # Найден существующий грант в кластере
+        # Проверяем доступность
+        if grant.is_bound_to_user:
+            log.warning(f"Grant {grant.pk} is bound to user, cluster {cluster.pk}")
+            return None, None, "Грант уже привязан к пользователю"
+        
+        # Обновляем метаданные гранта (актуализируем)
+        if fp and grant.fp != fp:
+            grant.fp = fp
+        if gid and grant.gid != gid:
+            grant.gid = gid
+        if ip_hash and grant.ip_hash != ip_hash:
+            grant.ip_hash = ip_hash
+        if ua_hash and grant.ua_hash != ua_hash:
+            grant.ua_hash = ua_hash
+        grant.save()
+        
+        log.info(f"Using existing grant {grant.pk} from cluster {cluster.pk}")
+        
+        # Создаём/обновляем устройство (для статистики)
+        device = None
+        try:
+            device, _ = DeviceFingerprint.get_or_create_device(
+                fp=fp or server_fp,
+                gid=gid,
+                ip_hash=ip_hash,
+                ua_hash=ua_hash,
+                server_fp=server_fp,
+                first_ip=first_ip,
+                session_key=session_key
+            )
+            if device and not device.free_grant:
+                device.free_grant = grant
+                device.save()
+        except Exception as e:
+            log.error(f"Error updating device: {e}")
+        
+        return grant, device, ""
 
-    # Шаг 1: Получить или создать устройство с улучшенной логикой
+    # ШАГ 3: Создаём устройство
     try:
         device, created = DeviceFingerprint.get_or_create_device(
-            fp=fp,
+            fp=fp or server_fp,
             gid=gid,
             ip_hash=ip_hash,
             ua_hash=ua_hash,
@@ -138,10 +186,9 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
         log.error(f"Error creating device: {e}")
         return None, None, "Ошибка системы безопасности"
 
-    # Шаг 2: Проверка блокировки устройства
+    # ШАГ 4: Проверка блокировки устройства
     can_get, reason = device.can_get_tokens()
     if not can_get:
-        # Логируем заблокированную попытку
         TokenGrantAttempt.objects.create(
             fp=fp,
             gid=gid,
@@ -156,17 +203,24 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
         )
         return None, device, reason
 
-    # Шаг 3: Получить или создать грант
-    if device.free_grant:
-        # Устройство уже имеет грант
-        grant = device.free_grant
-
-        # Проверка: если грант привязан к пользователю - это ошибка
-        if grant.is_bound_to_user:
-            log.warning(f"Device {device.pk} has user-bound grant {grant.pk}")
-            return None, device, "Грант уже привязан к пользователю"
-
-        # Логируем успешный доступ к существующему гранту
+    # ШАГ 5: Создаём НОВЫЙ грант (только если нет в кластере)
+    # Один грант на весь кластер UA_HASH
+    try:
+        grant = FreeGrant.objects.create(
+            fp=fp,
+            gid=gid,
+            ua_hash=ua_hash,
+            ip_hash=ip_hash,
+            first_ip=first_ip,
+            total=30,
+            consumed=0
+        )
+        
+        # Привязываем грант к устройству
+        device.free_grant = grant
+        device.save(update_fields=['free_grant', 'updated_at'])
+        
+        # Логируем создание нового гранта
         TokenGrantAttempt.objects.create(
             fp=fp,
             gid=gid,
@@ -179,166 +233,15 @@ def ensure_guest_grant_with_security(request: HttpRequest) -> Tuple[Optional[Fre
             block_reason='',
             device=device
         )
-
+        
+        log.info(f"Created new grant {grant.pk} for cluster {cluster.pk}, device {device.pk}")
         return grant, device, ""
+        
+    except Exception as e:
+        log.error(f"Failed to create grant: {e}")
+        return None, device, "Не удалось создать грант"
 
-    # Шаг 4: Создать новый грант для нового устройства
-    if created:
-        # Кластер: если уже есть грант в кластере — не создаём новый, а привязываем
-        cluster_grant = _find_cluster_grant(cluster) if cluster else None
-        if cluster_grant:
-            if cluster_grant.is_bound_to_user:
-                TokenGrantAttempt.objects.create(
-                    fp=fp,
-                    gid=gid,
-                    ip_hash=ip_hash,
-                    ua_hash=ua_hash,
-                    session_key=session_key,
-                    ip_address=first_ip,
-                    was_granted=False,
-                    was_blocked=True,
-                    block_reason='Кластер: существующий грант уже привязан к пользователю',
-                    device=device
-                )
-                return None, device, 'Грант уже привязан к пользователю'
 
-            device.free_grant = cluster_grant
-            device.save(update_fields=['free_grant', 'updated_at'])
-
-            TokenGrantAttempt.objects.create(
-                fp=fp,
-                gid=gid,
-                ip_hash=ip_hash,
-                ua_hash=ua_hash,
-                session_key=session_key,
-                ip_address=first_ip,
-                was_granted=True,
-                was_blocked=False,
-                block_reason='Кластер: найден и привязан существующий грант',
-                device=device
-            )
-            return cluster_grant, device, ""
-
-        # Это действительно новое устройство - даём токены
-        grant = FreeGrant.objects.create(
-            fp=fp,
-            gid=gid,
-            ua_hash=ua_hash,
-            ip_hash=ip_hash,
-            first_ip=first_ip,
-            total=30,  # СТРОГО 30 токенов
-            consumed=0
-        )
-
-        # Привязываем грант к устройству
-        device.free_grant = grant
-        device.save(update_fields=['free_grant', 'updated_at'])
-
-        # Логируем выдачу новых токенов
-        TokenGrantAttempt.objects.create(
-            fp=fp,
-            gid=gid,
-            ip_hash=ip_hash,
-            ua_hash=ua_hash,
-            session_key=session_key,
-            ip_address=first_ip,
-            was_granted=True,
-            was_blocked=False,
-            block_reason='Новое устройство - выданы токены',
-            device=device
-        )
-
-        log.info(f"Created new grant {grant.pk} for device {device.pk}")
-        return grant, device, ""
-
-    # Устройство существует но без гранта - ищем старый грант
-    # Это может быть после миграции или если связь была разорвана
-    # Сначала ищем грант в кластере (объединяет другие браузеры/инкогнито)
-    cluster_grant = _find_cluster_grant(cluster) if cluster else None
-    if cluster_grant:
-        if cluster_grant.is_bound_to_user:
-            TokenGrantAttempt.objects.create(
-                fp=fp,
-                gid=gid,
-                ip_hash=ip_hash,
-                ua_hash=ua_hash,
-                session_key=session_key,
-                ip_address=first_ip,
-                was_granted=False,
-                was_blocked=True,
-                block_reason='Кластер: грант уже привязан к пользователю',
-                device=device
-            )
-            return None, device, 'Грант уже привязан к пользователю'
-
-        device.free_grant = cluster_grant
-        device.save(update_fields=['free_grant', 'updated_at'])
-
-        TokenGrantAttempt.objects.create(
-            fp=fp,
-            gid=gid,
-            ip_hash=ip_hash,
-            ua_hash=ua_hash,
-            session_key=session_key,
-            ip_address=first_ip,
-            was_granted=True,
-            was_blocked=False,
-            block_reason='Кластер: восстановлена связь с существующим грантом',
-            device=device
-        )
-        return cluster_grant, device, ""
-
-    grant = FreeGrant.objects.filter(
-        fp=fp,
-        user__isnull=True
-    ).first()
-
-    if not grant:
-        # Ищем по другим идентификаторам
-        from django.db.models import Q
-        grant = FreeGrant.objects.filter(
-            Q(gid=gid) | Q(ip_hash=ip_hash),
-            user__isnull=True
-        ).first()
-
-    if grant:
-        # Нашли старый грант - привязываем к устройству
-        device.free_grant = grant
-        device.save(update_fields=['free_grant', 'updated_at'])
-
-        TokenGrantAttempt.objects.create(
-            fp=fp,
-            gid=gid,
-            ip_hash=ip_hash,
-            ua_hash=ua_hash,
-            session_key=session_key,
-            ip_address=first_ip,
-            was_granted=True,
-            was_blocked=False,
-            block_reason='Восстановлена связь с грантом',
-            device=device
-        )
-
-        return grant, device, ""
-
-    # Грант не найден - это подозрительно для существующего устройства
-    # Возможно попытка обхода - НЕ ДАЁМ новые токены
-    device.record_bypass_attempt("Попытка получить новый грант для существующего устройства")
-
-    TokenGrantAttempt.objects.create(
-        fp=fp,
-        gid=gid,
-        ip_hash=ip_hash,
-        ua_hash=ua_hash,
-        session_key=session_key,
-        ip_address=first_ip,
-        was_granted=False,
-        was_blocked=True,
-        block_reason='Подозрение на обход: устройство без гранта',
-        device=device
-    )
-
-    return None, device, "Токены уже использованы"
 
 
 @transaction.atomic
