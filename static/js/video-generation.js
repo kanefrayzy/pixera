@@ -1087,23 +1087,23 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const now = Date.now();
       const TTL_24H = 24 * 60 * 60 * 1000; // 24 часа
-      
+
       const items = [...this.queue].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       if (!items.length) return;
-      
+
       this.ensureQueueUI();
       const grid = document.getElementById('video-results-grid');
       if (!grid) return;
-      
+
       const frag = document.createDocumentFragment();
       const toRemove = [];
-      
+
       items.forEach(item => {
         // 1. Проверяем что задача не удалена пользователем
         if (this.clearedJobs && this.clearedJobs.has(String(item.job_id))) {
           return;
         }
-        
+
         // 2. Автоудаление задач старше 24 часов
         const completedAt = item.completedAt || item.createdAt || 0;
         if (completedAt && (now - completedAt > TTL_24H)) {
@@ -1113,7 +1113,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           }
           return;
         }
-        
+
         // 3. Skip legacy mixed-in IMAGE entries (no video_url but has image_url)
         if (item && !item.video_url && item.image_url) {
           try { this.clearedJobs.add(String(item.job_id)); this.saveClearedJobs?.(); } catch (_) { }
@@ -1130,14 +1130,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         }
         frag.appendChild(tile);
       });
-      
+
       // Удаляем устаревшие задачи из очереди
       if (toRemove.length > 0) {
         this.queue = this.queue.filter(item => !toRemove.includes(item.job_id));
         this.saveQueue();
         this.saveClearedJobs?.();
       }
-      
+
       grid.appendChild(frag);
       if (grid._moreJobs && grid._moreJobs.length && typeof this.insertShowMoreButton === 'function') {
         this.insertShowMoreButton(grid);
@@ -2848,7 +2848,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
    */
   createPendingTile(previewUrl = null) {
     const tile = document.createElement('div');
-    // Добавляем анимацию появления (как у изображений)
+    // Добавляем анимацию появления
     tile.className = 'video-result-tile rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden shadow-sm animate-fade-in-scale';
     tile.setAttribute('data-status', 'pending');
 
