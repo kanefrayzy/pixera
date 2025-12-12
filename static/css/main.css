@@ -5,9 +5,10 @@
   padding: 0 0.5rem;
 }
 
-@media (min-width: 480px) {
+@media (max-width: 480px) {
   .container {
-    padding: 0 1rem; /* 16px for larger screens */
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 

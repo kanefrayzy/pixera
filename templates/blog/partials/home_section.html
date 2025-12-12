@@ -1,4 +1,4 @@
-﻿{# blog/templates/blog/partials/home_section.html #}
+{# blog/templates/blog/partials/home_section.html #}
 <div class="container">
   <div class="text-center max-w-3xl mx-auto mb-16">
     <h2 class="text-3xl sm:text-4xl font-bold mb-4">Свежие статьи из блога</h2>
@@ -13,10 +13,10 @@
             <!-- Image -->
             <a class="block relative overflow-hidden" href="{{ p.get_absolute_url }}" aria-label="{{ p.title }}">
               {% if p.cover %}
-                <img class="w-full aspect-[16/10] object-cover transition duration-300 group-hover:scale-105" 
-                     src="{{ p.cover.url }}" 
-                     alt="{{ p.title }}" 
-                     loading="lazy" 
+                <img class="w-full aspect-[16/10] object-cover transition duration-300 group-hover:scale-105"
+                     src="{{ p.cover.url }}"
+                     alt="{{ p.title }}"
+                     loading="lazy"
                      decoding="async">
               {% else %}
                 <div class="w-full aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
@@ -25,7 +25,7 @@
                   </svg>
                 </div>
               {% endif %}
-              
+
               <!-- Reading Time Overlay -->
               <div class="absolute top-3 right-3">
                 <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
@@ -70,7 +70,7 @@
                       <span>{{ p.author.get_full_name|default:p.author.username }}</span>
                     </div>
                   {% endif %}
-                  
+
                   {% if p.published_at %}
                     <time datetime="{{ p.published_at|date:'c' }}">
                       {{ p.published_at|date:"d.m.Y" }}
@@ -138,10 +138,6 @@
   overflow: hidden;
 }
 
-/* Ensure equal height cards */
-.card {
-  height: 100%;
-}
 
 /* Hover effects for blog cards */
 .group:hover .card {
@@ -164,11 +160,11 @@
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
+
   .aspect-\[16\/10\] {
     aspect-ratio: 16/9;
   }
-  
+
   .text-xl.font-semibold {
     font-size: 1.125rem;
     line-height: 1.5;

@@ -757,13 +757,6 @@
 
 @media (hover: none) and (pointer: coarse) {
   /* Larger touch targets */
-  .card button,
-  .card a.flex,
-  .media-tab,
-  .profile-actions .btn {
-    min-height: 44px;
-    min-width: 44px;
-  }
 
   /* Disable hover effects */
   .card:hover,

@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
@@ -25,7 +25,6 @@
 <style>
 /* Критические стили инлайн для мгновенного рендеринга */
 .card{background:var(--bg-card);border-radius:1rem;border:1px solid var(--bord);padding:1.5rem}
-.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.625rem 1rem;border-radius:.5rem;font-weight:600;transition:all .2s}
 .btn-primary{background:var(--primary);color:#fff}
 .field{width:100%;padding:.625rem;border:1px solid var(--bord);border-radius:.5rem;background:var(--bg-card)}
 /* removed global .hidden override to preserve Tailwind responsive display utilities on header */
@@ -1651,44 +1650,52 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     {% endif %}
 
-    <div class="flex flex-wrap items-center justify-center gap-4 gap-y-6 sm:justify-end" style="margin-top: {% if request.user.is_staff %}1rem{% else %}0{% endif %}">
-
-  <div class="flex flex-wrap items-center justify-center gap-4 gap-y-6 sm:justify-end">
+    <!-- Balance Section with proper spacing -->
+    <div class="mt-6 sm:mt-8 mb-4">
+      <div class="flex flex-wrap items-center justify-center gap-4 gap-y-4 sm:justify-end">
         <!-- Balance Display -->
         {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
           {% if request.user.is_authenticated %}
-            <div class="min-w-[120px] flex flex-col justify-center">
-              <div class="flex items-center gap-2 justify-center">
-                <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span class="w-2 h-2 rounded-full bg-primary"></span>
+            <div class="card min-w-[140px] p-3 sm:p-4">
+              <div class="flex items-center gap-2 justify-center mb-2">
+                <span class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
                 </span>
                 {% if request.user.is_staff %}
-                  <strong id="balance" data-infinite="1" class="text-lg font-semibold">∞</strong>
+                  <strong id="balance" data-infinite="1" class="text-xl font-bold">∞</strong>
                 {% else %}
-                  <strong id="balance" class="text-lg font-semibold" itemprop="interactionStatistic">{{ wallet.balance|default:0 }}</strong>
+                  <strong id="balance" class="text-xl font-bold" itemprop="interactionStatistic">{{ wallet.balance|default:0 }}</strong>
                 {% endif %}
-                <span class="text-xs text-[var(--muted)]">TOK</span>
+                <span class="text-sm text-[var(--muted)] font-medium">TOK</span>
               </div>
-              <div class="text-xs text-[var(--muted)] mt-1 text-center">{% if request.user.is_staff %}Админ режим{% else %}Ваш баланс{% endif %}</div>
+              <div class="text-xs text-[var(--muted)] text-center">
+                {% if request.user.is_staff %}Админ режим{% else %}Ваш баланс{% endif %}
+              </div>
             </div>
           {% else %}
-            <div class="min-w-[120px] flex flex-col justify-center" aria-label="Гостевой баланс">
-              <div class="flex items-center gap-2 justify-center">
-                <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span class="w-2 h-2 rounded-full bg-primary"></span>
+            <div class="card min-w-[140px] p-3 sm:p-4" aria-label="Гостевой баланс">
+              <div class="flex items-center gap-2 justify-center mb-2">
+                <span class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
                 </span>
-                <strong id="guestBalance" class="text-lg font-semibold">{{ guest_tokens }}</strong>
-                <span class="text-xs text-[var(--muted)]">TOK</span>
+                <strong id="guestBalance" class="text-xl font-bold">{{ guest_tokens }}</strong>
+                <span class="text-sm text-[var(--muted)] font-medium">TOK</span>
               </div>
-              <div class="text-xs text-[var(--muted)] mt-1 text-center">Гостевой режим</div>
+              <div class="text-xs text-[var(--muted)] text-center">Гостевой режим</div>
             </div>
           {% endif %}
         {% endwith %}
 
-        <!-- Tokens only UI (no operations counter) -->
+        <!-- Top Up Button -->
         {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
           {% if not request.user.is_staff and cost %}
-            <a class="btn btn-primary w-full sm:w-auto" id="topUpLink" href="{{ tariffs_url }}" rel="nofollow">Пополнить</a>
+            <a class="btn btn-primary w-full sm:w-auto px-6 py-3" id="topUpLink" href="{{ tariffs_url }}" rel="nofollow">
+              <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Пополнить
+            </a>
           {% endif %}
         {% endwith %}
       </div>

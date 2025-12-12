@@ -1,4 +1,4 @@
-﻿{% load i18n %}
+{% load i18n %}
 {% load static %}
 <div class="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm z-40 opacity-0 pointer-events-none transition-opacity duration-300" id="dbBackdrop" hidden></div>
 
@@ -13,26 +13,57 @@
 >
   <div class="h-full bg-[var(--bg)] border-l border-[var(--bord)] shadow-2xl overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
 
-    <div class="relative flex items-center justify-between p-4 border-b border-[var(--bord)] min-h-[64px] sm:min-h-[72px]">
+    <!-- Header for authenticated users -->
+    {% if request.user.is_authenticated %}
+    <div class="relative p-4 border-b border-[var(--bord)]">
       <div id="dbDrawerTitle" class="sr-only">{% trans "Профиль" %}</div>
 
-      <a href="/profile-{{ request.user.username }}" class="absolute left-1/2 -translate-x-1/2 inline-flex items-center justify-center" aria-label="{% trans 'Мой профиль' %}">
-        <span class="relative inline-flex items-center justify-center">
-          <img
-            src="{% if user_profile and user_profile.avatar %}{{ user_profile.avatar.url }}{% else %}#{% endif %}"
-            alt="{{ request.user.username }}"
-            class="js-avatar-img {% if not user_profile or not user_profile.avatar %}hidden{% endif %} w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover ring-2 ring-[var(--bord)] bg-white/50 dark:bg-white/5 shadow-md"
-            loading="lazy"
-            decoding="async"
-          />
-          <span class="js-avatar-fallback {% if user_profile and user_profile.avatar %}hidden{% endif %} w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-base ring-2 ring-[var(--bord)] shadow-md">
-            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+      <div class="flex items-center gap-3 mb-3">
+        <a href="/profile-{{ request.user.username }}" class="flex-shrink-0 group" aria-label="{% trans 'Мой профиль' %}">
+          <span class="relative inline-block">
+            <img
+              src="{% if user_profile and user_profile.avatar %}{{ user_profile.avatar.url }}{% else %}#{% endif %}"
+              alt="{{ request.user.username }}"
+              class="js-avatar-img {% if not user_profile or not user_profile.avatar %}hidden{% endif %} w-14 h-14 rounded-full object-cover ring-2 ring-[var(--bord)] group-hover:ring-primary/50 bg-white/50 dark:bg-white/5 shadow-md transition-all"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="js-avatar-fallback {% if user_profile and user_profile.avatar %}hidden{% endif %} w-14 h-14 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white font-bold text-lg ring-2 ring-[var(--bord)] group-hover:ring-primary/50 shadow-md transition-all">
+              {{ request.user.first_name|first|default:request.user.username|first|upper }}
+            </span>
           </span>
-        </span>
-      </a>
+        </a>
+
+        <div class="flex-1 min-w-0">
+          <a href="/profile-{{ request.user.username }}" class="block group">
+            <div class="font-semibold text-base text-[var(--text)] truncate group-hover:text-primary transition-colors">
+              {{ request.user.username }}
+            </div>
+            <div class="text-xs text-[var(--muted)]">
+              {% trans "Мой профиль" %}
+            </div>
+          </a>
+        </div>
+
+        <button
+            class="flex-shrink-0 w-8 h-8 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center transition focus:outline-none focus:ring-0 focus:border-none"
+          id="dbDrawerClose"
+          type="button"
+          aria-label="{% trans 'Закрыть' %}"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    {% else %}
+    <!-- Header for guests -->
+    <div class="relative flex items-center gap-2 p-4 border-b border-[var(--bord)] min-h-[64px] sm:min-h-[72px]">
+      <div id="dbDrawerTitle" class="sr-only">{% trans "Меню" %}</div>
 
       <button
-          class="w-8 h-8 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center transition focus:outline-none focus:ring-0 focus:border-none"
+          class="w-8 h-8 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center transition focus:outline-none focus:ring-0 focus:border-none flex-shrink-0"
         id="dbDrawerClose"
         type="button"
         aria-label="{% trans 'Закрыть' %}"
@@ -41,17 +72,27 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
-    </div>
 
-    <div class="p-4 border-b border-[var(--bord)]">
-      <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 w-full">
-        <div class="flex-1 min-w-0">
-          
-        </div>
+      <div class="flex-1 flex items-center gap-2">
+        <a href="{% url 'account_login' %}" class="flex-1 btn btn-primary text-sm py-2 px-3 rounded-xl flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+          </svg>
+          <span class="font-medium">{% trans "Вход" %}</span>
+        </a>
+        <a href="{% url 'account_signup' %}" class="flex-1 btn btn-ghost border border-[var(--bord)] text-sm py-2 px-3 rounded-xl flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+          <span class="font-medium">{% trans "Регистрация" %}</span>
+        </a>
       </div>
+    </div>
+    {% endif %}
 
-
-
+    <!-- Balance & Controls for authenticated users / Language + Theme for guests -->
+    {% if request.user.is_authenticated %}
+    <div class="p-4 border-b border-[var(--bord)]">
       <div class="card p-4" aria-live="polite">
         <div class="flex items-center gap-3 mb-3">
           <div class="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -76,7 +117,6 @@
               <div class="font-bold" id="dbBalanceBlock">
                 <span id="dbBalanceValue">{{ wallet.balance|default:0 }}</span> <span class="text-sm text-[var(--muted)]">TOK</span>
               </div>
-
             {% endif %}
           </div>
         </div>
@@ -101,26 +141,26 @@
                      aria-label="{% trans 'Выбрать язык' %}">
               <span aria-hidden="true">🌐</span>
             </summary>
-            <div class="absolute left-0 bottom-full mb-2 rounded-3xl border border-[var(--bord)] bg-white dark:bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.18)] p-2 min-w-48 z-50"
+            <div class="absolute left-0 top-full mt-1 rounded-xl border border-[var(--bord)] bg-[var(--bg)] shadow-lg p-1 min-w-[160px] z-50"
                  id="langMenuDrawer" role="menu" aria-label="{% trans 'Выбрать язык' %}">
-              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
-                <img class="w-4 h-4 rounded" src="{% static 'img/flags/gb.svg' %}" alt="English">
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/gb.svg' %}" alt="English">
                 <span class="text-sm">English</span>
               </button>
-              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
-                <img class="w-4 h-4 rounded" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
-                <span class="text-sm">{% trans "Русский" %}</span>
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
+                <span class="text-sm">Русский</span>
               </button>
-              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
-                <img class="w-4 h-4 rounded" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
                 <span class="text-sm">Deutsch</span>
               </button>
-              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
-                <img class="w-4 h-4 rounded" src="{% static 'img/flags/es.svg' %}" alt="Español">
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/es.svg' %}" alt="Español">
                 <span class="text-sm">Español</span>
               </button>
-              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
-                <img class="w-4 h-4 rounded" src="{% static 'img/flags/pt.svg' %}" alt="Português">
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/pt.svg' %}" alt="Português">
                 <span class="text-sm">Português</span>
               </button>
             </div>
@@ -175,10 +215,62 @@
         </div>
       </section>
     </div>
+    {% else %}
+    <!-- Language + Theme for guests -->
+    <div class="p-4 border-b border-[var(--bord)]">
+      <section>
+        <div class="grid grid-cols-2 gap-2">
+          <!-- Language -->
+          <details class="relative" id="langSwitchDrawer">
+            <summary class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] text-xl leading-none flex items-center justify-center"
+                     aria-controls="langMenuDrawer" aria-haspopup="menu" aria-expanded="false"
+                     aria-label="{% trans 'Выбрать язык' %}">
+              <span aria-hidden="true">🌐</span>
+            </summary>
+            <div class="absolute left-0 top-full mt-1 rounded-xl border border-[var(--bord)] bg-[var(--bg)] shadow-lg p-1 min-w-[160px] z-50"
+                 id="langMenuDrawer" role="menu" aria-label="{% trans 'Выбрать язык' %}">
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="en" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/gb.svg' %}" alt="English">
+                <span class="text-sm">English</span>
+              </button>
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="ru" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/ru.svg' %}" alt="Русский">
+                <span class="text-sm">Русский</span>
+              </button>
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="de" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/de.svg' %}" alt="Deutsch">
+                <span class="text-sm">Deutsch</span>
+              </button>
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="es" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/es.svg' %}" alt="Español">
+                <span class="text-sm">Español</span>
+              </button>
+              <button class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition-colors" type="button" data-lang="pt" role="menuitemradio" aria-checked="false">
+                <img class="w-4 h-4 rounded-sm" src="{% static 'img/flags/pt.svg' %}" alt="Português">
+                <span class="text-sm">Português</span>
+              </button>
+            </div>
+          </details>
+          <!-- Theme -->
+          <button id="themeToggleDrawer"
+                  class="btn btn-ghost w-full h-12 rounded-2xl border border-[var(--bord)] flex items-center justify-center"
+                  type="button" aria-label="{% trans 'Переключить тему' %}" aria-pressed="false">
+            <svg id="iconSunD" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path>
+            </svg>
+            <svg id="iconMoonD" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
+    </div>
+    {% endif %}
 
+    <!-- Navigation -->
+    {% if request.user.is_authenticated %}
     <nav class="p-4 space-y-1" aria-label="{% trans 'Меню профиля' %}">
-
-
       <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'gallery:index' %}">
         <div class="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center group-hover:bg-violet-500/25 transition">
           <svg class="w-4 h-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -227,15 +319,14 @@
         </svg>
       </a>
 
-      <!-- Saved (bookmarks) -->
       <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'dashboard:saved' %}">
         <div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition">
-          <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z"/>
           </svg>
         </div>
         <span class="font-medium">{% trans "Сохранённое" %}</span>
-        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
       </a>
@@ -270,7 +361,61 @@
         </svg>
       </a>
     </nav>
+    {% else %}
+    <!-- Guest Navigation -->
+    <nav class="p-4 space-y-1" aria-label="{% trans 'Меню' %}">
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'gallery:index' %}">
+        <div class="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center group-hover:bg-violet-500/25 transition">
+          <svg class="w-4 h-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Галерея" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
 
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'gallery:trending' %}">
+        <div class="w-8 h-8 rounded-lg bg-pink-500/15 flex items-center justify-center group-hover:bg-pink-500/25 transition">
+          <svg class="w-4 h-4 text-pink-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Тренды" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'generate:new' %}">
+        <div class="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center group-hover:bg-green-500/25 transition">
+          <svg class="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Генерация" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <a class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="/blog/">
+        <div class="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center group-hover:bg-blue-500/25 transition">
+          <svg class="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+          </svg>
+        </div>
+        <span class="font-medium">{% trans "Блог" %}</span>
+        <svg class="w-4 h-4 ml-auto text-[var(--muted)] group-hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+    </nav>
+    {% endif %}
+
+    {% if request.user.is_authenticated %}
     <div class="p-4 mt-auto border-t border-[var(--bord)] sm:hidden">
       <a class="btn btn-primary w-full text-sm" href="{% url 'generate:new' %}">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -279,6 +424,7 @@
         {% trans "Создать" %}
       </a>
     </div>
+    {% endif %}
   </div>
 </aside>
 

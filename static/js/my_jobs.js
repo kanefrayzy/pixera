@@ -16,16 +16,16 @@
   }
 
   // Mobile touch target tweaks
-  function tuneTouchTargets(){
-    if (window.innerWidth > 640) return;
-    document.querySelectorAll('.btn').forEach(b => {
-      b.style.minHeight = '44px';
-    });
-    document.querySelectorAll('.w-8.h-8').forEach(el => {
-      el.style.width = '40px';
-      el.style.height = '40px';
-    });
-  }
+  // function tuneTouchTargets(){
+  //   if (window.innerWidth > 640) return;
+  //   document.querySelectorAll('.btn').forEach(b => {
+  //     b.style.minHeight = '44px';
+  //   });
+  //   document.querySelectorAll('.w-8.h-8').forEach(el => {
+  //     el.style.width = '40px';
+  //     el.style.height = '40px';
+  //   });
+  // }
 
   function isolateOverlayClicks(){
     document.addEventListener('click', (e) => {
