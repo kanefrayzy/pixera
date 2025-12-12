@@ -222,6 +222,7 @@ LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "/dashboard/me"
 ACCOUNT_SIGNUP_REDIRECT_URL = LOGIN_REDIRECT_URL
 ACCOUNT_ADAPTER = "ai_gallery.adapters.AccountAdapter"
+SOCIALACCOUNT_ADAPTER = "ai_gallery.adapters.SocialAccountAdapter"
 LOGOUT_REDIRECT_URL = "pages:home"
 
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
@@ -230,6 +231,12 @@ ACCOUNT_EMAIL_VERIFICATION = os.getenv("ACCOUNT_EMAIL_VERIFICATION", "optional")
 ACCOUNT_SESSION_REMEMBER = None
 ACCOUNT_RATE_LIMITS = {"login_failed": os.getenv("ACCOUNT_RATE_LIMIT_LOGIN_FAILED", "5/5m")}
 ACCOUNT_LOGIN_ON_SIGNUP = True
+
+# Настройки для социальных аккаунтов
+SOCIALACCOUNT_AUTO_SIGNUP = True  # Автоматическая регистрация без формы
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Использовать email для аутентификации
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Автоматически связывать по email
+SOCIALACCOUNT_QUERY_EMAIL = True  # Запрашивать email, если не получен
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
