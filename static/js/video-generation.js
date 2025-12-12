@@ -1085,17 +1085,36 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
   restoreQueue() {
     try {
+      const now = Date.now();
+      const TTL_24H = 24 * 60 * 60 * 1000; // 24 часа
+      
       const items = [...this.queue].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       if (!items.length) return;
+      
       this.ensureQueueUI();
       const grid = document.getElementById('video-results-grid');
       if (!grid) return;
+      
       const frag = document.createDocumentFragment();
+      const toRemove = [];
+      
       items.forEach(item => {
+        // 1. Проверяем что задача не удалена пользователем
         if (this.clearedJobs && this.clearedJobs.has(String(item.job_id))) {
-          return; // не восстанавливаем скрытые пользователем задачи
+          return;
         }
-        // Skip legacy mixed-in IMAGE entries (no video_url but has image_url)
+        
+        // 2. Автоудаление задач старше 24 часов
+        const completedAt = item.completedAt || item.createdAt || 0;
+        if (completedAt && (now - completedAt > TTL_24H)) {
+          toRemove.push(item.job_id);
+          if (item.job_id) {
+            this.clearedJobs.add(String(item.job_id));
+          }
+          return;
+        }
+        
+        // 3. Skip legacy mixed-in IMAGE entries (no video_url but has image_url)
         if (item && !item.video_url && item.image_url) {
           try { this.clearedJobs.add(String(item.job_id)); this.saveClearedJobs?.(); } catch (_) { }
           return;
@@ -1111,6 +1130,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         }
         frag.appendChild(tile);
       });
+      
+      // Удаляем устаревшие задачи из очереди
+      if (toRemove.length > 0) {
+        this.queue = this.queue.filter(item => !toRemove.includes(item.job_id));
+        this.saveQueue();
+        this.saveClearedJobs?.();
+      }
+      
       grid.appendChild(frag);
       if (grid._moreJobs && grid._moreJobs.length && typeof this.insertShowMoreButton === 'function') {
         this.insertShowMoreButton(grid);
@@ -2821,7 +2848,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
    */
   createPendingTile(previewUrl = null) {
     const tile = document.createElement('div');
-    tile.className = 'video-result-tile rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden shadow-sm';
+    // Добавляем анимацию появления (как у изображений)
+    tile.className = 'video-result-tile rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden shadow-sm animate-fade-in-scale';
     tile.setAttribute('data-status', 'pending');
 
     const hasPreview = !!(previewUrl || (this.currentMode === 'i2v' && this.sourcePreviewUrl));
@@ -2840,12 +2868,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         ${badgesHtml}
         ${hasPreview ? `<img src="${pic}" alt="Источник" class="absolute inset-0 w-full h-full object-cover">` : ''}
 
-        <!-- Remove tile button -->
-        <button type="button" class="tile-remove-btn absolute top-2 right-2 z-10 w-8 h-8 rounded-lg bg-black/60 text-white border border-white/20 hover:bg-black/70 flex items-center justify-center transition-all" aria-label="Удалить из очереди">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
-          </svg>
-        </button>
+        <!-- Кнопка удаления СКРЫТА во время генерации -->
 
         <!-- Puzzle Loader (same as image loader), overlaid on top of preview if present -->
         <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
@@ -2969,6 +2992,19 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         }
         .animate-shimmer {
           animation: shimmer 2s infinite;
+        }
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in-scale {
+          animation: fadeInScale 0.3s ease-out;
         }
         @media (max-width: 480px) {
           .puzzle-grid { width: 80px !important; height: 80px !important; gap: 1.5px; }
