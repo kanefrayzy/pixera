@@ -40,13 +40,13 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         Автоматически заполняем данные пользователя из социальной сети
         """
         user = super().populate_user(request, sociallogin, data)
-        
+
         # Генерируем username из email или имени
         if not user.username:
             email = data.get('email', '')
             name = data.get('name', '')
             first_name = data.get('first_name', '')
-            
+
             # Пробуем использовать часть email до @
             if email:
                 base_username = email.split('@')[0]
@@ -56,11 +56,11 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
                 base_username = first_name.lower()
             else:
                 base_username = f'user{sociallogin.account.uid[:8]}'
-            
+
             # Очищаем от недопустимых символов
             import re
             base_username = re.sub(r'[^\w.@+-]', '_', base_username)
-            
+
             # Проверяем уникальность и добавляем номер при необходимости
             from django.contrib.auth import get_user_model
             User = get_user_model()
@@ -69,7 +69,7 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
             while User.objects.filter(username=username).exists():
                 username = f"{base_username}{counter}"
                 counter += 1
-            
+
             user.username = username
-        
+
         return user

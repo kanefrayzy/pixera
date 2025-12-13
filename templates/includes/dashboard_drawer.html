@@ -34,16 +34,21 @@
           </span>
         </a>
 
-        <div class="flex-1 min-w-0">
-          <a href="/profile-{{ request.user.username }}" class="block group">
-            <div class="font-semibold text-base text-[var(--text)] truncate group-hover:text-primary transition-colors">
-              {{ request.user.username }}
-            </div>
-            <div class="text-xs text-[var(--muted)]">
-              {% trans "Мой профиль" %}
-            </div>
-          </a>
-        </div>
+        <a href="/profile-{{ request.user.username }}" class="flex-1 min-w-0 group">
+          <div class="font-semibold text-base text-[var(--text)] truncate group-hover:text-primary transition-colors">
+            {{ request.user.username }}
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-primary font-medium mt-0.5">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span class="group-hover:underline">{% trans "Мой профиль" %}</span>
+            <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </a>
 
         <button
             class="flex-shrink-0 w-8 h-8 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center transition focus:outline-none focus:ring-0 focus:border-none"

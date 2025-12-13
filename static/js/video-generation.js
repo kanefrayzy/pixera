@@ -587,6 +587,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         </span>
       `).join('');
     }
+
+    // Обновляем видимость секции референсов
+    this.updateReferenceSection();
   }
 
   /**
@@ -992,13 +995,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
   addOrUpdateQueueEntry(jobId, patch) {
     if (!jobId) return;
     const id = String(jobId);
-    
+
     // НЕ добавляем задачи, которые пользователь явно удалил
     if (this.clearedJobs && this.clearedJobs.has(id)) {
       console.log('[addOrUpdateQueueEntry] BLOCKED - job is in clearedJobs:', id);
       return;
     }
-    
+
     const idx = this.queue.findIndex(e => String(e.job_id) === id);
     if (idx >= 0) {
       this.queue[idx] = { ...this.queue[idx], ...patch, job_id: id };
@@ -2015,6 +2018,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Загрузка изображения для I2V
     this.setupImageUpload();
 
+    // Загрузка референсных изображений и аудио
+    this.setupReferenceUploads();
+
     // Кнопка генерации
     const generateBtn = document.getElementById('generate-video-btn');
     if (generateBtn) {
@@ -2202,6 +2208,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Обновляем список моделей
     this.updateModelSelect();
+
+    // Обновляем информацию о референсах в зависимости от режима
+    this.updateReferenceSection();
   }
 
   /**
@@ -2579,7 +2588,19 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         fd.append('motion_strength', motionStrength);
       }
 
+      // Для T2V добавляем референсные изображения (frameImages)
+      if (this.currentMode === 't2v' && this.t2vReferenceFiles && this.t2vReferenceFiles.length > 0) {
+        this.t2vReferenceFiles.forEach((file, index) => {
+          fd.append('reference_images', file);
+        });
+      }
 
+      // Добавляем аудио файлы (audioInputs)
+      if (this.audioFiles && this.audioFiles.length > 0) {
+        this.audioFiles.forEach((file, index) => {
+          fd.append('audio_files', file);
+        });
+      }
 
       // Отправляем одну задачу последовательно, чтобы не блокировать SQLite
       await this.submitVideoRequest(fd, tile);
@@ -3589,6 +3610,346 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       closeModal();
       this.showVideoResult(videoUrl, jobId, null);
     });
+  }
+
+  /**
+   * Настройка загрузки референсных изображений
+   */
+  setupReferenceUploads() {
+    // Инициализация массивов для хранения файлов
+    this.t2vReferenceFiles = [];
+    this.audioFiles = [];
+
+    // T2V референсы
+    const t2vInput = document.getElementById('t2v-reference-images');
+    const t2vPreviewsContainer = document.getElementById('t2v-ref-previews');
+
+    if (t2vInput && t2vPreviewsContainer) {
+      // Клик по области загрузки
+      const t2vUploadArea = t2vInput.closest('.border-dashed');
+      if (t2vUploadArea) {
+        t2vUploadArea.addEventListener('click', () => t2vInput.click());
+      }
+
+      // Обработка выбора файлов
+      t2vInput.addEventListener('change', (e) => {
+        this.handleReferenceFiles(e.target.files, 't2v');
+      });
+
+      // Drag & drop
+      if (t2vUploadArea) {
+        t2vUploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          t2vUploadArea.classList.add('border-primary');
+        });
+
+        t2vUploadArea.addEventListener('dragleave', () => {
+          t2vUploadArea.classList.remove('border-primary');
+        });
+
+        t2vUploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          t2vUploadArea.classList.remove('border-primary');
+          this.handleReferenceFiles(e.dataTransfer.files, 't2v');
+        });
+      }
+    }
+
+    // Audio files
+    const audioInput = document.getElementById('audio-files');
+    const audioPreviewsContainer = document.getElementById('audio-previews');
+
+    if (audioInput && audioPreviewsContainer) {
+      // Клик по области загрузки
+      const audioUploadArea = audioInput.closest('.border-dashed');
+      if (audioUploadArea) {
+        audioUploadArea.addEventListener('click', () => audioInput.click());
+      }
+
+      // Обработка выбора файлов
+      audioInput.addEventListener('change', (e) => {
+        this.handleAudioFiles(e.target.files);
+        e.target.value = ''; // Reset input
+      });
+
+      // Drag & drop
+      if (audioUploadArea) {
+        audioUploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          audioUploadArea.classList.add('border-primary');
+        });
+
+        audioUploadArea.addEventListener('dragleave', () => {
+          audioUploadArea.classList.remove('border-primary');
+        });
+
+        audioUploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          audioUploadArea.classList.remove('border-primary');
+          const audioFiles = Array.from(e.dataTransfer.files).filter(f =>
+            f.type.startsWith('audio/')
+          );
+          this.handleAudioFiles(audioFiles);
+        });
+      }
+    }
+  }
+
+  /**
+   * Обработка референсных файлов
+   */
+  handleReferenceFiles(files, mode) {
+    const maxFiles = 5;
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const fileArray = Array.from(files).filter(f => f.type.startsWith('image/'));
+
+    if (fileArray.length === 0) {
+      this.showError('Выберите изображения');
+      return;
+    }
+
+    // Проверка лимита
+    const currentCount = mode === 't2v' ? this.t2vReferenceFiles.length : 0;
+    if (currentCount + fileArray.length > maxFiles) {
+      this.showError(`Максимум ${maxFiles} изображений`);
+      return;
+    }
+
+    // Проверка размера и добавление файлов
+    for (const file of fileArray) {
+      if (file.size > maxSize) {
+        this.showError(`Файл ${file.name} слишком большой (макс. 10MB)`);
+        continue;
+      }
+
+      if (mode === 't2v') {
+        this.t2vReferenceFiles.push(file);
+      }
+
+      // Создаем превью
+      this.createReferencePreview(file, mode);
+    }
+  }
+
+  /**
+   * Создание превью референсного изображения
+   */
+  createReferencePreview(file, mode) {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const containerId = mode === 't2v' ? 't2v-ref-previews' : 'video-ref-previews';
+      const container = document.getElementById(containerId);
+
+      if (!container) return;
+
+      const previewDiv = document.createElement('div');
+      previewDiv.className = 'relative group aspect-square rounded-lg overflow-hidden border-2 border-[var(--bord)] hover:border-primary/50 transition-colors';
+      previewDiv.dataset.fileName = file.name;
+
+      previewDiv.innerHTML = `
+        <img src="${e.target.result}"
+             alt="${file.name}"
+             class="w-full h-full object-cover">
+        <button type="button"
+                class="ref-remove-btn absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
+                aria-label="Удалить">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+        <div class="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
+          <p class="text-[9px] text-white truncate">${file.name}</p>
+        </div>
+      `;
+
+      // Обработчик удаления
+      const removeBtn = previewDiv.querySelector('.ref-remove-btn');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeReferenceFile(file.name, mode);
+        previewDiv.remove();
+      });
+
+      container.appendChild(previewDiv);
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * Удаление референсного файла
+   */
+  removeReferenceFile(fileName, mode) {
+    if (mode === 't2v') {
+      this.t2vReferenceFiles = this.t2vReferenceFiles.filter(f => f.name !== fileName);
+    }
+  }
+
+  /**
+   * Обработка загрузки аудио файлов
+   */
+  handleAudioFiles(files) {
+    const maxFiles = 3;
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm'];
+
+    if (this.audioFiles.length >= maxFiles) {
+      this.showError(`Максимум ${maxFiles} аудио файла`);
+      return;
+    }
+
+    const filesArray = Array.from(files);
+    for (const file of filesArray) {
+      if (this.audioFiles.length >= maxFiles) break;
+
+      // Validate type
+      const isValidType = allowedTypes.includes(file.type) ||
+                          file.name.match(/\.(mp3|wav|ogg|webm)$/i);
+      if (!isValidType) {
+        this.showError(`Файл ${file.name}: неподдерживаемый формат. Используйте MP3, WAV или OGG`);
+        continue;
+      }
+
+      // Validate size
+      if (file.size > maxSize) {
+        this.showError(`Файл ${file.name}: размер превышает 50MB`);
+        continue;
+      }
+
+      // Check duplicates
+      if (this.audioFiles.some(f => f.name === file.name && f.size === file.size)) {
+        this.showError(`Файл ${file.name} уже добавлен`);
+        continue;
+      }
+
+      this.audioFiles.push(file);
+      this.createAudioPreview(file);
+    }
+  }
+
+  /**
+   * Создание превью для аудио файла
+   */
+  createAudioPreview(file) {
+    const container = document.getElementById('audio-previews');
+    if (!container) return;
+
+    const preview = document.createElement('div');
+    preview.className = 'flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--bord)]';
+    preview.dataset.fileName = file.name;
+
+    const icon = `
+      <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
+        <svg class="w-5 h-5 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+        </svg>
+      </div>
+    `;
+
+    const info = `
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-[var(--text)] truncate">${file.name}</p>
+        <p class="text-xs text-[var(--muted)]">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+      </div>
+    `;
+
+    const removeBtn = `
+      <button type="button" class="flex-shrink-0 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    `;
+
+    preview.innerHTML = icon + info + removeBtn;
+
+    const btn = preview.querySelector('button');
+    btn.addEventListener('click', () => {
+      this.removeAudioFile(file.name);
+    });
+
+    container.appendChild(preview);
+  }
+
+  /**
+   * Удаление аудио файла
+   */
+  removeAudioFile(fileName) {
+    this.audioFiles = this.audioFiles.filter(f => f.name !== fileName);
+    const container = document.getElementById('audio-previews');
+    if (container) {
+      const preview = container.querySelector(`[data-file-name="${fileName}"]`);
+      if (preview) preview.remove();
+    }
+  }
+
+  /**
+   * Обновление секции referencer и аудио в зависимости от режима и модели
+   */
+  updateReferenceSection() {
+    const i2vSection = document.getElementById('i2v-upload-compact');
+    const t2vSection = document.getElementById('t2v-references-section');
+    const audioSection = document.getElementById('audio-section');
+
+    if (this.currentMode === 'i2v') {
+      // I2V: показываем секцию исходного фото
+      if (i2vSection) i2vSection.style.display = 'block';
+      if (t2vSection) t2vSection.style.display = 'none';
+    } else {
+      // T2V: показываем секцию референсных изображений
+      if (i2vSection) i2vSection.style.display = 'none';
+      if (t2vSection) {
+        // Показываем только если модель поддерживает frameImages
+        const show = this.selectedModel && this.currentModelSupportsFrameImages();
+        t2vSection.style.display = show ? 'block' : 'none';
+      }
+    }
+
+    // Аудио секция - показываем если модель поддерживает audioInputs
+    if (audioSection) {
+      const showAudio = this.selectedModel && this.currentModelSupportsAudio();
+      audioSection.style.display = showAudio ? 'block' : 'none';
+    }
+  }
+
+  /**
+   * Проверка поддержки frameImages текущей моделью
+   */
+  currentModelSupportsFrameImages() {
+    if (!this.selectedModel || !this.selectedModel.model_id) return false;
+
+    // Проверяем по supported_references если есть
+    if (this.selectedModel.supported_references) {
+      return this.selectedModel.supported_references.includes('frameImages');
+    }
+
+    // Иначе проверяем по известным провайдерам
+    const modelId = String(this.selectedModel.model_id).toLowerCase();
+    return modelId.includes('bytedance') ||
+           modelId.includes('kling') ||
+           modelId.includes('vidu') ||
+           modelId.includes('runway') ||
+           modelId.includes('sora');
+  }
+
+  /**
+   * Проверка поддержки audioInputs текущей моделью
+   */
+  currentModelSupportsAudio() {
+    if (!this.selectedModel || !this.selectedModel.model_id) return false;
+
+    // Проверяем по supported_references если есть
+    if (this.selectedModel.supported_references) {
+      return this.selectedModel.supported_references.includes('audioInputs');
+    }
+
+    // Иначе проверяем по известным провайдерам, которые поддерживают аудио
+    const modelId = String(this.selectedModel.model_id).toLowerCase();
+    return modelId.includes('vidu') ||
+           modelId.includes('pixverse') ||
+           modelId.includes('runway');
   }
 
   /**

@@ -555,6 +555,22 @@ def generate_video_via_rest(
         if neg:
             payload[0]["negativePrompt"] = str(neg)
 
+        # Добавляем frameImages для T2V если переданы
+        frame_images = kwargs.get('frameImages') or kwargs.get('frame_images')
+        if frame_images:
+            if isinstance(frame_images, list) and frame_images:
+                # Для T2V frameImages - это просто массив UUID или URL
+                payload[0]["frameImages"] = frame_images
+                logger.info(f"Added {len(frame_images)} frameImages to T2V payload")
+
+        # Добавляем audioInputs если переданы
+        audio_inputs = kwargs.get('audioInputs') or kwargs.get('audio_inputs')
+        if audio_inputs:
+            if isinstance(audio_inputs, list) and audio_inputs:
+                # audioInputs - это массив UUID или URL аудио файлов
+                payload[0]["audioInputs"] = audio_inputs
+                logger.info(f"Added {len(audio_inputs)} audioInputs to T2V payload")
+
         # Добавляем providerSettings на основе модели
         provider_settings = _build_provider_settings(
             model_id, camera_movement=camera_movement, **kwargs)
@@ -866,6 +882,113 @@ def _upload_image_to_runware(image_bytes: bytes) -> str:
                 return image_uuid
 
     raise RunwareError(f"Не удалось получить UUID: {data}")
+
+
+def _upload_audio_to_runware(audio_bytes: bytes, filename: str = "audio.mp3") -> str:
+    """
+    Загружает аудио файл в Runware через mediaStorage.
+    Возвращает UUID загруженного аудио.
+
+    Args:
+        audio_bytes: Байты аудио файла
+        filename: Имя файла для определения MIME типа
+
+    Returns:
+        str: UUID загруженного аудио файла
+    """
+    api_key = _get_api_key()
+
+    # Определяем MIME тип по расширению
+    ext = filename.lower().split('.')[-1]
+    mime_map = {
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+        'ogg': 'audio/ogg',
+        'webm': 'audio/webm',
+        'm4a': 'audio/mp4',
+    }
+    mime_type = mime_map.get(ext, 'audio/mpeg')
+
+    # Создаем data URI
+    data_uri = f"data:{mime_type};base64,{base64.b64encode(audio_bytes).decode('ascii')}"
+
+    # Загружаем через mediaStorage
+    payload = [{
+        "taskType": "mediaStorage",
+        "taskUUID": str(uuid.uuid4()),
+        "action": "upload",
+        "file": data_uri,
+        "deliveryMethod": "sync",
+    }]
+
+    logger.info(f"Загрузка аудио файла в Runware: {filename} ({len(audio_bytes)} bytes)")
+
+    try:
+        r = requests.post(
+            settings.RUNWARE_API_URL,
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            timeout=(15, 60),
+        )
+
+        logger.info(f"Audio upload status: {r.status_code}")
+
+        try:
+            data = r.json()
+        except Exception:
+            data = {}
+
+        logger.info(f"Audio upload response: {data}")
+
+        r.raise_for_status()
+
+        # Извлекаем UUID из ответа
+        def _pick_uuid(d: dict) -> Optional[str]:
+            if not isinstance(d, dict):
+                return None
+            for k in ("audioUUID", "uuid", "fileUUID", "assetUUID", "assetId", "mediaUUID"):
+                v = d.get(k)
+                if isinstance(v, str) and v.strip():
+                    return v.strip()
+            out = d.get("output") or d.get("data")
+            if isinstance(out, dict):
+                for k in ("audioUUID", "uuid", "fileUUID", "assetUUID", "assetId", "mediaUUID"):
+                    v = out.get(k)
+                    if isinstance(v, str) and v.strip():
+                        return v.strip()
+            # Иногда UUID в URL
+            file_url = d.get("fileURL") or d.get("url")
+            if isinstance(file_url, str):
+                import re
+                m = re.search(r"([0-9a-fA-F\-]{36})", file_url)
+                if m:
+                    return m.group(1)
+            return None
+
+        # Проверяем data
+        audio_uuid = None
+        if isinstance(data, dict):
+            audio_uuid = _pick_uuid(data)
+
+            if not audio_uuid and "data" in data:
+                items = data["data"]
+                if isinstance(items, list) and items:
+                    audio_uuid = _pick_uuid(items[0])
+                elif isinstance(items, dict):
+                    audio_uuid = _pick_uuid(items)
+
+        if audio_uuid:
+            logger.info(f"Аудио загружено в Runware, UUID: {audio_uuid}")
+            return audio_uuid
+
+        raise RunwareError(f"Не удалось получить UUID аудио: {data}")
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Ошибка загрузки аудио в Runware: {e}")
+        raise RunwareError(f"Ошибка загрузки аудио: {str(e)}")
 
 
 def generate_video_from_image(

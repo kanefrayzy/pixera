@@ -424,17 +424,49 @@ def video_submit(request):
                 guest_fp=guest_fp,
             )
 
-            # Save reference images if any
+            # Save reference images if any and upload to Runware
+            reference_uuids = []
             try:
                 from .models import ReferenceImage
+                from ai_gallery.services.runware_client import _upload_image_to_runware
+
                 reference_images = request.FILES.getlist('reference_images')
                 for ref_img in reference_images[:5]:  # Max 5 images
-                    ReferenceImage.objects.create(
+                    # Save to database
+                    ref_obj = ReferenceImage.objects.create(
                         job=job,
                         image=ref_img
                     )
+
+                    # Upload to Runware to get UUID
+                    try:
+                        ref_img.seek(0)  # Reset file pointer
+                        image_data = ref_img.read()
+                        ref_uuid = _upload_image_to_runware(image_data)
+                        reference_uuids.append(ref_uuid)
+                        logger.info(f"Uploaded reference image to Runware: {ref_uuid}")
+                    except Exception as upload_err:
+                        logger.error(f"Failed to upload reference image to Runware: {upload_err}")
             except Exception as e:
                 logger.error(f"Failed to save reference images for video: {e}")
+
+            # Save and upload audio files if any
+            audio_uuids = []
+            try:
+                from ai_gallery.services.runware_client import _upload_audio_to_runware
+
+                audio_files = request.FILES.getlist('audio_files')
+                for audio_file in audio_files[:3]:  # Max 3 audio files
+                    try:
+                        audio_file.seek(0)  # Reset file pointer
+                        audio_data = audio_file.read()
+                        audio_uuid = _upload_audio_to_runware(audio_data, audio_file.name)
+                        audio_uuids.append(audio_uuid)
+                        logger.info(f"Uploaded audio file to Runware: {audio_uuid}")
+                    except Exception as upload_err:
+                        logger.error(f"Failed to upload audio file to Runware: {upload_err}")
+            except Exception as e:
+                logger.error(f"Failed to process audio files: {e}")
 
         # Для I2V обрабатываем изображение
         source_image_url = None
@@ -523,6 +555,16 @@ def video_submit(request):
                 w, h = 864, 480
             provider_fields['width'] = w
             provider_fields['height'] = h
+
+        # Add reference UUIDs to provider_fields if available
+        if reference_uuids:
+            provider_fields['frameImages'] = reference_uuids
+            logger.info(f"Added {len(reference_uuids)} reference UUIDs to provider_fields")
+
+        # Add audio UUIDs to provider_fields if available
+        if audio_uuids:
+            provider_fields['audioInputs'] = audio_uuids
+            logger.info(f"Added {len(audio_uuids)} audio UUIDs to provider_fields")
 
         # Проверяем режим работы: синхронный или асинхронный
         use_celery = getattr(settings, 'USE_CELERY', False)
