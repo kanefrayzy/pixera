@@ -563,14 +563,6 @@ def generate_video_via_rest(
                 payload[0]["frameImages"] = frame_images
                 logger.info(f"Added {len(frame_images)} frameImages to T2V payload")
 
-        # Добавляем audioInputs если переданы
-        audio_inputs = kwargs.get('audioInputs') or kwargs.get('audio_inputs')
-        if audio_inputs:
-            if isinstance(audio_inputs, list) and audio_inputs:
-                # audioInputs - это массив UUID или URL аудио файлов
-                payload[0]["audioInputs"] = audio_inputs
-                logger.info(f"Added {len(audio_inputs)} audioInputs to T2V payload")
-
         # Добавляем providerSettings на основе модели
         provider_settings = _build_provider_settings(
             model_id, camera_movement=camera_movement, **kwargs)

@@ -2588,18 +2588,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         fd.append('motion_strength', motionStrength);
       }
 
-      // Для T2V добавляем референсные изображения (frameImages)
-      if (this.currentMode === 't2v' && this.t2vReferenceFiles && this.t2vReferenceFiles.length > 0) {
-        this.t2vReferenceFiles.forEach((file, index) => {
-          fd.append('reference_images', file);
-        });
-      }
-
-      // Добавляем аудио файлы (audioInputs)
-      if (this.audioFiles && this.audioFiles.length > 0) {
-        this.audioFiles.forEach((file, index) => {
-          fd.append('audio_files', file);
-        });
+      // Для T2V добавляем референсное изображение (одно фото)
+      if (this.currentMode === 't2v' && this.t2vReferenceFile) {
+        fd.append('reference_images', this.t2vReferenceFile);
       }
 
       // Отправляем одну задачу последовательно, чтобы не блокировать SQLite
@@ -2984,6 +2975,15 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         .video-result-tile .aspect-video {
           aspect-ratio: 16/9;
         }
+        /* Unified tile sizing for mobile */
+        @media (max-width: 640px) {
+          .video-result-tile, .image-result-tile {
+            width: 100%;
+          }
+          .video-result-tile .aspect-video {
+            min-height: 200px;
+          }
+        }
         /* Video controls overlay */
         .video-result-tile video::-webkit-media-controls {
           opacity: 0;
@@ -3150,20 +3150,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           </span>
         </button>
 
-        <!-- Кнопки управления сверху справа -->
-        <div class="absolute top-2 right-2 flex gap-1.5 z-20">
-          <button type="button" class="tile-remove-btn w-7 h-7 rounded-full bg-black/60 text-white hover:bg-black/70 transition flex items-center justify-center" aria-label="Удалить">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-          <button type="button" class="tile-download-btn w-7 h-7 rounded-full bg-black/60 text-white hover:bg-black/70 transition flex items-center justify-center" aria-label="Скачать" data-url="${videoUrl}">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-          </button>
-          <a href="${videoUrl}" target="_blank" class="w-7 h-7 rounded-full bg-black/60 text-white hover:bg-black/70 transition flex items-center justify-center" aria-label="Открыть">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Кнопка открыть сверху справа -->
+        <div class="absolute top-2 right-2 z-20">
+          <a href="${videoUrl}" target="_blank" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 text-white hover:bg-black/80 transition flex items-center justify-center backdrop-blur-sm" aria-label="Открыть в новой вкладке">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
             </svg>
           </a>
@@ -3182,8 +3172,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           </svg>
         </button>
       </div>
-      <div class="p-1.5 sm:p-2 border-t border-[var(--bord)] bg-[var(--bg-card)]">
-        <button type="button" class="persist-btn w-full px-2 sm:px-3 py-1.5 rounded-md bg-primary/90 hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/30 text-white text-[10px] sm:text-xs font-medium transition">В галерею</button>
+      <div class="p-2 sm:p-2.5 border-t border-[var(--bord)] bg-[var(--bg-card)]">
+        <button type="button" class="persist-btn w-full px-3 py-2 rounded-lg bg-primary/90 hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/30 text-white text-xs sm:text-sm font-medium transition" data-auth-text="Сохранить в профиле" data-guest-text="Добавить в мои обработки">${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</button>
       </div>
     `;
 
@@ -3201,47 +3191,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       } catch (_) { }
     }
 
-    // Download button functionality (fetch + blob for cross-origin support)
-    try {
-      const downloadBtn = tile.querySelector('.tile-download-btn');
-      if (downloadBtn) {
-        downloadBtn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const url = downloadBtn.dataset.url || videoUrl;
-          if (!url) return;
-
-          try {
-            // Show loading state
-            downloadBtn.style.opacity = '0.5';
-            downloadBtn.style.pointerEvents = 'none';
-
-            // Fetch video as blob
-            const response = await fetch(url);
-            const blob = await response.blob();
-
-            // Create download link
-            const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = `video_${jobId || Date.now()}.mp4`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            // Cleanup
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-          } catch (err) {
-            console.error('Download failed:', err);
-            // Fallback: open in new tab
-            window.open(url, '_blank');
-          } finally {
-            downloadBtn.style.opacity = '';
-            downloadBtn.style.pointerEvents = '';
-          }
-        });
-      }
-    } catch (_) { }
+    // Download functionality removed for mobile optimization
 
     // Volume toggle functionality (simple mute/unmute button)
     try {
@@ -3349,7 +3299,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const pbtn = tile.querySelector('.persist-btn');
       if (pbtn && jobId && this.persistedJobs && this.persistedJobs.has(String(jobId))) {
-        pbtn.textContent = 'Добавлено';
+        pbtn.textContent = this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки';
         pbtn.disabled = true;
         pbtn.classList.add('opacity-70', 'pointer-events-none');
       }
@@ -3616,87 +3566,58 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
    * Настройка загрузки референсных изображений
    */
   setupReferenceUploads() {
-    // Инициализация массивов для хранения файлов
-    this.t2vReferenceFiles = [];
-    this.audioFiles = [];
-
-    // T2V референсы
+    // T2V референс (одно фото)
     const t2vInput = document.getElementById('t2v-reference-images');
-    const t2vPreviewsContainer = document.getElementById('t2v-ref-previews');
+    const t2vRemoveBtn = document.getElementById('remove-t2v-reference');
+    const t2vFileName = document.getElementById('t2v-file-name');
 
-    if (t2vInput && t2vPreviewsContainer) {
-      // Клик по области загрузки
-      const t2vUploadArea = t2vInput.closest('.border-dashed');
-      if (t2vUploadArea) {
-        t2vUploadArea.addEventListener('click', () => t2vInput.click());
-      }
-
-      // Обработка выбора файлов
+    if (t2vInput) {
       t2vInput.addEventListener('change', (e) => {
-        this.handleReferenceFiles(e.target.files, 't2v');
+        const file = e.target.files[0];
+        if (file) {
+          this.t2vReferenceFile = file;
+          if (t2vFileName) t2vFileName.textContent = file.name;
+          if (t2vRemoveBtn) t2vRemoveBtn.classList.remove('hidden');
+        }
       });
-
-      // Drag & drop
-      if (t2vUploadArea) {
-        t2vUploadArea.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          t2vUploadArea.classList.add('border-primary');
-        });
-
-        t2vUploadArea.addEventListener('dragleave', () => {
-          t2vUploadArea.classList.remove('border-primary');
-        });
-
-        t2vUploadArea.addEventListener('drop', (e) => {
-          e.preventDefault();
-          t2vUploadArea.classList.remove('border-primary');
-          this.handleReferenceFiles(e.dataTransfer.files, 't2v');
-        });
-      }
     }
 
-    // Audio files
-    const audioInput = document.getElementById('audio-files');
-    const audioPreviewsContainer = document.getElementById('audio-previews');
-
-    if (audioInput && audioPreviewsContainer) {
-      // Клик по области загрузки
-      const audioUploadArea = audioInput.closest('.border-dashed');
-      if (audioUploadArea) {
-        audioUploadArea.addEventListener('click', () => audioInput.click());
-      }
-
-      // Обработка выбора файлов
-      audioInput.addEventListener('change', (e) => {
-        this.handleAudioFiles(e.target.files);
-        e.target.value = ''; // Reset input
+    if (t2vRemoveBtn) {
+      t2vRemoveBtn.addEventListener('click', () => {
+        this.t2vReferenceFile = null;
+        if (t2vInput) t2vInput.value = '';
+        if (t2vFileName) t2vFileName.textContent = 'Выбрать файл';
+        t2vRemoveBtn.classList.add('hidden');
       });
+    }
 
-      // Drag & drop
-      if (audioUploadArea) {
-        audioUploadArea.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          audioUploadArea.classList.add('border-primary');
-        });
+    // I2V source image (уже есть обработка в другом месте, но обновим кнопку удаления)
+    const i2vRemoveBtn = document.getElementById('remove-video-image');
+    const i2vFileName = document.getElementById('i2v-file-name');
+    const i2vInput = document.getElementById('video-source-image');
 
-        audioUploadArea.addEventListener('dragleave', () => {
-          audioUploadArea.classList.remove('border-primary');
-        });
+    if (i2vInput) {
+      i2vInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && i2vFileName) {
+          i2vFileName.textContent = file.name;
+          if (i2vRemoveBtn) i2vRemoveBtn.classList.remove('hidden');
+        }
+      });
+    }
 
-        audioUploadArea.addEventListener('drop', (e) => {
-          e.preventDefault();
-          audioUploadArea.classList.remove('border-primary');
-          const audioFiles = Array.from(e.dataTransfer.files).filter(f =>
-            f.type.startsWith('audio/')
-          );
-          this.handleAudioFiles(audioFiles);
-        });
-      }
+    if (i2vRemoveBtn) {
+      i2vRemoveBtn.addEventListener('click', () => {
+        this.sourceImage = null;
+        if (i2vInput) i2vInput.value = '';
+        if (i2vFileName) i2vFileName.textContent = 'Выбрать файл';
+        i2vRemoveBtn.classList.add('hidden');
+      });
     }
   }
 
   /**
-   * Обработка референсных файлов
+   * Обработка референсных файлов (DEPRECATED - не используется)
    */
   handleReferenceFiles(files, mode) {
     const maxFiles = 5;
@@ -3886,12 +3807,16 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
   }
 
   /**
-   * Обновление секции referencer и аудио в зависимости от режима и модели
+   * Обновление секции референсов и аудио в зависимости от режима и модели
    */
   updateReferenceSection() {
     const i2vSection = document.getElementById('i2v-upload-compact');
     const t2vSection = document.getElementById('t2v-references-section');
-    const audioSection = document.getElementById('audio-section');
+
+    console.log('updateReferenceSection called:', {
+      mode: this.currentMode,
+      selectedModel: this.selectedModel?.model_id
+    });
 
     if (this.currentMode === 'i2v') {
       // I2V: показываем секцию исходного фото
@@ -3905,12 +3830,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         const show = this.selectedModel && this.currentModelSupportsFrameImages();
         t2vSection.style.display = show ? 'block' : 'none';
       }
-    }
-
-    // Аудио секция - показываем если модель поддерживает audioInputs
-    if (audioSection) {
-      const showAudio = this.selectedModel && this.currentModelSupportsAudio();
-      audioSection.style.display = showAudio ? 'block' : 'none';
     }
   }
 
@@ -3938,18 +3857,33 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
    * Проверка поддержки audioInputs текущей моделью
    */
   currentModelSupportsAudio() {
-    if (!this.selectedModel || !this.selectedModel.model_id) return false;
+    if (!this.selectedModel) return false;
 
     // Проверяем по supported_references если есть
-    if (this.selectedModel.supported_references) {
-      return this.selectedModel.supported_references.includes('audioInputs');
+    if (this.selectedModel.supported_references && Array.isArray(this.selectedModel.supported_references)) {
+      const hasAudioInputs = this.selectedModel.supported_references.includes('audioInputs');
+      console.log('Audio support check:', {
+        model: this.selectedModel.model_id,
+        supported_references: this.selectedModel.supported_references,
+        hasAudioInputs: hasAudioInputs
+      });
+      return hasAudioInputs;
     }
 
-    // Иначе проверяем по известным провайдерам, которые поддерживают аудио
-    const modelId = String(this.selectedModel.model_id).toLowerCase();
-    return modelId.includes('vidu') ||
-           modelId.includes('pixverse') ||
-           modelId.includes('runway');
+    // Fallback: некоторые провайдеры поддерживают аудио по умолчанию
+    if (this.selectedModel.model_id) {
+      const modelId = String(this.selectedModel.model_id).toLowerCase();
+      const fallbackSupport = modelId.includes('vidu') ||
+                              modelId.includes('pixverse') ||
+                              modelId.includes('runway') ||
+                              modelId.includes('kling');
+      if (fallbackSupport) {
+        console.log('Audio support via fallback for:', this.selectedModel.model_id);
+      }
+      return fallbackSupport;
+    }
+
+    return false;
   }
 
   /**

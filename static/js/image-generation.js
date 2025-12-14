@@ -480,13 +480,6 @@
     tile.setAttribute('data-status','pending');
     tile.innerHTML = `
       <div class="relative aspect-square group bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-2)]">
-        <!-- Remove tile button -->
-        <button type="button" class="tile-remove-btn absolute top-2 right-2 z-10 w-8 h-8 rounded-lg bg-black/60 text-white border border-white/20 hover:bg-black/70 flex items-center justify-center transition-all" aria-label="Удалить из очереди">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
-          </svg>
-        </button>
-
         <!-- Premium Puzzle Loader -->
         <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
           <!-- Puzzle Grid Container -->
@@ -660,14 +653,16 @@
       <div class="relative aspect-square bg-black group">
         <img data-src="${imageUrl}" alt="Результат" loading="lazy" decoding="async" fetchpriority="low" class="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-[1.02]"/>
 
-        <div class="absolute top-2 right-2 flex gap-2 img-tile-actions">
-          <button type="button" class="tile-remove-btn img-action px-2 py-1 rounded-md bg-black/60 text-white text-[10px] sm:text-xs font-semibold hover:bg-black/70 transition" aria-label="Удалить из очереди">✕</button>
-          <a href="${imageUrl}" target="_blank" class="img-action px-2 py-1 rounded-md bg-black/60 text-white text-[10px] sm:text-xs font-semibold hover:bg-black/70 transition">Открыть</a>
-          <a href="${imageUrl}" download class="img-action px-2 py-1 rounded-md bg-black/60 text-white text-[10px] sm:text-xs font-semibold hover:bg-black/70 transition">Скачать</a>
+        <div class="absolute top-2 right-2 img-tile-actions">
+          <a href="${imageUrl}" target="_blank" class="img-action w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 text-white hover:bg-black/80 transition flex items-center justify-center backdrop-blur-sm" aria-label="Открыть в новой вкладке">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
         </div>
       </div>
-      <div class="p-2.5 sm:p-3 border-t border-[var(--bord)] bg-[var(--bg-card)]">
-        <button type="button" class="persist-btn w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-primary/90 hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/30 text-white text-xs sm:text-sm font-semibold transition">Добавить в мои генерации</button>
+      <div class="p-2 sm:p-2.5 border-t border-[var(--bord)] bg-[var(--bg-card)]">
+        <button type="button" class="persist-btn w-full px-3 py-2 rounded-lg bg-primary/90 hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/30 text-white text-xs sm:text-sm font-medium transition">${isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</button>
       </div>
     `;
     try {
@@ -687,7 +682,7 @@
     try {
       const pbtn = tile.querySelector('.persist-btn');
       if (pbtn && jobId && persistedJobs && persistedJobs.has(String(jobId))) {
-        pbtn.textContent = 'Добавлено';
+        pbtn.textContent = isAuth ? 'Сохранено в профиле' : 'Добавлено в обработки';
         pbtn.disabled = true;
         pbtn.classList.add('opacity-70','pointer-events-none');
       }
