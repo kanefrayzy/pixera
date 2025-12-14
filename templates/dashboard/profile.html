@@ -2335,6 +2335,41 @@ video:not([controls]):hover ~ .video-play-overlay {
 </script>
 
 <script>
+// IntersectionObserver для автовоспроизведения видео в профиле
+(function(){
+  const root = document.getElementById('videos-grid');
+  if (!root) return;
+
+  try {
+    const autoplayObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (!video || video.hasAttribute('data-manual-control')) return;
+
+        if (entry.isIntersecting) {
+          if (video.paused) {
+            video.play().catch(() => {});
+          }
+        } else {
+          if (!video.paused) {
+            video.pause();
+          }
+        }
+      });
+    }, {
+      threshold: 0.5,
+      rootMargin: '50px'
+    });
+
+    // Observe all videos in profile grid
+    root.querySelectorAll('video').forEach(video => {
+      autoplayObserver.observe(video);
+    });
+  } catch(e) {}
+})();
+</script>
+
+<script>
 (function(){
   // Explicit play/pause binding for profile videos (robust, overrides any global handlers)
   const root = document.getElementById('videos-grid');
@@ -2368,6 +2403,7 @@ video:not([controls]):hover ~ .video-play-overlay {
       v.addEventListener('click', function(ev){
         // Ensure click never reaches anchors/modals
         ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+        this.setAttribute('data-manual-control', '1'); // Mark as manually controlled
         if (this.paused){ pauseAll(this); this.play().catch(()=>{}); } else { this.pause(); }
       });
       v.addEventListener('play',  ()=> setOverlay(v, true));
@@ -2383,6 +2419,7 @@ video:not([controls]):hover ~ .video-play-overlay {
         const card = findCard(this);
         const v = card && card.querySelector('video');
         if (!v) return;
+        v.setAttribute('data-manual-control', '1'); // Mark as manually controlled
         if (v.paused){ pauseAll(v); v.play().catch(()=>{}); } else { v.pause(); }
       });
     });

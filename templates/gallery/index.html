@@ -1585,6 +1585,60 @@ video[controls] + .video-play-overlay {
     // Silent fail
   }
 
+  // IntersectionObserver для автовоспроизведения видео в галерее
+  (function(){
+    try {
+      // Create observer for autoplay when videos enter viewport
+      const autoplayObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const video = entry.target;
+          if (!video || video.hasAttribute('data-manual-control')) return;
+
+          if (entry.isIntersecting) {
+            // Video is visible - autoplay (muted by default)
+            if (video.paused) {
+              video.play().catch(() => {});
+            }
+          } else {
+            // Video is not visible - pause
+            if (!video.paused) {
+              video.pause();
+            }
+          }
+        });
+      }, {
+        threshold: 0.5, // Trigger when 50% visible
+        rootMargin: '50px' // Start slightly before entering viewport
+      });
+
+      // Observe all videos in "Мои генерации" grid
+      document.querySelectorAll('#videos-grid video').forEach(video => {
+        autoplayObserver.observe(video);
+      });
+
+      // Observe all videos in "Публичные видео" grid
+      document.querySelectorAll('#public-videos-grid video').forEach(video => {
+        autoplayObserver.observe(video);
+      });
+
+      // Re-observe when tabs are switched
+      document.querySelectorAll('.media-tab, .public-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          setTimeout(() => {
+            document.querySelectorAll('#videos-grid video, #public-videos-grid video').forEach(video => {
+              if (!video.hasAttribute('data-observed')) {
+                autoplayObserver.observe(video);
+                video.setAttribute('data-observed', '1');
+              }
+            });
+          }, 100);
+        });
+      });
+    } catch(e) {
+      // IntersectionObserver not supported or error - silent fail
+    }
+  })();
+
   // Handle video play/pause for "Мои генерации" (videos-grid)
   (function(){
     function findCard(el){
@@ -1617,6 +1671,7 @@ video[controls] + .video-play-overlay {
       const video = e.target.closest('#videos-grid video');
       if (!video || video.hasAttribute('controls')) return;
       const card = findCard(video);
+      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
       if (video.paused){
         pauseAll(video);
         video.play().catch(()=>{});
@@ -1635,6 +1690,7 @@ video[controls] + .video-play-overlay {
       const video = card ? card.querySelector('video') : null;
       if (!video || video.hasAttribute('controls')) return;
       e.preventDefault(); e.stopPropagation();
+      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
       if (video.paused){
         pauseAll(video);
         video.play().catch(()=>{});
@@ -1923,6 +1979,7 @@ video[controls] + .video-play-overlay {
       const video = e.target.closest('#public-videos-grid video');
       if (!video || video.hasAttribute('controls')) return;
       const card = video.closest('article');
+      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
       if (video.paused){
         pauseAll(video);
         video.play().catch(()=>{});
@@ -1941,6 +1998,7 @@ video[controls] + .video-play-overlay {
       const video = card && card.querySelector('video');
       if (!video || video.hasAttribute('controls')) return;
       e.preventDefault(); e.stopPropagation();
+      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
       if (video.paused){
         pauseAll(video);
         video.play().catch(()=>{});

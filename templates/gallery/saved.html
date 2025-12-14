@@ -562,6 +562,38 @@
 })();
 </script>
 <script>
+// IntersectionObserver для автовоспроизведения видео на странице Сохранённое
+(function(){
+  try {
+    const autoplayObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (!video || video.hasAttribute('data-manual-control')) return;
+
+        if (entry.isIntersecting) {
+          if (video.paused) {
+            video.play().catch(() => {});
+          }
+        } else {
+          if (!video.paused) {
+            video.pause();
+          }
+        }
+      });
+    }, {
+      threshold: 0.5,
+      rootMargin: '50px'
+    });
+
+    // Observe all videos in saved grid
+    document.querySelectorAll('#videos-grid video').forEach(video => {
+      autoplayObserver.observe(video);
+    });
+  } catch(e) {}
+})();
+</script>
+
+<script>
 // saved page: play/pause videos by clicking overlay or the video itself; auto-pause others
 (function(){
   function pauseAll(except){
@@ -580,6 +612,7 @@
     const video = card && card.querySelector('video');
     if (!video) return;
     e.preventDefault(); e.stopPropagation();
+    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
     if (video.paused) {
       pauseAll(video);
       video.play().catch(()=>{});
@@ -594,6 +627,7 @@
     const video = e.target.closest('#videos-grid video');
     if (!video) return;
     const card = video.closest('article');
+    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
     if (video.paused) {
       pauseAll(video);
       video.play().catch(()=>{});
