@@ -1167,6 +1167,13 @@
       position: relative;
       width: 100%;
       overflow: hidden;
+      max-height: 270px;
+    }
+    
+    /* Унифицированная высота для pending и done состояний */
+    .video-result-tile[data-status="pending"] .aspect-video,
+    .video-result-tile[data-status="done"] .aspect-video {
+      max-height: 270px;
     }
     
     /* Кнопка Play - центрирование */
