@@ -3099,23 +3099,23 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
     modalContent.addEventListener('touchend', handleTouchEnd, { passive: true });
   }
 
-  function openModal(){ 
-    modal.classList.remove('hidden'); 
-    document.body.style.overflow='hidden'; 
+  function openModal(){
+    modal.classList.remove('hidden');
+    document.body.style.overflow='hidden';
     if (modalContent) {
       modalContent.style.transform = 'translateY(0)';
       modalContent.style.opacity = '1';
     }
   }
-  function closeModal(){ 
-    modal.classList.add('hidden'); 
-    document.body.style.overflow=''; 
-    commentsEl.innerHTML=''; 
-    mediaEl.innerHTML=''; 
-    likeBtn.dataset.url=''; 
-    likeCountEl.textContent='0'; 
-    likeBtn.setAttribute('aria-pressed','false'); 
-    likeBtn.querySelector('svg').setAttribute('fill','none'); 
+  function closeModal(){
+    modal.classList.add('hidden');
+    document.body.style.overflow='';
+    commentsEl.innerHTML='';
+    mediaEl.innerHTML='';
+    likeBtn.dataset.url='';
+    likeCountEl.textContent='0';
+    likeBtn.setAttribute('aria-pressed','false');
+    likeBtn.querySelector('svg').setAttribute('fill','none');
     if (modalContent) {
       modalContent.style.transform = 'translateY(0)';
       modalContent.style.opacity = '1';
