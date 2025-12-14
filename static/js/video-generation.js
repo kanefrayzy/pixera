@@ -3599,8 +3599,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (i2vInput) {
       i2vInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file && i2vFileName) {
-          i2vFileName.textContent = file.name;
+        if (file) {
+          // Сохраняем файл для проверки при генерации
+          this.sourceImage = file;
+          if (i2vFileName) i2vFileName.textContent = file.name;
           if (i2vRemoveBtn) i2vRemoveBtn.classList.remove('hidden');
         }
       });
