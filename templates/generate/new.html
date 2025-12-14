@@ -2299,48 +2299,48 @@ document.addEventListener('DOMContentLoaded', function() {
         min-height: 44px;
       }
 
-      /* Улучшения для видео кнопок на мобильных */
+      /* Оптимальные размеры для видео кнопок на мобильных */
       .video-play-btn {
         touch-action: manipulation !important;
       }
 
       .video-play-btn .play-btn-inner {
-        min-width: 64px !important;
-        min-height: 64px !important;
-        background: rgba(0,0,0,0.8) !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+        min-width: 52px !important;
+        min-height: 52px !important;
+        background: rgba(0,0,0,0.7) !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
       }
 
-      /* Увеличиваем иконки play и pause */
+      /* Оптимальный размер иконок play и pause */
       .video-play-btn .play-icon,
       .video-play-btn .pause-icon {
-        width: 2rem !important;
-        height: 2rem !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
       }
 
       /* Пауза должна быть видна */
       .video-play-btn .pause-icon {
         opacity: 1 !important;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
       }
 
       .volume-toggle-btn,
       a[target="_blank"] {
         touch-action: manipulation !important;
-        min-width: 48px !important;
-        min-height: 48px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
       }
 
-      /* Больше отступов между кнопками видео */
+      /* Компактные отступы между кнопками видео */
       .volume-toggle-btn {
-        bottom: 0.875rem !important;
-        right: 0.875rem !important;
+        bottom: 0.625rem !important;
+        right: 0.625rem !important;
       }
 
       a[target="_blank"] {
-        top: 0.875rem !important;
-        right: 0.875rem !important;
+        top: 0.625rem !important;
+        right: 0.625rem !important;
       }
     }
 
@@ -2351,8 +2351,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       .video-play-btn .play-btn-inner {
-        min-width: 56px !important;
-        min-height: 56px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+      }
+
+      .video-play-btn .play-icon,
+      .video-play-btn .pause-icon {
+        width: 1.25rem !important;
+        height: 1.25rem !important;
       }
     }
 

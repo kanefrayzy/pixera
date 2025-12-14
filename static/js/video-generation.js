@@ -3132,31 +3132,31 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
         <!-- Кнопка Play - абсолютное центрирование -->
         <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; opacity: 1; transition: opacity 0.2s; background: none; border: none; padding: 0; touch-action: manipulation;">
-          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 4rem; height: 4rem; border-radius: 50%; background: rgba(0,0,0,0.7); color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); backdrop-filter: blur(4px); transition: all 0.2s; cursor: pointer;">
-            <svg class="play-icon" style="width: 1.75rem; height: 1.75rem; margin-left: 0.25rem;" viewBox="0 0 24 24" fill="currentColor">
+          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); backdrop-filter: blur(4px); transition: all 0.2s; cursor: pointer;">
+            <svg class="play-icon" style="width: 1.25rem; height: 1.25rem; margin-left: 0.125rem;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />
             </svg>
-            <svg class="pause-icon" style="width: 1.75rem; height: 1.75rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="pause-icon" style="width: 1.25rem; height: 1.25rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
             </svg>
           </span>
         </button>
 
         <!-- Кнопка открыть сверху справа -->
-        <a href="${videoUrl}" target="_blank" style="position: absolute; top: 0.625rem; right: 0.625rem; z-index: 20; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: rgba(0,0,0,0.7); color: white; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.2s; touch-action: manipulation;" aria-label="Открыть">
-          <svg style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <a href="${videoUrl}" target="_blank" style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.2s; touch-action: manipulation;" aria-label="Открыть">
+          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
           </svg>
         </a>
 
         <!-- Кнопка звука снизу справа -->
-        <button type="button" class="volume-toggle-btn" style="position: absolute; bottom: 0.625rem; right: 0.625rem; z-index: 20; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: rgba(0,0,0,0.7); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation;" aria-label="Звук">
-          <svg class="volume-icon-off" style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button type="button" class="volume-toggle-btn" style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation;" aria-label="Звук">
+          <svg class="volume-icon-off" style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <line x1="23" y1="9" x2="17" y2="15"/>
             <line x1="17" y1="9" x2="23" y2="15"/>
           </svg>
-          <svg class="volume-icon-on" style="width: 1.25rem; height: 1.25rem; display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="volume-icon-on" style="width: 1rem; height: 1rem; display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
           </svg>
