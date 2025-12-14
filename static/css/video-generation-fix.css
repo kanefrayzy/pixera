@@ -76,7 +76,7 @@
   }
 }
 
-@media (max-width: 480px) {
+/* @media (max-width: 480px) {
   .video-result-tile {
     min-height: 180px;
   }
@@ -91,7 +91,7 @@
 @media (max-width: 320px) {
   .video-result-tile {
     min-height: 140px;
-  }
+  } */
 
   #video-queue-card {
     padding: 0.75rem;
