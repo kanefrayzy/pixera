@@ -1183,8 +1183,22 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
     # ───────── Похожие изображения (по категории; фолбэк — топ по лайкам) ─────────
     try:
         related_photos = []
-        base_qs = PublicPhoto.objects.filter(
-            is_active=True).exclude(pk=photo.pk)
+        base_qs = PublicPhoto.objects.filter(is_active=True).exclude(pk=photo.pk)
+        # Исключаем скрытые работы владельца (JobHide)
+        try:
+            from .models import JobHide
+            from django.db.models import Exists, OuterRef, Q
+            base_qs = base_qs.annotate(
+                hidden_by_owner=Exists(
+                    JobHide.objects.filter(user=OuterRef("uploaded_by_id"), job_id=OuterRef("source_job_id"))
+                )
+            )
+            if request.user.is_authenticated:
+                base_qs = base_qs.filter(Q(hidden_by_owner=False) | Q(uploaded_by_id=request.user.id))
+            else:
+                base_qs = base_qs.filter(hidden_by_owner=False)
+        except Exception:
+            pass
         # По категории
         if getattr(photo, "category_id", None):
             related_photos = list(
@@ -2005,6 +2019,21 @@ def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
     try:
         related_photos = []
         base_qs = PublicPhoto.objects.filter(is_active=True).exclude(pk=photo.pk)
+        # Exclude hidden jobs by owner (JobHide)
+        try:
+            from .models import JobHide
+            from django.db.models import Exists, OuterRef, Q
+            base_qs = base_qs.annotate(
+                hidden_by_owner=Exists(
+                    JobHide.objects.filter(user=OuterRef("uploaded_by_id"), job_id=OuterRef("source_job_id"))
+                )
+            )
+            if request.user.is_authenticated:
+                base_qs = base_qs.filter(Q(hidden_by_owner=False) | Q(uploaded_by_id=request.user.id))
+            else:
+                base_qs = base_qs.filter(hidden_by_owner=False)
+        except Exception:
+            pass
         if getattr(photo, "category_id", None):
             related_photos = list(
                 base_qs.filter(category_id=photo.category_id)

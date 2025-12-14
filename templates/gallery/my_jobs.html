@@ -903,15 +903,17 @@
 
   <!-- Media Type Tabs -->
   {% if show_only_published %}
-  <div class="media-tabs-wrapper rounded-xl bg-[var(--bord)] p-1 gap-1 w-full mb-6 grid grid-cols-2 xs:grid-cols-3 min-[700px]:inline-flex min-[700px]:w-auto">
-    <button class="media-tab active w-full flex-1 min-[700px]:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium"
-            data-tab="published" aria-controls="published-grid">
-      <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 5h18M3 12h18M3 19h18"/>
-      </svg>
-      <span class="hidden xs:inline">Опубликованные</span>
-      <span id="published-total" class="media-count px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[20px] text-center">{{ published_total|default:0 }}</span>
-    </button>
+  <div class="flex justify-center mb-6">
+    <div class="media-tabs-wrapper rounded-xl bg-[var(--bord)] p-1 gap-1 inline-flex w-auto">
+      <button class="media-tab active px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base font-medium"
+              data-tab="published" aria-controls="published-grid">
+        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 5h18M3 12h18M3 19h18"/>
+        </svg>
+        <span>Опубликованные</span>
+        <span id="published-total" class="media-count px-2 py-0.5 rounded-md bg-black/10 dark:bg-white/10 text-xs font-semibold min-w-[22px] text-center">{{ published_total|default:0 }}</span>
+      </button>
+    </div>
   </div>
   {% else %}
   <div class="media-tabs-wrapper rounded-xl bg-[var(--bord)] p-1 gap-1 w-full mb-6 grid grid-cols-2 xs:grid-cols-3 min-[700px]:inline-flex min-[700px]:w-auto">
