@@ -2296,6 +2296,51 @@ document.addEventListener('DOMContentLoaded', function() {
       .image-result-tile .persist-btn {
         padding: 0.625rem 0.75rem;
         font-size: 0.875rem;
+        min-height: 44px;
+      }
+
+      /* Улучшения для видео кнопок на мобильных */
+      .video-play-btn {
+        touch-action: manipulation !important;
+      }
+
+      .video-play-btn .play-btn-inner {
+        min-width: 64px !important;
+        min-height: 64px !important;
+        background: rgba(0,0,0,0.8) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+      }
+
+      /* Увеличиваем иконки play и pause */
+      .video-play-btn .play-icon,
+      .video-play-btn .pause-icon {
+        width: 2rem !important;
+        height: 2rem !important;
+      }
+
+      /* Пауза должна быть видна */
+      .video-play-btn .pause-icon {
+        opacity: 1 !important;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      }
+
+      .volume-toggle-btn,
+      a[target="_blank"] {
+        touch-action: manipulation !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+      }
+
+      /* Больше отступов между кнопками видео */
+      .volume-toggle-btn {
+        bottom: 0.875rem !important;
+        right: 0.875rem !important;
+      }
+
+      a[target="_blank"] {
+        top: 0.875rem !important;
+        right: 0.875rem !important;
       }
     }
 
@@ -2303,6 +2348,11 @@ document.addEventListener('DOMContentLoaded', function() {
     @media (max-width: 375px) {
       .image-result-tile .aspect-square {
         min-height: 180px;
+      }
+
+      .video-play-btn .play-btn-inner {
+        min-width: 56px !important;
+        min-height: 56px !important;
       }
     }
 
