@@ -1157,14 +1157,14 @@
   <div id="video-results-grid" class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
 
   <style>
-    /* Чистые стили для видео карточек с фиксированной высотой */
+    /* Умное масштабирование видео карточек */
     #video-results-grid .video-result-tile {
       width: 100%;
     }
     
-    /* Контейнер видео - фиксированная высота 270px */
+    /* Контейнер видео - aspect-ratio 16:9 для правильных пропорций */
     .video-tile-container {
-      height: 270px !important;
+      aspect-ratio: 16/9;
       position: relative;
       overflow: hidden;
     }

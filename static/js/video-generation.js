@@ -2896,7 +2896,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (aspectText) { try { tile.dataset.aspectText = aspectText; } catch (_) { } }
 
     tile.innerHTML = `
-      <div class="video-tile-container" style="height: 270px; position: relative; overflow: hidden; background: ${hasPreview ? '#000' : 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-2) 100%)'}; border-radius: 0.75rem;">
+      <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: ${hasPreview ? '#000' : 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-2) 100%)'}; border-radius: 0.75rem;">
         ${hasPreview ? `<img src="${pic}" alt="Источник" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">` : ''}
         
         <!-- Loader overlay -->
@@ -3117,10 +3117,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       console.log('[video-gen] Balance update skipped:', e.message);
     }
 
-    // Полностью переделанная структура с фиксированной высотой
+    // Умное масштабирование с aspect-ratio 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="height: 270px; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
+      <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
         <!-- Видео -->
         <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
                preload="auto"
