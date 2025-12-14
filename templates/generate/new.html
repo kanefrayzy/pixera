@@ -2330,7 +2330,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   <!-- ФОРМА ГЕНЕРАЦИИ ВИДЕО -->
   <div id="video-form-container" class="space-y-8" style="{% if request.GET.type == 'video' %}display: block{% else %}display: none{% endif %};">
-    <div class="card p-6">
+    <div class="card p-2">
       {% include 'generate/video_form.html' %}
     </div>
 

@@ -1193,38 +1193,50 @@
     /* Мобильные устройства */
     @media (max-width: 640px) {
       #video-results-grid {
-        gap: 0.75rem;
+        gap: 1rem;
       }
 
-      /* Увеличиваем кнопки для тача */
+      /* Увеличиваем кнопки для тача - минимум 44x44px */
       .video-play-btn .play-btn-inner {
-        width: 4rem !important;
-        height: 4rem !important;
+        width: 4.5rem !important;
+        height: 4.5rem !important;
+        background: rgba(0,0,0,0.75) !important;
       }
 
       .video-play-btn .play-btn-inner svg {
-        width: 1.75rem !important;
-        height: 1.75rem !important;
+        width: 2rem !important;
+        height: 2rem !important;
       }
 
       .volume-toggle-btn {
-        width: 2.5rem !important;
-        height: 2.5rem !important;
+        width: 3rem !important;
+        height: 3rem !important;
+        bottom: 0.75rem !important;
+        right: 0.75rem !important;
+        background: rgba(0,0,0,0.75) !important;
       }
 
       .volume-toggle-btn svg {
-        width: 1.125rem !important;
-        height: 1.125rem !important;
+        width: 1.375rem !important;
+        height: 1.375rem !important;
       }
 
       a[target="_blank"] {
-        width: 2.5rem !important;
-        height: 2.5rem !important;
+        width: 3rem !important;
+        height: 3rem !important;
+        top: 0.75rem !important;
+        right: 0.75rem !important;
+        background: rgba(0,0,0,0.75) !important;
       }
 
       a[target="_blank"] svg {
-        width: 1.125rem !important;
-        height: 1.125rem !important;
+        width: 1.375rem !important;
+        height: 1.375rem !important;
+      }
+
+      /* Больше отступ между кнопками */
+      .video-tile-container {
+        padding: 0.25rem;
       }
 
       /* Кнопка сохранить - компактный текст на мобильных */
@@ -1237,7 +1249,9 @@
       }
 
       .persist-btn {
-        font-size: 0.8125rem !important;
+        font-size: 0.875rem !important;
+        padding: 0.625rem 0.875rem !important;
+        min-height: 44px !important;
       }
     }
 
@@ -1255,8 +1269,8 @@
     /* Очень маленькие экраны */
     @media (max-width: 375px) {
       .video-play-btn .play-btn-inner {
-        width: 3.5rem !important;
-        height: 3.5rem !important;
+        width: 4rem !important;
+        height: 4rem !important;
       }
 
       .volume-toggle-btn,
