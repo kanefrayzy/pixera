@@ -3130,37 +3130,40 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           Ваш браузер не поддерживает видео.
         </video>
 
-        <!-- Кнопка Play - абсолютное центрирование -->
-        <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; opacity: 1; transition: opacity 0.2s; background: none; border: none; padding: 0; touch-action: manipulation;">
-          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); backdrop-filter: blur(4px); transition: all 0.2s; cursor: pointer;">
-            <svg class="play-icon" style="width: 1.25rem; height: 1.25rem; margin-left: 0.125rem;" viewBox="0 0 24 24" fill="currentColor">
+        <!-- Кнопка Play - в центре видео -->
+        <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; opacity: 1; transition: opacity 0.2s; background: none; border: none; padding: 0; touch-action: manipulation;">
+          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: rgba(0,0,0,0.75); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); backdrop-filter: blur(8px); transition: all 0.2s; cursor: pointer;">
+            <svg class="play-icon" style="width: 1.5rem; height: 1.5rem; margin-left: 0.125rem;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />
             </svg>
-            <svg class="pause-icon" style="width: 1.25rem; height: 1.25rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="pause-icon" style="width: 1.5rem; height: 1.5rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
             </svg>
           </span>
         </button>
 
-        <!-- Кнопка открыть сверху справа -->
-        <a href="${videoUrl}" target="_blank" style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.2s; touch-action: manipulation;" aria-label="Открыть">
-          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-          </svg>
-        </a>
-
-        <!-- Кнопка звука снизу справа -->
-        <button type="button" class="volume-toggle-btn" style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation;" aria-label="Звук">
-          <svg class="volume-icon-off" style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-            <line x1="23" y1="9" x2="17" y2="15"/>
-            <line x1="17" y1="9" x2="23" y2="15"/>
-          </svg>
-          <svg class="volume-icon-on" style="width: 1rem; height: 1rem; display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-          </svg>
-        </button>
+        <!-- Панель управления снизу с градиентом -->
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.4) 50%, transparent 100%); padding: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 1rem; backdrop-filter: blur(4px);">
+          <!-- Кнопка звука -->
+          <button type="button" class="volume-toggle-btn" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.3);" aria-label="Звук">
+            <svg class="volume-icon-off" style="width: 1.125rem; height: 1.125rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+            <svg class="volume-icon-on" style="width: 1.125rem; height: 1.125rem; display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </button>
+          
+          <!-- Кнопка открыть -->
+          <a href="${videoUrl}" target="_blank" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; touch-action: manipulation; text-decoration: none; box-shadow: 0 2px 8px rgba(0,0,0,0.3);" aria-label="Открыть">
+            <svg style="width: 1.125rem; height: 1.125rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
       </div>
       <div style="padding: 0.5rem; border-top: 1px solid var(--bord); background: var(--bg-card);">
         <button type="button" class="persist-btn" style="width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); color: white; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.375rem;">

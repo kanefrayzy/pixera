@@ -1193,50 +1193,45 @@
     /* Мобильные устройства */
     @media (max-width: 640px) {
       #video-results-grid {
-        gap: 0.875rem;
+        gap: 1rem;
       }
 
-      /* Оптимальные размеры кнопок для тача */
+      /* Увеличенная кнопка Play для удобства */
       .video-play-btn .play-btn-inner {
-        width: 3.5rem !important;
-        height: 3.5rem !important;
-        background: rgba(0,0,0,0.7) !important;
+        width: 4rem !important;
+        height: 4rem !important;
+        background: rgba(0,0,0,0.8) !important;
       }
 
       .video-play-btn .play-btn-inner svg {
-        width: 1.5rem !important;
-        height: 1.5rem !important;
+        width: 1.75rem !important;
+        height: 1.75rem !important;
+      }
+
+      /* Нижняя панель управления */
+      .video-tile-container > div[style*="linear-gradient"] {
+        padding: 1rem !important;
+        gap: 1.5rem !important;
       }
 
       .volume-toggle-btn {
-        width: 2.5rem !important;
-        height: 2.5rem !important;
-        bottom: 0.625rem !important;
-        right: 0.625rem !important;
-        background: rgba(0,0,0,0.7) !important;
+        width: 3rem !important;
+        height: 3rem !important;
       }
 
       .volume-toggle-btn svg {
-        width: 1.125rem !important;
-        height: 1.125rem !important;
+        width: 1.375rem !important;
+        height: 1.375rem !important;
       }
 
       a[target="_blank"] {
-        width: 2.5rem !important;
-        height: 2.5rem !important;
-        top: 0.625rem !important;
-        right: 0.625rem !important;
-        background: rgba(0,0,0,0.7) !important;
+        width: 3rem !important;
+        height: 3rem !important;
       }
 
       a[target="_blank"] svg {
-        width: 1.125rem !important;
-        height: 1.125rem !important;
-      }
-
-      /* Компактные отступы */
-      .video-tile-container {
-        padding: 0;
+        width: 1.375rem !important;
+        height: 1.375rem !important;
       }
 
       /* Кнопка сохранить - компактный текст на мобильных */
