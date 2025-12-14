@@ -2896,15 +2896,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (aspectText) { try { tile.dataset.aspectText = aspectText; } catch (_) { } }
 
     tile.innerHTML = `
-      <div class="relative aspect-video group ${hasPreview ? '' : 'bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-2)]'}">
-        ${badgesHtml}
-        ${hasPreview ? `<img src="${pic}" alt="Источник" class="absolute inset-0 w-full h-full object-cover">` : ''}
-
-        <!-- Кнопка удаления СКРЫТА во время генерации -->
-
-        <!-- Puzzle Loader (same as image loader), overlaid on top of preview if present -->
-        <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
-          <div class="puzzle-grid relative w-24 h-24 sm:w-28 sm:h-28">
+      <div class="video-tile-container" style="height: 270px; position: relative; overflow: hidden; background: ${hasPreview ? '#000' : 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-2) 100%)'}; border-radius: 0.75rem;">
+        ${hasPreview ? `<img src="${pic}" alt="Источник" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">` : ''}
+        
+        <!-- Loader overlay -->
+        <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem; z-index: 10;">
+          <div class="puzzle-grid" style="position: relative; width: 6rem; height: 6rem;">
             <div class="puzzle-piece puzzle-p1" style="--delay: 0s"></div>
             <div class="puzzle-piece puzzle-p2" style="--delay: 0.1s"></div>
             <div class="puzzle-piece puzzle-p3" style="--delay: 0.2s"></div>
@@ -2915,16 +2912,15 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             <div class="puzzle-piece puzzle-p8" style="--delay: 0.7s"></div>
             <div class="puzzle-piece puzzle-p9" style="--delay: 0.8s"></div>
           </div>
-
-          <div class="text-center">
-            <div class="text-sm sm:text-base font-semibold text-[var(--text)] mb-1" data-role="tile-phase">Создаём магию…</div>
-            <div class="text-xs sm:text-sm text-[var(--muted)]" data-role="tile-status">Подготовка</div>
+          <div style="text-align: center;">
+            <div style="font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;" data-role="tile-phase">Создаём магию…</div>
+            <div style="font-size: 0.75rem; color: var(--muted);" data-role="tile-status">Подготовка</div>
           </div>
         </div>
-
-        <!-- Animated gradient overlay -->
-        <div class="absolute inset-0 opacity-20 pointer-events-none">
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shimmer"></div>
+        
+        <!-- Shimmer effect -->
+        <div style="position: absolute; inset: 0; opacity: 0.2; pointer-events: none;">
+          <div class="animate-shimmer" style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb, 99, 102, 241), 0.3), transparent);"></div>
         </div>
       </div>
     `;
@@ -3121,16 +3117,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       console.log('[video-gen] Balance update skipped:', e.message);
     }
 
-    // Keep frame unchanged; overlay aspect label and controls
+    // Полностью переделанная структура с фиксированной высотой
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="relative aspect-video bg-black group rounded-lg overflow-hidden">
-        <div class="absolute top-2 left-2 z-10 flex flex-col gap-1">
-          <div data-role="tile-aspect" class="px-2 py-1 rounded-full bg-black/60 text-white text-[10px] sm:text-xs font-medium backdrop-blur-sm">${this.escapeHtml(arFromDataset)}</div>
-        </div>
-
-        <!-- Видео без нативных controls -->
-        <video class="video-player w-full h-full object-contain cursor-pointer"
+      <div class="video-tile-container" style="height: 270px; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
+        <!-- Видео -->
+        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
                preload="auto"
                loop
                muted
@@ -3138,42 +3130,40 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           Ваш браузер не поддерживает видео.
         </video>
 
-        <!-- Кнопка Play по центру (компактная) - единственная кнопка управления воспроизведением -->
-        <button type="button" class="video-play-btn absolute inset-0 flex items-center justify-center z-10 transition-opacity duration-200" style="opacity: 1;">
-          <span class="play-btn-inner inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/60 hover:bg-black/70 text-white shadow-lg backdrop-blur-sm transition transform hover:scale-110">
-            <svg class="play-icon w-5 h-5 sm:w-6 sm:h-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
+        <!-- Кнопка Play - абсолютное центрирование -->
+        <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; opacity: 1; transition: opacity 0.2s; background: none; border: none; padding: 0;">
+          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); backdrop-filter: blur(4px); transition: all 0.2s; cursor: pointer;">
+            <svg class="play-icon" style="width: 1.5rem; height: 1.5rem; margin-left: 0.125rem;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />
             </svg>
-            <svg class="pause-icon w-5 h-5 sm:w-6 sm:h-6 hidden" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="pause-icon" style="width: 1.5rem; height: 1.5rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
             </svg>
           </span>
         </button>
 
         <!-- Кнопка открыть сверху справа -->
-        <div class="absolute top-2 right-2 z-20">
-          <a href="${videoUrl}" target="_blank" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 text-white hover:bg-black/80 transition flex items-center justify-center backdrop-blur-sm" aria-label="Открыть в новой вкладке">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-            </svg>
-          </a>
-        </div>
+        <a href="${videoUrl}" target="_blank" style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.7); color: white; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: background 0.2s;" aria-label="Открыть">
+          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+        </a>
 
-        <!-- Маленький переключатель звука снизу справа -->
-        <button type="button" class="volume-toggle-btn absolute bottom-2 right-2 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black/70 text-white flex items-center justify-center transition" aria-label="Звук">
-          <svg class="volume-icon-off w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Кнопка звука снизу справа -->
+        <button type="button" class="volume-toggle-btn" style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: center; transition: background 0.2s; border: none; cursor: pointer;" aria-label="Звук">
+          <svg class="volume-icon-off" style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <line x1="23" y1="9" x2="17" y2="15"/>
             <line x1="17" y1="9" x2="23" y2="15"/>
           </svg>
-          <svg class="volume-icon-on w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="volume-icon-on" style="width: 1rem; height: 1rem; display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
           </svg>
         </button>
       </div>
-      <div class="p-2 sm:p-2.5 border-t border-[var(--bord)] bg-[var(--bg-card)]">
-        <button type="button" class="persist-btn w-full px-3 py-2 rounded-lg bg-primary/90 hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/30 text-white text-xs sm:text-sm font-medium transition" data-auth-text="Сохранить в профиле" data-guest-text="Добавить в мои обработки">${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</button>
+      <div style="padding: 0.5rem; border-top: 1px solid var(--bord); background: var(--bg-card);">
+        <button type="button" class="persist-btn" style="width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); color: white; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s;">${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</button>
       </div>
     `;
 

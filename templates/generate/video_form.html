@@ -1157,92 +1157,86 @@
   <div id="video-results-grid" class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
 
   <style>
-    /* Унификация размеров карточек для мобильных */
+    /* Чистые стили для видео карточек с фиксированной высотой */
     #video-results-grid .video-result-tile {
       width: 100%;
     }
     
-    /* Фикс для правильного позиционирования на мобильных */
-    .video-result-tile .aspect-video {
+    /* Контейнер видео - фиксированная высота 270px */
+    .video-tile-container {
+      height: 270px !important;
       position: relative;
-      width: 100%;
       overflow: hidden;
-      max-height: 270px;
     }
     
-    /* Унифицированная высота для pending и done состояний */
-    .video-result-tile[data-status="pending"] .aspect-video,
-    .video-result-tile[data-status="done"] .aspect-video {
-      max-height: 270px;
+    /* Hover эффект для кнопки play */
+    .play-btn-inner:hover {
+      background: rgba(0,0,0,0.7) !important;
+      transform: scale(1.1);
     }
     
-    /* Кнопка Play - центрирование */
-    .video-play-btn {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      pointer-events: none;
+    /* Hover для кнопки открыть */
+    a[target="_blank"]:hover {
+      background: rgba(0,0,0,0.8) !important;
     }
     
-    .video-play-btn .play-btn-inner {
-      pointer-events: auto;
+    /* Hover для кнопки звука */
+    .volume-toggle-btn:hover {
+      background: rgba(0,0,0,0.7) !important;
     }
     
-    /* Кнопка звука - всегда видна */
-    .volume-toggle-btn {
-      position: absolute !important;
-      bottom: 0.5rem !important;
-      right: 0.5rem !important;
-      z-index: 20 !important;
+    /* Hover для кнопки сохранить */
+    .persist-btn:hover {
+      background: rgba(var(--primary-rgb, 99, 102, 241), 1) !important;
     }
 
-    /* Улучшенное отображение на мобильных */
+    /* Мобильные устройства */
     @media (max-width: 640px) {
       #video-results-grid {
         gap: 0.75rem;
       }
-
-      .video-result-tile .aspect-video {
-        min-height: 200px;
+      
+      /* Увеличиваем кнопки для тача */
+      .video-play-btn .play-btn-inner {
+        width: 4rem !important;
+        height: 4rem !important;
       }
+      
+      .video-play-btn .play-btn-inner svg {
+        width: 1.75rem !important;
+        height: 1.75rem !important;
+      }
+      
+      .volume-toggle-btn {
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+      }
+      
+      .volume-toggle-btn svg {
+        width: 1.125rem !important;
+        height: 1.125rem !important;
+      }
+      
+      a[target="_blank"] {
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+      }
+      
+      a[target="_blank"] svg {
+        width: 1.125rem !important;
+        height: 1.125rem !important;
+      }
+    }
 
-      /* Оптимизация кнопок для тач-устройств */
+    /* Очень маленькие экраны */
+    @media (max-width: 375px) {
       .video-play-btn .play-btn-inner {
         width: 3.5rem !important;
         height: 3.5rem !important;
       }
-
-      .volume-toggle-btn {
-        width: 2.5rem !important;
-        height: 2.5rem !important;
-        bottom: 0.5rem !important;
-        right: 0.5rem !important;
-      }
-
-      /* Кнопка открыть - больше для тача */
-      .video-result-tile a[target="_blank"] {
-        width: 2.5rem !important;
-        height: 2.5rem !important;
-      }
-    }
-
-    /* Для очень маленьких экранов */
-    @media (max-width: 375px) {
-      .video-result-tile .aspect-video {
-        min-height: 180px;
-      }
       
-      .video-play-btn .play-btn-inner {
-        width: 3rem !important;
-        height: 3rem !important;
-      }
-      
-      .volume-toggle-btn {
+      .volume-toggle-btn,
+      a[target="_blank"] {
         width: 2.25rem !important;
         height: 2.25rem !important;
       }
