@@ -156,18 +156,6 @@
                   Ваш браузер не поддерживает видео.
                 </video>
 
-                <!-- Play Button Overlay -->
-                <div class="absolute inset-0 flex items-center justify-center video-play-overlay cursor-pointer transition-opacity duration-200 bg-black/10 hover:bg-black/20">
-                  <div class="w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70 ring-1 ring-white/30">
-                    <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                    </svg>
-                  </div>
-                </div>
-
                 <!-- Controls Container -->
                 <div class="absolute inset-0 flex flex-col justify-between p-1.5 xs:p-2 sm:p-2.5 pointer-events-none">
                   <!-- Top: Model Badge -->
@@ -665,17 +653,6 @@
                 </video>
 
                 <div class="absolute inset-0 cursor-zoom-in pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
-                <!-- Play Icon Overlay -->
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none video-play-overlay transition-opacity duration-200">
-                  <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70">
-                    <svg class="w-8 h-8 text-white ml-1 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    <svg class="w-8 h-8 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                    </svg>
-                  </div>
-                </div>
 
                 <!-- Sound Toggle + Volume -->
                 <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
@@ -1585,30 +1562,37 @@ video[controls] + .video-play-overlay {
     // Silent fail
   }
 
-  // IntersectionObserver для автовоспроизведения видео в галерее
+// Автозапуск всех видео в галерее при загрузке страницы
   (function(){
     try {
-      // Create observer for autoplay when videos enter viewport
+      // Запускаем все видео сразу (muted)
+      document.querySelectorAll('#videos-grid video, #public-videos-grid video').forEach(video => {
+        video.muted = true;
+        video.play().catch(() => {});
+      });
+
+      // IntersectionObserver для паузы видео вне viewport (экономия ресурсов)
       const autoplayObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           const video = entry.target;
           if (!video || video.hasAttribute('data-manual-control')) return;
-
+          
           if (entry.isIntersecting) {
-            // Video is visible - autoplay (muted by default)
+            // Video in viewport - play if paused
             if (video.paused) {
+              video.muted = true;
               video.play().catch(() => {});
             }
           } else {
-            // Video is not visible - pause
+            // Video out of viewport - pause to save resources
             if (!video.paused) {
               video.pause();
             }
           }
         });
       }, {
-        threshold: 0.5, // Trigger when 50% visible
-        rootMargin: '50px' // Start slightly before entering viewport
+        threshold: 0.1,
+        rootMargin: '100px'
       });
 
       // Observe all videos in "Мои генерации" grid
@@ -1639,73 +1623,18 @@ video[controls] + .video-play-overlay {
     }
   })();
 
-  // Handle video play/pause for "Мои генерации" (videos-grid)
+  // Handle video play/pause for "Мои генерации" (videos-grid) - Simplified
   (function(){
-    function findCard(el){
-      return el.closest('div[role="listitem"]') || el.closest('.group') || el.parentElement;
-    }
-    function setPlaying(card, playing){
-      if (!card) return;
-      card.classList.toggle('playing', !!playing);
-      const overlay = card.querySelector('.video-play-overlay');
-      if (overlay){
-        const playI = overlay.querySelector('.play-icon');
-        const pauseI = overlay.querySelector('.pause-icon');
-        if (playI && pauseI){
-          playI.classList.toggle('hidden', !!playing);
-          pauseI.classList.toggle('hidden', !playing);
-        }
-      }
-    }
-    function pauseAll(except){
-      document.querySelectorAll('#videos-grid video').forEach(v=>{
-        if (v !== except){
-          try { v.pause(); } catch(_){}
-          setPlaying(findCard(v), false);
-        }
-      });
-    }
-
     // Click on video toggles playback
     document.addEventListener('click', (e)=>{
       const video = e.target.closest('#videos-grid video');
       if (!video || video.hasAttribute('controls')) return;
-      const card = findCard(video);
       video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
       if (video.paused){
-        pauseAll(video);
         video.play().catch(()=>{});
-        setPlaying(card, true);
       } else {
         video.pause();
-        setPlaying(card, false);
       }
-    });
-
-    // Click on overlay toggles playback
-    document.addEventListener('click', (e)=>{
-      const ov = e.target.closest('#videos-grid .video-play-overlay');
-      if (!ov) return;
-      const card = findCard(ov);
-      const video = card ? card.querySelector('video') : null;
-      if (!video || video.hasAttribute('controls')) return;
-      e.preventDefault(); e.stopPropagation();
-      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-      if (video.paused){
-        pauseAll(video);
-        video.play().catch(()=>{});
-        setPlaying(card, true);
-      } else {
-        video.pause();
-        setPlaying(card, false);
-      }
-    });
-
-    // Sync overlay on events
-    document.querySelectorAll('#videos-grid video').forEach(video=>{
-      video.addEventListener('ended', ()=> setPlaying(findCard(video), false));
-      video.addEventListener('play',  ()=> setPlaying(findCard(video), true));
-      video.addEventListener('pause', ()=> setPlaying(findCard(video), false));
     });
   })();
 
@@ -1947,73 +1876,18 @@ video[controls] + .video-play-overlay {
     }
   } catch(e) {}
 
-  // Handle video play/pause with proper overlay lookup and auto-pause
+  // Handle video play/pause for public videos - Simplified
   (function(){
-    function getOverlay(video){
-      return video && video.parentElement ? video.parentElement.querySelector('.video-play-overlay') : null;
-    }
-    function setPlaying(card, playing){
-      if (!card) return;
-      card.classList.toggle('playing', !!playing);
-      const overlay = card.querySelector('.video-play-overlay');
-      if (overlay){
-        const playI = overlay.querySelector('.play-icon');
-        const pauseI = overlay.querySelector('.pause-icon');
-        if (playI && pauseI){
-          playI.classList.toggle('hidden', !!playing);
-          pauseI.classList.toggle('hidden', !playing);
-        }
-      }
-    }
-    function pauseAll(except){
-      document.querySelectorAll('#public-videos-grid video').forEach(v=>{
-        if (v !== except){
-          try { v.pause(); } catch(_){}
-          setPlaying(v.closest('article'), false);
-        }
-      });
-    }
-
     // Click on video toggles playback
     document.addEventListener('click', (e)=>{
       const video = e.target.closest('#public-videos-grid video');
       if (!video || video.hasAttribute('controls')) return;
-      const card = video.closest('article');
       video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
       if (video.paused){
-        pauseAll(video);
         video.play().catch(()=>{});
-        setPlaying(card, true);
       } else {
         video.pause();
-        setPlaying(card, false);
       }
-    });
-
-    // Click on play overlay toggles playback
-    document.addEventListener('click', (e)=>{
-      const ov = e.target.closest('#public-videos-grid .video-play-overlay');
-      if (!ov) return;
-      const card = ov.closest('article');
-      const video = card && card.querySelector('video');
-      if (!video || video.hasAttribute('controls')) return;
-      e.preventDefault(); e.stopPropagation();
-      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-      if (video.paused){
-        pauseAll(video);
-        video.play().catch(()=>{});
-        setPlaying(card, true);
-      } else {
-        video.pause();
-        setPlaying(card, false);
-      }
-    });
-
-    // Sync overlay on events
-    document.querySelectorAll('#public-videos-grid video').forEach(video=>{
-      video.addEventListener('ended', ()=> setPlaying(video.closest('article'), false));
-      video.addEventListener('play',  ()=> setPlaying(video.closest('article'), true));
-      video.addEventListener('pause', ()=> setPlaying(video.closest('article'), false));
     });
   })();
 })();

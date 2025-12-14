@@ -79,15 +79,6 @@
                  preload="${index === 0 ? 'auto' : 'metadata'}" playsinline webkit-playsinline x5-playsinline muted
                  title="${(item.title || 'Видео пример').replace(/"/g,'"')}"></video>
 
-          <!-- Play/Pause overlay -->
-          <button type="button"
-                  class="video-play-btn absolute inset-0 grid place-items-center transition opacity-100 z-30 pointer-events-auto cursor-pointer"
-                  aria-label="Воспроизведение">
-            <span class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 text-white shadow-lg backdrop-blur">
-              <svg class="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-            </span>
-          </button>
-
           <!-- Volume control (shows only if audio is present) -->
           <div class="video-vol-wrap absolute right-3 top-3 items-center gap-2 bg-black/55 text-white px-2.5 py-1.5 rounded-xl backdrop-blur-sm z-20">
             <button type="button" class="video-mute-btn" aria-label="Звук">
@@ -118,22 +109,14 @@
       indicators.appendChild(dot);
 
       const video = slide.querySelector('video');
-      const playBtn = slide.querySelector('.video-play-btn');
-      const safePlay = async () => { try { await video.play(); } catch (_) {} };
-      const updateOverlay = () => {
+      // Простой клик по видео для паузы/воспроизведения
+      video.addEventListener('click', () => { 
         if (video.paused) {
-          playBtn.classList.remove('opacity-0','invisible','pointer-events-none');
-          playBtn.setAttribute('aria-label','Воспроизведение');
+          video.play().catch(() => {});
         } else {
-          playBtn.classList.add('opacity-0','invisible','pointer-events-none');
-          playBtn.setAttribute('aria-label','Пауза');
+          video.pause();
         }
-      };
-      playBtn.addEventListener('click', (e) => { e.stopPropagation(); if (video.paused) safePlay(); else video.pause(); });
-      video.addEventListener('click', () => { if (video.paused) safePlay(); else video.pause(); });
-      video.addEventListener('play', updateOverlay);
-      video.addEventListener('pause', updateOverlay);
-      video.addEventListener('ended', updateOverlay);
+      });
 
       // Volume controls (only for videos that actually have audio)
       const volWrap = slide.querySelector('.video-vol-wrap');
@@ -208,9 +191,14 @@
       video.addEventListener('canplay', tryDetect, { once: true });
       video.addEventListener('timeupdate', tryDetect, { once: true });
 
-      // Initial state: muted (for autoplay policy), overlay visible
+      // Initial state: muted (for autoplay policy)
       setVolume(0);
-      updateOverlay();
+      
+      // Автовоспроизведение первого видео при загрузке
+      if (index === 0) {
+        video.muted = true;
+        video.play().catch(() => {});
+      }
     });
 
     if (!root.dataset.navWired) {
@@ -255,12 +243,16 @@
       const isActive = i === current;
       el.classList.toggle('active', isActive);
       el.style.display = isActive ? '' : 'none';
-      // Пауза неактивных
       const v = el.querySelector('video');
-      const playBtn = el.querySelector('.video-play-btn');
       if (v) {
-        if (!isActive && !v.paused) v.pause();
-        if (playBtn) playBtn.classList.toggle('opacity-0', isActive && !v.paused);
+        if (!isActive && !v.paused) {
+          // Пауза неактивных
+          v.pause();
+        } else if (isActive && v.paused) {
+          // Автовоспроизведение активного слайда
+          v.muted = true;
+          v.play().catch(() => {});
+        }
       }
     });
     dots.forEach((d, i) => d.classList.toggle('active', i === current));
@@ -324,8 +316,7 @@
 <style>
 /* Safety styles to guarantee visibility and clickability on all themes and devices */
 #generationVideoSlider .slide { position: relative; }
-#generationVideoSlider video { display:block; width:100%; height:auto; }
-#generationVideoSlider .video-play-btn { z-index:30; }
+#generationVideoSlider video { display:block; width:100%; height:auto; cursor:pointer; }
 #generationVideoSlider .video-vol-wrap,
 #generationVideoSlider .video-noaudio { z-index:20; }
 #generationVideoSlider .indicator.active { background: var(--primary); }

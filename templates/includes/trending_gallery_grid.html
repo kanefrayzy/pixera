@@ -16,17 +16,6 @@
               <source src="{{ v.video_url }}" type="video/mp4">
             </video>
 
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none video-play-overlay transition-opacity duration-200 opacity-0">
-              <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70">
-                <svg class="w-8 h-8 text-white ml-1 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"></path>
-                </svg>
-                <svg class="w-8 h-8 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
-                </svg>
-              </div>
-            </div>
-
             <!-- Sound control -->
             <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2 pointer-events-auto">
               <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
@@ -224,51 +213,21 @@
   function setPlaying(card, playing){
     if (!card) return;
     card.classList.toggle('playing', !!playing);
-    const overlay = card.querySelector('.video-play-overlay');
-    if (overlay){
-      const playI = overlay.querySelector('.play-icon');
-      const pauseI = overlay.querySelector('.pause-icon');
-      if (playI && pauseI){
-        playI.classList.toggle('hidden', !!playing);
-        pauseI.classList.toggle('hidden', !playing);
-      }
-      // Управление видимостью overlay через класс playing
-      if (playing) {
-        overlay.style.opacity = '0';
-      } else {
-        overlay.style.opacity = '1';
-      }
-    }
-  }
-  function pauseAll(except){
-    root.querySelectorAll('video').forEach(v=>{
-      if (v !== except){
-        try { v.pause(); } catch(_){}
-        setPlaying(findCard(v), false);
-      }
-    });
   }
 
-  // Toggle play on video/overlay click
+  // Toggle play/pause on video click
   root.addEventListener('click', (e)=>{
-    const ov = e.target.closest('.video-play-overlay');
-    if (ov){
-      const card = findCard(ov);
-      const v = card && card.querySelector('video');
-      if (!v) return;
-      e.preventDefault(); e.stopPropagation();
-      v.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-      if (v.paused){ pauseAll(v); v.play().catch(()=>{}); setPlaying(card,true); }
-      else { v.pause(); setPlaying(card,false); }
-      return;
-    }
     const video = e.target.closest('video');
-    if (!video) return;
+    if (!video || video.hasAttribute('controls')) return;
     const card = findCard(video);
-    if (video.hasAttribute('controls')) return;
     video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-    if (video.paused){ pauseAll(video); video.play().catch(()=>{}); setPlaying(card,true); }
-    else { video.pause(); setPlaying(card,false); }
+    if (video.paused){ 
+      video.play().catch(()=>{}); 
+      setPlaying(card,true); 
+    } else { 
+      video.pause(); 
+      setPlaying(card,false); 
+    }
   });
 
   // Volume + mute
@@ -354,14 +313,4 @@
   content: ""; position: absolute; left: -8px; right: -8px; top: 100%; height: 14px;
 }
 
-/* Community videos: show play overlay only when paused or on hover */
-#community article:hover .video-play-overlay {
-  opacity: 1 !important;
-}
-#community article:not(.playing) .video-play-overlay {
-  opacity: 1 !important;
-}
-#community article.playing .video-play-overlay {
-  opacity: 0 !important;
-}
 </style>
