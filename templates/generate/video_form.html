@@ -1226,6 +1226,30 @@
         width: 1.125rem !important;
         height: 1.125rem !important;
       }
+      
+      /* Кнопка сохранить - компактный текст на мобильных */
+      .persist-btn-text-full {
+        display: none !important;
+      }
+      
+      .persist-btn-text {
+        display: inline !important;
+      }
+      
+      .persist-btn {
+        font-size: 0.8125rem !important;
+      }
+    }
+    
+    /* Десктоп - полный текст */
+    @media (min-width: 641px) {
+      .persist-btn-text {
+        display: none !important;
+      }
+      
+      .persist-btn-text-full {
+        display: inline !important;
+      }
     }
 
     /* Очень маленькие экраны */

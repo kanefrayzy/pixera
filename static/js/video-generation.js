@@ -3163,7 +3163,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         </button>
       </div>
       <div style="padding: 0.5rem; border-top: 1px solid var(--bord); background: var(--bg-card);">
-        <button type="button" class="persist-btn" style="width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); color: white; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s;">${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</button>
+        <button type="button" class="persist-btn" style="width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); color: white; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.375rem;">
+          <svg style="width: 1rem; height: 1rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span class="persist-btn-text">${this.isAuthenticated ? 'Сохранить' : 'Добавить'}</span>
+          <span class="persist-btn-text-full" style="display: none;">${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</span>
+        </button>
       </div>
     `;
 
@@ -3200,11 +3206,11 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           videoEl.muted = !videoEl.muted;
           if (volumeIconOn && volumeIconOff) {
             if (videoEl.muted) {
-              volumeIconOn.classList.add('hidden');
-              volumeIconOff.classList.remove('hidden');
+              volumeIconOn.style.display = 'none';
+              volumeIconOff.style.display = 'block';
             } else {
-              volumeIconOn.classList.remove('hidden');
-              volumeIconOff.classList.add('hidden');
+              volumeIconOn.style.display = 'block';
+              volumeIconOff.style.display = 'none';
             }
           }
         });
@@ -3289,9 +3295,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const pbtn = tile.querySelector('.persist-btn');
       if (pbtn && jobId && this.persistedJobs && this.persistedJobs.has(String(jobId))) {
-        pbtn.textContent = this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки';
+        const textEl = pbtn.querySelector('.persist-btn-text');
+        const textFullEl = pbtn.querySelector('.persist-btn-text-full');
+        if (textEl) textEl.textContent = this.isAuthenticated ? 'Сохранено' : 'Добавлено';
+        if (textFullEl) textFullEl.textContent = this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки';
         pbtn.disabled = true;
-        pbtn.classList.add('opacity-70', 'pointer-events-none');
+        pbtn.style.opacity = '0.7';
+        pbtn.style.pointerEvents = 'none';
       }
     } catch (_) { }
 
