@@ -67,9 +67,9 @@
 
 /* Responsive fixes for small screens */
 @media (max-width: 640px) {
-  .video-result-tile {
+  /* .video-result-tile {
     min-height: 200px;
-  }
+  } */
 
   #video-queue-card {
     padding: 1rem;
