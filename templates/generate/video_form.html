@@ -1162,38 +1162,82 @@
       width: 100%;
     }
     
+    /* Фикс для правильного позиционирования на мобильных */
+    .video-result-tile .aspect-video {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+    }
+    
+    /* Кнопка Play - центрирование */
+    .video-play-btn {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      pointer-events: none;
+    }
+    
+    .video-play-btn .play-btn-inner {
+      pointer-events: auto;
+    }
+    
+    /* Кнопка звука - всегда видна */
+    .volume-toggle-btn {
+      position: absolute !important;
+      bottom: 0.5rem !important;
+      right: 0.5rem !important;
+      z-index: 20 !important;
+    }
+
     /* Улучшенное отображение на мобильных */
     @media (max-width: 640px) {
       #video-results-grid {
         gap: 0.75rem;
       }
-      
+
       .video-result-tile .aspect-video {
         min-height: 200px;
       }
-      
+
       /* Оптимизация кнопок для тач-устройств */
       .video-play-btn .play-btn-inner {
         width: 3.5rem !important;
         height: 3.5rem !important;
       }
-      
+
       .volume-toggle-btn {
         width: 2.5rem !important;
         height: 2.5rem !important;
+        bottom: 0.5rem !important;
+        right: 0.5rem !important;
       }
-      
+
       /* Кнопка открыть - больше для тача */
       .video-result-tile a[target="_blank"] {
         width: 2.5rem !important;
         height: 2.5rem !important;
       }
     }
-    
+
     /* Для очень маленьких экранов */
     @media (max-width: 375px) {
       .video-result-tile .aspect-video {
         min-height: 180px;
+      }
+      
+      .video-play-btn .play-btn-inner {
+        width: 3rem !important;
+        height: 3rem !important;
+      }
+      
+      .volume-toggle-btn {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
       }
     }
   </style>

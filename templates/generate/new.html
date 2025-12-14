@@ -2275,48 +2275,48 @@ document.addEventListener('DOMContentLoaded', function() {
     .image-result-tile {
       width: 100%;
     }
-    
+
     /* Улучшенное отображение на мобильных */
     @media (max-width: 640px) {
       #image-queue-card .grid {
         gap: 0.75rem;
       }
-      
+
       .image-result-tile .aspect-square {
         min-height: 200px;
       }
-      
+
       /* Оптимизация кнопок для тач-устройств */
       .image-result-tile a[target="_blank"] {
         width: 2.5rem !important;
         height: 2.5rem !important;
       }
-      
+
       /* Кнопка persist больше для тача */
       .image-result-tile .persist-btn {
         padding: 0.625rem 0.75rem;
         font-size: 0.875rem;
       }
     }
-    
+
     /* Для очень маленьких экранов */
     @media (max-width: 375px) {
       .image-result-tile .aspect-square {
         min-height: 180px;
       }
     }
-    
+
     /* Унифицированный размер карточек в сетке */
     #image-queue-card .grid {
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
-    
+
     @media (max-width: 640px) {
       #image-queue-card .grid {
         grid-template-columns: 1fr;
       }
     }
-    
+
     @media (min-width: 641px) and (max-width: 1024px) {
       #image-queue-card .grid {
         grid-template-columns: repeat(2, 1fr);
