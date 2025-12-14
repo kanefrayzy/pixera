@@ -2299,48 +2299,60 @@ document.addEventListener('DOMContentLoaded', function() {
         min-height: 44px;
       }
 
-      /* Оптимальные размеры для видео кнопок на мобильных */
+      /* Компактные размеры для видео кнопок на мобильных */
       .video-play-btn {
         touch-action: manipulation !important;
       }
 
       .video-play-btn .play-btn-inner {
-        width: 4rem !important;
-        height: 4rem !important;
-        background: rgba(0,0,0,0.8) !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+        width: 2.75rem !important;
+        height: 2.75rem !important;
+        background: rgba(0,0,0,0.55) !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.25) !important;
       }
 
-      /* Оптимальный размер иконок play и pause */
+      /* Маленькие иконки play и pause */
       .video-play-btn .play-icon,
       .video-play-btn .pause-icon {
-        width: 1.75rem !important;
-        height: 1.75rem !important;
+        width: 1.125rem !important;
+        height: 1.125rem !important;
       }
 
       /* Пауза должна быть видна */
       .video-play-btn .pause-icon {
         opacity: 1 !important;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-      }
-
-      /* Нижняя панель управления на мобильных */
-      .video-tile-container > div[style*="linear-gradient"] {
-        padding: 1rem !important;
-        gap: 1.5rem !important;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
       }
 
       .volume-toggle-btn,
-      .video-tile-container a[target="_blank"] {
-        width: 3rem !important;
-        height: 3rem !important;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.4) !important;
+      a[target="_blank"] {
+        touch-action: manipulation !important;
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.25) !important;
+        background: rgba(0,0,0,0.55) !important;
       }
 
-      .volume-toggle-btn svg,
-      .video-tile-container a[target="_blank"] svg {
-        width: 1.375rem !important;
-        height: 1.375rem !important;
+      /* Кнопки по углам - Volume слева внизу, Open справа вверху */
+      .volume-toggle-btn {
+        bottom: 0.5rem !important;
+        left: 0.5rem !important;
+        right: auto !important;
+      }
+
+      .volume-toggle-btn svg {
+        width: 1rem !important;
+        height: 1rem !important;
+      }
+
+      a[target="_blank"] {
+        top: 0.5rem !important;
+        right: 0.5rem !important;
+      }
+
+      a[target="_blank"] svg {
+        width: 1rem !important;
+        height: 1rem !important;
       }
     }
 
@@ -2351,25 +2363,26 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       .video-play-btn .play-btn-inner {
-        width: 3.5rem !important;
-        height: 3.5rem !important;
+        width: 2.5rem !important;
+        height: 2.5rem !important;
       }
 
       .video-play-btn .play-icon,
       .video-play-btn .pause-icon {
-        width: 1.5rem !important;
-        height: 1.5rem !important;
-      }
-
-      .video-tile-container > div[style*="linear-gradient"] {
-        padding: 0.75rem !important;
-        gap: 1rem !important;
+        width: 1rem !important;
+        height: 1rem !important;
       }
 
       .volume-toggle-btn,
-      .video-tile-container a[target="_blank"] {
-        width: 2.5rem !important;
-        height: 2.5rem !important;
+      a[target="_blank"] {
+        width: 2rem !important;
+        height: 2rem !important;
+      }
+
+      .volume-toggle-btn svg,
+      a[target="_blank"] svg {
+        width: 0.875rem !important;
+        height: 0.875rem !important;
       }
     }
 
