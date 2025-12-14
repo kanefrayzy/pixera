@@ -2956,7 +2956,13 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
 <!-- My Jobs: Media Modal (Instagram-like) -->
 <div id="pfMediaModal" class="fixed inset-0 z-[70] hidden">
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-pf-close="1"></div>
-  <div class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
+  <div id="pfModalContent" class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden transition-transform duration-300">
+    <!-- Кнопка закрытия сверху справа -->
+    <button type="button" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all backdrop-blur-sm" aria-label="Закрыть" data-pf-close="1">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
     <div class="grid md:grid-cols-2 gap-0">
       <!-- Media -->
       <div id="pfModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
@@ -2971,7 +2977,6 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
               <span id="pfModalLikeCount" class="text-sm font-medium">0</span>
             </button>
           </div>
-          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-pf-close="1">✕</button>
         </div>
         <div id="pfModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
       </div>
@@ -3047,8 +3052,75 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
     if (input && input.value) return input.value;
     return '';
   }
-  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
-  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); }
+
+  // Swipe down to close modal
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+  const modalContent = document.getElementById('pfModalContent');
+
+  function handleTouchStart(e) {
+    if (!modal || modal.classList.contains('hidden')) return;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+    if (modalContent) modalContent.style.transition = 'none';
+  }
+
+  function handleTouchMove(e) {
+    if (!isDragging || !modalContent) return;
+    currentY = e.touches[0].clientY;
+    const diff = currentY - startY;
+    if (diff > 0) {
+      modalContent.style.transform = `translateY(${diff}px)`;
+      modalContent.style.opacity = Math.max(0.5, 1 - diff / 400);
+    }
+  }
+
+  function handleTouchEnd() {
+    if (!isDragging || !modalContent) return;
+    isDragging = false;
+    const diff = currentY - startY;
+    if (modalContent) {
+      modalContent.style.transition = 'transform 0.3s, opacity 0.3s';
+      if (diff > 150) {
+        modalContent.style.transform = 'translateY(100%)';
+        modalContent.style.opacity = '0';
+        setTimeout(closeModal, 300);
+      } else {
+        modalContent.style.transform = 'translateY(0)';
+        modalContent.style.opacity = '1';
+      }
+    }
+  }
+
+  if (modalContent) {
+    modalContent.addEventListener('touchstart', handleTouchStart, { passive: true });
+    modalContent.addEventListener('touchmove', handleTouchMove, { passive: true });
+    modalContent.addEventListener('touchend', handleTouchEnd, { passive: true });
+  }
+
+  function openModal(){ 
+    modal.classList.remove('hidden'); 
+    document.body.style.overflow='hidden'; 
+    if (modalContent) {
+      modalContent.style.transform = 'translateY(0)';
+      modalContent.style.opacity = '1';
+    }
+  }
+  function closeModal(){ 
+    modal.classList.add('hidden'); 
+    document.body.style.overflow=''; 
+    commentsEl.innerHTML=''; 
+    mediaEl.innerHTML=''; 
+    likeBtn.dataset.url=''; 
+    likeCountEl.textContent='0'; 
+    likeBtn.setAttribute('aria-pressed','false'); 
+    likeBtn.querySelector('svg').setAttribute('fill','none'); 
+    if (modalContent) {
+      modalContent.style.transform = 'translateY(0)';
+      modalContent.style.opacity = '1';
+    }
+  }
 
   modal?.addEventListener('click', (e)=>{ if (e.target.dataset.pfClose==='1') closeModal(); });
   document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });

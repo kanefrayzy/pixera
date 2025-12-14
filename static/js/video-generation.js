@@ -3339,19 +3339,16 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
    * Отображение результата (как для фото)
    */
   showVideoResult(videoUrl, jobId, galleryId) {
-    // Создаем модальное окно с поддержкой свайпа
+    // Создаем модальное окно в стиле результата фото
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 video-result-modal';
     modal.innerHTML = `
-      <div class="modal-content bg-[var(--bg-card)] rounded-2xl max-w-4xl w-full p-6 border border-[var(--bord)] shadow-2xl" style="position: relative; transition: transform 0.3s ease-out;">
-        <!-- Свайп индикатор для мобильных -->
-        <div class="modal-swipe-indicator" style="width: 40px; height: 4px; background: var(--muted); border-radius: 2px; margin: 0 auto 1rem; opacity: 0.5;"></div>
-        
+      <div class="modal-content bg-[var(--bg-card)] rounded-2xl max-w-4xl w-full p-6 border border-[var(--bord)] shadow-2xl">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-xl font-bold">Видео готово!</h3>
-          <button class="close-video-modal" style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; border-radius: 0.5rem; background: rgba(0,0,0,0.1); transition: background 0.2s; border: none; cursor: pointer; z-index: 10;" aria-label="Закрыть">
-            <svg style="width: 1.5rem; height: 1.5rem; color: var(--text);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          <button class="close-video-modal w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" aria-label="Закрыть">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
           </button>
         </div>
@@ -3410,58 +3407,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         closeModal();
       }
     });
-
-    // Свайп вниз для закрытия на мобильных
-    const modalContent = modal.querySelector('.modal-content');
-    let startY = 0;
-    let currentY = 0;
-    let isDragging = false;
-
-    const handleTouchStart = (e) => {
-      startY = e.touches[0].clientY;
-      isDragging = true;
-      modalContent.style.transition = 'none';
-    };
-
-    const handleTouchMove = (e) => {
-      if (!isDragging) return;
-      currentY = e.touches[0].clientY;
-      const deltaY = currentY - startY;
-      
-      // Разрешаем свайп только вниз
-      if (deltaY > 0) {
-        e.preventDefault();
-        modalContent.style.transform = `translateY(${deltaY}px)`;
-        // Уменьшаем прозрачность фона при свайпе
-        const opacity = Math.max(0.3, 1 - (deltaY / 400));
-        modal.style.backgroundColor = `rgba(0, 0, 0, ${opacity * 0.8})`;
-      }
-    };
-
-    const handleTouchEnd = () => {
-      if (!isDragging) return;
-      isDragging = false;
-      
-      const deltaY = currentY - startY;
-      modalContent.style.transition = 'transform 0.3s ease-out';
-      
-      // Если свайп больше 150px, закрываем модалку
-      if (deltaY > 150) {
-        modalContent.style.transform = 'translateY(100%)';
-        modal.style.opacity = '0';
-        setTimeout(() => {
-          closeModal();
-        }, 300);
-      } else {
-        // Возвращаем на место
-        modalContent.style.transform = 'translateY(0)';
-        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-      }
-    };
-
-    modalContent.addEventListener('touchstart', handleTouchStart, { passive: true });
-    modalContent.addEventListener('touchmove', handleTouchMove, { passive: false });
-    modalContent.addEventListener('touchend', handleTouchEnd);
 
     // Закрытие по Escape
     const handleEscape = (e) => {
