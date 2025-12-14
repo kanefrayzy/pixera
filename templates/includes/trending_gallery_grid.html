@@ -166,33 +166,47 @@
 {% endif %}
 
 <script>
-// IntersectionObserver для автовоспроизведения видео в Работах сообщества
+// Автовоспроизведение видео при загрузке страницы (Работы сообщества)
 (function(){
   const root = document.getElementById('community');
   if (!root) return;
 
   try {
+    // Автозапуск всех видео при загрузке страницы (muted)
+    root.querySelectorAll('video').forEach(video => {
+      // Убеждаемся что видео muted для автовоспроизведения
+      video.muted = true;
+      // Пробуем запустить видео
+      video.play().catch(() => {
+        // Если не удалось - ничего страшного, пользователь может запустить вручную
+      });
+    });
+
+    // IntersectionObserver для паузы видео вне viewport (экономия ресурсов)
     const autoplayObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const video = entry.target;
         if (!video || video.hasAttribute('data-manual-control')) return;
 
         if (entry.isIntersecting) {
+          // Видео в viewport - воспроизводим если на паузе
           if (video.paused) {
+            video.muted = true; // Обеспечиваем muted для автовоспроизведения
             video.play().catch(() => {});
           }
         } else {
+          // Видео вне viewport - ставим на паузу для экономии ресурсов
           if (!video.paused) {
             video.pause();
           }
         }
       });
     }, {
-      threshold: 0.5,
-      rootMargin: '50px'
+      threshold: 0.1,
+      rootMargin: '100px'
     });
 
-    // Observe all videos in community grid
+    // Observe all videos
     root.querySelectorAll('video').forEach(video => {
       autoplayObserver.observe(video);
     });
