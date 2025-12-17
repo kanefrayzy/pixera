@@ -843,7 +843,9 @@
 
     // Add reference images if any
     try {
-      const refSection = document.querySelector('.reference-upload-section[data-target="image"]');
+      // Try both compact and full component classes
+      const refSection = document.querySelector('.reference-upload-compact[data-target="image"]') ||
+                        document.querySelector('.reference-upload-section[data-target="image"]');
       if (refSection) {
         // Wait for component initialization if needed
         if (typeof refSection.getReferenceFiles === 'function') {
@@ -861,7 +863,7 @@
           console.warn('[image-gen] Reference component not initialized yet');
         }
       } else {
-        console.log('[image-gen] No reference upload section found');
+        console.log('[image-gen] No reference upload section found (tried .reference-upload-compact and .reference-upload-section)');
       }
     } catch(e) {
       console.error('[image-gen] Failed to attach reference images:', e);
