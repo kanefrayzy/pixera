@@ -559,9 +559,39 @@ def generate_video_via_rest(
         frame_images = kwargs.get('frameImages') or kwargs.get('frame_images')
         if frame_images:
             if isinstance(frame_images, list) and frame_images:
-                # Для T2V frameImages - это просто массив UUID или URL
-                payload[0]["frameImages"] = frame_images
-                logger.info(f"Added {len(frame_images)} frameImages to T2V payload")
+                # Форматируем frameImages в зависимости от провайдера
+                if provider == 'bytedance':
+                    # ByteDance ожидает массив объектов { inputImage: <uuid|url> }
+                    payload[0]["frameImages"] = [{"inputImage": v} for v in frame_images]
+                    logger.info(f"Added {len(frame_images)} frameImages (ByteDance format) to T2V payload")
+                elif provider == 'klingai':
+                    # KlingAI ожидает массив объектов { inputImage: <uuid|url> }
+                    # Конвертируем UUID в CDN URL для совместимости
+                    import re
+                    uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+                    converted = []
+                    for v in frame_images:
+                        val = v
+                        if isinstance(v, str) and uuid_re.match(v):
+                            try:
+                                val = runware_image_url(v)
+                            except Exception:
+                                val = v
+                        converted.append({"inputImage": val})
+                    payload[0]["frameImages"] = converted
+                    logger.info(f"Added {len(frame_images)} frameImages (KlingAI format) to T2V payload")
+                else:
+                    # Для остальных провайдеров - простой массив UUID или URL
+                    payload[0]["frameImages"] = frame_images
+                    logger.info(f"Added {len(frame_images)} frameImages to T2V payload")
+
+        # Добавляем referenceImages для T2V если переданы (для моделей, которые используют этот параметр)
+        reference_images = kwargs.get('referenceImages') or kwargs.get('reference_images')
+        if reference_images:
+            if isinstance(reference_images, list) and reference_images:
+                # Для referenceImages обычно используется простой массив (Wan2.5-Preview)
+                payload[0]["referenceImages"] = reference_images
+                logger.info(f"Added {len(reference_images)} referenceImages to T2V payload")
 
         # Добавляем providerSettings на основе модели
         provider_settings = _build_provider_settings(
