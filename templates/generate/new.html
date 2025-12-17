@@ -1655,7 +1655,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Balance Display -->
         {% with cost=price|default:TOKENS_PRICE_PER_GEN|default:10 %}
           {% if request.user.is_authenticated %}
-            <div class="card min-w-[140px] p-3 sm:p-4">
+            <div class="min-w-[140px] p-3 sm:p-4">
               <div class="flex items-center gap-2 justify-center mb-2">
                 <span class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                   <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
