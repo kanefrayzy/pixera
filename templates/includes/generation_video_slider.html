@@ -110,7 +110,7 @@
 
       const video = slide.querySelector('video');
       // Простой клик по видео для паузы/воспроизведения
-      video.addEventListener('click', () => { 
+      video.addEventListener('click', () => {
         if (video.paused) {
           video.play().catch(() => {});
         } else {
@@ -193,7 +193,7 @@
 
       // Initial state: muted (for autoplay policy)
       setVolume(0);
-      
+
       // Автовоспроизведение первого видео при загрузке
       if (index === 0) {
         video.muted = true;

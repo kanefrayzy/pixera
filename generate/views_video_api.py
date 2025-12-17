@@ -541,8 +541,19 @@ def video_submit(request):
 
         # Add reference UUIDs to provider_fields if available
         if reference_uuids:
-            provider_fields['frameImages'] = reference_uuids
-            logger.info(f"Added {len(reference_uuids)} reference UUIDs to provider_fields")
+            # Определяем тип референса на основе supported_references модели
+            supported_refs = video_model_config.supported_references or []
+            
+            if 'frameImages' in supported_refs:
+                provider_fields['frameImages'] = reference_uuids
+                logger.info(f"Added {len(reference_uuids)} frame images to provider_fields")
+            elif 'referenceImages' in supported_refs:
+                provider_fields['referenceImages'] = reference_uuids
+                logger.info(f"Added {len(reference_uuids)} reference images to provider_fields")
+            else:
+                # Fallback: если не указано, используем frameImages по умолчанию
+                provider_fields['frameImages'] = reference_uuids
+                logger.info(f"Added {len(reference_uuids)} reference UUIDs to provider_fields (default frameImages)")
 
         # Проверяем режим работы: синхронный или асинхронный
         use_celery = getattr(settings, 'USE_CELERY', False)

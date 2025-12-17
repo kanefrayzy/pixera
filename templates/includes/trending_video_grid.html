@@ -25,18 +25,6 @@
 
             <div class="absolute inset-0 cursor-pointer pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
 
-            <!-- Play/Pause overlay -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none video-play-overlay transition-opacity duration-200">
-              <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70">
-                <svg class="w-8 h-8 text-white ml-1 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-                <svg class="w-8 h-8 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                </svg>
-              </div>
-            </div>
-
             <!-- Top-right overlays (model + views) -->
             <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
               {% with job=v.source_job %}
@@ -123,6 +111,65 @@
       </article>
     {% endfor %}
   </div>
+
+<script>
+// Автозапуск видео и управление звуком для трендов
+(function(){
+  // Определяем контейнер (используем closest для поиска родителя грида)
+  const gridContainer = document.currentScript.previousElementSibling;
+  if (!gridContainer) return;
+
+  // Автозапуск всех видео в гриде
+  try {
+    gridContainer.querySelectorAll('video').forEach(video => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+  } catch(e) {}
+
+  // IntersectionObserver для паузы видео вне viewport
+  try {
+    const autoplayObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (!video || video.hasAttribute('data-manual-control')) return;
+        if (entry.isIntersecting) {
+          if (video.paused) {
+            video.muted = true;
+            video.play().catch(() => {});
+          }
+        } else {
+          if (!video.paused) {
+            video.pause();
+          }
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '100px'
+    });
+
+    gridContainer.querySelectorAll('video').forEach(video => {
+      autoplayObserver.observe(video);
+    });
+  } catch(e) {}
+
+  // Простое управление play/pause по клику на видео
+  gridContainer.addEventListener('click', (e)=> {
+    const video = e.target.closest('video');
+    if (!video || video.hasAttribute('controls')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    video.setAttribute('data-manual-control', '1');
+    if (video.paused) {
+      video.play().catch(()=>{});
+    } else {
+      video.pause();
+    }
+  });
+})();
+</script>
+
 {% else %}
   <div class="card p-12 text-center">
     <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">

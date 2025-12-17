@@ -143,18 +143,6 @@
 
               <div class="absolute inset-0 cursor-pointer pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
 
-              <!-- Play/Pause overlay -->
-              <div class="absolute inset-0 flex items-center justify-center pointer-events-none video-play-overlay transition-opacity duration-200">
-                <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70">
-                  <svg class="w-8 h-8 text-white ml-1 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                  <svg class="w-8 h-8 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                  </svg>
-                </div>
-              </div>
-
               <!-- Sound Toggle + Volume -->
               <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
                 <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
@@ -484,27 +472,7 @@
   const VOL_KEY = 'trending_video_volume_pct';
 
   function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
-  function setPlaying(card, playing){
-    if (!card) return;
-    card.classList.toggle('playing', !!playing);
-    const overlay = card.querySelector('.video-play-overlay');
-    if (overlay){
-      const playI = overlay.querySelector('.play-icon');
-      const pauseI = overlay.querySelector('.pause-icon');
-      if (playI && pauseI){
-        playI.classList.toggle('hidden', !!playing);
-        pauseI.classList.toggle('hidden', !playing);
-      }
-    }
-  }
-  function pauseAll(except){
-    document.querySelectorAll(CONTAINER + ' video').forEach(v=>{
-      if (v !== except){
-        try{ v.pause(); }catch(_){}
-        setPlaying(findCard(v), false);
-      }
-    });
-  }
+
   function getSavedVol(){ try{ const v = localStorage.getItem(VOL_KEY); const n = Number(v); return isFinite(n)? Math.max(0, Math.min(100, n)) : null; }catch(_){ return null; } }
   function setSavedVol(p){ try{ localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, p)))); }catch(_){ } }
   function hasAudio(video){
@@ -593,40 +561,21 @@
     });
   }
 
-  // Toggle playback on video click
+  // Simple video click control (no overlays)
   document.addEventListener('click', (e)=>{
     const video = e.target.closest(CONTAINER + ' video');
     if (!video || video.hasAttribute('controls')) return;
-    const card = findCard(video);
-    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-    if (video.paused){
-      pauseAll(video);
+    e.preventDefault();
+    e.stopPropagation();
+    video.setAttribute('data-manual-control', '1');
+    if (video.paused) {
       video.play().catch(()=>{});
-      setPlaying(card, true);
     } else {
       video.pause();
-      setPlaying(card, false);
     }
   });
 
-  // Toggle playback on overlay click
-  document.addEventListener('click', (e)=>{
-    const ov = e.target.closest(CONTAINER + ' .video-play-overlay');
-    if (!ov) return;
-    const card = findCard(ov);
-    const video = card && card.querySelector('video');
-    if (!video || video.hasAttribute('controls')) return;
-    e.preventDefault(); e.stopPropagation();
-    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-    if (video.paused){
-      pauseAll(video);
-      video.play().catch(()=>{});
-      setPlaying(card, true);
-    } else {
-      video.pause();
-      setPlaying(card, false);
-    }
-  });
+
 
   // Toggle sound button
   document.addEventListener('click', (e)=>{

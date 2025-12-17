@@ -298,16 +298,6 @@
                    src="${item.url}" ${posterAttr} preload="metadata" playsinline muted loop title="${title}" loading="lazy">
               Ваш браузер не поддерживает видео.
             </video>
-            <div class="absolute inset-0 flex items-center justify-center video-play-overlay cursor-pointer transition-opacity duration-200 bg-black/10 hover:bg-black/20">
-              <div class="w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/70 ring-1 ring-white/30">
-                <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"></path>
-                </svg>
-                <svg class="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3.5 sm:h-3.5 text-white pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
-                </svg>
-              </div>
-            </div>
           </div>
         `;
       }
@@ -1571,12 +1561,23 @@ video[controls] + .video-play-overlay {
         video.play().catch(() => {});
       });
 
+      // Даем браузеру время для инициализации аудио, затем обновляем кнопки звука
+      setTimeout(() => {
+        document.querySelectorAll('#videos-grid .vid-snd-btn, #public-videos-grid .vid-snd-btn').forEach(btn => {
+          const card = btn.closest('article') || btn.closest('.group') || btn.parentElement;
+          const video = card && card.querySelector('video');
+          if (video && video.readyState >= 1) {
+            btn.dispatchEvent(new Event('video-ready', { bubbles: false }));
+          }
+        });
+      }, 500);
+
       // IntersectionObserver для паузы видео вне viewport (экономия ресурсов)
       const autoplayObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           const video = entry.target;
           if (!video || video.hasAttribute('data-manual-control')) return;
-          
+
           if (entry.isIntersecting) {
             // Video in viewport - play if paused
             if (video.paused) {
@@ -1722,6 +1723,8 @@ video[controls] + .video-play-overlay {
       if (!video) return;
       video.addEventListener('loadedmetadata', ()=> markBtnState(btn, video));
       video.addEventListener('play', ()=> markBtnState(btn, video));
+      // Обработчик для немедленной проверки после автозапуска
+      btn.addEventListener('video-ready', ()=> markBtnState(btn, video));
     }
     function bindSlider(btn, card, video){
       const slider = card && card.querySelector('.vid-vol');

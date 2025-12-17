@@ -966,14 +966,6 @@
                   {% if v.video_url %}<source src="{{ v.video_url }}" type="video/mp4">{% endif %}
                 </video>
 
-                <!-- Play/Pause overlay -->
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-auto video-play-overlay transition-opacity duration-200">
-                  <div class="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 dark:bg-white/20 text-white dark:text-[var(--bg)] backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/80 ring-2 ring-white/20">
-                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 pause-icon hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path></svg>
-                  </div>
-                </div>
-
                 <!-- Open button -->
                 <a class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20"
                    href="{{ v.get_absolute_url }}"
@@ -1571,18 +1563,6 @@ data-count-target="save-count-{{ p.id }}"
                        playsinline>
                   <source src="{{ j.result_video_url }}" type="video/mp4">
                 </video>
-
-                <!-- Play/Pause overlay -->
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-auto video-play-overlay transition-opacity duration-200">
-                  <div class="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 dark:bg-white/20 text-white dark:text-[var(--bg)] backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/80 ring-2 ring-white/20">
-                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"></path>
-                    </svg>
-                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
-                    </svg>
-                  </div>
-                </div>
 
                 <!-- Open button with modal -->
                 <button type="button" class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20 js-open-video-modal"
@@ -2215,18 +2195,6 @@ video:not([controls]):hover + .video-play-overlay {
                        src="${vurl}">
                 </video>
 
-                <!-- Play/Pause overlay -->
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-auto video-play-overlay transition-opacity duration-200">
-                  <div class="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 dark:bg-white/20 text-white dark:text-[var(--bg)] backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 group-hover:scale-110 group-hover:bg-black/80 ring-2 ring-white/20">
-                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"></path>
-                    </svg>
-                    <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 pause-icon hidden" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
-                    </svg>
-                  </div>
-                </div>
-
                 <!-- Open button -->
                 <a class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20"
                    href="${durl}"
@@ -2692,143 +2660,40 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
     } catch(e) {}
   })();
 
-  // Video interactions for published grid: play/pause with overlay + pause others
+  // Simple click control for published grid videos (no overlays)
   (function(){
     const CONTAINER = '#published-grid-inner';
-    function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
-    function setPlaying(card, playing){
-      if (!card) return;
-      card.classList.toggle('playing', !!playing);
-      const overlay = card.querySelector('.video-play-overlay');
-      if (overlay){
-        const playI = overlay.querySelector('.play-icon');
-        const pauseI = overlay.querySelector('.pause-icon');
-        if (playI && pauseI){
-          playI.classList.toggle('hidden', !!playing);
-          pauseI.classList.toggle('hidden', !playing);
-        }
-        overlay.style.opacity = playing ? '0' : '1';
-      }
-    }
-    function pauseAll(except){
-      document.querySelectorAll(CONTAINER + ' video').forEach(v=>{
-        if (v !== except){
-          try { v.pause(); } catch(_){}
-          setPlaying(findCard(v), false);
-        }
-      });
-    }
-    // Allow modal handler to decide; do not stop propagation here to keep play/pause working.
-    // Click on video toggles playback
     document.addEventListener('click', (e)=>{
       const video = e.target.closest(CONTAINER + ' video');
       if (!video || video.hasAttribute('controls')) return;
-      const card = findCard(video);
-      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-      if (video.paused){
-        pauseAll(video);
+      e.preventDefault();
+      e.stopPropagation();
+      video.setAttribute('data-manual-control', '1');
+      if (video.paused) {
         video.play().catch(()=>{});
-        setPlaying(card, true);
       } else {
         video.pause();
-        setPlaying(card, false);
       }
-    });
-    // Click on overlay toggles playback
-    document.addEventListener('click', (e)=>{
-      const ov = e.target.closest(CONTAINER + ' .video-play-overlay');
-      if (!ov) return;
-      const card = findCard(ov);
-      const video = card && card.querySelector('video');
-      if (!video || video.hasAttribute('controls')) return;
-      e.preventDefault(); e.stopPropagation();
-      video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-      if (video.paused){
-        pauseAll(video);
-        video.play().catch(()=>{});
-        setPlaying(card, true);
-      } else {
-        video.pause();
-        setPlaying(card, false);
-      }
-    });
-    // Sync state on native events
-    document.querySelectorAll(CONTAINER + ' video').forEach(video=>{
-      video.addEventListener('ended', ()=> setPlaying(findCard(video), false));
-      video.addEventListener('play',  ()=> setPlaying(findCard(video), true));
-      video.addEventListener('pause', ()=> setPlaying(findCard(video), false));
     });
   })();
 })();
 </script>
 
 <script>
-// Video interactions for videos-grid: play/pause overlay and click to play
+// Simple click control for videos-grid (no overlays)
 (function(){
   const CONTAINER = '#videos-grid';
-  function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
-  function setPlaying(card, playing){
-    if (!card) return;
-    card.classList.toggle('playing', !!playing);
-    const overlay = card.querySelector('.video-play-overlay');
-    if (overlay){
-      const playI = overlay.querySelector('.play-icon');
-      const pauseI = overlay.querySelector('.pause-icon');
-      if (playI && pauseI){
-        playI.classList.toggle('hidden', !!playing);
-        pauseI.classList.toggle('hidden', !playing);
-      }
-      overlay.style.opacity = playing ? '0' : '1';
-    }
-  }
-  function pauseAll(except){
-    document.querySelectorAll(CONTAINER + ' video').forEach(v=>{
-      if (v !== except){
-        try { v.pause(); } catch(_){}
-        setPlaying(findCard(v), false);
-      }
-    });
-  }
-  // Allow modal handler to decide; do not stop propagation here to keep play/pause working.
-  // Toggle by clicking on the video
   document.addEventListener('click', (e)=>{
     const video = e.target.closest(CONTAINER + ' video');
     if (!video || video.hasAttribute('controls')) return;
-    const card = findCard(video);
     e.preventDefault();
-    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-    if (video.paused){
-      pauseAll(video);
+    e.stopPropagation();
+    video.setAttribute('data-manual-control', '1');
+    if (video.paused) {
       video.play().catch(()=>{});
-      setPlaying(card, true);
     } else {
       video.pause();
-      setPlaying(card, false);
     }
-  });
-  // Toggle by clicking overlay (play icon)
-  document.addEventListener('click', (e)=>{
-    const ov = e.target.closest(CONTAINER + ' .video-play-overlay');
-    if (!ov) return;
-    const card = findCard(ov);
-    const video = card && card.querySelector('video');
-    if (!video || video.hasAttribute('controls')) return;
-    e.preventDefault(); e.stopPropagation();
-    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-    if (video.paused){
-      pauseAll(video);
-      video.play().catch(()=>{});
-      setPlaying(card, true);
-    } else {
-      video.pause();
-      setPlaying(card, false);
-    }
-  });
-  // Sync icons on native events
-  document.querySelectorAll(CONTAINER + ' video').forEach(video=>{
-    video.addEventListener('ended', ()=> setPlaying(findCard(video), false));
-    video.addEventListener('play',  ()=> setPlaying(findCard(video), true));
-    video.addEventListener('pause', ()=> setPlaying(findCard(video), false));
   });
 })();
 </script>

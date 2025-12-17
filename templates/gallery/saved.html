@@ -245,15 +245,6 @@
                   {% if v.video_url %}<source src="{{ v.video_url }}" type="video/mp4">{% endif %}
                 </video>
 
-                <!-- Play Button Overlay (like in cabinet) -->
-                <div class="absolute inset-0 flex items-center justify-center bg-black/20 video-play-overlay cursor-pointer">
-                  <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
-                    <svg class="w-8 h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </div>
-                </div>
-
                 <!-- Sound Toggle -->
                 <div class="absolute bottom-2 left-2 z-10">
                   <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
@@ -364,15 +355,6 @@
                   {% else %}
                     <div class="w-full aspect-square bg-[var(--bord)] grid place-items-center text-[var(--muted)]">Видео</div>
                   {% endif %}
-
-                  <!-- Play Overlay -->
-                  <div class="absolute inset-0 flex items-center justify-center bg-black/20 video-play-overlay cursor-pointer">
-                    <div class="w-16 h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
-                      <svg class="w-8 h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </div>
-                  </div>
 
                   <!-- Sound Toggle -->
                   <div class="absolute bottom-2 left-2 z-10">
@@ -604,46 +586,19 @@
       }
     });
   }
-  // Click on play overlay
-  document.addEventListener('click', (e)=>{
-    const overlay = e.target.closest('.video-play-overlay');
-    if (!overlay) return;
-    const card = overlay.closest('article');
-    const video = card && card.querySelector('video');
-    if (!video) return;
-    e.preventDefault(); e.stopPropagation();
-    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-    if (video.paused) {
-      pauseAll(video);
-      video.play().catch(()=>{});
-      if (card) card.classList.add('playing');
-    } else {
-      video.pause();
-      if (card) card.classList.remove('playing');
-    }
-  });
-  // Click on video toggles play/pause
+  // Simple click control for videos (no overlays)
   document.addEventListener('click', (e)=>{
     const video = e.target.closest('#videos-grid video');
     if (!video) return;
-    const card = video.closest('article');
-    video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
+    e.preventDefault();
+    e.stopPropagation();
+    video.setAttribute('data-manual-control', '1');
     if (video.paused) {
-      pauseAll(video);
       video.play().catch(()=>{});
-      if (card) card.classList.add('playing');
     } else {
       video.pause();
-      if (card) card.classList.remove('playing');
     }
   });
-  // Sync overlay on events
-  function bind(v){
-    v.addEventListener('play', ()=>{ v.closest('article')?.classList.add('playing'); });
-    v.addEventListener('pause', ()=>{ v.closest('article')?.classList.remove('playing'); });
-    v.addEventListener('ended', ()=>{ v.closest('article')?.classList.remove('playing'); });
-  }
-  document.querySelectorAll('#videos-grid video').forEach(bind);
 })();
 </script>
 

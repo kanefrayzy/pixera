@@ -32,14 +32,6 @@
               <source src="{{ video_url }}" type="video/mp4">
             </video>
 
-            <!-- Play/Pause overlay -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-auto video-play-overlay transition-opacity duration-200">
-              <div class="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-full bg-black/70 dark:bg-white/20 text-white dark:text-[var(--bg)] backdrop-blur-sm flex items-center justify-center shadow-lg transform transition-all duration-200 hover:scale-110 ring-2 ring-white/20">
-                <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 ml-0.5 play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-                <svg class="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 pause-icon hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path></svg>
-              </div>
-            </div>
-
             <!-- Sound Toggle + Volume -->
             <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
               <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
@@ -428,9 +420,6 @@ textarea.field {
   if (!box) return;
 
   const video = box.querySelector('video');
-  const overlay = box.querySelector('.video-play-overlay');
-  const playIcon = overlay && overlay.querySelector('.play-icon');
-  const pauseIcon = overlay && overlay.querySelector('.pause-icon');
   const sndBtn = box.querySelector('.vid-snd-btn');
   const slider = box.querySelector('.vid-vol');
 
@@ -456,14 +445,7 @@ textarea.field {
     return false;
   }
 
-  function setOverlayState(playing){
-    if (!overlay) return;
-    overlay.style.opacity = playing ? '0' : '1';
-    if (playIcon && pauseIcon) {
-      playIcon.classList.toggle('hidden', !!playing);
-      pauseIcon.classList.toggle('hidden', !playing);
-    }
-  }
+
 
   function markBtnState(){
     if (!sndBtn) return;
@@ -529,9 +511,7 @@ textarea.field {
 
   // Wire events
   if (video){
-    video.addEventListener('play', ()=> setOverlayState(true));
-    video.addEventListener('pause', ()=> setOverlayState(false));
-    video.addEventListener('ended', ()=> setOverlayState(false));
+
     video.addEventListener('loadedmetadata', markBtnState);
     video.addEventListener('play', markBtnState);
   }
@@ -542,12 +522,7 @@ textarea.field {
     e.preventDefault(); e.stopPropagation();
     if (v.paused){ v.play().catch(()=>{}); } else { v.pause(); }
   });
-  // Click overlay toggles playback
-  overlay && overlay.addEventListener('click', (e)=>{
-    e.preventDefault(); e.stopPropagation();
-    if (!video || video.hasAttribute('controls')) return;
-    if (video.paused){ video.play().catch(()=>{}); } else { video.pause(); }
-  });
+
 
   // Sound slider
   slider && slider.addEventListener('input', ()=>{
@@ -592,7 +567,6 @@ textarea.field {
   markBtnState();
   updateSoundBtn();
   syncSliderFromVideo();
-  setOverlayState(false);
 })();
 </script>
 

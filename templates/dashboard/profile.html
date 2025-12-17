@@ -1582,17 +1582,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 <a class="absolute inset-0 cursor-zoom-in z-10" href="{{ pub_video_url }}" aria-label="Открыть"></a>
 
-                <div class="absolute inset-0 z-[100] flex items-center justify-center bg-black/20 pointer-events-auto cursor-pointer video-play-overlay video-play-btn transition-opacity duration-200 group-hover:bg-black/30">
-                  <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
-                    <svg class="play-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    <svg class="pause-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white hidden" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                    </svg>
-                  </div>
-                </div>
-
                 <!-- Sound Toggle + Volume -->
                 <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
                   <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
@@ -1725,18 +1714,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% else %}
                 <div class="absolute inset-0 pointer-events-none" aria-hidden="true"></div>
                 {% endif %}
-
-                <!-- Play/Pause Overlay -->
-                <div class="absolute inset-0 z-[100] flex items-center justify-center bg-black/20 pointer-events-auto cursor-pointer video-play-overlay video-play-btn transition-opacity duration-200 group-hover:bg-black/30">
-                  <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transform transition group-hover:scale-110">
-                    <svg class="play-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    <svg class="pause-icon w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white hidden" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                    </svg>
-                  </div>
-                </div>
 
                 <!-- Sound Toggle + Volume -->
                 <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
@@ -2299,37 +2276,18 @@ video:not([controls]):hover ~ .video-play-overlay {
     }
   } catch(e) {}
 
-  // Video play/pause handlers
-  // Disabled legacy delegate (explicit per-element bindings added below)
-  // document.addEventListener('click', videoPlayDelegate, true);
-
-  function findOverlayForVideo(video){
-    const card = video.closest('.group, article') || video.parentElement;
-    return card ? card.querySelector('.video-play-overlay') : null;
-  }
-  function setOverlayState(video, playing){
-    const overlay = findOverlayForVideo(video);
-    if (!overlay) return;
-    overlay.style.opacity = playing ? '0' : '1';
-    const playI = overlay.querySelector('.play-icon');
-    const pauseI = overlay.querySelector('.pause-icon');
-    if (playI && pauseI){
-      playI.classList.toggle('hidden', !!playing);
-      pauseI.classList.toggle('hidden', !playing);
-    }
-  }
-  function pauseAllExcept(current){
-    document.querySelectorAll('#videos-grid video').forEach(v=>{
-      if (v !== current){
-        try { v.pause(); } catch(_){}
-        setOverlayState(v, false);
+  // Simple click control for videos (no overlays)
+  document.querySelectorAll('#videos-grid video').forEach(video => {
+    video.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      video.setAttribute('data-manual-control', '1');
+      if (video.paused) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
       }
     });
-  }
-  document.querySelectorAll('#videos-grid video').forEach(video => {
-    video.addEventListener('play', () => { pauseAllExcept(video); setOverlayState(video, true); });
-    video.addEventListener('pause', () => { setOverlayState(video, false); });
-    video.addEventListener('ended', () => { setOverlayState(video, false); });
   });
 })();
 </script>
@@ -2369,63 +2327,7 @@ video:not([controls]):hover ~ .video-play-overlay {
 })();
 </script>
 
-<script>
-(function(){
-  // Explicit play/pause binding for profile videos (robust, overrides any global handlers)
-  const root = document.getElementById('videos-grid');
-  if (root) {
-    function findCard(el){ return el.closest('article') || el.closest('.group') || el.parentElement; }
-    function findOverlay(video){
-      const card = findCard(video);
-      return card ? card.querySelector('.video-play-overlay') : null;
-    }
-    function setOverlay(video, playing){
-      const ov = findOverlay(video);
-      if (!ov) return;
-      ov.style.opacity = playing ? '0' : '1';
-      const playI = ov.querySelector('.play-icon');
-      const pauseI = ov.querySelector('.pause-icon');
-      if (playI && pauseI){
-        playI.classList.toggle('hidden', !!playing);
-        pauseI.classList.toggle('hidden', !playing);
-      }
-    }
-    function pauseAll(except){
-      root.querySelectorAll('video').forEach(v=>{
-        if (v !== except){
-          try { v.pause(); } catch(_){}
-          setOverlay(v, false);
-        }
-      });
-    }
-    // Bind videos
-    root.querySelectorAll('video').forEach(v=>{
-      v.addEventListener('click', function(ev){
-        // Ensure click never reaches anchors/modals
-        ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
-        this.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-        if (this.paused){ pauseAll(this); this.play().catch(()=>{}); } else { this.pause(); }
-      });
-      v.addEventListener('play',  ()=> setOverlay(v, true));
-      v.addEventListener('pause', ()=> setOverlay(v, false));
-      v.addEventListener('ended', ()=> setOverlay(v, false));
-      // Initialize overlay state on load
-      setOverlay(v, !v.paused && !v.ended);
-    });
-    // Bind play overlays
-    root.querySelectorAll('.video-play-overlay').forEach(ov=>{
-      ov.addEventListener('click', function(ev){
-        ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
-        const card = findCard(this);
-        const v = card && card.querySelector('video');
-        if (!v) return;
-        v.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-        if (v.paused){ pauseAll(v); v.play().catch(()=>{}); } else { v.pause(); }
-      });
-    });
-  }
-})();
-</script>
+
 
 <script>
 (function(){

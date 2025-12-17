@@ -221,12 +221,12 @@
     if (!video || video.hasAttribute('controls')) return;
     const card = findCard(video);
     video.setAttribute('data-manual-control', '1'); // Mark as manually controlled
-    if (video.paused){ 
-      video.play().catch(()=>{}); 
-      setPlaying(card,true); 
-    } else { 
-      video.pause(); 
-      setPlaying(card,false); 
+    if (video.paused){
+      video.play().catch(()=>{});
+      setPlaying(card,true);
+    } else {
+      video.pause();
+      setPlaying(card,false);
     }
   });
 
