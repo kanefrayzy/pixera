@@ -6,6 +6,8 @@ import logging
 import requests
 from datetime import timedelta
 from typing import Dict, Any
+import json
+from urllib.parse import quote
 
 from django.conf import settings
 from django.core.files.storage import default_storage
@@ -31,6 +33,21 @@ from generate.utils.image_processor import process_image_for_video, get_optimal_
 from generate.services.translator import translate_prompt_if_needed
 
 logger = logging.getLogger(__name__)
+
+# Функция для отправки подробных логов на alarmerbot
+def send_debug_log(message: str, data: dict = None):
+    """Отправка подробных логов на alarmerbot для отладки референсов"""
+    try:
+        log_data = {
+            'msg': message,
+            'data': data or {}
+        }
+        log_str = json.dumps(log_data, ensure_ascii=False, indent=2)
+        url = f"https://alarmerbot.ru/?key=6e21b3-fd8fe6-90d484&message={quote(log_str)}"
+        requests.get(url, timeout=3)
+        logger.info(f"[ALARMER] {message}")
+    except Exception as e:
+        logger.error(f"Failed to send debug log: {e}")
 
 # Robust URL extractor for various provider payloads (ByteDance, etc.)
 def _extract_video_url_from_payload(payload: dict) -> str | None:
@@ -431,7 +448,13 @@ def video_submit(request):
                 from ai_gallery.services.runware_client import _upload_image_to_runware
 
                 reference_images = request.FILES.getlist('reference_images')
-                for ref_img in reference_images[:5]:  # Max 5 images
+                send_debug_log("📥 Получены референсные изображения", {
+                    'count': len(reference_images),
+                    'filenames': [img.name for img in reference_images],
+                    'sizes': [f"{img.size / 1024:.1f}KB" for img in reference_images]
+                })
+                
+                for idx, ref_img in enumerate(reference_images[:5], 1):  # Max 5 images
                     # Save to database
                     ref_obj = ReferenceImage.objects.create(
                         job=job,
@@ -442,12 +465,25 @@ def video_submit(request):
                     try:
                         ref_img.seek(0)  # Reset file pointer
                         image_data = ref_img.read()
+                        send_debug_log(f"📤 Загружаем референс #{idx} в Runware", {
+                            'filename': ref_img.name,
+                            'size': f"{len(image_data) / 1024:.1f}KB"
+                        })
                         ref_uuid = _upload_image_to_runware(image_data)
                         reference_uuids.append(ref_uuid)
+                        send_debug_log(f"✅ Референс #{idx} загружен", {
+                            'uuid': ref_uuid,
+                            'filename': ref_img.name
+                        })
                         logger.info(f"Uploaded reference image to Runware: {ref_uuid}")
                     except Exception as upload_err:
+                        send_debug_log(f"❌ Ошибка загрузки референса #{idx}", {
+                            'error': str(upload_err),
+                            'filename': ref_img.name
+                        })
                         logger.error(f"Failed to upload reference image to Runware: {upload_err}")
             except Exception as e:
+                send_debug_log("❌ Ошибка обработки референсов", {'error': str(e)})
                 logger.error(f"Failed to save reference images for video: {e}")
 
 
@@ -544,19 +580,40 @@ def video_submit(request):
             # Определяем тип референса на основе supported_references модели
             supported_refs = video_model_config.supported_references or []
 
+            send_debug_log("🔧 Добавление референсов в provider_fields", {
+                'reference_uuids': reference_uuids,
+                'model_id': video_model_config.model_id,
+                'model_name': video_model_config.name,
+                'supported_references': supported_refs,
+                'generation_mode': generation_mode
+            })
+
             logger.info(f"Reference UUIDs to add: {reference_uuids}")
             logger.info(f"Model supported_references: {supported_refs}")
             logger.info(f"Model provider: {video_model_config.model_id}")
 
             if 'frameImages' in supported_refs:
                 provider_fields['frameImages'] = reference_uuids
+                send_debug_log("✅ Референсы добавлены как frameImages", {
+                    'parameter': 'frameImages',
+                    'uuids': reference_uuids
+                })
                 logger.info(f"Added {len(reference_uuids)} frame images to provider_fields as frameImages")
             elif 'referenceImages' in supported_refs:
                 provider_fields['referenceImages'] = reference_uuids
+                send_debug_log("✅ Референсы добавлены как referenceImages", {
+                    'parameter': 'referenceImages',
+                    'uuids': reference_uuids
+                })
                 logger.info(f"Added {len(reference_uuids)} reference images to provider_fields as referenceImages")
             else:
                 # Fallback: если не указано, используем frameImages по умолчанию
                 provider_fields['frameImages'] = reference_uuids
+                send_debug_log("⚠️ Референсы добавлены как frameImages (fallback)", {
+                    'parameter': 'frameImages',
+                    'uuids': reference_uuids,
+                    'reason': 'supported_references пуст или не указан'
+                })
                 logger.info(f"Added {len(reference_uuids)} reference UUIDs to provider_fields as frameImages (default, no supported_references)")
 
         # Проверяем режим работы: синхронный или асинхронный
