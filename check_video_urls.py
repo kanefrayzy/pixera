@@ -16,10 +16,10 @@ import requests
 
 def check_video_urls():
     print("=== Проверка URL видео ===\n")
-    
+
     # Получаем видео с ID 6, 7, 11 (из логов)
     video_ids = [6, 7, 11]
-    
+
     for vid in video_ids:
         try:
             video = PublicVideo.objects.get(pk=vid)
@@ -27,7 +27,7 @@ def check_video_urls():
             print(f"  URL: {video.video_url}")
             print(f"  Категория: {video.category.name if video.category else 'Нет'}")
             print(f"  Активно: {video.is_active}")
-            
+
             # Пробуем сделать HEAD запрос
             try:
                 response = requests.head(video.video_url, timeout=5, allow_redirects=True)
@@ -36,16 +36,16 @@ def check_video_urls():
                 print(f"  Content-Length: {response.headers.get('Content-Length', 'N/A')}")
             except requests.exceptions.RequestException as e:
                 print(f"  ❌ Ошибка доступа: {e}")
-            
+
             print()
         except PublicVideo.DoesNotExist:
             print(f"Видео #{vid} не найдено\n")
-    
+
     # Проверим все активные видео
     print("\n=== Все активные видео ===")
     all_videos = PublicVideo.objects.filter(is_active=True).order_by("pk")
     print(f"Всего: {all_videos.count()}\n")
-    
+
     for v in all_videos:
         print(f"#{v.pk}: {v.title[:50] if v.title else 'Без названия'}")
         print(f"  URL: {v.video_url[:80]}...")

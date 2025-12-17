@@ -145,8 +145,7 @@
         {% if related_videos %}
           <div class="grid grid-cols-2 gap-2 sm:gap-3">
             {% for rv in related_videos|slice:":4" %}
-              {% url 'gallery:video_detail' rv.pk as rurl %}
-              <a class="block group rounded-xl overflow-hidden border border-[var(--bord)] relative" href="{{ rurl }}" title="{{ rv.title|default:'Видео' }}">
+              <a class="block group rounded-xl overflow-hidden border border-[var(--bord)] relative" href="{{ rv.get_absolute_url }}" title="{{ rv.title|default:'Видео' }}">
                 {% if rv.thumbnail %}
                   <img class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.03]"
                        src="{{ rv.thumbnail.url }}"

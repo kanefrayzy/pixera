@@ -951,10 +951,11 @@
     <div id="published-grid-inner" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {% if show_only_published %}
         {% for v in pub_videos %}
-          <article class="group cursor-pointer js-open-video"
+          <article class="group"
+                   {% comment %}cursor-pointer js-open-video
                    data-detail-url="{{ v.get_absolute_url }}"
                    data-video-url="{{ v.video_url }}"
-                   data-poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}">
+                   data-poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}"{% endcomment %}>
             <div class="card overflow-hidden">
               <div class="relative">
                 <video class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02] cursor-pointer"
