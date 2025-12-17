@@ -789,7 +789,11 @@ def run_generation_async(self, job_id: int) -> None:
     elif mid == "bytedance:5@0":
         w = 1024
         h = 1024
-    force_sync = bool(getattr(settings, "RUNWARE_FORCE_SYNC", True))
+
+    # Определяем режим: если USE_CELERY=True и брокер НЕ memory — используем async
+    use_celery = getattr(settings, 'USE_CELERY', False)
+    broker_url = getattr(settings, 'CELERY_BROKER_URL', 'memory://')
+    force_sync = not (use_celery and not broker_url.startswith('memory'))
 
     # ========================================================================
     # LOAD REFERENCE IMAGES FIRST (for ALL models except Face Retouch)
