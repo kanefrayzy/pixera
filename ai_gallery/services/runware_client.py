@@ -614,7 +614,7 @@ def generate_video_via_rest(
                     })
                     logger.info(f"Added {len(frame_images)} frameImages (KlingAI format) to T2V payload")
                 else:
-                    # Для остальных провайдеров - конвертируем UUID в CDN URL
+                    # Для остальных провайдеров (Vidu, Sora и т.д.) - используем формат объектов с CDN URL
                     import re
                     uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
                     converted = []
@@ -626,10 +626,10 @@ def generate_video_via_rest(
                                 val = runware_image_url(v)
                             except Exception:
                                 val = v
-                        converted.append(val)
+                        converted.append({"inputImage": val})
                     payload[0]["frameImages"] = converted
                     send_debug_log("✅ frameImages отформатированы (other provider)", {
-                        'format': 'CDN URLs',
+                        'format': 'array of objects with CDN URLs',
                         'input': frame_images,
                         'result': converted
                     })
@@ -1366,11 +1366,13 @@ def generate_video_from_image(
             'value': converted
         })
     else:
-        payload[0]["frameImages"] = images_list
-        send_debug_log("✅ I2V: Используется frameImages (default)", {
+        # Для всех остальных провайдеров используем формат объектов (как ByteDance/KlingAI)
+        formatted = [{"inputImage": v} for v in images_list]
+        payload[0]["frameImages"] = formatted
+        send_debug_log("✅ I2V: Используется frameImages (default - objects)", {
             'parameter': 'frameImages',
-            'format': 'simple array',
-            'value': images_list
+            'format': 'array of objects',
+            'value': formatted
         })
 
     # Аудио-входы (URL/UUID/Data URI) — прокидываем как есть, если указаны
