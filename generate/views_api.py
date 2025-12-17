@@ -324,15 +324,17 @@ def api_submit(request: HttpRequest) -> JsonResponse:
         # Save reference images if any (up to 5 images)
         try:
             reference_images = request.FILES.getlist('reference_images')
+            log.info(f"📸 Received {len(reference_images)} reference images for job {job.pk}")
             for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
-                ReferenceImage.objects.create(
+                ref_obj = ReferenceImage.objects.create(
                     job=job,
                     image=ref_img,
                     order=idx
                 )
+                log.info(f"  ✅ Saved reference image {idx}: {ref_img.name} ({ref_img.size} bytes) -> {ref_obj.pk}")
         except Exception as e:
             import logging
-            logging.getLogger(__name__).error(f"Failed to save reference images: {e}", exc_info=True)
+            logging.getLogger(__name__).error(f"❌ Failed to save reference images: {e}", exc_info=True)
 
         # Face Retouch (runware:108@22): persist uploaded reference image for special processing
         try:
