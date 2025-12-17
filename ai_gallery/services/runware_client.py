@@ -40,11 +40,11 @@ def _get_api_key() -> str:
 
 def runware_image_url(image_uuid: str) -> str:
     """
-    Построить канонический CDN-URL Runware для загруженного изображения, как в Playground:
-      https://im.runware.ai/image/ii/<UUID>.jpg
+    Построить канонический CDN-URL Runware для загруженного изображения:
+      https://im.runware.ai/image/ws/5/bucket/media-storage/ii/<UUID>
     """
     u = str(image_uuid).strip()
-    return f"https://im.runware.ai/image/ii/{u}.jpg"
+    return f"https://im.runware.ai/image/ws/5/bucket/media-storage/ii/{u}"
 
 
 class RunwareError(Exception):
@@ -1330,40 +1330,71 @@ def generate_video_from_image(
     })
 
     if mid == "runware:201@1":
-        payload[0]["referenceImages"] = images_list
+        # Wan2.5: конвертируем UUID в CDN URL (массив строк, не объектов)
+        import re
+        uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+        converted_urls = []
+        for v in images_list:
+            if isinstance(v, str) and uuid_re.match(v):
+                try:
+                    converted_urls.append(runware_image_url(v))
+                except Exception:
+                    converted_urls.append(v)
+            else:
+                converted_urls.append(v)
+        payload[0]["referenceImages"] = converted_urls
         send_debug_log("✅ I2V: Используется referenceImages (Wan2.5)", {
             'parameter': 'referenceImages',
-            'value': images_list
-        })
-    elif provider == 'bytedance':
-        # ByteDance ожидает массив объектов { inputImage: <uuid|url|data> }
-        formatted = [{"inputImage": v} for v in images_list]
-        payload[0]["frameImages"] = formatted
-        send_debug_log("✅ I2V: Используется frameImages (ByteDance)", {
-            'parameter': 'frameImages',
-            'format': 'array of objects',
-            'value': formatted
-        })
-    elif provider == 'klingai':
-        # KlingAI I2V: ожидает массив объектов { inputImage: <uuid|url|data> }.
-        # Если у нас есть UUID, конвертируем его в канонический CDN-URL Runware, как в Playground.
+            'format': 'массив объектов { inputImage: CDN_URL }
         import re
         uuid_re2 = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
         converted: List[Dict[str, str]] = []
+        for v in im: массив объектов { inputImage: CDN_URL }
+        import re
+        uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+        formatted = []
         for v in images_list:
             val = v
-            if isinstance(v, str) and uuid_re2.match(v):
-                # Превращаем UUID в https://im.runware.ai/image/ii/<UUID>.jpg
+            if isinstance(v, str) and uuid_re.match(v):
                 try:
                     val = runware_image_url(v)
                 except Exception:
+                    val = v
+            formatted.append({"inputImage": val})
+        payload[0]["frameImages"] = formatted
+        send_debug_log("✅ I2V: Используется frameImages (ByteDance)", {
+            'parameter': 'frameImages',
+            'format': 'array of objects with CDN URL
                     val = v
             converted.append({"inputImage": val})
         payload[0]["frameImages"] = converted
         send_debug_log("✅ I2V: Используется frameImages (KlingAI)", {
             'parameter': 'frameImages',
             'format': 'array of objects with CDN URLs',
-            'value': converted
+            'value': convertede": v} for v in images_list]
+        payload[0]["frameImages"] = formatted
+        send_debug_log("✅ I2V: Используется frameImages (ByteDance)", {
+            'parameter': 'frameImages',
+            'format': 'array of objects',
+            'value': formatted
+        }): массив объектов { inputImage: CDN_URL }
+        import re
+        uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+        formatted = []
+        for v in images_list:
+            val = v
+            if isinstance(v, str) and uuid_re.match(v):
+                try:
+                    val = runware_image_url(v)
+                except Exception:
+                    val = v
+            formatted.append({"inputImage": val})
+        payload[0]["frameImages"] = formatted
+        send_debug_log("✅ I2V: Используется frameImages (default - objects with CDN URLs)", {
+            'parameter': 'frameImages',
+            'format': 'array of objects with CDN URL,
+            'format': 'simple UUID array',
+            'value': images_list
         })
     else:
         # Для всех остальных провайдеров используем формат объектов (как ByteDance/KlingAI)
