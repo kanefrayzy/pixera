@@ -543,7 +543,7 @@ def video_submit(request):
         if reference_uuids:
             # Определяем тип референса на основе supported_references модели
             supported_refs = video_model_config.supported_references or []
-            
+
             if 'frameImages' in supported_refs:
                 provider_fields['frameImages'] = reference_uuids
                 logger.info(f"Added {len(reference_uuids)} frame images to provider_fields")
