@@ -685,9 +685,8 @@ def video_detail(request: HttpRequest, slug: str) -> HttpResponse:
         if len(related_videos) < 8:
             exclude_ids = [video.pk] + [v.pk for v in related_videos]
             fill = list(
-                PublicVideo.objects.filter(is_active=True)
-                .exclude(pk__in=exclude_ids)
-                .order_by("-likes_count", "-view_count", "-created_at")[: 8 - len(related_videos)]
+                base_qs.exclude(pk__in=exclude_ids)
+                       .order_by("-likes_count", "-view_count", "-created_at")[: 8 - len(related_videos)]
             )
             related_videos.extend(fill)
     except Exception:
