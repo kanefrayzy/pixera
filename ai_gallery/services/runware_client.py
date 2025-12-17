@@ -30,7 +30,6 @@ def send_debug_log(message: str, data: dict = None):
 def _get_api_key() -> str:
     """
     Динамически загружает API ключ из .env файла.
-    Это позволяет обновлять ключ без перезапуска сервера.
     """
     load_dotenv(override=True)
     key = os.getenv("RUNWARE_API_KEY", "")
@@ -39,10 +38,6 @@ def _get_api_key() -> str:
     return key
 
 def runware_image_url(image_uuid: str) -> str:
-    """
-    Построить канонический CDN-URL Runware для загруженного изображения:
-      https://im.runware.ai/image/ws/5/bucket/media-storage/ii/<UUID>
-    """
     u = str(image_uuid).strip()
     return f"https://im.runware.ai/image/ws/5/bucket/media-storage/ii/{u}"
 
@@ -1345,11 +1340,11 @@ def generate_video_from_image(
         payload[0]["referenceImages"] = converted_urls
         send_debug_log("✅ I2V: Используется referenceImages (Wan2.5)", {
             'parameter': 'referenceImages',
-            'format': 'массив объектов { inputImage: CDN_URL }
-        import re
-        uuid_re2 = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
-        converted: List[Dict[str, str]] = []
-        for v in im: массив объектов { inputImage: CDN_URL }
+            'format': 'simple array of CDN URLs',
+            'value': converted_urls
+        })
+    elif provider == 'bytedance':
+        # ByteDance: frameImages с объектами и CDN URLs
         import re
         uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
         formatted = []
@@ -1364,20 +1359,30 @@ def generate_video_from_image(
         payload[0]["frameImages"] = formatted
         send_debug_log("✅ I2V: Используется frameImages (ByteDance)", {
             'parameter': 'frameImages',
-            'format': 'array of objects with CDN URL
+            'format': 'array of objects with CDN URLs',
+            'value': formatted
+        })
+    elif provider == 'klingai':
+        # KlingAI: frameImages с объектами и CDN URLs
+        import re
+        uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+        formatted = []
+        for v in images_list:
+            val = v
+            if isinstance(v, str) and uuid_re.match(v):
+                try:
+                    val = runware_image_url(v)
+                except Exception:
                     val = v
-            converted.append({"inputImage": val})
-        payload[0]["frameImages"] = converted
+            formatted.append({"inputImage": val})
+        payload[0]["frameImages"] = formatted
         send_debug_log("✅ I2V: Используется frameImages (KlingAI)", {
             'parameter': 'frameImages',
             'format': 'array of objects with CDN URLs',
-            'value': convertede": v} for v in images_list]
-        payload[0]["frameImages"] = formatted
-        send_debug_log("✅ I2V: Используется frameImages (ByteDance)", {
-            'parameter': 'frameImages',
-            'format': 'array of objects',
             'value': formatted
-        }): массив объектов { inputImage: CDN_URL }
+        })
+    else:
+        # Для всех остальных провайдеров (Vidu, Sora и т.д.) - объекты с CDN URLs
         import re
         uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
         formatted = []
@@ -1392,17 +1397,7 @@ def generate_video_from_image(
         payload[0]["frameImages"] = formatted
         send_debug_log("✅ I2V: Используется frameImages (default - objects with CDN URLs)", {
             'parameter': 'frameImages',
-            'format': 'array of objects with CDN URL,
-            'format': 'simple UUID array',
-            'value': images_list
-        })
-    else:
-        # Для всех остальных провайдеров используем формат объектов (как ByteDance/KlingAI)
-        formatted = [{"inputImage": v} for v in images_list]
-        payload[0]["frameImages"] = formatted
-        send_debug_log("✅ I2V: Используется frameImages (default - objects)", {
-            'parameter': 'frameImages',
-            'format': 'array of objects',
+            'format': 'array of objects with CDN URLs',
             'value': formatted
         })
 
