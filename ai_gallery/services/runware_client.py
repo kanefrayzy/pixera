@@ -581,7 +581,7 @@ def generate_video_via_rest(
                 'frame_images_input': frame_images,
                 'frame_images_count': len(frame_images) if isinstance(frame_images, list) else 1
             })
-            
+
             if isinstance(frame_images, list) and frame_images:
                 # Форматируем frameImages в зависимости от провайдера
                 if provider == 'bytedance':
@@ -614,11 +614,24 @@ def generate_video_via_rest(
                     })
                     logger.info(f"Added {len(frame_images)} frameImages (KlingAI format) to T2V payload")
                 else:
-                    # Для остальных провайдеров - простой массив UUID или URL
-                    payload[0]["frameImages"] = frame_images
+                    # Для остальных провайдеров - конвертируем UUID в CDN URL
+                    import re
+                    uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+                    converted = []
+                    for v in frame_images:
+                        val = v
+                        if isinstance(v, str) and uuid_re.match(v):
+                            # Конвертируем UUID в публичный CDN URL
+                            try:
+                                val = runware_image_url(v)
+                            except Exception:
+                                val = v
+                        converted.append(val)
+                    payload[0]["frameImages"] = converted
                     send_debug_log("✅ frameImages отформатированы (other provider)", {
-                        'format': 'simple array',
-                        'result': frame_images
+                        'format': 'CDN URLs',
+                        'input': frame_images,
+                        'result': converted
                     })
                     logger.info(f"Added {len(frame_images)} frameImages to T2V payload")
 
@@ -667,7 +680,7 @@ def generate_video_via_rest(
             'frameImages_value': payload[0].get('frameImages'),
             'referenceImages_value': payload[0].get('referenceImages')
         })
-        
+
         logger.info(
             f"T2V payload → model={model_id}, provider={provider}: {payload}")
         # Safety: ensure defaultDuration absent (top-level and nested) - НО НЕ ДЛЯ BYTEDANCE!
@@ -730,7 +743,7 @@ def generate_video_via_rest(
                         error_msg += f" (param: {param})"
                 else:
                     error_msg = 'Неверные параметры запроса'
-            
+
             send_debug_log("❌ ОШИБКА 400 от Runware API", {
                 'error_message': error_msg,
                 'full_response': data,
@@ -1309,13 +1322,13 @@ def generate_video_from_image(
     }]
     # Wan2.5-Preview (runware:201@1) требует referenceImages, а не frameImages
     mid = str(model_id).lower()
-    
+
     send_debug_log("🎬 Формирование frameImages для I2V", {
         'model_id': model_id,
         'provider': provider,
         'images_list': images_list
     })
-    
+
     if mid == "runware:201@1":
         payload[0]["referenceImages"] = images_list
         send_debug_log("✅ I2V: Используется referenceImages (Wan2.5)", {
@@ -1428,7 +1441,7 @@ def generate_video_from_image(
 
     logger.info(f"Отправка запроса на I2V: model={model_id}")
     logger.info(f"I2V Payload: {payload}")
-    
+
     send_debug_log("🚀 ОТПРАВКА I2V на Runware API", {
         'model_id': model_id,
         'provider': provider,
@@ -1550,7 +1563,7 @@ def generate_video_from_image(
                             error_msg += f" (param: {param})"
                     else:
                         error_msg = 'Неверные параметры запроса'
-                
+
                 send_debug_log("❌ ОШИБКА 400 от Runware API (I2V)", {
                     'error_message': error_msg,
                     'full_response': data,

@@ -453,7 +453,7 @@ def video_submit(request):
                     'filenames': [img.name for img in reference_images],
                     'sizes': [f"{img.size / 1024:.1f}KB" for img in reference_images]
                 })
-                
+
                 for idx, ref_img in enumerate(reference_images[:5], 1):  # Max 5 images
                     # Save to database
                     ref_obj = ReferenceImage.objects.create(
