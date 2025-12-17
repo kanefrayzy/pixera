@@ -563,7 +563,8 @@ def video_stream(request: HttpRequest, pk: int) -> HttpResponse:
     """
     Унифицированная точка отдачи видео:
       1) Если есть локальная оптимизированная копия — отдаём её (с Range).
-      2) Иначе запускаем фоновую оптимизацию и проксируем внешний video_url c поддержкой Range.
+      2) Если video_url — локальный путь (/media/...) — отдаём из storage напрямую.
+      3) Иначе запускаем фоновую оптимизацию и проксируем внешний video_url c поддержкой Range.
     """
     video = get_object_or_404(PublicVideo.objects.only("id", "video_url", "uploaded_by", "source_job_id", "is_active"), pk=pk, is_active=True)
 
@@ -587,7 +588,22 @@ def video_stream(request: HttpRequest, pk: int) -> HttpResponse:
     except Exception:
         pass
 
-    # 2) запустить фон — и проксировать удалённый сейчас
+    # 2) проверяем, является ли video_url локальным путем
+    video_url = video.video_url or ""
+    if video_url.startswith("/media/"):
+        # Локальный путь — убираем префикс /media/ и отдаём из storage
+        storage_path = video_url[len("/media/"):]
+        try:
+            if default_storage.exists(storage_path):
+                ctype = mimetypes.guess_type(storage_path)[0] or "video/mp4"
+                return _serve_local_file_with_range(request, storage_path, ctype)
+        except Exception:
+            pass
+        # Если не нашли в storage — 404
+        from django.http import Http404
+        raise Http404("Video file not found in storage")
+
+    # 3) запустить фон — и проксировать удалённый сейчас
     _ensure_optimize_in_background(video)
     return _proxy_remote_stream(request, video.video_url, "video/mp4")
 
