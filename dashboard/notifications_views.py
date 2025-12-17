@@ -322,19 +322,19 @@ def notifications_list(request: HttpRequest):
 
     for n in slice_qs:
         prev = _preview_for(n)
-        
+
         # Проверяем подписан ли текущий пользователь на актора уведомления
         is_following_actor = False
         if n.actor and request.user.is_authenticated and n.actor.id != request.user.id:
             try:
                 from dashboard.models import Follow
                 is_following_actor = Follow.objects.filter(
-                    follower=request.user, 
+                    follower=request.user,
                     following=n.actor
                 ).exists()
             except Exception:
                 pass
-        
+
         items.append({
             "id": n.id,
             "type": n.type,

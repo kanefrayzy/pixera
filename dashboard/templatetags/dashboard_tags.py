@@ -16,5 +16,5 @@ def is_following(user, target_user):
         return False
     if user.id == target_user.id:
         return False  # Нельзя подписаться на самого себя
-    
+
     return Follow.objects.filter(follower=user, following=target_user).exists()

@@ -72,12 +72,12 @@
 
             <div class="flex items-center justify-between gap-2 flex-nowrap">
               <button type="button"
-                      class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if request.user.is_authenticated and v.pk in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
+                      class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition like-toggle {% if v.pk in liked_video_ids %}text-red-500{% else %}text-[var(--muted)]{% endif %}"
                       data-id="{{ v.pk }}"
                       data-url="{{ like_url }}"
-                      aria-pressed="{% if request.user.is_authenticated and v.pk in liked_video_ids %}true{% else %}false{% endif %}"
+                      aria-pressed="{% if v.pk in liked_video_ids %}true{% else %}false{% endif %}"
                       aria-label="Лайк">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if request.user.is_authenticated and v.pk in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{% if v.pk in liked_video_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                 </svg>
                 <span id="like-count-{{ v.pk }}" class="text-sm font-medium cursor-pointer likers-hotspot" data-open-likers="1" data-url="{{ likers_url }}" aria-label="Кто лайкнул">{{ v.likes_count|default:0 }}</span>

@@ -104,14 +104,21 @@
           <!-- Actions Button -->
           <div class="mt-3 sm:mt-4 w-full sm:w-auto profile-actions">
             {% if not is_self %}
-              <button type="button"
-                      class="btn {% if is_following %}btn-ghost{% else %}btn-primary{% endif %} text-sm px-6 py-2 font-semibold rounded-xl"
-                      data-follow-toggle="1"
-                      data-username="{{ target.username }}"
-                      id="followBtn"
-                      onclick="try{ if(window.__pfToggleFollow){ window.__pfToggleFollow(this); } }catch(e){} return false;">
-                {% if is_following %}{% trans "Отписаться" %}{% else %}{% trans "Подписаться" %}{% endif %}
-              </button>
+              <div class="flex flex-col gap-2">
+                <button type="button"
+                        class="btn {% if is_following %}btn-ghost{% else %}btn-primary{% endif %} text-sm px-6 py-2 font-semibold rounded-xl"
+                        data-follow-toggle="1"
+                        data-username="{{ target.username }}"
+                        id="followBtn"
+                        onclick="try{ if(window.__pfToggleFollow){ window.__pfToggleFollow(this); } }catch(e){} return false;">
+                  {% if is_following %}{% trans "Отписаться" %}{% else %}{% if target_follows_me %}{% trans "Подписаться в ответ" %}{% else %}{% trans "Подписаться" %}{% endif %}{% endif %}
+                </button>
+                {% if target_follows_me and not is_following %}
+                  <div class="text-xs text-center text-[var(--muted)]">
+                    {% trans "Подписан(а) на вас" %}
+                  </div>
+                {% endif %}
+              </div>
               <!-- Fallback form: if AJAX is blocked (e.g., CSP/CSRF), submit regular POST -->
               <form id="pfFollowFallbackForm" method="post" action="{% url 'dashboard:api:follow_toggle' %}" class="hidden">
                 {% csrf_token %}
@@ -157,7 +164,8 @@
                         var following = !!j.following;
                         btn.classList.toggle('btn-primary', !following);
                         btn.classList.toggle('btn-ghost', following);
-                        btn.textContent = following ? '{{ _("Отписаться") }}' : '{{ _("Подписаться") }}';
+                        var targetFollowsMe = {{ target_follows_me|lower }};
+                        btn.textContent = following ? '{{ _("Отписаться") }}' : (targetFollowsMe ? '{{ _("Подписаться в ответ") }}' : '{{ _("Подписаться") }}');
                         btn.setAttribute('aria-pressed', following ? 'true':'false');
                         var cnt = document.getElementById('pfFollowers');
                         var newCount = (typeof j.followers_count === 'number') ? j.followers_count : (typeof j.followers === 'number' ? j.followers : null);

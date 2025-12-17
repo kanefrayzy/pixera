@@ -1217,6 +1217,24 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
     except Exception:
         related_photos = []
 
+    # Проверяем лайки для похожих фото (важно для гостей!)
+    liked_photo_ids: set[int] = set()
+    related_photo_ids = [p.id for p in related_photos]
+    if related_photo_ids:
+        if request.user.is_authenticated:
+            liked_photo_ids = set(
+                PhotoLike.objects.filter(
+                    user=request.user, photo_id__in=related_photo_ids
+                ).values_list("photo_id", flat=True)
+            )
+        else:
+            skey = _ensure_session_key(request)
+            liked_photo_ids = set(
+                PhotoLike.objects.filter(
+                    user__isnull=True, session_key=skey, photo_id__in=related_photo_ids
+                ).values_list("photo_id", flat=True)
+            )
+
     return render(
         request,
         "gallery/detail.html",
@@ -1225,6 +1243,7 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
             "comments": comments,
             "liked": liked,
             "liked_comment_ids": liked_comment_ids,
+            "liked_photo_ids": liked_photo_ids,
             "comment_form": PhotoCommentForm(),
             "related_photos": related_photos,
         },
@@ -1520,7 +1539,7 @@ def comment_reply(request: HttpRequest, pk: int) -> HttpResponse:
                 reply_preview = (text or "").strip().split('\n')[0][:50]
                 if len((text or "").strip()) > 50:
                     reply_preview += "..."
-                
+
                 Notification.create(
                     recipient=parent.user,
                     actor=request.user,
@@ -1936,7 +1955,7 @@ def photo_comment(request: HttpRequest, pk: int) -> HttpResponse:
                 comment_preview = (text or "").strip().split('\n')[0][:50]
                 if len((text or "").strip()) > 50:
                     comment_preview += "..."
-                
+
                 Notification.create(
                     recipient=photo.uploaded_by,
                     actor=request.user,

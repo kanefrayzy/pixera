@@ -931,9 +931,13 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
 
     # is_following (для кнопки)
     is_following = False
+    # Проверяем, подписан ли target на текущего пользователя (для кнопки "подписаться в ответ")
+    target_follows_me = False
     if request.user.is_authenticated and not is_self:
         is_following = Follow.objects.filter(
             follower=request.user, following=target).exists()
+        target_follows_me = Follow.objects.filter(
+            follower=target, following=request.user).exists()
 
     # Определяем имя связи PublicPhoto -> job СНАЧАЛА
     rel_name = None
@@ -1460,6 +1464,7 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
             "posts": posts,
             "is_self": is_self,
             "is_following": is_following,
+            "target_follows_me": target_follows_me,
 
             # Параметры my_jobs
             "jobs_cards": jobs_cards,

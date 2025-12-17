@@ -708,6 +708,24 @@ def video_detail(request: HttpRequest, slug: str) -> HttpResponse:
     except Exception:
         related_videos = []
 
+    # Проверяем лайки для похожих видео (важно для гостей!)
+    liked_video_ids: set[int] = set()
+    related_video_ids = [v.id for v in related_videos]
+    if related_video_ids:
+        if request.user.is_authenticated:
+            liked_video_ids = set(
+                VideoLike.objects.filter(
+                    user=request.user, video_id__in=related_video_ids
+                ).values_list("video_id", flat=True)
+            )
+        else:
+            skey = _ensure_session_key(request)
+            liked_video_ids = set(
+                VideoLike.objects.filter(
+                    user__isnull=True, session_key=skey, video_id__in=related_video_ids
+                ).values_list("video_id", flat=True)
+            )
+
     return render(
         request,
         "gallery/video_detail.html",
@@ -716,6 +734,7 @@ def video_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "comments": comments,
             "liked": liked,
             "liked_comment_ids": liked_comment_ids,
+            "liked_video_ids": liked_video_ids,
             "comment_form": PhotoCommentForm(),
             "related_videos": related_videos,
         },
@@ -984,7 +1003,7 @@ def video_comment(request: HttpRequest, pk: int) -> HttpResponse:
                 comment_preview = (text or "").strip().split('\n')[0][:50]
                 if len((text or "").strip()) > 50:
                     comment_preview += "..."
-                
+
                 Notification.create(
                     recipient=video.uploaded_by,
                     actor=request.user,
@@ -1046,7 +1065,7 @@ def video_comment_reply(request: HttpRequest, pk: int) -> HttpResponse:
                 reply_preview = (text or "").strip().split('\n')[0][:50]
                 if len((text or "").strip()) > 50:
                     reply_preview += "..."
-                
+
                 Notification.create(
                     recipient=parent.user,
                     actor=request.user,

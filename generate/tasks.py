@@ -1257,33 +1257,33 @@ def delete_old_unpublished_jobs():
     """
     from datetime import timedelta
     from django.apps import apps
-    
+
     cutoff_date = timezone.now() - timedelta(days=30)
-    
+
     # Получаем модели
     PublicPhoto = apps.get_model('gallery', 'PublicPhoto')
     PublicVideo = apps.get_model('gallery', 'PublicVideo')
-    
+
     # Находим все работы старше 30 дней
     old_jobs = GenerationJob.objects.filter(
         created_at__lt=cutoff_date
     )
-    
+
     # Исключаем опубликованные (у которых есть связь с PublicPhoto или PublicVideo)
     published_photo_job_ids = PublicPhoto.objects.filter(
         source_job__isnull=False
     ).values_list('source_job_id', flat=True)
-    
+
     published_video_job_ids = PublicVideo.objects.filter(
         source_job__isnull=False
     ).values_list('source_job_id', flat=True)
-    
+
     # Объединяем ID опубликованных работ
     published_job_ids = set(published_photo_job_ids) | set(published_video_job_ids)
-    
+
     # Фильтруем только неопубликованные
     jobs_to_delete = old_jobs.exclude(pk__in=published_job_ids)
-    
+
     deleted_count = 0
     for job in jobs_to_delete:
         try:
@@ -1293,19 +1293,19 @@ def delete_old_unpublished_jobs():
                     default_storage.delete(job.result_image.name)
                 except Exception as e:
                     log.warning(f"Failed to delete image for job {job.pk}: {e}")
-            
+
             if job.video_source_image:
                 try:
                     default_storage.delete(job.video_source_image.name)
                 except Exception as e:
                     log.warning(f"Failed to delete video source image for job {job.pk}: {e}")
-            
+
             # Удаляем запись из БД
             job.delete()
             deleted_count += 1
-            
+
         except Exception as e:
             log.error(f"Failed to delete job {job.pk}: {e}")
-    
+
     log.info(f"Deleted {deleted_count} old unpublished generation jobs")
     return deleted_count
