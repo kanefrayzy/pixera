@@ -1042,6 +1042,8 @@ def run_generation_async(self, job_id: int) -> None:
                     webhook_url=webhook,
                 )
             else:
+                # Логирование референсов перед отправкой
+                log.info(f"Job {job.pk}: Sending to Runware async with {len(general_refs)} reference images: {general_refs}")
                 task_uuid = rw.submit_image_inference_async(
                     prompt=job.prompt,
                     model_id=model_id,

@@ -196,6 +196,7 @@ def submit_image_inference_async(
     # Reference images support (according to official Runware API docs)
     if reference_images:
         model_lower = str(model_id or "").strip().lower()
+        log.info(f"🔍 ASYNC: Processing reference images for model {model_id}, count={len(reference_images)}")
 
         # Models that support referenceImages parameter
         # FLUX.1 Kontext: runware:106@1 (max 2 images)
@@ -217,19 +218,26 @@ def submit_image_inference_async(
                 log.warning(f"Reference images provided but none valid after normalization for model {model_id}")
         elif model_lower == "google:4@2":
             # Google Imagen requires CDN URLs as plain strings (not objects)
+            log.info(f"🖼️ Google Imagen: converting {len(reference_images)} references to CDN URLs")
             from ai_gallery.services.runware_client import runware_image_url
             import re
             uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
             cdn_urls = []
-            for ref in reference_images:
+            for i, ref in enumerate(reference_images):
+                log.info(f"  Ref[{i}]: type={type(ref).__name__}, value={ref}")
                 if isinstance(ref, str):
                     if uuid_re.match(ref.strip()):
-                        cdn_urls.append(runware_image_url(ref.strip()))
+                        cdn_url = runware_image_url(ref.strip())
+                        cdn_urls.append(cdn_url)
+                        log.info(f"  ✅ UUID→CDN: {cdn_url}")
                     elif ref.strip().startswith("http"):
                         cdn_urls.append(ref.strip())
+                        log.info(f"  ✅ URL kept: {ref.strip()}")
             if cdn_urls:
                 task["referenceImages"] = cdn_urls[:1]  # Max 1 for Google Imagen
-                log.info(f"Added {len(task['referenceImages'])} reference CDN URLs for Google Imagen")
+                log.info(f"✅ Google Imagen: added {len(task['referenceImages'])} CDN URLs: {task['referenceImages']}")
+            else:
+                log.warning(f"⚠️ Google Imagen: no valid CDN URLs generated from {len(reference_images)} inputs")
         else:
             # For other models, reference images are NOT supported via referenceImages
             # They would need ControlNet with specific preprocessed guide images
@@ -239,7 +247,7 @@ def submit_image_inference_async(
     try:
         # Log minimal task details for debugging referenceImages issue
         try:
-            log.debug("Runware submit (async) model=%s, hasRef=%s, nRef=%s", model_id, bool(task.get("referenceImages")), len(task.get("referenceImages") or []))
+            log.info(f"📤 ASYNC submit: model={model_id}, hasRef={bool(task.get('referenceImages'))}, nRef={len(task.get('referenceImages') or [])}")
         except Exception:
             pass
         data = _post([task], timeout=(10, 15))
