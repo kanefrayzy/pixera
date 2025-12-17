@@ -365,18 +365,31 @@
 
     const snippet = prev.text ? `<div class="mt-1 text-xs text-[var(--muted)] line-clamp-2">${prev.text}</div>` : '';
     
-    // Кнопка "Подписаться" для follow уведомлений
-    const subscribeBtn = (n.type === 'follow' && uname) ? `
-      <button class="btn btn-primary px-3 py-1.5 text-xs js-follow-toggle-notif" 
-              data-username="${uname}" 
-              data-notif-id="${n.id}"
-              title="Подписаться в ответ">
-        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Подписаться
-      </button>
-    ` : '';
+    // Кнопка "Подписаться/Подписаны" для follow уведомлений
+    const isFollowing = !!n.is_following_actor;
+    const subscribeBtn = (n.type === 'follow' && uname) ? (
+      isFollowing 
+        ? `<button class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-green-500/10 hover:bg-red-500/10 text-green-600 dark:text-green-400 hover:text-red-600 dark:hover:text-red-400 transition js-follow-toggle-notif" 
+                  data-username="${uname}" 
+                  data-notif-id="${n.id}"
+                  data-following="true"
+                  title="Нажмите чтобы отписаться">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Подписаны</span>
+          </button>`
+        : `<button class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition js-follow-toggle-notif" 
+                  data-username="${uname}" 
+                  data-notif-id="${n.id}"
+                  data-following="false"
+                  title="Подписаться в ответ">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            <span>Подписаться</span>
+          </button>`
+    ) : '';
 
     return `
       <li class="relative px-4 sm:px-5 py-3 hover:bg-black/[.02] dark:hover:bg-white/5 transition">
@@ -527,16 +540,17 @@
       });
     });
 
-    // Обработчики для кнопок подписки в уведомлениях
+    // Обработчики для кнопок подписки в уведомлениях (toggle)
     listEl.querySelectorAll('.js-follow-toggle-notif').forEach(btn=>{
       btn.addEventListener('click', async (e)=>{
         e.preventDefault();
         e.stopPropagation();
         const username = btn.getAttribute('data-username');
+        const wasFollowing = btn.getAttribute('data-following') === 'true';
         if (!username || btn.disabled) return;
         
         btn.disabled = true;
-        const originalText = btn.innerHTML;
+        const originalHTML = btn.innerHTML;
         btn.innerHTML = '<svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke-width="4"/></svg>';
         
         try{
@@ -555,20 +569,38 @@
           
           const j = await res.json();
           if (j && j.ok) {
-            // Обновляем кнопку на "Отписаться" или скрываем
-            if (j.is_following) {
-              btn.classList.remove('btn-primary');
-              btn.classList.add('btn-ghost');
-              btn.innerHTML = '✓ Подписан';
+            const isNowFollowing = !!j.is_following;
+            
+            // Обновляем внешний вид кнопки
+            if (isNowFollowing) {
+              // Теперь подписаны - зеленая галочка
+              btn.className = 'inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-green-500/10 hover:bg-red-500/10 text-green-600 dark:text-green-400 hover:text-red-600 dark:hover:text-red-400 transition js-follow-toggle-notif';
+              btn.innerHTML = `
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Подписаны</span>
+              `;
+              btn.setAttribute('data-following', 'true');
+              btn.setAttribute('title', 'Нажмите чтобы отписаться');
             } else {
-              btn.innerHTML = originalText;
+              // Отписались - синяя кнопка подписки
+              btn.className = 'inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition js-follow-toggle-notif';
+              btn.innerHTML = `
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                <span>Подписаться</span>
+              `;
+              btn.setAttribute('data-following', 'false');
+              btn.setAttribute('title', 'Подписаться в ответ');
             }
           } else {
-            btn.innerHTML = originalText;
+            btn.innerHTML = originalHTML;
           }
         }catch(err){
           console.error('Follow toggle error:', err);
-          btn.innerHTML = originalText;
+          btn.innerHTML = originalHTML;
         }finally{
           btn.disabled = false;
         }

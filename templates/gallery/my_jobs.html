@@ -902,6 +902,25 @@
   </div>
 
   <!-- Media Type Tabs -->
+  {% if is_self %}
+  <!-- 30-Day Deletion Notice Banner -->
+  <div class="mb-6 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 p-4">
+    <div class="flex items-start gap-3">
+      <svg class="w-6 h-6 text-orange-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <div class="flex-1">
+        <h3 class="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-1">
+          Внимание! Автоматическое удаление неопубликованных работ
+        </h3>
+        <p class="text-xs text-gray-700 dark:text-gray-300">
+          Неопубликованные работы (фото и видео, которые не добавлены в галерею) автоматически удаляются с нашего сервера через <strong>30 дней</strong> после создания. Опубликованные в галерее работы хранятся постоянно.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {% if show_only_published %}
   <div class="flex justify-center mb-6">
     <div class="media-tabs-wrapper rounded-xl bg-[var(--bord)] p-1 gap-1 inline-flex w-auto">

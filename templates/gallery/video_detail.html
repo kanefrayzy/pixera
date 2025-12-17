@@ -279,14 +279,22 @@
                 {% if request.user.is_authenticated and c.user.id != request.user.id %}
                   {% load dashboard_tags %}
                   {% if not request.user|is_following:c.user %}
-                    <button class="btn btn-primary px-2 py-1 text-xs js-follow-toggle-comment" 
+                    <button class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition js-follow-toggle-comment" 
                             data-username="{{ c.user.username }}" 
                             data-comment-id="{{ c.pk }}"
                             title="Подписаться на @{{ c.user.username }}">
-                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                       </svg>
-                      Подписаться
+                      <span>Подписаться</span>
+                    </button>
+                  {% else %}
+                    <button class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 cursor-default" 
+                            title="Вы подписаны на @{{ c.user.username }}">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <span>Подписаны</span>
                     </button>
                   {% endif %}
                 {% endif %}
@@ -551,7 +559,7 @@
     btn.disabled = true;
     
     const username = btn.getAttribute('data-username');
-    const originalText = btn.innerHTML;
+    const originalHTML = btn.innerHTML;
     btn.innerHTML = '<svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke-width="4"/></svg>';
     
     try {
@@ -571,18 +579,24 @@
       const j = await res.json();
       if (j && j.ok) {
         if (j.is_following) {
-          btn.classList.remove('btn-primary');
-          btn.classList.add('btn-ghost');
-          btn.innerHTML = '✓ Подписан';
+          // Подписались - показываем зеленую галочку
+          btn.className = 'inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 cursor-default';
+          btn.innerHTML = `
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Подписаны</span>
+          `;
+          btn.title = 'Вы подписаны на @' + username;
         } else {
-          btn.innerHTML = originalText;
+          btn.innerHTML = originalHTML;
         }
       } else {
-        btn.innerHTML = originalText;
+        btn.innerHTML = originalHTML;
       }
     } catch (err) {
       console.error('Follow toggle error:', err);
-      btn.innerHTML = originalText;
+      btn.innerHTML = originalHTML;
     } finally {
       delete btn.dataset.loading;
       btn.disabled = false;
