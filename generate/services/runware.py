@@ -149,7 +149,7 @@ def submit_image_inference_async(
 ) -> str:
     """Отправляет задачу (deliveryMethod=async) и возвращает taskUUID."""
     task_uuid = str(uuid.uuid4())
-    special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0"}
+    special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
     if special:
         # Flux/Seedream: без steps/CFG/scheduler, и с includeCost, JPEG, outputType=["URL"]
         task: Dict[str, Any] = {
@@ -253,7 +253,7 @@ def submit_image_inference_sync(
     number_results: int | None = None,
 ) -> str:
     """Синхронная генерация (deliveryMethod=sync). Возвращает imageURL."""
-    special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0"}
+    special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
     if special:
         task: Dict[str, Any] = {
             "taskType": "imageInference",
