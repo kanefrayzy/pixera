@@ -286,12 +286,26 @@
 
             <div class="flex-1 min-w-0">
               <!-- Comment Header -->
-              <div class="flex items-center gap-2 mb-2">
+              <div class="flex items-center gap-2 mb-2 flex-wrap">
                 <span class="font-medium">{{ c.user.get_full_name|default:c.user.username }}</span>
                 <span class="text-xs text-[var(--muted)]">•</span>
                 <time datetime="{{ c.created_at|date:'c' }}" class="text-xs text-[var(--muted)]">
                   {{ c.created_at|date:'d.m.Y H:i' }}
                 </time>
+                {% if request.user.is_authenticated and c.user.id != request.user.id %}
+                  {% load dashboard_tags %}
+                  {% if not request.user|is_following:c.user %}
+                    <button class="btn btn-primary px-2 py-1 text-xs js-follow-toggle-comment" 
+                            data-username="{{ c.user.username }}" 
+                            data-comment-id="{{ c.pk }}"
+                            title="Подписаться на @{{ c.user.username }}">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                      </svg>
+                      Подписаться
+                    </button>
+                  {% endif %}
+                {% endif %}
               </div>
 
               <!-- Comment Body -->
@@ -576,6 +590,62 @@ document.addEventListener('click', (e) => {
         setTimeout(() => textarea.focus(), 100);
       }
     }
+  }
+});
+
+// Follow toggle in comments
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.js-follow-toggle-comment');
+  if (!btn) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  if (btn.disabled || btn.dataset.loading === '1') return;
+  btn.dataset.loading = '1';
+  btn.disabled = true;
+  
+  const username = btn.getAttribute('data-username');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8" stroke-width="4"/></svg>';
+  
+  function getCSRFCookie(){
+    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+  
+  try {
+    const fd = new FormData();
+    fd.append('username', username);
+    
+    const res = await fetch('{% url "dashboard:api:follow_toggle" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFCookie(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin',
+      body: fd
+    });
+    
+    const j = await res.json();
+    if (j && j.ok) {
+      if (j.is_following) {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-ghost');
+        btn.innerHTML = '✓ Подписан';
+      } else {
+        btn.innerHTML = originalText;
+      }
+    } else {
+      btn.innerHTML = originalText;
+    }
+  } catch (err) {
+    console.error('Follow toggle error:', err);
+    btn.innerHTML = originalText;
+  } finally {
+    delete btn.dataset.loading;
+    btn.disabled = false;
   }
 });
 

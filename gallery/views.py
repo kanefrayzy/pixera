@@ -1516,6 +1516,11 @@ def comment_reply(request: HttpRequest, pk: int) -> HttpResponse:
         # Уведомление автору комментария об ответе
         try:
             if request.user.is_authenticated and getattr(parent, "user_id", None) and request.user.id != parent.user_id:
+                # Получаем первую строку ответа для превью
+                reply_preview = (text or "").strip().split('\n')[0][:50]
+                if len((text or "").strip()) > 50:
+                    reply_preview += "..."
+                
                 Notification.create(
                     recipient=parent.user,
                     actor=request.user,
@@ -1524,7 +1529,7 @@ def comment_reply(request: HttpRequest, pk: int) -> HttpResponse:
                     link=reverse("gallery:photo_detail", args=[
                                  parent.photo_id]) + f"#c{child.pk}",
                     payload={"comment_id": parent.pk,
-                             "reply_id": child.pk, "photo_id": parent.photo_id},
+                             "reply_id": child.pk, "photo_id": parent.photo_id, "comment_text": reply_preview},
                 )
         except Exception:
             pass
@@ -1927,6 +1932,11 @@ def photo_comment(request: HttpRequest, pk: int) -> HttpResponse:
         # Уведомление автору фото о новом комментарии
         try:
             if request.user.is_authenticated and getattr(photo, "uploaded_by_id", None) and request.user.id != photo.uploaded_by_id:
+                # Получаем первую строку комментария для превью
+                comment_preview = (text or "").strip().split('\n')[0][:50]
+                if len((text or "").strip()) > 50:
+                    comment_preview += "..."
+                
                 Notification.create(
                     recipient=photo.uploaded_by,
                     actor=request.user,
@@ -1934,7 +1944,7 @@ def photo_comment(request: HttpRequest, pk: int) -> HttpResponse:
                     message=f"@{request.user.username} прокомментировал(а) ваше фото",
                     link=reverse("gallery:photo_detail", args=[
                                  photo.pk]) + "#comments",
-                    payload={"photo_id": photo.pk},
+                    payload={"photo_id": photo.pk, "comment_text": comment_preview},
                 )
         except Exception:
             pass

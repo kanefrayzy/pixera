@@ -144,8 +144,9 @@ def notifications_list(request: HttpRequest):
             # Prefer reply text/anchor if present
             anchor_id = rid or cid
             if anchor_id and not is_deleted:
-                text = ""
-                if PhotoComment:
+                # Используем превью из payload, если есть, иначе запрашиваем из БД
+                text = payload.get("comment_text", "")
+                if not text and PhotoComment:
                     try:
                         c = PhotoComment.objects.filter(id=anchor_id).only("text").first()
                         text = ((c.text or "")[:140]) if c else ""
@@ -223,8 +224,9 @@ def notifications_list(request: HttpRequest):
             # Prefer reply text/anchor if present
             anchor_id = rid or cid
             if anchor_id and not is_deleted:
-                text = ""
-                if VideoComment:
+                # Используем превью из payload, если есть, иначе запрашиваем из БД
+                text = payload.get("comment_text", "")
+                if not text and VideoComment:
                     try:
                         c = VideoComment.objects.filter(id=anchor_id).only("text").first()
                         text = ((c.text or "")[:140]) if c else ""

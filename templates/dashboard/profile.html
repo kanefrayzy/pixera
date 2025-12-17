@@ -1261,6 +1261,25 @@ document.addEventListener('DOMContentLoaded', function() {
   })();
   </script>
 
+  {% if is_self %}
+  <!-- 30-Day Deletion Notice Banner -->
+  <div class="mb-6 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 p-4">
+    <div class="flex items-start gap-3">
+      <svg class="w-6 h-6 text-orange-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <div class="flex-1">
+        <h3 class="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-1">
+          Внимание! Автоматическое удаление неопубликованных работ
+        </h3>
+        <p class="text-xs text-gray-700 dark:text-gray-300">
+          Неопубликованные работы (фото и видео, которые не добавлены в галерею) автоматически удаляются с нашего сервера через <strong>30 дней</strong> после создания. Опубликованные в галерее работы хранятся постоянно.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Media Type Tabs -->
   <div class="media-tabs-wrapper rounded-xl bg-[var(--bord)] p-1 gap-1 w-full mb-6 grid grid-cols-2 min-[640px]:inline-flex min-[640px]:w-auto">
     <button class="media-tab active w-full min-[640px]:flex-initial px-2.5 xs:px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium"
@@ -1510,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                   </div>
                 {% endif %}
-                {% if is_self and not c.pub %}
+                {% if is_self %}
                 <div class="pt-3 border-t border-[var(--bord)]">
                   <button type="button" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition hide-toggle"
                           data-job-id="{{ j.id }}"
@@ -1596,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       <path d="M12 8l6 6"></path>
                     </svg>
                   </button>
-                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                  <input type="range" min="0" max="100" value="60" class="vid-vol w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
                 </div>
 
                 <!-- Model Badge (from source_job) -->
@@ -1729,7 +1748,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       <path d="M12 8l6 6"></path>
                     </svg>
                   </button>
-                  <input type="range" min="0" max="100" value="60" class="vid-vol hidden w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+                  <input type="range" min="0" max="100" value="60" class="vid-vol w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
                 </div>
 
                 <!-- Model Badge (from job fields) -->
@@ -1831,7 +1850,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                   </div>
                 {% endif %}
-                {% if is_self and not c.pub %}
+                {% if is_self %}
                   <!-- Hide/Show Toggle -->
                   <button type="button" class="w-full flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition hide-toggle"
                           data-job-id="{{ j.id }}"

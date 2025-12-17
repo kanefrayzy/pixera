@@ -407,6 +407,15 @@ CELERY_TASK_ROUTES = {
     "generate.tasks.poll_video_result": {"queue": CELERY_QUEUE_SUBMIT},
 }
 
+# Celery Beat расписание для периодических задач
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'delete-old-unpublished-jobs': {
+        'task': 'generate.tasks.delete_old_unpublished_jobs',
+        'schedule': crontab(hour=3, minute=0),  # Каждый день в 3:00 ночи
+    },
+}
+
 # ── Runware ───────────────────────────────────────────────────────────────────
 RUNWARE_API_URL = os.getenv("RUNWARE_API_URL", "https://api.runware.ai/v1")
 RUNWARE_API_KEY = os.getenv("RUNWARE_API_KEY", "")

@@ -979,13 +979,19 @@ def video_comment(request: HttpRequest, pk: int) -> HttpResponse:
         try:
             from dashboard.models import Notification
             if request.user.is_authenticated and getattr(video, "uploaded_by_id", None) and request.user.id != video.uploaded_by_id:
+                text = form.cleaned_data["text"]
+                # Получаем первую строку комментария для превью
+                comment_preview = (text or "").strip().split('\n')[0][:50]
+                if len((text or "").strip()) > 50:
+                    comment_preview += "..."
+                
                 Notification.create(
                     recipient=video.uploaded_by,
                     actor=request.user,
                     type=Notification.Type.COMMENT_VIDEO,
                     message=f"@{request.user.username} прокомментировал(а) ваше видео",
                     link=video.get_absolute_url() + "#comments",
-                    payload={"video_id": video.pk},
+                    payload={"video_id": video.pk, "comment_text": comment_preview},
                 )
         except Exception:
             pass
@@ -1035,13 +1041,19 @@ def video_comment_reply(request: HttpRequest, pk: int) -> HttpResponse:
         try:
             from dashboard.models import Notification
             if request.user.is_authenticated and getattr(parent, "user_id", None) and request.user.id != parent.user_id:
+                text = form.cleaned_data["text"]
+                # Получаем первую строку ответа для превью
+                reply_preview = (text or "").strip().split('\n')[0][:50]
+                if len((text or "").strip()) > 50:
+                    reply_preview += "..."
+                
                 Notification.create(
                     recipient=parent.user,
                     actor=request.user,
                     type=Notification.Type.REPLY_VIDEO,
                     message=f"@{request.user.username} ответил(а) на ваш комментарий",
                     link=parent.video.get_absolute_url() + f"#c{jc.pk}",
-                    payload={"comment_id": parent.pk, "reply_id": jc.pk, "video_id": parent.video_id},
+                    payload={"comment_id": parent.pk, "reply_id": jc.pk, "video_id": parent.video_id, "comment_text": reply_preview},
                 )
         except Exception:
             pass
