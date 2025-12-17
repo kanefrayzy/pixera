@@ -804,7 +804,7 @@ def run_generation_async(self, job_id: int) -> None:
     try:
         from .models import ReferenceImage
         ref_images = ReferenceImage.objects.filter(
-            job=job).order_by('order', 'created_at')
+            job=job).order_by('order', 'uploaded_at')
 
         if ref_images.exists():
             log.info(f"Found {ref_images.count()} reference images for job {job.pk}")

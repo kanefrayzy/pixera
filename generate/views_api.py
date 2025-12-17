@@ -324,14 +324,16 @@ def api_submit(request: HttpRequest) -> JsonResponse:
         # Save reference images if any (up to 5 images)
         try:
             reference_images = request.FILES.getlist('reference_images')
-            log.info(f"📸 Received {len(reference_images)} reference images for job {job.pk}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"📸 Received {len(reference_images)} reference images for job {job.pk}")
             for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
                 ref_obj = ReferenceImage.objects.create(
                     job=job,
                     image=ref_img,
                     order=idx
                 )
-                log.info(f"  ✅ Saved reference image {idx}: {ref_img.name} ({ref_img.size} bytes) -> {ref_obj.pk}")
+                logger.info(f"  ✅ Saved reference image {idx}: {ref_img.name} ({ref_img.size} bytes) -> {ref_obj.pk}")
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"❌ Failed to save reference images: {e}", exc_info=True)
@@ -749,13 +751,15 @@ def job_persist(request: HttpRequest, pk: int) -> JsonResponse:
 # Webhook от Runware (успех/ошибка провайдера)
 # =============================================================================
 
-@require_POST
 @csrf_exempt
 def runware_webhook(request: HttpRequest) -> HttpResponse:
     """
     На успех — финализируем (tasks._finalize_job_with_url), без повторных списаний.
     На провале — FAILED и рефанд токенов только авторизованному пользователю.
     """
+    # Проверяем только POST метод
+    if request.method != 'POST':
+        return HttpResponse('Method not allowed', status=405)
     import logging
     logger = logging.getLogger(__name__)
 
