@@ -749,8 +749,8 @@ def job_persist(request: HttpRequest, pk: int) -> JsonResponse:
 # Webhook от Runware (успех/ошибка провайдера)
 # =============================================================================
 
-@csrf_exempt
 @require_POST
+@csrf_exempt
 def runware_webhook(request: HttpRequest) -> HttpResponse:
     """
     На успех — финализируем (tasks._finalize_job_with_url), без повторных списаний.
