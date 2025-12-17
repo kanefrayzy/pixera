@@ -197,9 +197,11 @@ def submit_image_inference_async(
     if reference_images:
         model_lower = str(model_id or "").strip().lower()
 
-        # Models that support referenceImages parameter (max 2 images for FLUX.1 Kontext, 1 for Ace++)
-        # FLUX.1 Kontext: runware:106@1
-        # Ace++: runware:102@1 (with acePlusPlus object)
+        # Models that support referenceImages parameter
+        # FLUX.1 Kontext: runware:106@1 (max 2 images)
+        # Ace++: runware:102@1
+        # Face Retouch: runware:108@22
+        # Google Imagen: google:4@2
         if model_lower in {"runware:106@1", "runware:102@1", "runware:108@22"}:
             # Нормализуем в формат, который ожидает Runware:
             #  - UUID  -> {"imageUUID": "..."}
@@ -213,6 +215,21 @@ def submit_image_inference_async(
                 log.info(f"Added {len(task['referenceImages'])} reference images for {model_id}")
             else:
                 log.warning(f"Reference images provided but none valid after normalization for model {model_id}")
+        elif model_lower == "google:4@2":
+            # Google Imagen requires CDN URLs as plain strings (not objects)
+            from ai_gallery.services.runware_client import runware_image_url
+            import re
+            uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+            cdn_urls = []
+            for ref in reference_images:
+                if isinstance(ref, str):
+                    if uuid_re.match(ref.strip()):
+                        cdn_urls.append(runware_image_url(ref.strip()))
+                    elif ref.strip().startswith("http"):
+                        cdn_urls.append(ref.strip())
+            if cdn_urls:
+                task["referenceImages"] = cdn_urls[:1]  # Max 1 for Google Imagen
+                log.info(f"Added {len(task['referenceImages'])} reference CDN URLs for Google Imagen")
         else:
             # For other models, reference images are NOT supported via referenceImages
             # They would need ControlNet with specific preprocessed guide images
@@ -294,9 +311,11 @@ def submit_image_inference_sync(
     if reference_images:
         model_lower = str(model_id or "").strip().lower()
 
-        # Models that support referenceImages parameter (max 2 images for FLUX.1 Kontext, 1 for Ace++)
-        # FLUX.1 Kontext: runware:106@1
-        # Ace++: runware:102@1 (with acePlusPlus object)
+        # Models that support referenceImages parameter
+        # FLUX.1 Kontext: runware:106@1 (max 2 images)
+        # Ace++: runware:102@1
+        # Face Retouch: runware:108@22
+        # Google Imagen: google:4@2
         if model_lower in {"runware:106@1", "runware:102@1", "runware:108@22"}:
             # Нормализуем в формат, который ожидает Runware:
             #  - UUID  -> {"imageUUID": "..."}
@@ -310,6 +329,21 @@ def submit_image_inference_sync(
                 log.info(f"Added {len(task['referenceImages'])} reference images for {model_id}")
             else:
                 log.warning(f"Reference images provided but none valid after normalization for model {model_id}")
+        elif model_lower == "google:4@2":
+            # Google Imagen requires CDN URLs as plain strings (not objects)
+            from ai_gallery.services.runware_client import runware_image_url
+            import re
+            uuid_re = re.compile(r"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+            cdn_urls = []
+            for ref in reference_images:
+                if isinstance(ref, str):
+                    if uuid_re.match(ref.strip()):
+                        cdn_urls.append(runware_image_url(ref.strip()))
+                    elif ref.strip().startswith("http"):
+                        cdn_urls.append(ref.strip())
+            if cdn_urls:
+                task["referenceImages"] = cdn_urls[:1]  # Max 1 for Google Imagen
+                log.info(f"Added {len(task['referenceImages'])} reference CDN URLs for Google Imagen")
         else:
             # For other models, reference images are NOT supported via referenceImages
             # They would need ControlNet with specific preprocessed guide images
