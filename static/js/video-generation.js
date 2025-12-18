@@ -3825,13 +3825,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       if (i2vSection) i2vSection.style.display = 'block';
       if (t2vSection) t2vSection.style.display = 'none';
     } else {
-      // T2V: показываем секцию референсных изображений
+      // T2V: скрываем референсные изображения
       if (i2vSection) i2vSection.style.display = 'none';
-      if (t2vSection) {
-        // Показываем только если модель поддерживает frameImages
-        const show = this.selectedModel && this.currentModelSupportsFrameImages();
-        t2vSection.style.display = show ? 'block' : 'none';
-      }
+      if (t2vSection) t2vSection.style.display = 'none';
     }
   }
 
