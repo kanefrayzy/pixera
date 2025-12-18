@@ -325,7 +325,7 @@
       <div class="mt-2 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 text-xs text-[var(--muted)]">
         Результаты (фото) хранятся локально 24 часа. По истечении срока очередь очищается автоматически. Данные не покидают ваш браузер.
       </div>
-      <div id="image-results-grid" class="mt-4 grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3"></div>
+      <div id="image-results-grid" class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3"></div>
     `;
     if (placeholder) {
       placeholder.appendChild(card);
