@@ -3276,10 +3276,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       console.log('[video-gen] Balance update skipped:', e.message);
     }
 
-    // Умное масштабирование с aspect-ratio 16:9 (выше на мобилке)
+    // Умное масштабирование: на мобилке выше, на ПК 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="aspect-ratio: 9/13; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;"
+      <div class="video-tile-container" style="aspect-ratio: 4/5; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;"
         <!-- Видео -->
         <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
                preload="metadata"
