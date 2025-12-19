@@ -267,7 +267,7 @@
         // Скрыть/показать кнопки "Скрыть/Показать" в зависимости от приватности
         const hideToggles = document.querySelectorAll('.hide-toggle');
         hideToggles.forEach(btn => {
-          const container = btn.closest('div.mt-2, div.pt-3');
+          const container = btn.closest('div.mt-2, div.mb-2, div.pt-3');
           if (container) {
             if (data.is_private) {
               container.style.display = 'none';
