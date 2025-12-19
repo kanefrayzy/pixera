@@ -571,13 +571,13 @@
           <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
           </svg>
-          <span class="save-btn-text">Добавлено</span>
+          <span class="save-btn-text">Сохранен</span>
         `;
         btn.disabled = true;
         btn.style.opacity = '0.7';
         btn.style.pointerEvents = 'none';
         btn.style.animation = 'pulse 0.6s ease-in-out';
-        btn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Добавлено в галерею');
+        btn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Сохранен в галерею');
         // brief success pulse
         try { setTimeout(()=> { if(btn.style) btn.style.animation = ''; }, 600); } catch(_) {}
       }
