@@ -373,35 +373,14 @@
           backface-visibility: hidden;
         }
 
-        /* Кнопка удаления */
-        .image-tile-remove {
-          position: absolute;
-          top: 0.5rem;
-          left: 0.5rem;
-          z-index: 30;
-          width: 2.25rem;
-          height: 2.25rem;
-          border-radius: 50%;
-          background: rgba(220, 38, 38, 0.85);
-          backdrop-filter: blur(8px);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          touch-action: manipulation;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .image-tile-remove:hover {
-          background: rgba(220, 38, 38, 1);
+        /* Кнопки */
+        .image-tile-remove:hover,
+        .persist-btn:hover {
           transform: scale(1.1);
-          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
         }
 
-        .image-tile-remove:active {
+        .image-tile-remove:active,
+        .persist-btn:active {
           transform: scale(0.95);
         }
       `;
@@ -780,33 +759,22 @@
     }
 
     tile.innerHTML = `
-      <div class="relative aspect-square bg-black group overflow-hidden rounded-xl">
-        <img data-src="${imageUrl}" alt="Результат" loading="lazy" decoding="async" fetchpriority="low" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
-
-        <!-- Overlay gradient for better button visibility -->
-        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative aspect-square bg-black overflow-hidden rounded-xl">
+        <img data-src="${imageUrl}" alt="Результат" loading="lazy" decoding="async" fetchpriority="low" class="absolute inset-0 w-full h-full object-cover"/>
 
         <!-- Кнопка удаления (верхний левый угол) -->
-        <button type="button" class="image-tile-remove" aria-label="Удалить">
+        <button type="button" class="image-tile-remove" aria-label="Удалить" style="position: absolute; top: 0.5rem; left: 0.5rem; z-index: 30; width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(220, 38, 38, 0.9); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
           <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
 
-        <!-- Кнопка открыть (верхний правый угол) -->
-        <a href="${imageUrl}" target="_blank" 
-           class="absolute top-2 right-2 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/80 hover:scale-110 transition-all duration-200 flex items-center justify-center shadow-lg"
-           aria-label="Открыть в новой вкладке">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-          </svg>
-        </a>
-
         <!-- Кнопка сохранить (нижний правый угол) -->
         <button type="button" 
-                class="persist-btn absolute bottom-2 right-2 z-20 w-9 h-9 rounded-full bg-primary/90 backdrop-blur-md text-white hover:bg-primary hover:scale-110 transition-all duration-200 flex items-center justify-center shadow-lg"
-                aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки'}">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                class="persist-btn" 
+                aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки'}"
+                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
         </button>

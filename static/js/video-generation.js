@@ -918,54 +918,15 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           backface-visibility: hidden;
         }
 
-        /* Кнопка удаления */
-        .video-tile-remove {
-          position: absolute;
-          top: 0.5rem;
-          left: 0.5rem;
-          z-index: 30;
-          width: 2.25rem;
-          height: 2.25rem;
-          border-radius: 50%;
-          background: rgba(220, 38, 38, 0.85);
-          backdrop-filter: blur(8px);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          touch-action: manipulation;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .video-tile-remove:hover {
-          background: rgba(220, 38, 38, 1);
-          transform: scale(1.1);
-          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-        }
-
-        .video-tile-remove:active {
-          transform: scale(0.95);
-        }
-        
-        /* Hover эффект для кнопок на видео */
-        .video-open-btn:hover,
-        .volume-toggle-btn:hover {
-          background: rgba(0, 0, 0, 0.8);
-          transform: scale(1.1);
-        }
-        
+        /* Кнопки */
+        .video-tile-remove:hover,
         .persist-btn:hover {
-          background: rgba(var(--primary-rgb, 99, 102, 241), 1) !important;
           transform: scale(1.1);
-          box-shadow: 0 4px 12px rgba(var(--primary-rgb, 99, 102, 241), 0.4) !important;
         }
-        
-        .play-btn-inner:hover {
-          background: rgba(0, 0, 0, 0.8) !important;
-          transform: scale(1.1);
+
+        .video-tile-remove:active,
+        .persist-btn:active {
+          transform: scale(0.95);
         }
       `;
       try { document.head.appendChild(st); } catch (_) { }
@@ -3212,19 +3173,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Умное масштабирование с aspect-ratio 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container group" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
-        <!-- Overlay gradient for better button visibility -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.4), transparent 40%, rgba(0,0,0,0.2)); opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 5;" class="video-overlay"></div>
-
-        <!-- Кнопка удаления (верхний левый угол) -->
-        <button type="button" class="video-tile-remove" aria-label="Удалить">
-          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-
+      <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
         <!-- Видео -->
-        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; transition: transform 0.3s;"
+        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
                preload="metadata"
                loop
                muted
@@ -3234,49 +3185,19 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           Ваш браузер не поддерживает видео.
         </video>
 
-        <!-- Кнопка Play - центр -->
-        <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; opacity: 1; transition: opacity 0.2s; background: none; border: none; padding: 0; touch-action: manipulation;">
-          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; border-radius: 50%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s; cursor: pointer;">
-            <svg class="play-icon" style="width: 1.25rem; height: 1.25rem; margin-left: 0.15rem;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-            <svg class="pause-icon" style="width: 1.25rem; height: 1.25rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-            </svg>
-          </span>
-        </button>
-
-        <!-- Кнопка открыть (верхний правый угол) -->
-        <a href="${videoUrl}" target="_blank" 
-           style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" 
-           class="video-open-btn"
-           aria-label="Открыть">
-          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-          </svg>
-        </a>
-
-        <!-- Кнопка звука (нижний левый угол) -->
-        <button type="button" class="volume-toggle-btn" 
-                style="position: absolute; bottom: 0.5rem; left: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" 
-                aria-label="Звук">
-          <svg class="volume-icon-off" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-            <line x1="23" y1="9" x2="17" y2="15"/>
-            <line x1="17" y1="9" x2="23" y2="15"/>
-          </svg>
-          <svg class="volume-icon-on" style="width: 0.875rem; height: 0.875rem; display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        <!-- Кнопка удаления (верхний левый угол) -->
+        <button type="button" class="video-tile-remove" aria-label="Удалить" style="position: absolute; top: 0.5rem; left: 0.5rem; z-index: 30; width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(220, 38, 38, 0.9); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
 
         <!-- Кнопка сохранить (нижний правый угол) -->
         <button type="button" 
                 class="persist-btn" 
-                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); backdrop-filter: blur(8px); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"
-                aria-label="${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}">
-          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                aria-label="${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}"
+                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
         </button>
@@ -3314,93 +3235,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       } catch (_) { }
     }
 
-    // Download functionality removed for mobile optimization
-
-    // Volume toggle functionality (simple mute/unmute button)
+    // Simple click to play/pause video
     try {
-      const volumeToggle = tile.querySelector('.volume-toggle-btn');
-      const volumeIconOn = tile.querySelector('.volume-icon-on');
-      const volumeIconOff = tile.querySelector('.volume-icon-off');
-
-      if (videoEl && volumeToggle) {
-        // Video starts muted
-        videoEl.muted = true;
-        videoEl.volume = 0.7;
-
-        // Toggle mute on click
-        volumeToggle.addEventListener('click', (e) => {
-          e.stopPropagation();
-          videoEl.muted = !videoEl.muted;
-          if (volumeIconOn && volumeIconOff) {
-            if (videoEl.muted) {
-              volumeIconOn.style.display = 'none';
-              volumeIconOff.style.display = 'block';
-            } else {
-              volumeIconOn.style.display = 'block';
-              volumeIconOff.style.display = 'none';
-            }
-          }
-        });
-      }
-    } catch (_) { }
-
-    // Play/pause logic with centered button
-    try {
-      const playBtn = tile.querySelector('.video-play-btn');
-      const playBtnInner = playBtn?.querySelector('.play-btn-inner');
-      const playIcon = playBtn?.querySelector('.play-icon');
-      const pauseIcon = playBtn?.querySelector('.pause-icon');
-
-      if (videoEl && playBtn) {
-        // Update button icons based on video state
-        const updatePlayButton = () => {
-          if (videoEl.paused) {
-            if (playIcon) playIcon.style.display = 'block';
-            if (pauseIcon) pauseIcon.style.display = 'none';
-            if (playBtnInner) playBtnInner.style.opacity = '1';
-          } else {
-            if (playIcon) playIcon.style.display = 'none';
-            if (pauseIcon) pauseIcon.style.display = 'block';
-            // Hide button inner after short delay when playing
-            setTimeout(() => {
-              if (!videoEl.paused && playBtnInner) {
-                playBtnInner.style.opacity = '0';
-              }
-            }, 1500);
-          }
-        };
-
-        videoEl.addEventListener('play', updatePlayButton);
-        videoEl.addEventListener('pause', updatePlayButton);
-        videoEl.addEventListener('ended', updatePlayButton);
-
-        // Show overlay and button on hover
-        const overlay = tile.querySelector('.video-overlay');
-        tile.addEventListener('mouseenter', () => {
-          if (playBtnInner) playBtnInner.style.opacity = '1';
-          if (overlay) overlay.style.opacity = '1';
-        });
-        tile.addEventListener('mouseleave', () => {
-          if (!videoEl.paused && playBtnInner) {
-            playBtnInner.style.opacity = '0';
-          }
-          if (overlay && !videoEl.paused) overlay.style.opacity = '0';
-        });
-
-        // Toggle play/pause on button click
-        playBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (videoEl.paused) {
-            const p = videoEl.play();
-            if (p && typeof p.catch === 'function') {
-              p.catch(() => { /* autoplay policy errors ignored */ });
-            }
-          } else {
-            videoEl.pause();
-          }
-        });
-
-        // Also toggle on video click
+      if (videoEl) {
         videoEl.addEventListener('click', (e) => {
           e.stopPropagation();
           if (videoEl.paused) {
@@ -3412,9 +3249,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             videoEl.pause();
           }
         });
-
-        // Initial state
-        updatePlayButton();
       }
     } catch (_) { }
 
