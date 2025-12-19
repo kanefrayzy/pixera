@@ -383,6 +383,20 @@
         .persist-btn:active {
           transform: scale(0.95);
         }
+        
+        /* Мобильные стили */
+        @media (max-width: 640px) {
+          .image-tile-remove,
+          .image-result-tile .persist-btn {
+            width: 2.25rem !important;
+            height: 2.25rem !important;
+          }
+          .image-tile-remove svg,
+          .image-result-tile .persist-btn svg {
+            width: 1rem !important;
+            height: 1rem !important;
+          }
+        }
       `;
       try { document.head.appendChild(st); } catch(_) {}
     }
@@ -773,7 +787,7 @@
         <button type="button" 
                 class="persist-btn" 
                 aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки'}"
-                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
           <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
