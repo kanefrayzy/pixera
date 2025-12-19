@@ -272,7 +272,7 @@
     const slider = card.querySelector('.vid-vol');
     if (video){
       const saved = getSavedVol();
-      if (saved !== null){ video.volume = saved/100; if (saved>0) video.muted = false; }
+      if (saved !== null){ video.volume = saved/100; /* Звук всегда выключен по умолчанию */ }
       if (btn) markBtnState(btn, video);
       if (slider){ slider.value = saved!==null?saved:Math.round((video.volume||0.6)*100); }
       video.addEventListener('ended', ()=> setPlaying(card,false));
