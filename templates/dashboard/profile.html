@@ -2326,6 +2326,12 @@ video:not([controls]):hover ~ .video-play-overlay {
   if (!root) return;
 
   try {
+    // Автозапуск всех видео при загрузке (muted для autoplay policy)
+    root.querySelectorAll('video').forEach(video => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+
     const autoplayObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const video = entry.target;
