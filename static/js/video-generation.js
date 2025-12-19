@@ -3123,10 +3123,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
         <!-- Видео -->
         <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
-               preload="auto"
+               preload="metadata"
                loop
                muted
-               playsinline>
+               playsinline
+               poster="${videoUrl}#t=0.1">
+          <source src="${videoUrl}" type="video/mp4">
           Ваш браузер не поддерживает видео.
         </video>
 
@@ -3182,8 +3184,25 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Немедленно загружаем видео и устанавливаем src
     if (videoEl && videoUrl) {
       try {
-        videoEl.src = videoUrl;
+        // Устанавливаем источник через source элемент (уже есть в innerHTML)
+        // Загружаем метаданные для отображения первого кадра
         videoEl.load();
+
+        // Принудительно загружаем первый кадр для превью
+        videoEl.addEventListener('loadedmetadata', () => {
+          try {
+            videoEl.currentTime = 0.1;
+          } catch(_) {}
+        }, { once: true });
+
+        // Убираем черный экран после загрузки
+        videoEl.addEventListener('loadeddata', () => {
+          try {
+            if (videoEl.style) {
+              videoEl.style.opacity = '1';
+            }
+          } catch(_) {}
+        }, { once: true });
       } catch (_) { }
     }
 
