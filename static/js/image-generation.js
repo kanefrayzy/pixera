@@ -411,8 +411,8 @@
         /* Мобильные стили */
         @media (max-width: 640px) {
           .image-tile-remove {
-            width: 2rem !important;
-            height: 2rem !important;
+            width: 1.5rem !important;
+            height: 1.5rem !important;
           }
           .image-tile-remove svg {
             width: 1rem !important;

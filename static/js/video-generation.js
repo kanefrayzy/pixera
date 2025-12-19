@@ -923,12 +923,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
         /* Адаптивный aspect ratio: выше на мобилке, 16:9 на ПК */
         .video-tile-container {
-          aspect-ratio: 9/16;
+          aspect-ratio: 9/16 !important;
         }
 
         @media (min-width: 641px) {
           .video-tile-container {
-            aspect-ratio: 16/9;
+            aspect-ratio: 16/9 !important;
           }
         }
 
