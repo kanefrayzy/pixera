@@ -881,9 +881,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           backface-visibility: hidden;
         }
 
-        /* Адаптивный aspect ratio: выше на мобилке, 16:9 на ПК */
+        /* Адаптивный aspect ratio: квадрат на мобилке (как фото), 16:9 на ПК */
         .video-tile-container {
-          aspect-ratio: 9/16 !important;
+          aspect-ratio: 1/1 !important;
         }
 
         @media (min-width: 641px) {
