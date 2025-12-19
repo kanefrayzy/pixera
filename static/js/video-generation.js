@@ -841,6 +841,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     const wrap = document.getElementById('video-form-container');
     if (!wrap) return;
 
+    // Всегда обновляем стили (перед проверкой существования grid)
+    this.ensureVideoQueueStyles();
+
     // If grid already exists (создан ранее), обновим его классы сетки под новую компоновку и выйдем
     const existingGrid = document.getElementById('video-results-grid');
     if (existingGrid) {
