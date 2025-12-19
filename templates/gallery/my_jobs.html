@@ -1821,6 +1821,7 @@ data-count-target="save-count-{{ p.id }}"
                   </div>
                 {% endif %}
 
+                {% if can_manage_jobs and not show_only_published and not c.pub %}
                   <!-- Share Button -->
                   <a class="btn btn-primary w-full text-sm flex items-center justify-center gap-2"
                      href="{{ share_video_href }}"
