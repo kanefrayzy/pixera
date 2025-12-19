@@ -873,59 +873,81 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       <div class="mt-2 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 text-xs text-[var(--muted)]">
         Результаты (видео) хранятся локально 24 часа. По истечении срока очередь очищается автоматически. Данные не покидают ваш браузер.
       </div>
-      <div id="video-results-grid" class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"></div>
+      <div id="video-results-grid" class="mt-4 grid gap-3"></div>
     `;
 
     // Insert after prompts/showcase blocks within video form container
     wrap.appendChild(card);
-    // Lightweight performance styles for offscreen results
+    // Оптимизация производительности
     if (!document.getElementById('video-queue-perf-style')) {
       const st = document.createElement('style');
       st.id = 'video-queue-perf-style';
       st.textContent = `
-        #video-results-grid{content-visibility:auto;contain-intrinsic-size:800px}
-      `;
-      try { document.head.appendChild(st); } catch (_) { }
-    }
-    // Принудительно задаём компактную сетку через ID-селектор (обходит отсутствие новых классов в Tailwind)
-    // Увеличенные карточки на 25%: minmax(300px, 1fr) для более крупного отображения видео
-    if (!document.getElementById('video-queue-compact-style')) {
-      const st2 = document.createElement('style');
-      st2.id = 'video-queue-compact-style';
-      st2.textContent = `
+        /* Фиксированный размер карточек для всех устройств */
         #video-results-grid {
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 1rem;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 0.75rem;
+          contain: layout style;
         }
-        /* Responsive: на средних экранах */
-        @media (max-width: 768px) {
-          #video-results-grid {
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 0.75rem;
-          }
-        }
-        /* Responsive: на маленьких экранах */
+        
+        /* Телефоны: 2 карточки */
         @media (max-width: 640px) {
           #video-results-grid {
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 0.5rem;
           }
         }
-        /* Responsive: на очень маленьких экранах */
-        @media (max-width: 480px) {
+        
+        /* ПК: автоматическое заполнение */
+        @media (min-width: 641px) {
           #video-results-grid {
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 0.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
           }
         }
-        @media (max-width: 380px) {
-          #video-results-grid {
-            grid-template-columns: 1fr;
-            gap: 0.5rem;
-          }
+        
+        /* Оптимизация производительности */
+        .video-result-tile {
+          content-visibility: auto;
+          contain-intrinsic-size: 280px 200px;
+          will-change: auto;
+        }
+        
+        .video-result-tile video {
+          transform: translateZ(0);
+          backface-visibility: hidden;
+        }
+        
+        /* Кнопка удаления */
+        .video-tile-remove {
+          position: absolute;
+          top: 0.5rem;
+          left: 0.5rem;
+          z-index: 30;
+          width: 2rem;
+          height: 2rem;
+          border-radius: 50%;
+          background: rgba(220, 38, 38, 0.9);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          touch-action: manipulation;
+        }
+        
+        .video-tile-remove:hover {
+          background: rgba(220, 38, 38, 1);
+          transform: scale(1.1);
+        }
+        
+        .video-tile-remove:active {
+          transform: scale(0.95);
         }
       `;
-      try { document.head.appendChild(st2); } catch (_) { }
+      try { document.head.appendChild(st); } catch (_) { }
     }
 
     // Bind clear button to clear queue and remove UI immediately
@@ -2899,6 +2921,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: ${hasPreview ? '#000' : 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-2) 100%)'}; border-radius: 0.75rem;">
         ${hasPreview ? `<img src="${pic}" alt="Источник" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">` : ''}
 
+        <!-- Кнопка удаления -->
+        <button type="button" class="video-tile-remove" aria-label="Удалить">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+
         <!-- Loader overlay -->
         <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem; z-index: 10;">
           <div class="puzzle-grid" style="position: relative; width: 6rem; height: 6rem;">
@@ -3056,6 +3085,35 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       try { document.head.appendChild(style); } catch (_) { }
     }
 
+    // Обработчик удаления для pending tile
+    try {
+      const removeBtn = tile.querySelector('.video-tile-remove');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          // Анимация удаления
+          tile.style.transition = 'all 0.3s ease';
+          tile.style.transform = 'scale(0.8)';
+          tile.style.opacity = '0';
+          
+          setTimeout(() => {
+            try {
+              tile.remove();
+              
+              // Проверяем, остались ли карточки
+              const grid = document.getElementById('video-results-grid');
+              if (grid && !grid.querySelector('.video-result-tile')) {
+                const card = document.getElementById('video-queue-card');
+                if (card) card.remove();
+              }
+            } catch(_) {}
+          }, 300);
+        });
+      }
+    } catch(_) {}
+
     return tile;
   }
 
@@ -3121,6 +3179,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
       <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
+        <!-- Кнопка удаления -->
+        <button type="button" class="video-tile-remove" aria-label="Удалить">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+        
         <!-- Видео -->
         <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
                preload="metadata"
@@ -3309,6 +3374,42 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Best-effort cache persisted/stream URL
     try { this.cacheAsset(videoUrl); } catch (_) { }
+
+    // Обработчик удаления карточки
+    try {
+      const removeBtn = tile.querySelector('.video-tile-remove');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          // Удаляем из очереди
+          if (jobId) {
+            try {
+              this.removeFromQueue(String(jobId));
+            } catch(_) {}
+          }
+          
+          // Анимация удаления
+          tile.style.transition = 'all 0.3s ease';
+          tile.style.transform = 'scale(0.8)';
+          tile.style.opacity = '0';
+          
+          setTimeout(() => {
+            try {
+              tile.remove();
+              
+              // Проверяем, остались ли карточки
+              const grid = document.getElementById('video-results-grid');
+              if (grid && !grid.querySelector('.video-result-tile')) {
+                const card = document.getElementById('video-queue-card');
+                if (card) card.remove();
+              }
+            } catch(_) {}
+          }, 300);
+        });
+      }
+    } catch(_) {}
 
     // If already persisted earlier, lock the button state on render
     try {
