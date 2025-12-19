@@ -1215,16 +1215,6 @@ video::-webkit-media-controls-volume-slider {
   filter: brightness(1.2);
 }
 
-/* Всегда показывать контролы видео */
-video::-webkit-media-controls {
-  opacity: 1 !important;
-}
-
-video::-webkit-media-controls-panel {
-  opacity: 1 !important;
-  display: flex !important;
-}
-
 /* Video play overlay */
 .video-play-overlay {
   transition: opacity 0.2s ease;
@@ -2091,7 +2081,7 @@ video[controls] + .video-play-overlay {
   async function openVideo(detailUrl, videoUrl, poster, author){
     currentDetailUrl = detailUrl || '';
     openModal();
-    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline controlsList="nodownload"><source src="'+videoUrl+'" type="video/mp4"></video>';
+    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline><source src="'+videoUrl+'" type="video/mp4"></video>';
     // Fill author (from card)
     const auth = document.getElementById('pfModalAuthor');
     if (auth){
