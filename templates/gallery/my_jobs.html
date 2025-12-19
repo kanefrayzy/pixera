@@ -1799,9 +1799,10 @@ data-count-target="save-count-{{ p.id }}"
                   {% endif %}
                 </div>
 
-                <!-- DEBUG: my_profile_is_private={{ my_profile_is_private }}, can_manage_jobs={{ can_manage_jobs }}, show_only_published={{ show_only_published }}, c.pub={{ c.pub }} -->
                 {% if can_manage_jobs and not show_only_published and not c.pub and not my_profile_is_private %}
-                  <div class="mb-2">
+              {% if profile_header and target_profile and target_profile.is_private %}
+              {% else %}
+              <div class="mb-2">
                   <!-- Hide/Show Toggle -->
                   <button type="button" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-[var(--bord)] hover:bg-black/[.04] dark:hover:bg-white/10 transition hide-toggle"
                           data-job-id="{{ j.id }}"
@@ -1819,7 +1820,8 @@ data-count-target="save-count-{{ p.id }}"
                       <span data-hide-knob class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all {% if hidden_job_ids and j.id in hidden_job_ids %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
                     </span>
                   </button>
-                  </div>
+              </div>
+              {% endif %}
                 {% endif %}
 
                 {% if can_manage_jobs and not show_only_published and not c.pub %}
