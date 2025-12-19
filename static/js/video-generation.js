@@ -921,10 +921,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           backface-visibility: hidden;
         }
 
-        /* Адаптивный aspect ratio: вертикальный на мобилке, горизонтальный на ПК */
+        /* Адаптивный aspect ratio: выше на мобилке, 16:9 на ПК */
+        .video-tile-container {
+          aspect-ratio: 4/5;
+        }
+
         @media (min-width: 641px) {
           .video-tile-container {
-            aspect-ratio: 16/9 !important;
+            aspect-ratio: 16/9;
           }
         }
 
@@ -3279,7 +3283,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Умное масштабирование: на мобилке выше, на ПК 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="aspect-ratio: 4/5; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;"
+      <div class="video-tile-container" style="position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;"
         <!-- Видео -->
         <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
                preload="metadata"
