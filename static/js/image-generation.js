@@ -288,7 +288,7 @@
         const grid = document.getElementById('image-results-grid');
         if (grid) {
           if (removed.size) {
-            grid.querySelectorAll('.gen-result-tile').forEach(tile => {
+            grid.querySelectorAll('.image-result-tile').forEach(tile => {
               const jid = tile && tile.dataset ? tile.dataset.jobId : null;
               if (jid && removed.has(String(jid))) {
                 try { tile.remove(); } catch(_) {}
@@ -296,7 +296,7 @@
             });
           }
           // If no tiles left, remove the whole card until next generation
-          if (!grid.querySelector('.gen-result-tile')) {
+          if (!grid.querySelector('.image-result-tile')) {
             const card = document.getElementById('image-queue-card');
             if (card) { try { card.remove(); } catch(_) {} }
           }
@@ -333,18 +333,77 @@
       host.appendChild(card);
     }
     try { console.log('[image-gen] queue UI created'); } catch(_) {}
-    // Load unified queue styles
-    if (!document.getElementById('gen-queue-styles')) {
-      const link = document.createElement('link');
-      link.id = 'gen-queue-styles';
-      link.rel = 'stylesheet';
-      link.href = '/static/css/generation-queue.css';
-      try { document.head.appendChild(link); } catch(_) {}
-    }
+    // Оптимизация производительности и фиксированный размер карточек
+    if (!document.getElementById('image-queue-perf-style')) {
+      const st = document.createElement('style');
+      st.id = 'image-queue-perf-style';
+      st.textContent = `
+        /* Фиксированный размер карточек для всех устройств */
+        #image-results-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 0.75rem;
+          contain: layout style;
+        }
 
-    // Apply queue-grid class
-    const grid = document.getElementById('image-results-grid');
-    if (grid) { grid.className = 'queue-grid'; }
+        /* Телефоны: 2 карточки */
+        @media (max-width: 640px) {
+          #image-results-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+          }
+        }
+
+        /* ПК: автоматическое заполнение */
+        @media (min-width: 641px) {
+          #image-results-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          }
+        }
+
+        /* Оптимизация производительности */
+        .image-result-tile {
+          content-visibility: auto;
+          contain-intrinsic-size: 200px 250px;
+          will-change: auto;
+        }
+
+        .image-result-tile img {
+          transform: translateZ(0);
+          backface-visibility: hidden;
+        }
+
+        /* Кнопка удаления */
+        .image-tile-remove {
+          position: absolute;
+          top: 0.5rem;
+          left: 0.5rem;
+          z-index: 30;
+          width: 2rem;
+          height: 2rem;
+          border-radius: 50%;
+          background: rgba(220, 38, 38, 0.9);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          touch-action: manipulation;
+        }
+
+        .image-tile-remove:hover {
+          background: rgba(220, 38, 38, 1);
+          transform: scale(1.1);
+        }
+
+        .image-tile-remove:active {
+          transform: scale(0.95);
+        }
+      `;
+      try { document.head.appendChild(st); } catch(_) {}
+    }
 
     card.querySelector('#clear-image-queue-btn')?.addEventListener('click', async () => {
       try { console.log('[image-gen] clear clicked; queue size=', (queue||[]).length); } catch(_) {}
@@ -359,7 +418,7 @@
       clearedAt = Date.now();
       saveClearedAt(clearedAt);
       // wipe DOM
-      card.querySelectorAll('.gen-result-tile').forEach(el => { try { el.remove(); } catch(_) {} });
+      card.querySelectorAll('.image-result-tile').forEach(el => { try { el.remove(); } catch(_) {} });
       // clear state
       queue = [];
       saveQueue(queue);
@@ -372,7 +431,7 @@
       // Persist to "Мои генерации"
       const pbtn = e.target.closest('.persist-btn');
       if (pbtn) {
-        const tile = pbtn.closest('.gen-result-tile');
+        const tile = pbtn.closest('.image-result-tile');
         const jid = tile && tile.dataset ? tile.dataset.jobId : null;
         if (jid) { persistJob(String(jid), pbtn); }
         return;
@@ -381,7 +440,7 @@
       // Remove tile from queue UI
       const btn = e.target.closest('.tile-remove-btn');
       if (!btn) return;
-      const tile = btn.closest('.gen-result-tile');
+      const tile = btn.closest('.image-result-tile');
       if (!tile) return;
       const jid = tile.dataset.jobId;
       if (jid) {
@@ -479,44 +538,132 @@
   // Tiles
   function createPendingTile() {
     const tile = document.createElement('div');
-    tile.className = 'gen-result-tile animate-fade-in-scale';
+    tile.className = 'image-result-tile rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden shadow-sm';
     tile.setAttribute('data-status','pending');
     tile.innerHTML = `
-      <div class="gen-media-container">
-        <!-- Delete Button -->
-        <button type="button" class="gen-btn gen-btn-sm gen-delete-btn" aria-label="Удалить">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <div class="relative aspect-square group bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-2)]">
+        <!-- Кнопка удаления -->
+        <button type="button" class="image-tile-remove" aria-label="Удалить">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
 
-        <!-- Loader Overlay -->
-        <div class="gen-pending-loader">
-          <div class="puzzle-grid">
-            <div class="puzzle-piece" style="--delay: 0s"></div>
-            <div class="puzzle-piece" style="--delay: 0.1s"></div>
-            <div class="puzzle-piece" style="--delay: 0.2s"></div>
-            <div class="puzzle-piece" style="--delay: 0.3s"></div>
-            <div class="puzzle-piece" style="--delay: 0.4s"></div>
-            <div class="puzzle-piece" style="--delay: 0.5s"></div>
-            <div class="puzzle-piece" style="--delay: 0.6s"></div>
-            <div class="puzzle-piece" style="--delay: 0.7s"></div>
-            <div class="puzzle-piece" style="--delay: 0.8s"></div>
+        <!-- Premium Puzzle Loader -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
+          <!-- Puzzle Grid Container -->
+          <div class="puzzle-grid relative w-24 h-24 sm:w-28 sm:h-28">
+            <!-- Puzzle pieces (3x3 grid) -->
+            <div class="puzzle-piece puzzle-p1" style="--delay: 0s"></div>
+            <div class="puzzle-piece puzzle-p2" style="--delay: 0.1s"></div>
+            <div class="puzzle-piece puzzle-p3" style="--delay: 0.2s"></div>
+            <div class="puzzle-piece puzzle-p4" style="--delay: 0.3s"></div>
+            <div class="puzzle-piece puzzle-p5" style="--delay: 0.4s"></div>
+            <div class="puzzle-piece puzzle-p6" style="--delay: 0.5s"></div>
+            <div class="puzzle-piece puzzle-p7" style="--delay: 0.6s"></div>
+            <div class="puzzle-piece puzzle-p8" style="--delay: 0.7s"></div>
+            <div class="puzzle-piece puzzle-p9" style="--delay: 0.8s"></div>
           </div>
-          <div class="gen-pending-text">
-            <div class="gen-pending-phase" data-role="tile-phase">Создаём магию…</div>
-            <div class="gen-pending-status" data-role="tile-status">Подготовка</div>
+
+          <!-- Status Text -->
+          <div class="text-center">
+            <div class="text-sm sm:text-base font-semibold text-[var(--text)] mb-1" data-role="tile-phase">Создаём магию…</div>
+            <div class="text-xs sm:text-sm text-[var(--muted)]" data-role="tile-status">Подготовка</div>
           </div>
         </div>
 
-        <!-- Shimmer Effect -->
-        <div class="gen-shimmer"></div>
+        <!-- Animated gradient overlay -->
+        <div class="absolute inset-0 opacity-20 pointer-events-none">
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shimmer"></div>
+        </div>
       </div>
     `;
 
+    // Inject puzzle animation styles if not already present
+    if (!document.getElementById('puzzle-loader-styles')) {
+      const style = document.createElement('style');
+      style.id = 'puzzle-loader-styles';
+      style.textContent = `
+        /* Puzzle Grid Layout */
+        .puzzle-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          grid-template-rows: repeat(3, 1fr);
+          gap: 2px;
+        }
+
+        /* Individual Puzzle Piece */
+        .puzzle-piece {
+          background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+          border-radius: 2px;
+          opacity: 0;
+          transform: scale(0) rotate(0deg);
+          animation: puzzlePop 1.2s ease-in-out infinite;
+          animation-delay: var(--delay);
+          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Light theme adjustments */
+        html[data-theme="light"] .puzzle-piece {
+          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Puzzle Pop Animation */
+        @keyframes puzzlePop {
+          0%, 100% {
+            opacity: 0;
+            transform: scale(0) rotate(0deg);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1) rotate(180deg);
+          }
+        }
+
+        /* Shimmer Effect */
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+          .puzzle-grid {
+            width: 80px !important;
+            height: 80px !important;
+            gap: 1.5px;
+          }
+        }
+
+        @media (max-width: 375px) {
+          .puzzle-grid {
+            width: 72px !important;
+            height: 72px !important;
+            gap: 1px;
+          }
+        }
+
+        @media (max-width: 320px) {
+          .puzzle-grid {
+            width: 64px !important;
+            height: 64px !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
     // Обработчик удаления для pending tile
     try {
-      const removeBtn = tile.querySelector('.gen-delete-btn');
+      const removeBtn = tile.querySelector('.image-tile-remove');
       if (removeBtn) {
         removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -533,7 +680,7 @@
 
               // Проверяем, остались ли карточки
               const grid = document.getElementById('image-results-grid');
-              if (grid && !grid.querySelector('.gen-result-tile')) {
+              if (grid && !grid.querySelector('.image-result-tile')) {
                 const card = document.getElementById('image-queue-card');
                 if (card) card.remove();
               }
@@ -600,34 +747,27 @@
       console.log('[image-gen] Balance update skipped:', e.message);
     }
 
-    const tooltipText = isAuth ? 'Сохранить в профиле' : 'Добавить в обработки';
-    
     tile.innerHTML = `
-      <div class="gen-media-container">
-        <img data-src="${imageUrl}" alt="Результат" loading="lazy" decoding="async" fetchpriority="low"/>
+      <div class="relative aspect-square bg-black group">
+        <img data-src="${imageUrl}" alt="Результат" loading="lazy" decoding="async" fetchpriority="low" class="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-[1.02]"/>
 
-        <!-- Delete Button -->
-        <button type="button" class="gen-btn gen-btn-sm gen-delete-btn" aria-label="Удалить">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <!-- Кнопка удаления -->
+        <button type="button" class="image-tile-remove" aria-label="Удалить">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
 
-        <!-- Open Button -->
-        <a href="${imageUrl}" target="_blank" class="gen-btn gen-btn-sm gen-open-btn" aria-label="Открыть">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-          </svg>
-        </a>
-
-        <!-- Action Bar with Persist -->
-        <div class="gen-action-bar">
-          <button type="button" class="gen-persist-btn persist-btn" data-tooltip="${tooltipText}" aria-label="${tooltipText}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        <div class="absolute top-2 right-2 img-tile-actions">
+          <a href="${imageUrl}" target="_blank" class="img-action w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 text-white hover:bg-black/80 transition flex items-center justify-center backdrop-blur-sm" aria-label="Открыть в новой вкладке">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
             </svg>
-          </button>
+          </a>
         </div>
+      </div>
+      <div class="p-2 sm:p-2.5 border-t border-[var(--bord)] bg-[var(--bg-card)]">
+        <button type="button" class="persist-btn w-full px-3 py-2 rounded-lg bg-primary/90 hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/30 text-white text-xs sm:text-sm font-medium transition">${isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</button>
       </div>
     `;
     try {
@@ -643,24 +783,19 @@
     // Best-effort cache
     try { cacheAsset(imageUrl); } catch(_){}
 
-    // If already persisted earlier, update button state
+    // If already persisted earlier, lock the button state on render
     try {
-      const pbtn = tile.querySelector('.gen-persist-btn');
+      const pbtn = tile.querySelector('.persist-btn');
       if (pbtn && jobId && persistedJobs && persistedJobs.has(String(jobId))) {
-        pbtn.classList.add('persisted');
+        pbtn.textContent = isAuth ? 'Сохранено в профиле' : 'Добавлено в обработки';
         pbtn.disabled = true;
-        pbtn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-          </svg>
-        `;
-        pbtn.setAttribute('data-tooltip', 'Сохранено');
+        pbtn.classList.add('opacity-70','pointer-events-none');
       }
     } catch(_) {}
 
     // Обработчик удаления карточки
     try {
-      const removeBtn = tile.querySelector('.gen-delete-btn');
+      const removeBtn = tile.querySelector('.image-tile-remove');
       if (removeBtn) {
         removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -686,7 +821,7 @@
 
               // Проверяем, остались ли карточки
               const grid = document.getElementById('image-results-grid');
-              if (grid && !grid.querySelector('.gen-result-tile')) {
+              if (grid && !grid.querySelector('.image-result-tile')) {
                 const card = document.getElementById('image-queue-card');
                 if (card) card.remove();
               }
