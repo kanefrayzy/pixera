@@ -956,12 +956,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         .volume-toggle-btn:active {
           transform: scale(0.95);
         }
-        
+
         .play-btn-inner:hover {
           background: rgba(0,0,0,0.85) !important;
           transform: scale(1.05);
         }
-        
+
         /* Мобильные стили */
         @media (max-width: 640px) {
           .video-tile-remove,
@@ -3496,14 +3496,17 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const pbtn = tile.querySelector('.vid-save-btn');
       if (pbtn && jobId && this.persistedJobs && this.persistedJobs.has(String(jobId))) {
-        // Change icon to checkmark for persisted state
-        pbtn.innerHTML = `<svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-        </svg>`;
+        // Change icon to checkmark with text for persisted state
+        pbtn.innerHTML = `
+          <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          <span class="save-btn-text">Сохранен</span>
+        `;
         pbtn.disabled = true;
         pbtn.style.opacity = '0.7';
         pbtn.style.pointerEvents = 'none';
-        pbtn.setAttribute('aria-label', this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки');
+        pbtn.setAttribute('aria-label', this.isAuthenticated ? 'Сохранено в профиле' : 'Сохранен в галерею');
       }
     } catch (_) { }
 

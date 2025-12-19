@@ -407,7 +407,7 @@
         .img-save-btn:active {
           transform: scale(0.95);
         }
-        
+
         /* Мобильные стили */
         @media (max-width: 640px) {
           .image-tile-remove {
@@ -862,8 +862,8 @@
         </button>
 
         <!-- Кнопка сохранить (нижний правый угол) -->
-        <button type="button" 
-                class="img-save-btn" 
+        <button type="button"
+                class="img-save-btn"
                 aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в галерею'}">
           <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -889,13 +889,16 @@
     try {
       const pbtn = tile.querySelector('.img-save-btn');
       if (pbtn && jobId && persistedJobs && persistedJobs.has(String(jobId))) {
-        // Change icon to checkmark for persisted state
-        pbtn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-        </svg>`;
+        // Change icon to checkmark with text for persisted state
+        pbtn.innerHTML = `
+          <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          <span class="save-btn-text">Сохранен</span>
+        `;
         pbtn.disabled = true;
         pbtn.classList.add('opacity-70','pointer-events-none');
-        pbtn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Добавлено в обработки');
+        pbtn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Сохранен в галерею');
       }
     } catch(_) {}
 
