@@ -1799,6 +1799,7 @@ data-count-target="save-count-{{ p.id }}"
                   {% endif %}
                 </div>
 
+                <!-- DEBUG: my_profile_is_private={{ my_profile_is_private }}, can_manage_jobs={{ can_manage_jobs }}, show_only_published={{ show_only_published }}, c.pub={{ c.pub }} -->
                 {% if can_manage_jobs and not show_only_published and not c.pub and not my_profile_is_private %}
                   <div class="mb-2">
                   <!-- Hide/Show Toggle -->
