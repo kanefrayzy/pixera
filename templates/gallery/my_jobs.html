@@ -2693,7 +2693,8 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
   // Simple click control for published grid videos (no overlays)
   (function(){
     const CONTAINER = '#published-grid-inner';
-    document.addEventListener('click', (e)=>{
+    document.addEventListener('click', (e)=>{\n      // Не перехватывать клики по ссылкам и кнопкам
+      if (e.target.closest('a, button')) return;
       const video = e.target.closest(CONTAINER + ' video');
       if (!video || video.hasAttribute('controls')) return;
       e.preventDefault();
@@ -2714,6 +2715,8 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
 (function(){
   const CONTAINER = '#videos-grid';
   document.addEventListener('click', (e)=>{
+    // Не перехватывать клики по ссылкам и кнопкам
+    if (e.target.closest('a, button')) return;
     const video = e.target.closest(CONTAINER + ' video');
     if (!video || video.hasAttribute('controls')) return;
     e.preventDefault();
