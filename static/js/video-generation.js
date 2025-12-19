@@ -878,77 +878,19 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Insert after prompts/showcase blocks within video form container
     wrap.appendChild(card);
-    // Оптимизация производительности
-    if (!document.getElementById('video-queue-perf-style')) {
-      const st = document.createElement('style');
-      st.id = 'video-queue-perf-style';
-      st.textContent = `
-        /* Фиксированный размер карточек для всех устройств */
-        #video-results-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 0.75rem;
-          contain: layout style;
-        }
-        
-        /* Телефоны: 2 карточки */
-        @media (max-width: 640px) {
-          #video-results-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem;
-          }
-        }
-        
-        /* ПК: автоматическое заполнение */
-        @media (min-width: 641px) {
-          #video-results-grid {
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          }
-        }
-        
-        /* Оптимизация производительности */
-        .video-result-tile {
-          content-visibility: auto;
-          contain-intrinsic-size: 280px 200px;
-          will-change: auto;
-        }
-        
-        .video-result-tile video {
-          transform: translateZ(0);
-          backface-visibility: hidden;
-        }
-        
-        /* Кнопка удаления */
-        .video-tile-remove {
-          position: absolute;
-          top: 0.5rem;
-          left: 0.5rem;
-          z-index: 30;
-          width: 2rem;
-          height: 2rem;
-          border-radius: 50%;
-          background: rgba(220, 38, 38, 0.9);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-          touch-action: manipulation;
-        }
-        
-        .video-tile-remove:hover {
-          background: rgba(220, 38, 38, 1);
-          transform: scale(1.1);
-        }
-        
-        .video-tile-remove:active {
-          transform: scale(0.95);
-        }
-      `;
-      try { document.head.appendChild(st); } catch (_) { }
+    
+    // Load unified queue styles
+    if (!document.getElementById('gen-queue-styles')) {
+      const link = document.createElement('link');
+      link.id = 'gen-queue-styles';
+      link.rel = 'stylesheet';
+      link.href = '/static/css/generation-queue.css';
+      try { document.head.appendChild(link); } catch(_) {}
     }
+
+    // Apply queue-grid class
+    const grid = document.getElementById('video-results-grid');
+    if (grid) { grid.className = 'queue-grid'; }
 
     // Bind clear button to clear queue and remove UI immediately
     const clearBtn = card.querySelector('#clear-video-queue-btn');
@@ -1060,14 +1002,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         // Remove tiles for purged jobs
         const grid = document.getElementById('video-results-grid');
         if (grid && removed.size) {
-          grid.querySelectorAll('.video-result-tile').forEach(tile => {
+          grid.querySelectorAll('.gen-result-tile').forEach(tile => {
             const jid = tile && tile.dataset ? tile.dataset.jobId : null;
             if (jid && removed.has(String(jid))) {
               try { tile.remove(); } catch (_) { }
             }
           });
           // If grid is empty, hide the card until next generation
-          if (!grid.querySelector('.video-result-tile')) {
+          if (!grid.querySelector('.gen-result-tile')) {
             const card = document.getElementById('video-queue-card');
             if (card) { try { card.remove(); } catch (_) { } }
           }
@@ -1205,7 +1147,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
       // 3) Удаляем из DOM все плитки (и pending, и done)
       if (grid) {
-        grid.querySelectorAll('.video-result-tile').forEach(el => {
+        grid.querySelectorAll('.gen-result-tile').forEach(el => {
           try { if (el.isConnected) el.remove(); } catch (_) { }
         });
       }
@@ -2062,7 +2004,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         // Persist to "Мои генерации"
         const pbtn = e.target.closest('.persist-btn');
         if (pbtn) {
-          const tile = pbtn.closest('.video-result-tile');
+          const tile = pbtn.closest('.gen-result-tile');
           const jid = tile && tile.dataset ? tile.dataset.jobId : null;
           if (jid) { this.persistJob(String(jid), pbtn); }
           return;
@@ -2071,7 +2013,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         // Remove tile from queue UI
         const btn = e.target.closest('.tile-remove-btn');
         if (!btn) return;
-        const tile = btn.closest('.video-result-tile');
+        const tile = btn.closest('.gen-result-tile');
         if (!tile) return;
         const jid = tile.dataset.jobId;
         if (jid) {
@@ -2902,8 +2844,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
    */
   createPendingTile(previewUrl = null) {
     const tile = document.createElement('div');
-    // Добавляем анимацию появления
-    tile.className = 'video-result-tile rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden shadow-sm animate-fade-in-scale';
+    tile.className = 'gen-result-tile animate-fade-in-scale';
     tile.setAttribute('data-status', 'pending');
 
     const hasPreview = !!(previewUrl || (this.currentMode === 'i2v' && this.sourcePreviewUrl));
@@ -2911,200 +2852,65 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Aspect + TTL badges (display-only). Keep frame unchanged.
     const aspectText = (this.currentMode === 'i2v' && this.sourceAspectText) ? this.escapeHtml(this.sourceAspectText) : '';
-    const badgesHtml = `
-      </div>`;
 
     // Persist aspect on tile for later (result stage)
     if (aspectText) { try { tile.dataset.aspectText = aspectText; } catch (_) { } }
 
     tile.innerHTML = `
-      <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: ${hasPreview ? '#000' : 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-2) 100%)'}; border-radius: 0.75rem;">
+      <div class="gen-media-container" style="${hasPreview ? 'background: #000;' : ''}">
         ${hasPreview ? `<img src="${pic}" alt="Источник" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">` : ''}
 
-        <!-- Кнопка удаления -->
-        <button type="button" class="video-tile-remove" aria-label="Удалить">
-          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <!-- Delete Button -->
+        <button type="button" class="gen-btn gen-btn-sm gen-delete-btn" aria-label="Удалить">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
 
-        <!-- Loader overlay -->
-        <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem; z-index: 10;">
-          <div class="puzzle-grid" style="position: relative; width: 6rem; height: 6rem;">
-            <div class="puzzle-piece puzzle-p1" style="--delay: 0s"></div>
-            <div class="puzzle-piece puzzle-p2" style="--delay: 0.1s"></div>
-            <div class="puzzle-piece puzzle-p3" style="--delay: 0.2s"></div>
-            <div class="puzzle-piece puzzle-p4" style="--delay: 0.3s"></div>
-            <div class="puzzle-piece puzzle-p5" style="--delay: 0.4s"></div>
-            <div class="puzzle-piece puzzle-p6" style="--delay: 0.5s"></div>
-            <div class="puzzle-piece puzzle-p7" style="--delay: 0.6s"></div>
-            <div class="puzzle-piece puzzle-p8" style="--delay: 0.7s"></div>
-            <div class="puzzle-piece puzzle-p9" style="--delay: 0.8s"></div>
+        <!-- Loader Overlay -->
+        <div class="gen-pending-loader" style="z-index: 10;">
+          <div class="puzzle-grid">
+            <div class="puzzle-piece" style="--delay: 0s"></div>
+            <div class="puzzle-piece" style="--delay: 0.1s"></div>
+            <div class="puzzle-piece" style="--delay: 0.2s"></div>
+            <div class="puzzle-piece" style="--delay: 0.3s"></div>
+            <div class="puzzle-piece" style="--delay: 0.4s"></div>
+            <div class="puzzle-piece" style="--delay: 0.5s"></div>
+            <div class="puzzle-piece" style="--delay: 0.6s"></div>
+            <div class="puzzle-piece" style="--delay: 0.7s"></div>
+            <div class="puzzle-piece" style="--delay: 0.8s"></div>
           </div>
-          <div style="text-align: center;">
-            <div style="font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;" data-role="tile-phase">Создаём магию…</div>
-            <div style="font-size: 0.75rem; color: var(--muted);" data-role="tile-status">Подготовка</div>
+          <div class="gen-pending-text">
+            <div class="gen-pending-phase" data-role="tile-phase">Создаём магию…</div>
+            <div class="gen-pending-status" data-role="tile-status">Подготовка</div>
           </div>
         </div>
 
-        <!-- Shimmer effect -->
-        <div style="position: absolute; inset: 0; opacity: 0.2; pointer-events: none;">
-          <div class="animate-shimmer" style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb, 99, 102, 241), 0.3), transparent);"></div>
-        </div>
+        <!-- Shimmer Effect -->
+        <div class="gen-shimmer"></div>
       </div>
     `;
 
-    // Inject puzzle animation styles if not already present (parity with image loader)
-    if (!document.getElementById('video-player-styles')) {
-      const vstyle = document.createElement('style');
-      vstyle.id = 'video-player-styles';
-      vstyle.textContent = `
-        /* Video player volume slider styles */
-        .volume-slider {
-          -webkit-appearance: none;
-          appearance: none;
-          background: rgba(255,255,255,0.3);
-          border-radius: 9999px;
-          height: 4px;
-          cursor: pointer;
-        }
-        .volume-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: white;
-          cursor: pointer;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-          transition: transform 0.15s ease;
-        }
-        .volume-slider::-webkit-slider-thumb:hover {
-          transform: scale(1.15);
-        }
-        .volume-slider::-moz-range-thumb {
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: white;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        }
-        .volume-slider::-moz-range-track {
-          background: rgba(255,255,255,0.3);
-          border-radius: 9999px;
-          height: 4px;
-        }
-        /* Video tile aspect-video */
-        .video-result-tile .aspect-video {
-          aspect-ratio: 16/9;
-        }
-        /* Unified tile sizing for mobile */
-        @media (max-width: 640px) {
-          .video-result-tile, .image-result-tile {
-            width: 100%;
-          }
-          .video-result-tile .aspect-video {
-            min-height: 200px;
-          }
-        }
-        /* Video controls overlay */
-        .video-result-tile video::-webkit-media-controls {
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-        .video-result-tile:hover video::-webkit-media-controls {
-          opacity: 1;
-        }
-      `;
-      try { document.head.appendChild(vstyle); } catch (_) { }
-    }
-    if (!document.getElementById('puzzle-loader-styles')) {
-      const style = document.createElement('style');
-      style.id = 'puzzle-loader-styles';
-      style.textContent = `
-        .puzzle-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          grid-template-rows: repeat(3, 1fr);
-          gap: 2px;
-        }
-        .puzzle-piece {
-          background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
-          border-radius: 2px;
-          opacity: 0;
-          transform: scale(0) rotate(0deg);
-          animation: puzzlePop 1.2s ease-in-out infinite;
-          animation-delay: var(--delay);
-          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-        }
-        html[data-theme="light"] .puzzle-piece {
-          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
-        }
-        @keyframes puzzlePop {
-          0%, 100% {
-            opacity: 0;
-            transform: scale(0) rotate(0deg);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1) rotate(180deg);
-          }
-        }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-        @keyframes fadeInScale {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        .animate-fade-in-scale {
-          animation: fadeInScale 0.3s ease-out;
-        }
-        @media (max-width: 480px) {
-          .puzzle-grid { width: 80px !important; height: 80px !important; gap: 1.5px; }
-        }
-        @media (max-width: 375px) {
-          .puzzle-grid { width: 72px !important; height: 72px !important; gap: 1px; }
-        }
-        @media (max-width: 320px) {
-          .puzzle-grid { width: 64px !important; height: 64px !important; }
-        }
-      `;
-      try { document.head.appendChild(style); } catch (_) { }
-    }
-
     // Обработчик удаления для pending tile
     try {
-      const removeBtn = tile.querySelector('.video-tile-remove');
+      const removeBtn = tile.querySelector('.gen-delete-btn');
       if (removeBtn) {
         removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          
+
           // Анимация удаления
           tile.style.transition = 'all 0.3s ease';
           tile.style.transform = 'scale(0.8)';
           tile.style.opacity = '0';
-          
+
           setTimeout(() => {
             try {
               tile.remove();
-              
+
               // Проверяем, остались ли карточки
               const grid = document.getElementById('video-results-grid');
-              if (grid && !grid.querySelector('.video-result-tile')) {
+              if (grid && !grid.querySelector('.gen-result-tile')) {
                 const card = document.getElementById('video-queue-card');
                 if (card) card.remove();
               }
@@ -3175,68 +2981,61 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       console.log('[video-gen] Balance update skipped:', e.message);
     }
 
-    // Умное масштабирование с aspect-ratio 16:9
-    const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
+    const tooltipText = this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в обработки';
+    
     tile.innerHTML = `
-      <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
-        <!-- Кнопка удаления -->
-        <button type="button" class="video-tile-remove" aria-label="Удалить">
-          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-        
-        <!-- Видео -->
-        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
-               preload="metadata"
-               loop
-               muted
-               playsinline
-               poster="${videoUrl}#t=0.1">
+      <div class="gen-media-container">
+        <!-- Video -->
+        <video class="video-player" preload="metadata" loop muted playsinline poster="${videoUrl}#t=0.1">
           <source src="${videoUrl}" type="video/mp4">
           Ваш браузер не поддерживает видео.
         </video>
 
-        <!-- Кнопка Play - абсолютное центрирование -->
-        <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; opacity: 1; transition: opacity 0.2s; background: none; border: none; padding: 0; touch-action: manipulation;">
-          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.25); backdrop-filter: blur(4px); transition: all 0.2s; cursor: pointer;">
-            <svg class="play-icon" style="width: 1rem; height: 1rem; margin-left: 0.125rem;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-            <svg class="pause-icon" style="width: 1rem; height: 1rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-            </svg>
-          </span>
+        <!-- Delete Button -->
+        <button type="button" class="gen-btn gen-btn-sm gen-delete-btn" aria-label="Удалить">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
         </button>
 
-        <!-- Кнопка открыть сверху справа -->
-        <a href="${videoUrl}" target="_blank" style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 20; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.2s; touch-action: manipulation;" aria-label="Открыть">
-          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Open Button -->
+        <a href="${videoUrl}" target="_blank" class="gen-btn gen-btn-sm gen-open-btn" aria-label="Открыть">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
           </svg>
         </a>
 
-        <!-- Кнопка звука снизу слева -->
-        <button type="button" class="volume-toggle-btn" style="position: absolute; bottom: 0.5rem; left: 0.5rem; z-index: 20; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation;" aria-label="Звук">
-          <svg class="volume-icon-off" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Play Button (Center) -->
+        <button type="button" class="gen-btn gen-btn-lg gen-play-btn video-play-btn">
+          <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg class="pause-icon" style="display: none;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+          </svg>
+        </button>
+
+        <!-- Volume Button (Bottom Left) -->
+        <button type="button" class="gen-btn gen-btn-sm gen-volume-btn volume-toggle-btn" aria-label="Звук">
+          <svg class="volume-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <line x1="23" y1="9" x2="17" y2="15"/>
             <line x1="17" y1="9" x2="23" y2="15"/>
           </svg>
-          <svg class="volume-icon-on" style="width: 0.875rem; height: 0.875rem; display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="volume-icon-on" style="display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
           </svg>
         </button>
-      </div>
-      <div style="padding: 0.5rem; border-top: 1px solid var(--bord); background: var(--bg-card);">
-        <button type="button" class="persist-btn" style="width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); color: white; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.375rem;">
-          <svg style="width: 1rem; height: 1rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-          </svg>
-          <span class="persist-btn-text">${this.isAuthenticated ? 'Сохранить' : 'Добавить'}</span>
-          <span class="persist-btn-text-full" style="display: none;">${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</span>
-        </button>
+
+        <!-- Action Bar with Persist -->
+        <div class="gen-action-bar">
+          <button type="button" class="gen-persist-btn persist-btn" data-tooltip="${tooltipText}" aria-label="${tooltipText}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+          </button>
+        </div>
       </div>
     `;
 
@@ -3303,8 +3102,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Play/pause logic with centered button
     try {
-      const playBtn = tile.querySelector('.video-play-btn');
-      const playBtnInner = playBtn?.querySelector('.play-btn-inner');
+      const playBtn = tile.querySelector('.gen-play-btn');
       const playIcon = playBtn?.querySelector('.play-icon');
       const pauseIcon = playBtn?.querySelector('.pause-icon');
 
@@ -3314,16 +3112,16 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           if (videoEl.paused) {
             if (playIcon) playIcon.style.display = 'block';
             if (pauseIcon) pauseIcon.style.display = 'none';
-            if (playBtnInner) playBtnInner.style.opacity = '1';
+            playBtn.style.opacity = '1';
           } else {
             if (playIcon) playIcon.style.display = 'none';
             if (pauseIcon) pauseIcon.style.display = 'block';
-            // Hide button inner after short delay when playing
+            // Hide button after short delay when playing
             setTimeout(() => {
-              if (!videoEl.paused && playBtnInner) {
-                playBtnInner.style.opacity = '0';
+              if (!videoEl.paused) {
+                playBtn.style.opacity = '0';
               }
-            }, 1500);
+            }, 1200);
           }
         };
 
@@ -3333,11 +3131,11 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
         // Show button on hover when playing
         tile.addEventListener('mouseenter', () => {
-          if (playBtnInner) playBtnInner.style.opacity = '1';
+          playBtn.style.opacity = '1';
         });
         tile.addEventListener('mouseleave', () => {
-          if (!videoEl.paused && playBtnInner) {
-            playBtnInner.style.opacity = '0';
+          if (!videoEl.paused) {
+            playBtn.style.opacity = '0';
           }
         });
 
@@ -3377,31 +3175,31 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Обработчик удаления карточки
     try {
-      const removeBtn = tile.querySelector('.video-tile-remove');
+      const removeBtn = tile.querySelector('.gen-delete-btn');
       if (removeBtn) {
         removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          
+
           // Удаляем из очереди
           if (jobId) {
             try {
               this.removeFromQueue(String(jobId));
             } catch(_) {}
           }
-          
+
           // Анимация удаления
           tile.style.transition = 'all 0.3s ease';
           tile.style.transform = 'scale(0.8)';
           tile.style.opacity = '0';
-          
+
           setTimeout(() => {
             try {
               tile.remove();
-              
+
               // Проверяем, остались ли карточки
               const grid = document.getElementById('video-results-grid');
-              if (grid && !grid.querySelector('.video-result-tile')) {
+              if (grid && !grid.querySelector('.gen-result-tile')) {
                 const card = document.getElementById('video-queue-card');
                 if (card) card.remove();
               }
@@ -3411,17 +3209,18 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       }
     } catch(_) {}
 
-    // If already persisted earlier, lock the button state on render
+    // If already persisted earlier, update button state
     try {
-      const pbtn = tile.querySelector('.persist-btn');
+      const pbtn = tile.querySelector('.gen-persist-btn');
       if (pbtn && jobId && this.persistedJobs && this.persistedJobs.has(String(jobId))) {
-        const textEl = pbtn.querySelector('.persist-btn-text');
-        const textFullEl = pbtn.querySelector('.persist-btn-text-full');
-        if (textEl) textEl.textContent = this.isAuthenticated ? 'Сохранено' : 'Добавлено';
-        if (textFullEl) textFullEl.textContent = this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки';
+        pbtn.classList.add('persisted');
         pbtn.disabled = true;
-        pbtn.style.opacity = '0.7';
-        pbtn.style.pointerEvents = 'none';
+        pbtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        `;
+        pbtn.setAttribute('data-tooltip', 'Сохранено');
       }
     } catch (_) { }
 
