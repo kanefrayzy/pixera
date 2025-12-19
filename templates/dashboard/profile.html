@@ -1346,7 +1346,9 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
 
               <div class="p-4">
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ p.title|default:"Без названия" }}</h3>
+                <a href="{{ pub_detail_url }}" class="block hover:text-primary transition">
+                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ p.title|default:"Без названия" }}</h3>
+                </a>
                 <!-- Author -->
                 <div class="flex items-center gap-2 mb-3">
                   {% if target_profile and target_profile.avatar %}
@@ -1471,13 +1473,13 @@ document.addEventListener('DOMContentLoaded', function() {
               <!-- Card Content -->
               <div class="p-4">
                 <!-- Meta: created time only -->
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
-                  {% if c.pub %}
-                    {{ c.pub.title|default:"Без названия" }}
-                  {% else %}
-                    {{ j.prompt|default:"Без названия" }}
-                  {% endif %}
-                </h3>
+                {% if c.pub %}
+                <a href="{{ pub_detail_url }}" class="block hover:text-primary transition">
+                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</h3>
+                </a>
+                {% else %}
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</h3>
+                {% endif %}
                 <!-- Author -->
                 <div class="flex items-center gap-2 mb-3">
                   {% if target_profile and target_profile.avatar %}
@@ -1607,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <source src="{{ v.video_url }}" type="video/mp4">
                 </video>
 
-                <a class="absolute inset-0 cursor-zoom-in z-10" href="{{ pub_video_url }}" aria-label="Открыть"></a>
+                <a class="absolute inset-0 z-10" href="{{ pub_video_url }}" aria-label="Открыть"></a>
 
                 <!-- Sound Toggle + Volume -->
                 <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
@@ -1645,7 +1647,9 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
 
               <div class="p-4">
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ v.title|default:"Без названия" }}</h3>
+                <a href="{{ pub_video_url }}" class="block hover:text-primary transition">
+                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ v.title|default:"Без названия" }}</h3>
+                </a>
                 <!-- Author -->
                 <div class="flex items-center gap-2 mb-3">
                   {% if target_profile and target_profile.avatar %}
@@ -1737,7 +1741,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </video>
 
                 {% if c.pub %}
-                <a class="absolute inset-0 cursor-zoom-in z-10" href="{{ pub_video_url }}" aria-label="Открыть"></a>
+                <a class="absolute inset-0 z-10" href="{{ pub_video_url }}" aria-label="Открыть"></a>
                 {% else %}
                 <div class="absolute inset-0 pointer-events-none" aria-hidden="true"></div>
                 {% endif %}
@@ -1792,13 +1796,13 @@ document.addEventListener('DOMContentLoaded', function() {
               <!-- Card Content -->
               <div class="p-4">
                 <!-- Meta: created time only -->
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
-                  {% if c.pub %}
-                    {{ c.pub.title|default:"Без названия" }}
-                  {% else %}
-                    {{ j.prompt|default:"Без названия" }}
-                  {% endif %}
-                </h3>
+                {% if c.pub %}
+                <a href="{{ pub_video_url }}" class="block hover:text-primary transition">
+                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</h3>
+                </a>
+                {% else %}
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</h3>
+                {% endif %}
                 <!-- Author -->
                 <div class="flex items-center gap-2 mb-3">
                   {% if target_profile and target_profile.avatar %}
@@ -2470,7 +2474,7 @@ video:not([controls]):hover ~ .video-play-overlay {
       const saved = getSavedVol();
       if (video && saved !== null){
         video.volume = saved/100;
-        if (saved > 0) video.muted = false;
+        // Звук всегда выключен по умолчанию
       }
       markBtnState(btn, video);
       updateSoundBtn(btn, !video ? true : !!video.muted);

@@ -537,7 +537,7 @@
       const saved = getSavedVol();
       if (video && saved !== null){
         video.volume = saved/100;
-        if (saved > 0) video.muted = false;
+        // Звук всегда выключен по умолчанию
       }
       markBtnState(btn, video);
       updateSoundBtn(btn, !video ? true : !!video.muted);
