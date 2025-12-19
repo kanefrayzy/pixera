@@ -1572,7 +1572,7 @@ data-count-target="save-count-{{ p.id }}"
         {% with slug=j.prompt|safe_slugify|default:"image" %}{% url 'generate:job_detail' j.pk slug as job_detail_url %}{% endwith %}
         {% url 'generate:job_detail_no_slug' j.pk as job_detail_noslug %}
         {% if c.pub %}
-          {% url 'gallery:video_detail' c.pub.id as pub_video_url %}
+          {% url 'gallery:video_detail_by_pk' c.pub.id as pub_video_url %}
         {% endif %}
 
           {% if not c.pub %}
