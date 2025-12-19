@@ -38,7 +38,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     enhanceCardHovers();
-    tuneTouchTargets();
+    // tuneTouchTargets(); // Закомментировано - функция не определена
     isolateOverlayClicks();
   });
 })();
