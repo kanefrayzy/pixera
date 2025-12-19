@@ -2798,7 +2798,7 @@ video:not([controls]):hover ~ .video-play-overlay {
   async function openVideo(detailUrl, videoUrl, poster){
     currentDetailUrl = detailUrl || '';
     openModal();
-    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline><source src="'+videoUrl+'" type="video/mp4"></video>';
+    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline controlsList="nodownload"><source src="'+videoUrl+'" type="video/mp4"></video>';
     try{
       const doc = await fetchDetail(detailUrl);
       const c = doc.getElementById('comments');

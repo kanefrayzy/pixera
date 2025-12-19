@@ -121,6 +121,29 @@
     }
   </style>
 
+  <!-- Всегда показывать контролы видео (включая ползунок громкости) -->
+  <style>
+    /* Webkit (Chrome, Safari, Edge) */
+    video::-webkit-media-controls {
+      opacity: 1 !important;
+    }
+    
+    video::-webkit-media-controls-panel {
+      opacity: 1 !important;
+      display: flex !important;
+    }
+
+    /* Firefox */
+    video::-moz-media-controls {
+      opacity: 1 !important;
+    }
+
+    /* Убедиться что контролы не скрываются при воспроизведении */
+    video[controls] {
+      --controls-visible: 1;
+    }
+  </style>
+
   <script>
     (function () {
       try {
