@@ -379,23 +379,26 @@
           top: 0.5rem;
           left: 0.5rem;
           z-index: 30;
-          width: 2rem;
-          height: 2rem;
+          width: 2.25rem;
+          height: 2.25rem;
           border-radius: 50%;
-          background: rgba(220, 38, 38, 0.9);
+          background: rgba(220, 38, 38, 0.85);
+          backdrop-filter: blur(8px);
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
           border: none;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
           touch-action: manipulation;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .image-tile-remove:hover {
           background: rgba(220, 38, 38, 1);
           transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
         }
 
         .image-tile-remove:active {
@@ -501,7 +504,12 @@
     try {
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Добавляем…';
+        // Add spinning animation while processing
+        btn.innerHTML = `<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" opacity="0.25"/>
+          <path opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>`;
+        btn.setAttribute('aria-label', 'Добавляем…');
       }
       const r = await fetch(`/generate/api/job/${jobId}/persist`, {
         method: 'POST',
@@ -519,16 +527,24 @@
       // Без автоскачивания — по требованию: добавляем в «Мои генерации» без загрузки файла
 
       if (btn) {
-        btn.textContent = 'Добавлено';
+        // Show success checkmark
+        btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>`;
         btn.disabled = true;
         btn.classList.add('opacity-70', 'pointer-events-none', 'animate-pulse');
+        btn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Добавлено в обработки');
         // brief success pulse
         try { setTimeout(()=> btn.classList.remove('animate-pulse'), 600); } catch(_) {}
       }
     } catch (e) {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = 'Добавить в мои генерации';
+        // Restore original icon on error
+        btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>`;
+        btn.setAttribute('aria-label', isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки');
       }
       // soft alert; do not break UI
       try { console.warn('Persist failed', e); } catch(_) {}
@@ -538,10 +554,10 @@
   // Tiles
   function createPendingTile() {
     const tile = document.createElement('div');
-    tile.className = 'image-result-tile rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden shadow-sm';
+    tile.className = 'image-result-tile rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] overflow-hidden shadow-sm animate-fade-in-scale';
     tile.setAttribute('data-status','pending');
     tile.innerHTML = `
-      <div class="relative aspect-square group bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-2)]">
+      <div class="relative aspect-square group bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-2)] overflow-hidden rounded-xl">
         <!-- Кнопка удаления -->
         <button type="button" class="image-tile-remove" aria-label="Удалить">
           <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -550,7 +566,7 @@
         </button>
 
         <!-- Premium Puzzle Loader -->
-        <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 z-10">
           <!-- Puzzle Grid Container -->
           <div class="puzzle-grid relative w-24 h-24 sm:w-28 sm:h-28">
             <!-- Puzzle pieces (3x3 grid) -->
@@ -632,6 +648,22 @@
 
         .animate-shimmer {
           animation: shimmer 2s infinite;
+        }
+
+        /* Fade in scale animation */
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animate-fade-in-scale {
+          animation: fadeInScale 0.3s ease-out;
         }
 
         /* Responsive adjustments */
@@ -748,26 +780,36 @@
     }
 
     tile.innerHTML = `
-      <div class="relative aspect-square bg-black group">
-        <img data-src="${imageUrl}" alt="Результат" loading="lazy" decoding="async" fetchpriority="low" class="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-[1.02]"/>
+      <div class="relative aspect-square bg-black group overflow-hidden rounded-xl">
+        <img data-src="${imageUrl}" alt="Результат" loading="lazy" decoding="async" fetchpriority="low" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
 
-        <!-- Кнопка удаления -->
+        <!-- Overlay gradient for better button visibility -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+        <!-- Кнопка удаления (верхний левый угол) -->
         <button type="button" class="image-tile-remove" aria-label="Удалить">
           <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
 
-        <div class="absolute top-2 right-2 img-tile-actions">
-          <a href="${imageUrl}" target="_blank" class="img-action w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/70 text-white hover:bg-black/80 transition flex items-center justify-center backdrop-blur-sm" aria-label="Открыть в новой вкладке">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-      <div class="p-2 sm:p-2.5 border-t border-[var(--bord)] bg-[var(--bg-card)]">
-        <button type="button" class="persist-btn w-full px-3 py-2 rounded-lg bg-primary/90 hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary/30 text-white text-xs sm:text-sm font-medium transition">${isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</button>
+        <!-- Кнопка открыть (верхний правый угол) -->
+        <a href="${imageUrl}" target="_blank" 
+           class="absolute top-2 right-2 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/80 hover:scale-110 transition-all duration-200 flex items-center justify-center shadow-lg"
+           aria-label="Открыть в новой вкладке">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+        </a>
+
+        <!-- Кнопка сохранить (нижний правый угол) -->
+        <button type="button" 
+                class="persist-btn absolute bottom-2 right-2 z-20 w-9 h-9 rounded-full bg-primary/90 backdrop-blur-md text-white hover:bg-primary hover:scale-110 transition-all duration-200 flex items-center justify-center shadow-lg"
+                aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в мои обработки'}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+        </button>
       </div>
     `;
     try {
@@ -787,9 +829,13 @@
     try {
       const pbtn = tile.querySelector('.persist-btn');
       if (pbtn && jobId && persistedJobs && persistedJobs.has(String(jobId))) {
-        pbtn.textContent = isAuth ? 'Сохранено в профиле' : 'Добавлено в обработки';
+        // Change icon to checkmark for persisted state
+        pbtn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>`;
         pbtn.disabled = true;
         pbtn.classList.add('opacity-70','pointer-events-none');
+        pbtn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Добавлено в обработки');
       }
     } catch(_) {}
 

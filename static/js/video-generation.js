@@ -924,27 +924,48 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           top: 0.5rem;
           left: 0.5rem;
           z-index: 30;
-          width: 2rem;
-          height: 2rem;
+          width: 2.25rem;
+          height: 2.25rem;
           border-radius: 50%;
-          background: rgba(220, 38, 38, 0.9);
+          background: rgba(220, 38, 38, 0.85);
+          backdrop-filter: blur(8px);
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
           border: none;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
           touch-action: manipulation;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .video-tile-remove:hover {
           background: rgba(220, 38, 38, 1);
           transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
         }
 
         .video-tile-remove:active {
           transform: scale(0.95);
+        }
+        
+        /* Hover эффект для кнопок на видео */
+        .video-open-btn:hover,
+        .volume-toggle-btn:hover {
+          background: rgba(0, 0, 0, 0.8);
+          transform: scale(1.1);
+        }
+        
+        .persist-btn:hover {
+          background: rgba(var(--primary-rgb, 99, 102, 241), 1) !important;
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(var(--primary-rgb, 99, 102, 241), 0.4) !important;
+        }
+        
+        .play-btn-inner:hover {
+          background: rgba(0, 0, 0, 0.8) !important;
+          transform: scale(1.1);
         }
       `;
       try { document.head.appendChild(st); } catch (_) { }
@@ -1082,7 +1103,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Добавляем…';
+        // Add spinning animation while processing
+        btn.innerHTML = `<svg style="width: 1rem; height: 1rem;" class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" opacity="0.25"/>
+          <path opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>`;
+        btn.setAttribute('aria-label', 'Добавляем…');
       }
       const r = await fetch(`/generate/api/job/${jobId}/persist`, {
         method: 'POST',
@@ -1101,16 +1127,24 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       // No auto-download here — по требованию: добавляем в «Мои генерации» без скачивания
 
       if (btn) {
-        btn.textContent = 'Добавлено';
+        // Show success checkmark
+        btn.innerHTML = `<svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>`;
         btn.disabled = true;
         btn.classList.add('opacity-70', 'pointer-events-none', 'animate-pulse');
+        btn.setAttribute('aria-label', this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки');
         // brief success pulse anim
         try { setTimeout(() => btn.classList.remove('animate-pulse'), 600); } catch (_) { }
       }
     } catch (e) {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = 'Добавить в мои генерации';
+        // Restore original icon on error
+        btn.innerHTML = `<svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>`;
+        btn.setAttribute('aria-label', this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки');
       }
       try { console.warn('Persist failed', e); } catch (_) { }
     }
@@ -3178,8 +3212,11 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Умное масштабирование с aspect-ratio 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
-        <!-- Кнопка удаления -->
+      <div class="video-tile-container group" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
+        <!-- Overlay gradient for better button visibility -->
+        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.4), transparent 40%, rgba(0,0,0,0.2)); opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 5;" class="video-overlay"></div>
+
+        <!-- Кнопка удаления (верхний левый угол) -->
         <button type="button" class="video-tile-remove" aria-label="Удалить">
           <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -3187,7 +3224,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         </button>
 
         <!-- Видео -->
-        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
+        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; transition: transform 0.3s;"
                preload="metadata"
                loop
                muted
@@ -3197,27 +3234,32 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           Ваш браузер не поддерживает видео.
         </video>
 
-        <!-- Кнопка Play - абсолютное центрирование -->
+        <!-- Кнопка Play - центр -->
         <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; opacity: 1; transition: opacity 0.2s; background: none; border: none; padding: 0; touch-action: manipulation;">
-          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.25); backdrop-filter: blur(4px); transition: all 0.2s; cursor: pointer;">
-            <svg class="play-icon" style="width: 1rem; height: 1rem; margin-left: 0.125rem;" viewBox="0 0 24 24" fill="currentColor">
+          <span class="play-btn-inner" style="display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; border-radius: 50%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s; cursor: pointer;">
+            <svg class="play-icon" style="width: 1.25rem; height: 1.25rem; margin-left: 0.15rem;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />
             </svg>
-            <svg class="pause-icon" style="width: 1rem; height: 1rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="pause-icon" style="width: 1.25rem; height: 1.25rem; display: none;" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
             </svg>
           </span>
         </button>
 
-        <!-- Кнопка открыть сверху справа -->
-        <a href="${videoUrl}" target="_blank" style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 20; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.2s; touch-action: manipulation;" aria-label="Открыть">
+        <!-- Кнопка открыть (верхний правый угол) -->
+        <a href="${videoUrl}" target="_blank" 
+           style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" 
+           class="video-open-btn"
+           aria-label="Открыть">
           <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
           </svg>
         </a>
 
-        <!-- Кнопка звука снизу слева -->
-        <button type="button" class="volume-toggle-btn" style="position: absolute; bottom: 0.5rem; left: 0.5rem; z-index: 20; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation;" aria-label="Звук">
+        <!-- Кнопка звука (нижний левый угол) -->
+        <button type="button" class="volume-toggle-btn" 
+                style="position: absolute; bottom: 0.5rem; left: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" 
+                aria-label="Звук">
           <svg class="volume-icon-off" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
             <line x1="23" y1="9" x2="17" y2="15"/>
@@ -3228,14 +3270,15 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
           </svg>
         </button>
-      </div>
-      <div style="padding: 0.5rem; border-top: 1px solid var(--bord); background: var(--bg-card);">
-        <button type="button" class="persist-btn" style="width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); color: white; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.375rem;">
-          <svg style="width: 1rem; height: 1rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+        <!-- Кнопка сохранить (нижний правый угол) -->
+        <button type="button" 
+                class="persist-btn" 
+                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 20; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: rgba(var(--primary-rgb, 99, 102, 241), 0.9); backdrop-filter: blur(8px); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; cursor: pointer; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"
+                aria-label="${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}">
+          <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
-          <span class="persist-btn-text">${this.isAuthenticated ? 'Сохранить' : 'Добавить'}</span>
-          <span class="persist-btn-text-full" style="display: none;">${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в мои обработки'}</span>
         </button>
       </div>
     `;
@@ -3331,14 +3374,17 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         videoEl.addEventListener('pause', updatePlayButton);
         videoEl.addEventListener('ended', updatePlayButton);
 
-        // Show button on hover when playing
+        // Show overlay and button on hover
+        const overlay = tile.querySelector('.video-overlay');
         tile.addEventListener('mouseenter', () => {
           if (playBtnInner) playBtnInner.style.opacity = '1';
+          if (overlay) overlay.style.opacity = '1';
         });
         tile.addEventListener('mouseleave', () => {
           if (!videoEl.paused && playBtnInner) {
             playBtnInner.style.opacity = '0';
           }
+          if (overlay && !videoEl.paused) overlay.style.opacity = '0';
         });
 
         // Toggle play/pause on button click
@@ -3415,13 +3461,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const pbtn = tile.querySelector('.persist-btn');
       if (pbtn && jobId && this.persistedJobs && this.persistedJobs.has(String(jobId))) {
-        const textEl = pbtn.querySelector('.persist-btn-text');
-        const textFullEl = pbtn.querySelector('.persist-btn-text-full');
-        if (textEl) textEl.textContent = this.isAuthenticated ? 'Сохранено' : 'Добавлено';
-        if (textFullEl) textFullEl.textContent = this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки';
+        // Change icon to checkmark for persisted state
+        pbtn.innerHTML = `<svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>`;
         pbtn.disabled = true;
         pbtn.style.opacity = '0.7';
         pbtn.style.pointerEvents = 'none';
+        pbtn.setAttribute('aria-label', this.isAuthenticated ? 'Сохранено в профиле' : 'Добавлено в обработки');
       }
     } catch (_) { }
 
