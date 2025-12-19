@@ -569,7 +569,7 @@
 
           const j = await res.json();
           if (j && j.ok) {
-            const isNowFollowing = !!j.is_following;
+            const isNowFollowing = !!j.following;
 
             // Обновляем внешний вид кнопки
             if (isNowFollowing) {
