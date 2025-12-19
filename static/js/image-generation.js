@@ -861,6 +861,13 @@
           </svg>
         </button>
 
+        <!-- Кнопка открыть (верхний правый угол) -->
+        <a href="${imageUrl}" target="_blank" class="image-open-btn" aria-label="Открыть" style="position: absolute; top: 0.5rem; right: 0.5rem; z-index: 30; width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(0,0,0,0.7); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+          <svg style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+        </a>
+
         <!-- Кнопка сохранить (нижний правый угол) -->
         <button type="button"
                 class="img-save-btn"

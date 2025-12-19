@@ -921,6 +921,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           backface-visibility: hidden;
         }
 
+        /* Адаптивный aspect ratio: вертикальный на мобилке, горизонтальный на ПК */
+        @media (min-width: 641px) {
+          .video-tile-container {
+            aspect-ratio: 16/9 !important;
+          }
+        }
+
         /* Кнопка сохранить */
         .vid-save-btn {
           position: absolute;
@@ -3269,10 +3276,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       console.log('[video-gen] Balance update skipped:', e.message);
     }
 
-    // Умное масштабирование с aspect-ratio 16:9
+    // Умное масштабирование с aspect-ratio 16:9 (выше на мобилке)
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="aspect-ratio: 16/9; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
+      <div class="video-tile-container" style="aspect-ratio: 9/13; position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;"
         <!-- Видео -->
         <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
                preload="metadata"
@@ -3324,8 +3331,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         </button>
 
         <!-- Кнопка сохранить (нижний правый угол) -->
-        <button type="button" class="vid-save-btn" aria-label="${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в галерею'}">
-          <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <button type="button" class="vid-save-btn" aria-label="${this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в галерею'}" style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; height: 2rem; padding: 0 0.75rem; border-radius: 1rem; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; gap: 0.375rem; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; font-size: 0.75rem; font-weight: 500;">
+          <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
           <span class="save-btn-text">Добавить</span>
