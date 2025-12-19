@@ -941,8 +941,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           .video-tile-remove,
           .video-open-btn,
           .volume-toggle-btn {
-            width: 2.25rem !important;
-            height: 2.25rem !important;
+            width: 1.5rem !important;
+            height: 1.5rem !important;
           }
           .video-tile-remove svg,
           .video-open-btn svg,
