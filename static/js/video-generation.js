@@ -878,11 +878,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Insert after prompts/showcase blocks within video form container
     wrap.appendChild(card);
-    // Оптимизация производительности
-    if (!document.getElementById('video-queue-perf-style')) {
-      const st = document.createElement('style');
-      st.id = 'video-queue-perf-style';
-      st.textContent = `
+    // Оптимизация производительности - удаляем старую версию и создаем новую
+    const oldStyle = document.getElementById('video-queue-perf-style');
+    if (oldStyle) {
+      try { oldStyle.remove(); } catch(_) {}
+    }
+    const st = document.createElement('style');
+    st.id = 'video-queue-perf-style';
+    st.textContent = `
         /* Фиксированный размер карточек для всех устройств */
         #video-results-grid {
           display: grid;
@@ -1007,8 +1010,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           }
         }
       `;
-      try { document.head.appendChild(st); } catch (_) { }
-    }
+    try { document.head.appendChild(st); } catch (_) { }
 
     // Bind clear button to clear queue and remove UI immediately
     const clearBtn = card.querySelector('#clear-video-queue-btn');

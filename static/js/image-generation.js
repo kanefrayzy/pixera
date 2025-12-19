@@ -419,12 +419,12 @@
             height: 1rem !important;
           }
           .img-save-btn {
-            height: 2.25rem !important;
-            padding: 0 0.625rem !important;
+            height: 1.75rem !important;
+            padding: 0 0.525rem !important;
             font-size: 0.6875rem !important;
             gap: 0.25rem !important;
             bottom: 0.375rem !important;
-            right: 0.375rem !important;
+            right: 1.175rem !important;
           }
           .img-save-btn svg {
             width: 0.75rem !important;
