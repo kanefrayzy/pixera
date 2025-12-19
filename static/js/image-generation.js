@@ -373,6 +373,30 @@
           backface-visibility: hidden;
         }
 
+        /* Кнопка сохранить */
+        .img-save-btn {
+          position: absolute;
+          bottom: 0.5rem;
+          right: 0.5rem;
+          z-index: 30;
+          height: 2rem;
+          padding: 0 0.75rem;
+          border-radius: 1rem;
+          background: rgba(99, 102, 241, 0.9);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.375rem;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          white-space: nowrap;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
         /* Кнопки */
         .image-tile-remove:hover,
         .img-save-btn:hover {
@@ -399,10 +423,21 @@
             padding: 0 0.625rem !important;
             font-size: 0.6875rem !important;
             gap: 0.25rem !important;
+            bottom: 0.375rem !important;
+            right: 0.375rem !important;
           }
           .img-save-btn svg {
             width: 0.75rem !important;
             height: 0.75rem !important;
+          }
+        }
+
+        /* Очень маленькие экраны */
+        @media (max-width: 375px) {
+          .img-save-btn {
+            height: 2rem !important;
+            padding: 0 0.5rem !important;
+            font-size: 0.625rem !important;
           }
         }
       `;
@@ -829,9 +864,8 @@
         <!-- Кнопка сохранить (нижний правый угол) -->
         <button type="button" 
                 class="img-save-btn" 
-                aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в галерею'}"
-                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; height: 2rem; padding: 0 0.75rem; border-radius: 1rem; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; gap: 0.375rem; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; font-size: 0.75rem; font-weight: 500;">
-          <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в галерею'}">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
           <span class="save-btn-text">Добавить</span>
