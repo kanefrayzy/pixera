@@ -2385,7 +2385,8 @@ video:not([controls]):hover ~ .video-play-overlay {
   function setSavedVol(p){ try{ localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, p)))); }catch(_){ } }
 
   function markBtnState(btn, video){
-    const disabled = video ? !hasAudio(video) : true;
+    // По умолчанию считаем что аудио есть, скрываем только если точно известно что нет
+    const disabled = video ? (!video.readyState || video.readyState < 1 ? false : !hasAudio(video)) : true;
     btn.dataset.disabled = disabled ? '1' : '0';
     btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     btn.title = disabled ? 'Нет аудио' : '';
@@ -2401,7 +2402,7 @@ video:not([controls]):hover ~ .video-play-overlay {
       onI.classList.toggle('hidden', muted);
       offI.classList.toggle('hidden', !muted);
     }
-    // Slider visibility
+    // Slider всегда видимый пока не подтверждено отсутствие аудио
     const card = findCard(btn);
     const slider = card && card.querySelector('.vid-vol');
     if (slider){

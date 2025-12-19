@@ -187,7 +187,7 @@
 
   // ====== УПРАВЛЕНИЕ ЗВУКОМ ======
   const VOL_KEY = 'trending_video_volume_pct';
-  
+
   function getSavedVol() {
     try {
       const v = localStorage.getItem(VOL_KEY);
@@ -197,7 +197,7 @@
       return null;
     }
   }
-  
+
   function setSavedVol(pct) {
     try {
       localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, pct))));
@@ -231,7 +231,7 @@
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    
+
     const card = findCard(btn);
     const video = card && card.querySelector('video');
     if (!video) return;
@@ -251,7 +251,7 @@
     } else {
       video.muted = true;
     }
-    
+
     markBtnState(btn, video);
     syncSlider(card, video);
   });
@@ -260,7 +260,7 @@
   gridContainer.addEventListener('input', (e) => {
     const slider = e.target.closest('.vid-vol');
     if (!slider) return;
-    
+
     const card = findCard(slider);
     const video = card && card.querySelector('video');
     if (!video) return;
@@ -274,9 +274,9 @@
     } else {
       video.muted = true;
     }
-    
+
     setSavedVol(pct);
-    
+
     const btn = card && card.querySelector('.vid-snd-btn');
     if (btn) markBtnState(btn, video);
   });
