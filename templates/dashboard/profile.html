@@ -1316,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {% for p in pub_photos %}
           {% url 'gallery:photo_detail' p.pk as pub_detail_url %}
-          <article class="group cursor-pointer js-open-photo" data-detail-url="{{ pub_detail_url }}" data-media-url="{{ p.image.url }}" data-title="{{ p.title|escapejs }}">
+          <article class="group">
             <div class="card overflow-hidden">
               <div class="relative">
                 {% if p.image %}
@@ -1412,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {% url 'gallery:photo_detail' c.pub.id as pub_detail_url %}
           {% endif %}
 
-          <article class="group cursor-pointer {% if c.pub %}js-open-photo{% endif %}" {% if c.pub %}data-detail-url="{{ pub_detail_url }}" data-media-url="{% if j.result_image %}{{ j.result_image.url }}{% endif %}" data-title="{{ j.prompt|default:'Результат генерации'|escapejs }}"{% endif %}>
+          <article class="group">
 
             <div class="card overflow-hidden">
               <!-- Image/Thumbnail -->
@@ -1597,7 +1597,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {% for v in pub_videos %}
           {% url 'gallery:video_detail' v.pk as pub_video_url %}
-          <article class="group cursor-pointer video-card js-open-video" data-detail-url="{{ pub_video_url }}" data-video-url="{{ v.video_url }}" data-poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}">
+          <article class="group video-card">
             <div class="card overflow-hidden">
               <div class="relative">
                 <video class="video-element w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]"
@@ -1726,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% url 'gallery:video_detail' c.pub.id as pub_video_url %}
         {% endif %}
 
-          <article class="group cursor-pointer video-card {% if c.pub %}js-open-video{% endif %}" {% if c.pub %}data-detail-url="{{ pub_video_url }}" data-video-url="{{ j.result_video_url }}" data-poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}"{% endif %}>
+          <article class="group video-card">
             <div class="card overflow-hidden">
               <!-- Video Preview -->
               <div class="relative">
