@@ -951,12 +951,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             height: 1rem !important;
           }
           .vid-save-btn {
-            height: 2.25rem !important;
-            padding: 0 0.625rem !important;
-            font-size: 0.6875rem !important;
-            gap: 0.25rem !important;
-            bottom: 0.375rem !important;
-            right: 0.375rem !important;
+              height: 1.75rem !important;
+              padding: 0 0.625rem !important;
+              font-size: 0.6875rem !important;
+              gap: 0.25rem !important;
+              bottom: 0.375rem !important;
+              right: 0.375rem !important;
           }
           .vid-save-btn svg {
             width: 0.75rem !important;
