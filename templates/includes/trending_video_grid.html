@@ -25,6 +25,23 @@
 
             <div class="absolute inset-0 cursor-pointer pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
 
+            <!-- Sound control (bottom-left) -->
+            <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2 pointer-events-auto">
+              <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
+                <svg class="icon-vol-on w-4 h-4 hidden" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                  <path d="M16 7a5 5 0 010 10" opacity="0.8"></path>
+                  <path d="M19 5a8 8 0 010 14" opacity="0.6"></path>
+                </svg>
+                <svg class="icon-vol-off w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
+                  <path d="M18 8l-6 6"></path>
+                  <path d="M12 8l6 6"></path>
+                </svg>
+              </button>
+              <input type="range" min="0" max="100" value="60" class="vid-vol w-16 sm:w-20 md:w-24 h-1.5 rounded-full accent-[var(--primary)] bg-white/30 dark:bg-white/20 outline-none cursor-pointer" aria-label="Громкость" />
+            </div>
+
             <!-- Top-right overlays (model + views) -->
             <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
               {% with job=v.source_job %}
@@ -165,6 +182,112 @@
       video.play().catch(()=>{});
     } else {
       video.pause();
+    }
+  });
+
+  // ====== УПРАВЛЕНИЕ ЗВУКОМ ======
+  const VOL_KEY = 'trending_video_volume_pct';
+  
+  function getSavedVol() {
+    try {
+      const v = localStorage.getItem(VOL_KEY);
+      const n = Number(v);
+      return isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
+    } catch(_) {
+      return null;
+    }
+  }
+  
+  function setSavedVol(pct) {
+    try {
+      localStorage.setItem(VOL_KEY, String(Math.max(0, Math.min(100, pct))));
+    } catch(_) {}
+  }
+
+  function findCard(el) {
+    return el.closest('article') || el.closest('.group') || el.parentElement;
+  }
+
+  function markBtnState(btn, video) {
+    const onIcon = btn.querySelector('.icon-vol-on');
+    const offIcon = btn.querySelector('.icon-vol-off');
+    const muted = !video || video.muted;
+    if (onIcon && offIcon) {
+      onIcon.classList.toggle('hidden', muted);
+      offIcon.classList.toggle('hidden', !muted);
+    }
+  }
+
+  function syncSlider(card, video) {
+    const slider = card && card.querySelector('.vid-vol');
+    if (!slider || !video) return;
+    const pct = Math.round((video.muted ? 0 : (video.volume || 0)) * 100);
+    slider.value = isFinite(pct) ? pct : 0;
+  }
+
+  // Кнопка включения/выключения звука
+  gridContainer.addEventListener('click', (e) => {
+    const btn = e.target.closest('.vid-snd-btn');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const card = findCard(btn);
+    const video = card && card.querySelector('video');
+    if (!video) return;
+
+    if (video.muted) {
+      const slider = card && card.querySelector('.vid-vol');
+      let pct = Number(slider?.value);
+      if (!isFinite(pct) || pct === 0) {
+        pct = getSavedVol();
+        if (pct === null || pct === 0) pct = 60;
+        if (slider) slider.value = pct;
+        setSavedVol(pct);
+      }
+      video.volume = pct / 100;
+      video.muted = false;
+      try { video.play(); } catch(_) {}
+    } else {
+      video.muted = true;
+    }
+    
+    markBtnState(btn, video);
+    syncSlider(card, video);
+  });
+
+  // Ползунок громкости
+  gridContainer.addEventListener('input', (e) => {
+    const slider = e.target.closest('.vid-vol');
+    if (!slider) return;
+    
+    const card = findCard(slider);
+    const video = card && card.querySelector('video');
+    if (!video) return;
+
+    const pct = Number(slider.value);
+    if (!isFinite(pct)) return;
+
+    video.volume = pct / 100;
+    if (pct > 0) {
+      video.muted = false;
+    } else {
+      video.muted = true;
+    }
+    
+    setSavedVol(pct);
+    
+    const btn = card && card.querySelector('.vid-snd-btn');
+    if (btn) markBtnState(btn, video);
+  });
+
+  // Инициализация состояния кнопок
+  gridContainer.querySelectorAll('article').forEach(card => {
+    const video = card.querySelector('video');
+    const btn = card.querySelector('.vid-snd-btn');
+    if (video && btn) {
+      markBtnState(btn, video);
+      syncSlider(card, video);
     }
   });
 })();
