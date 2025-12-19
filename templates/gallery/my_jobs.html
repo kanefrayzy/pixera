@@ -1218,11 +1218,10 @@ data-count-target="save-count-{{ p.id }}"
         {% endif %}
 
         {% if not c.pub %}
-        <article class="group cursor-pointer js-open-job"
+        <article class="group"
                  itemprop="associatedMedia"
                  itemscope
-                 itemtype="https://schema.org/ImageObject"
-                 data-detail-url="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ pub_detail_url|default:open_href }}{% endif %}">
+                 itemtype="https://schema.org/ImageObject">
 
           <div class="card overflow-hidden">
             <!-- Image/Thumbnail -->
@@ -1327,13 +1326,15 @@ data-count-target="save-count-{{ p.id }}"
 
               <!-- Meta: created time only -->
               <!-- Title -->
-              <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
-                {% if c.pub %}
-                  {{ c.pub.title|default:"Без названия" }}
-                {% else %}
-                  {{ j.prompt|default:"Без названия" }}
-                {% endif %}
-              </h3>
+              {% if c.pub %}
+              <a href="{{ pub_detail_url|default:open_href }}" class="block hover:text-primary transition">
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</h3>
+              </a>
+              {% else %}
+              <a href="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ pub_detail_url|default:open_href }}{% endif %}" class="block hover:text-primary transition">
+                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</h3>
+              </a>
+              {% endif %}
 
               <!-- Author (avatar + username) -->
               <div class="flex items-center gap-2 mb-3">
@@ -1576,7 +1577,7 @@ data-count-target="save-count-{{ p.id }}"
         {% endif %}
 
           {% if not c.pub %}
-          <article class="group js-open-job" data-detail-url="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{% if c.pub %}{{ pub_video_url }}{% else %}{{ job_detail_noslug }}{% endif %}{% endif %}" data-video-url="{{ j.result_video_url }}" data-poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}">
+          <article class="group" data-video-url="{{ j.result_video_url }}" data-poster="{% if j.result_image %}{{ j.result_image.url }}{% endif %}">
             <div class="card overflow-hidden">
               <!-- Video Preview -->
               <div class="relative">
@@ -1695,13 +1696,15 @@ data-count-target="save-count-{{ p.id }}"
 
 
                 <!-- Title -->
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
-                  {% if c.pub %}
-                    {{ c.pub.title|default:"Без названия" }}
-                  {% else %}
-                    {{ j.prompt|default:"Без названия" }}
-                  {% endif %}
-                </h3>
+                {% if c.pub %}
+                <a href="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ pub_video_url }}{% endif %}" class="block hover:text-primary transition">
+                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</h3>
+                </a>
+                {% else %}
+                <a href="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ job_detail_noslug }}{% endif %}" class="block hover:text-primary transition">
+                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</h3>
+                </a>
+                {% endif %}
 
                 <!-- Author (avatar + username) -->
                 <div class="flex items-center gap-2 mb-3">
