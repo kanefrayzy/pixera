@@ -375,12 +375,12 @@
 
         /* Кнопки */
         .image-tile-remove:hover,
-        .persist-btn:hover {
-          transform: scale(1.1);
+        .img-save-btn:hover {
+          transform: scale(1.05);
         }
 
         .image-tile-remove:active,
-        .persist-btn:active {
+        .img-save-btn:active {
           transform: scale(0.95);
         }
         
@@ -393,6 +393,16 @@
           .image-tile-remove svg {
             width: 1rem !important;
             height: 1rem !important;
+          }
+          .img-save-btn {
+            height: 2.25rem !important;
+            padding: 0 0.625rem !important;
+            font-size: 0.6875rem !important;
+            gap: 0.25rem !important;
+          }
+          .img-save-btn svg {
+            width: 0.75rem !important;
+            height: 0.75rem !important;
           }
         }
       `;
@@ -423,7 +433,7 @@
     // Delegated actions on tiles (persist/remove)
     card.addEventListener('click', (e) => {
       // Persist to "Мои генерации"
-      const pbtn = e.target.closest('.persist-btn');
+      const pbtn = e.target.closest('.img-save-btn');
       if (pbtn) {
         const tile = pbtn.closest('.image-result-tile');
         const jid = tile && tile.dataset ? tile.dataset.jobId : null;
@@ -496,11 +506,13 @@
       if (btn) {
         btn.disabled = true;
         // Add spinning animation while processing
-        btn.innerHTML = `<svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="12" cy="12" r="10" opacity="0.25"/>
-          <path opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-        </svg>
-        <span class="persist-btn-text" style="font-size: 0.75rem; font-weight: 500;">Добавляем...</span>`;
+        btn.innerHTML = `
+          <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0; animation: spin 1s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10" opacity="0.25"/>
+            <path opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <span class="save-btn-text">Добавляем...</span>
+        `;
         btn.setAttribute('aria-label', 'Добавляем…');
       }
       const r = await fetch(`/generate/api/job/${jobId}/persist`, {
@@ -519,26 +531,32 @@
       // Без автоскачивания — по требованию: добавляем в «Мои генерации» без загрузки файла
 
       if (btn) {
-        // Show success checkmark
-        btn.innerHTML = `<svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-        </svg>
-        <span class="persist-btn-text" style="font-size: 0.75rem; font-weight: 500;">Сохранено</span>`;
+        // Show success checkmark with text
+        btn.innerHTML = `
+          <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          <span class="save-btn-text">Добавлено</span>
+        `;
         btn.disabled = true;
-        btn.classList.add('opacity-70', 'pointer-events-none', 'animate-pulse');
-        btn.setAttribute('aria-label', 'Сохранено');
+        btn.style.opacity = '0.7';
+        btn.style.pointerEvents = 'none';
+        btn.style.animation = 'pulse 0.6s ease-in-out';
+        btn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Добавлено в галерею');
         // brief success pulse
-        try { setTimeout(()=> btn.classList.remove('animate-pulse'), 600); } catch(_) {}
+        try { setTimeout(()=> { if(btn.style) btn.style.animation = ''; }, 600); } catch(_) {}
       }
     } catch (e) {
       if (btn) {
         btn.disabled = false;
-        // Restore original icon on error
-        btn.innerHTML = `<svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-        </svg>
-        <span class="persist-btn-text" style="font-size: 0.75rem; font-weight: 500;">Сохранить</span>`;
-        btn.setAttribute('aria-label', 'Сохранить');
+        // Restore original icon and text on error
+        btn.innerHTML = `
+          <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span class="save-btn-text">Добавить</span>
+        `;
+        btn.setAttribute('aria-label', isAuth ? 'Сохранить в профиле' : 'Добавить в галерею');
       }
       // soft alert; do not break UI
       try { console.warn('Persist failed', e); } catch(_) {}
@@ -630,6 +648,18 @@
           }
         }
 
+        /* Spin animation */
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        /* Pulse animation */
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+
         /* Shimmer Effect */
         @keyframes shimmer {
           0% {
@@ -642,6 +672,18 @@
 
         .animate-shimmer {
           animation: shimmer 2s infinite;
+        }
+
+        /* Spin animation */
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        /* Pulse animation */
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
 
         /* Fade in scale animation */
@@ -786,13 +828,13 @@
 
         <!-- Кнопка сохранить (нижний правый угол) -->
         <button type="button" 
-                class="persist-btn" 
-                aria-label="${isAuth ? 'Сохранить' : 'Сохранить'}"
-                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; height: 2rem; padding: 0 0.75rem; border-radius: 9999px; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; gap: 0.375rem; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap;">
+                class="img-save-btn" 
+                aria-label="${isAuth ? 'Сохранить в профиле' : 'Добавить в галерею'}"
+                style="position: absolute; bottom: 0.5rem; right: 0.5rem; z-index: 30; height: 2rem; padding: 0 0.75rem; border-radius: 1rem; background: rgba(99, 102, 241, 0.9); color: white; display: flex; align-items: center; justify-content: center; gap: 0.375rem; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; font-size: 0.75rem; font-weight: 500;">
           <svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
-          <span class="persist-btn-text" style="font-size: 0.75rem; font-weight: 500;">Сохранить</span>
+          <span class="save-btn-text">Добавить</span>
         </button>
       </div>
     `;
@@ -811,16 +853,15 @@
 
     // If already persisted earlier, lock the button state on render
     try {
-      const pbtn = tile.querySelector('.persist-btn');
+      const pbtn = tile.querySelector('.img-save-btn');
       if (pbtn && jobId && persistedJobs && persistedJobs.has(String(jobId))) {
         // Change icon to checkmark for persisted state
-        pbtn.innerHTML = `<svg style="width: 0.875rem; height: 0.875rem; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
+        pbtn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-        </svg>
-        <span class="persist-btn-text" style="font-size: 0.75rem; font-weight: 500;">Сохранено</span>`;
+        </svg>`;
         pbtn.disabled = true;
         pbtn.classList.add('opacity-70','pointer-events-none');
-        pbtn.setAttribute('aria-label', 'Сохранено');
+        pbtn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Добавлено в обработки');
       }
     } catch(_) {}
 
