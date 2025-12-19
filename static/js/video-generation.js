@@ -836,51 +836,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     } catch (_) { }
   }
 
-  // Create queue UI lazily only when first generation starts or when restoring pending items
-  ensureQueueUI() {
-    const wrap = document.getElementById('video-form-container');
-    if (!wrap) return;
-
-    // Всегда обновляем стили (перед проверкой существования grid)
-    this.ensureVideoQueueStyles();
-
-    // If grid already exists (создан ранее), обновим его классы сетки под новую компоновку и выйдем
-    const existingGrid = document.getElementById('video-results-grid');
-    if (existingGrid) {
-      // Убираем inline стили чтобы CSS из video-queue-compact-style применился
-      try {
-        existingGrid.style.gridTemplateColumns = '';
-        existingGrid.style.gap = '';
-      } catch (_) { }
-      return;
+  // Ensure video queue styles are up to date
+  ensureVideoQueueStyles() {
+    // Удаляем старую версию и создаем новую
+    const oldStyle = document.getElementById('video-queue-perf-style');
+    if (oldStyle) {
+      try { oldStyle.remove(); } catch(_) {}
     }
-
-    // Card container
-    const card = document.createElement('div');
-    card.id = 'video-queue-card';
-    card.className = 'card p-6 mt-6';
-
-    card.innerHTML = `
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <h3 class="text-lg sm:text-xl font-bold">Очередь генерации</h3>
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs bg-primary/15 text-primary border border-primary/30"
-                title="Результаты видео и эскизы хранятся локально 24 часа, затем удаляются автоматически">
-            24&nbsp;ч
-          </span>
-        </div>
-        <button type="button" id="clear-video-queue-btn" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm">
-          Очистить очередь
-        </button>
-      </div>
-      <div class="mt-2 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 text-xs text-[var(--muted)]">
-        Результаты (видео) хранятся локально 24 часа. По истечении срока очередь очищается автоматически. Данные не покидают ваш браузер.
-      </div>
-      <div id="video-results-grid" class="mt-4 grid gap-3"></div>
-    `;
-
-    // Insert after prompts/showcase blocks within video form container
-    wrap.appendChild(card);
+    const st = document.createElement('style');
     st.id = 'video-queue-perf-style';
     st.textContent = `
         /* Фиксированный размер карточек для всех устройств */
@@ -1017,6 +980,55 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             font-size: 0.625rem !important;
           }
         }
+      `;
+    try { document.head.appendChild(st); } catch (_) { }
+  }
+
+  // Create queue UI lazily only when first generation starts or when restoring pending items
+  ensureQueueUI() {
+    const wrap = document.getElementById('video-form-container');
+    if (!wrap) return;
+
+    // Всегда обновляем стили (перед проверкой существования grid)
+    this.ensureVideoQueueStyles();
+
+    // If grid already exists (создан ранее), обновим его классы сетки под новую компоновку и выйдем
+    const existingGrid = document.getElementById('video-results-grid');
+    if (existingGrid) {
+      // Убираем inline стили чтобы CSS из video-queue-compact-style применился
+      try {
+        existingGrid.style.gridTemplateColumns = '';
+        existingGrid.style.gap = '';
+      } catch (_) { }
+      return;
+    }
+
+    // Card container
+    const card = document.createElement('div');
+    card.id = 'video-queue-card';
+    card.className = 'card p-6 mt-6';
+
+    card.innerHTML = `
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <h3 class="text-lg sm:text-xl font-bold">Очередь генерации</h3>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs bg-primary/15 text-primary border border-primary/30"
+                title="Результаты видео и эскизы хранятся локально 24 часа, затем удаляются автоматически">
+            24&nbsp;ч
+          </span>
+        </div>
+        <button type="button" id="clear-video-queue-btn" class="px-3 py-1.5 rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] text-xs sm:text-sm">
+          Очистить очередь
+        </button>
+      </div>
+      <div class="mt-2 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 text-xs text-[var(--muted)]">
+        Результаты (видео) хранятся локально 24 часа. По истечении срока очередь очищается автоматически. Данные не покидают ваш браузер.
+      </div>
+      <div id="video-results-grid" class="mt-4 grid gap-3"></div>
+    `;
+
+    // Insert after prompts/showcase blocks within video form container
+    wrap.appendChild(card);
 
     // Bind clear button to clear queue and remove UI immediately
     const clearBtn = card.querySelector('#clear-video-queue-btn');
