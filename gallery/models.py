@@ -120,9 +120,11 @@ class PublicPhoto(models.Model):
             from generate.views import _job_slug
             job = self.source_job
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
-            # Получаем категорию
-            category_slug = self.category.slug if self.category else "uncategorized"
-            return reverse("generate:photo_detail", args=[category_slug, slug_with_id])
+            # Для опубликованных - URL с категорией
+            if self.category:
+                return reverse("generate:photo_detail_with_category", args=[self.category.slug, slug_with_id])
+            else:
+                return reverse("generate:photo_detail", args=[slug_with_id])
 
         # SEO-friendly URL с категорией: /gallery/photo/<category-slug>/<photo-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
@@ -340,9 +342,11 @@ class PublicVideo(models.Model):
             from generate.views import _job_slug
             job = self.source_job
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
-            # Получаем категорию
-            category_slug = self.category.slug if self.category else "uncategorized"
-            return reverse("generate:video_detail", args=[category_slug, slug_with_id])
+            # Для опубликованных - URL с категорией
+            if self.category:
+                return reverse("generate:video_detail_with_category", args=[self.category.slug, slug_with_id])
+            else:
+                return reverse("generate:video_detail", args=[slug_with_id])
 
         # SEO-friendly URL с категорией: /gallery/video/<category-slug>/<video-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
