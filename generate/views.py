@@ -788,7 +788,7 @@ def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
 # Редирект на новый URL формат
     slug = _job_slug(job)
     slug_with_id = f"{slug}-{job.pk}"
-    
+
     # Проверяем, опубликовано ли
     is_published = False
     category_slug = None
@@ -797,14 +797,14 @@ def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
             public_entry = job.public_video_entries.first()
         else:
             public_entry = job.public_entries.first()
-        
+
         if public_entry:
             is_published = True
             if public_entry.category:
                 category_slug = public_entry.category.slug
     except Exception:
         pass
-    
+
     # Для опубликованных - URL с категорией, для неопубликованных - без
     if is_published and category_slug:
         if job.generation_type == 'video':
@@ -1138,7 +1138,7 @@ def job_like_toggle(request: HttpRequest, pk: int) -> JsonResponse:
                     public_entry = job.public_video_entries.first()
                 else:
                     public_entry = job.public_entries.first()
-                
+
                 if public_entry:
                     is_published = True
                     if public_entry.category:

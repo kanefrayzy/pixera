@@ -110,6 +110,52 @@ class ImageModelConfiguration(models.Model):
         help_text="Максимальная высота изображения в пикселях"
     )
 
+    # ============ ASPECT RATIO SETTINGS ============
+    # 🔲 Квадратные
+    aspect_ratio_1_1 = models.BooleanField("1:1 — квадрат (соцсети, иконки)", default=True)
+
+    # 📺 Классические (старые мониторы / ТВ)
+    aspect_ratio_4_3 = models.BooleanField("4:3 — стандарт (CRT, старые камеры)", default=False)
+    aspect_ratio_3_2 = models.BooleanField("3:2 — фотоаппараты, плёнка", default=False)
+    aspect_ratio_5_4 = models.BooleanField("5:4 — старые LCD (1280×1024)", default=False)
+
+    # 🖥 Современные широкоэкранные
+    aspect_ratio_16_9 = models.BooleanField("16:9 — основной стандарт (мониторы, ТВ, YouTube)", default=True)
+    aspect_ratio_16_10 = models.BooleanField("16:10 — рабочие мониторы, ноутбуки", default=False)
+    aspect_ratio_15_9 = models.BooleanField("15:9 — редкий переходный формат", default=False)
+    aspect_ratio_17_9 = models.BooleanField("17:9 — цифровое кино (DCI)", default=False)
+
+    # 🎬 Киноформаты
+    aspect_ratio_1_85_1 = models.BooleanField("1.85:1 — кинотеатры (Flat)", default=False)
+    aspect_ratio_2_00_1 = models.BooleanField("2.00:1 — Netflix, современные сериалы", default=False)
+    aspect_ratio_2_20_1 = models.BooleanField("2.20:1 — 70mm плёнка", default=False)
+    aspect_ratio_2_35_1 = models.BooleanField("2.35:1 — CinemaScope", default=False)
+    aspect_ratio_2_39_1 = models.BooleanField("2.39:1 — CinemaScope", default=False)
+    aspect_ratio_2_40_1 = models.BooleanField("2.40:1 — CinemaScope", default=False)
+
+    # 🖥 Ультраширокие
+    aspect_ratio_18_9 = models.BooleanField("18:9 (≈2:1)", default=False)
+    aspect_ratio_19_9 = models.BooleanField("19:9", default=False)
+    aspect_ratio_20_9 = models.BooleanField("20:9", default=False)
+    aspect_ratio_21_9 = models.BooleanField("21:9 — ультраширокие мониторы", default=False)
+    aspect_ratio_24_10 = models.BooleanField("24:10", default=False)
+    aspect_ratio_32_9 = models.BooleanField("32:9 — суперультраширокие", default=False)
+
+    # 📱 Вертикальные (мобильные, соцсети)
+    aspect_ratio_9_16 = models.BooleanField("9:16 — основной вертикальный (Stories, Reels)", default=True)
+    aspect_ratio_3_4 = models.BooleanField("3:4 — вертикальный стандарт", default=False)
+    aspect_ratio_2_3 = models.BooleanField("2:3 — фото", default=False)
+    aspect_ratio_4_5 = models.BooleanField("4:5 — Instagram", default=False)
+    aspect_ratio_5_8 = models.BooleanField("5:8", default=False)
+    aspect_ratio_10_16 = models.BooleanField("10:16", default=False)
+    aspect_ratio_9_19_5 = models.BooleanField("9:19.5", default=False)
+    aspect_ratio_9_20 = models.BooleanField("9:20", default=False)
+    aspect_ratio_9_21 = models.BooleanField("9:21", default=False)
+
+    # 🖼 Фотографические
+    aspect_ratio_7_5 = models.BooleanField("7:5", default=False)
+    aspect_ratio_8_10 = models.BooleanField("8:10 — портретная печать", default=False)
+
     # Параметры генерации
     supports_steps = models.BooleanField(
         "Поддерживает настройку шагов",
@@ -295,6 +341,60 @@ class ImageModelConfiguration(models.Model):
                 resolutions.append(resolution)
 
         return resolutions
+
+    def get_available_aspect_ratios(self):
+        """Возвращает список доступных соотношений сторон"""
+        ratios = []
+        ratio_fields = [
+            # 🔲 Квадратные
+            ('1:1', self.aspect_ratio_1_1),
+            
+            # 📺 Классические
+            ('4:3', self.aspect_ratio_4_3),
+            ('3:2', self.aspect_ratio_3_2),
+            ('5:4', self.aspect_ratio_5_4),
+            
+            # 🖥 Современные широкоэкранные
+            ('16:9', self.aspect_ratio_16_9),
+            ('16:10', self.aspect_ratio_16_10),
+            ('15:9', self.aspect_ratio_15_9),
+            ('17:9', self.aspect_ratio_17_9),
+            
+            # 🎬 Киноформаты
+            ('1.85:1', self.aspect_ratio_1_85_1),
+            ('2.00:1', self.aspect_ratio_2_00_1),
+            ('2.20:1', self.aspect_ratio_2_20_1),
+            ('2.35:1', self.aspect_ratio_2_35_1),
+            ('2.39:1', self.aspect_ratio_2_39_1),
+            ('2.40:1', self.aspect_ratio_2_40_1),
+            
+            # 🖥 Ультраширокие
+            ('18:9', self.aspect_ratio_18_9),
+            ('19:9', self.aspect_ratio_19_9),
+            ('20:9', self.aspect_ratio_20_9),
+            ('21:9', self.aspect_ratio_21_9),
+            ('24:10', self.aspect_ratio_24_10),
+            ('32:9', self.aspect_ratio_32_9),
+            
+            # 📱 Вертикальные
+            ('9:16', self.aspect_ratio_9_16),
+            ('3:4', self.aspect_ratio_3_4),
+            ('2:3', self.aspect_ratio_2_3),
+            ('4:5', self.aspect_ratio_4_5),
+            ('5:8', self.aspect_ratio_5_8),
+            ('10:16', self.aspect_ratio_10_16),
+            ('9:19.5', self.aspect_ratio_9_19_5),
+            ('9:20', self.aspect_ratio_9_20),
+            ('9:21', self.aspect_ratio_9_21),
+            
+            # 🖼 Фотографические
+            ('7:5', self.aspect_ratio_7_5),
+            ('8:10', self.aspect_ratio_8_10),
+        ]
+        for ratio, enabled in ratio_fields:
+            if enabled:
+                ratios.append(ratio)
+        return ratios
 
     def is_special_processing_model(self):
         """Проверяет, требует ли модель специальной обработки"""

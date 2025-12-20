@@ -106,7 +106,7 @@ urlpatterns = [
     # ── Новые URL для фото и видео по slug с категорией (для опубликованных)
     path("photo/<slug:category_slug>/<slug:slug>", views.photo_detail_with_category, name="photo_detail_with_category"),
     path("video/<slug:category_slug>/<slug:slug>", views.video_detail_with_category, name="video_detail_with_category"),
-    
+
     # ── URL для фото и видео без категории (для неопубликованных в галерее)
     path("photo/<slug:slug>", views.photo_detail, name="photo_detail"),
     path("video/<slug:slug>", views.video_detail, name="video_detail"),
