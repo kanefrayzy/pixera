@@ -2224,7 +2224,7 @@ video:not([controls]):hover + .video-play-overlay {
         const createdLabel = formatDate(it.created || it.created_at);
         const modelLabel = (it.model_display || it.model || it.job_model || it.source_model || "").toString().trim();
         return `
-          <article class="group cursor-pointer js-open-video"
+          <article class="group"
                    data-detail-url="${durl}"
                    data-video-url="${vurl}"
                    data-poster="${poster}">
@@ -2282,15 +2282,15 @@ video:not([controls]):hover + .video-play-overlay {
               </div>
 
               <div class="p-4">
-
-
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
-                  ${title || ""}
-                </h3>
+                <a href="${durl}" class="block pointer-events-auto">
+                  <h3 class="font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">
+                    ${title || ""}
+                  </h3>
+                </a>
 
                 <div class="flex items-center gap-2 mb-3">
                   ${pageOwnerAvatar ? `<img src="${pageOwnerAvatar}" alt="${pageOwnerUsername}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">` : `<span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">${(pageOwnerUsername||'U').slice(0,1).toUpperCase()}</span>`}
-                  <a href="/profile-${encodeURIComponent(pageOwnerUsername)}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal" aria-label="@${pageOwnerUsername}">
+                  <a href="/profile-${encodeURIComponent(pageOwnerUsername)}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal pointer-events-auto" aria-label="@${pageOwnerUsername}">
                     @${pageOwnerUsername}
                   </a>
                 </div>
@@ -2358,14 +2358,13 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
         const createdLabel = formatDate(it.created || it.created_at);
         const modelLabel = (it.model_display || it.model || it.job_model || it.source_model || "").toString().trim();
         return `
-          <article class="group cursor-pointer js-open-photo"
+          <article class="group"
                    data-detail-url="${durl}"
                    data-media-url="${src}"
                    data-title="${title}">
             <div class="card overflow-hidden">
               <div class="relative">
                 <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]" src="${src}" alt="${title}" loading="lazy">
-                <a class="absolute inset-0 cursor-zoom-in" href="${durl}" aria-label="Открыть"></a>
                 <!-- Top-right overlays (model + views) -->
                 <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
                   ${modelLabel ? `<div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">${modelLabel}</div>` : ''}

@@ -141,7 +141,7 @@ def _lookup_model_name_by_id(model_id: str) -> str:
     mid = (model_id or "").strip()
     if not mid:
         return ""
-    
+
     # 1) Check ImageModelConfiguration first
     try:
         from generate.models_image import ImageModelConfiguration
@@ -156,7 +156,7 @@ def _lookup_model_name_by_id(model_id: str) -> str:
                 return _canonicalize_name(name)
     except Exception:
         pass
-    
+
     # 2) Check VideoModel
     try:
         if VideoModel is not None:
@@ -171,7 +171,7 @@ def _lookup_model_name_by_id(model_id: str) -> str:
                     return _canonicalize_name(name)
     except Exception:
         pass
-    
+
     # 3) UI overrides
     try:
         return _canonicalize_name(MODEL_NAME_OVERRIDES.get(mid.lower(), mid))
