@@ -9,8 +9,9 @@ class ImageFieldManager {
         this.fieldMap = {
             // Basic parameters
             'resolution': () => document.getElementById('resolution-selector'),
-            'aspect_ratio': () => document.getElementById('aspect-ratio-selector'),
-            'custom_dimensions': () => document.getElementById('custom-dimensions-field'),
+            // NOTE: aspect_ratio and custom_dimensions are managed separately in updateModelParameters
+            // 'aspect_ratio': () => document.getElementById('aspect-ratio-selector'),
+            // 'custom_dimensions': () => document.getElementById('custom-dimensions-field'),
             'steps': () => document.getElementById('steps-input'),
             'cfg_scale': () => document.getElementById('cfg-scale-input'),
             'scheduler': () => document.getElementById('scheduler-select'),
