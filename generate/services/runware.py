@@ -159,6 +159,19 @@ def submit_image_inference_async(
     """Отправляет задачу (deliveryMethod=async) и возвращает taskUUID."""
     task_uuid = str(uuid.uuid4())
 
+    # Валидация размера для Seedream (bytedance:5@0)
+    model_lower = str(model_id or "").strip().lower()
+    if model_lower == "bytedance:5@0":
+        total_pixels = int(width) * int(height)
+        min_pixels = 3686400  # ~1920x1920
+        max_pixels = 16777216  # 4096x4096
+        if total_pixels < min_pixels or total_pixels > max_pixels:
+            raise RunwareError(
+                f"Seedream requires total pixels (width x height) between {min_pixels:,} and {max_pixels:,}. "
+                f"Current: {width}x{height} = {total_pixels:,} pixels. "
+                f"Try using resolutions like 1920x1920, 2048x2048, or 4096x4096."
+            )
+
     # Получаем конфигурацию модели
     model_config = _get_model_config(model_id)
 
@@ -313,6 +326,19 @@ def submit_image_inference_sync(
     number_results: int | None = None,
 ) -> str:
     """Синхронная генерация (deliveryMethod=sync). Возвращает imageURL."""
+
+    # Валидация размера для Seedream (bytedance:5@0)
+    model_lower = str(model_id or "").strip().lower()
+    if model_lower == "bytedance:5@0":
+        total_pixels = int(width) * int(height)
+        min_pixels = 3686400  # ~1920x1920
+        max_pixels = 16777216  # 4096x4096
+        if total_pixels < min_pixels or total_pixels > max_pixels:
+            raise RunwareError(
+                f"Seedream requires total pixels (width x height) between {min_pixels:,} and {max_pixels:,}. "
+                f"Current: {width}x{height} = {total_pixels:,} pixels. "
+                f"Try using resolutions like 1920x1920, 2048x2048, or 4096x4096."
+            )
 
     # Получаем конфигурацию модели
     model_config = _get_model_config(model_id)
