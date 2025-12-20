@@ -774,14 +774,35 @@ def video_detail_by_pk(request: HttpRequest, pk: int) -> HttpResponse:
         except Exception:
             pass
 
-    # Редирект только если текущий URL не совпадает с каноническим (избегаем бесконечного редиректа)
-    canonical_url = video.get_absolute_url()
-    current_path = request.path
-    if canonical_url != current_path and not current_path.startswith('/gallery/' + (video.category.slug + '/' if video.category else '')):
-        return redirect(canonical_url)
+    return redirect(video.get_absolute_url())
 
-    # Если мы уже на правильном URL, показываем видео
-    return video_detail(request, video.slug)
+
+def category_video_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
+    """
+    SEO-friendly URL для видео: /gallery/video/<category-slug>/<content-slug>
+    """
+    from .models import VideoCategory
+    
+    try:
+        category = VideoCategory.objects.filter(slug=category_slug).first()
+        if not category:
+            from django.http import Http404
+            raise Http404("Video category not found")
+        
+        video = PublicVideo.objects.filter(
+            slug=content_slug,
+            category=category,
+            is_active=True
+        ).first()
+        
+        if not video:
+            from django.http import Http404
+            raise Http404("Video not found")
+            
+        return video_detail(request, content_slug)
+    except Exception as e:
+        from django.http import Http404
+        raise Http404(f"Video not found: {e}")
 
 
 # ───────────────────────── VIDEO LIKE ─────────────────────────

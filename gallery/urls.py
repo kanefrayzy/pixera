@@ -27,10 +27,6 @@ urlpatterns = [
     path("populyarnoe/", RedirectView.as_view(pattern_name="gallery:trending", permanent=True)),
     path("trending/snippet/", RedirectView.as_view(pattern_name="gallery:trending_snippet", permanent=True)),
 
-    # SEO-friendly URLs: /gallery/photo/<category>/<slug> и /gallery/video/<category>/<slug>
-    path("photo/<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_photo_detail"),
-    path("video/<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_video_detail"),
-
     # Фото и действия
     path("photo/<int:pk>", views.photo_detail,  name="photo_detail"),
     path("photo/<int:pk>/like",    views.photo_like,    name="photo_like"),
@@ -101,6 +97,13 @@ urlpatterns = [
     path("admin/category/add/", RedirectView.as_view(pattern_name="gallery:admin_category_add", permanent=True)),
     path("admin/public/add/",                   views.admin_public_add,    name="admin_public_add"),
     path("admin/public/<int:pk>/delete/",       views.admin_public_delete, name="admin_public_delete"),
+
+    # SEO-friendly URLs с категорией и типом контента
+    path("photo/<slug:category_slug>/<slug:content_slug>", views.category_photo_detail, name="category_photo_detail"),
+    path("video/<slug:category_slug>/<slug:content_slug>", views_video.category_video_detail, name="category_video_detail"),
+    
+    # Legacy: старые URL без префикса photo/video (для обратной совместимости)
+    path("<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="legacy_category_detail"),
 
     # Человекопонятный SLUG-роут без префикса для видео (и потенциально для других сущностей, если понадобится)
     # ВАЖНО: держим в самом конце, чтобы не перекрывать остальные маршруты.

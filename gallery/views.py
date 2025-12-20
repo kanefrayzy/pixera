@@ -1111,13 +1111,9 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
         pk=pk,
         is_active=True,
     )
-    # редирект только если текущий URL не совпадает с каноническим
+    # Canonicalize: always redirect legacy /gallery/photo/<pk> to slug URL /gallery/<slug>
     if getattr(photo, "slug", None):
-        canonical_url = photo.get_absolute_url()
-        current_path = request.path
-        # Редиректим только если пути разные
-        if canonical_url != current_path and not current_path.startswith('/gallery/' + (photo.category.slug + '/' if photo.category else '')):
-            return redirect(canonical_url)
+        return redirect(photo.get_absolute_url())
 
     # Respect owner's hide setting: hidden publications are not visible to others
     try:
@@ -2097,46 +2093,70 @@ def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
     )
 
 
+def category_photo_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
+    """
+    SEO-friendly URL для фото: /gallery/photo/<category-slug>/<content-slug>
+    """
+    try:
+        category = Category.objects.filter(slug=category_slug).first()
+        if not category:
+            from django.http import Http404
+            raise Http404("Category not found")
+        
+        photo = PublicPhoto.objects.filter(
+            slug=content_slug,
+            category=category,
+            is_active=True
+        ).first()
+        
+        if not photo:
+            from django.http import Http404
+            raise Http404("Photo not found")
+            
+        return photo_detail_by_slug(request, content_slug)
+    except Exception as e:
+        from django.http import Http404
+        raise Http404(f"Photo not found: {e}")
+
+
 def category_content_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
     """
-    SEO-friendly URL: /gallery/photo/<category-slug>/<content-slug-id> или /gallery/video/<category-slug>/<content-slug-id>
-    - content_slug имеет формат: название-123 (slug-id)
-    - Извлекаем ID из конца и ищем по нему
-    - Тип контента (photo/video) определяется из request.path
+    Legacy SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug>
+    - Сначала ищем фото по Category.slug + PublicPhoto.slug
+    - Если не нашли — ищем видео по VideoCategory.slug + PublicVideo.slug
     """
-    # Извлекаем ID из конца slug (формат: slug-123)
+    # Пытаемся как фото
     try:
-        pk = int(content_slug.split('-')[-1])
-    except (ValueError, IndexError):
-        from django.http import Http404
-        raise Http404("Invalid content slug format")
-
-    # Определяем тип контента из URL
-    is_photo = '/photo/' in request.path
-    is_video = '/video/' in request.path
-
-    # Если это photo URL - ищем фото
-    if is_photo:
-        try:
-            photo = PublicPhoto.objects.filter(pk=pk).first()
+        category = Category.objects.filter(slug=category_slug).first()
+        if category:
+            photo = PublicPhoto.objects.filter(
+                slug=content_slug,
+                category=category,
+                is_active=True
+            ).first()
             if photo:
-                return photo_detail(request, pk)
-        except Exception:
-            pass
+                return photo_detail_by_slug(request, content_slug)
+    except Exception:
+        pass
 
-    # Если это video URL - ищем видео
-    if is_video:
-        try:
-            video = PublicVideo.objects.filter(pk=pk).first()
+    # Пытаемся как видео
+    try:
+        video_category = VideoCategory.objects.filter(slug=category_slug).first()
+        if video_category:
+            video = PublicVideo.objects.filter(
+                slug=content_slug,
+                category=video_category,
+                is_active=True
+            ).first()
             if video:
                 from . import views_video as vvid
-                return vvid.video_detail_by_pk(request, pk)
-        except Exception:
-            pass
+                return vvid.video_detail(request, content_slug)
+    except Exception:
+        pass
 
     # Если не нашли ни фото, ни видео - 404
     from django.http import Http404
-    raise Http404(f"Content with ID {pk} not found")
+    raise Http404("Content not found")
 
 
 def slug_detail(request: HttpRequest, slug: str) -> HttpResponse:
