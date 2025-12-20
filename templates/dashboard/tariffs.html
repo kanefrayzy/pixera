@@ -183,7 +183,7 @@
       </div>
       <h3 class="text-lg font-semibold mb-2">Тарифы временно недоступны</h3>
       <p class="text-[var(--muted)] mb-6">Попробуйте обновить страницу чуть позже или вернитесь к генерации.</p>
-      <a class="btn btn-primary" href="{% url 'generate:new' %}">Вернуться к генерации</a>
+      <a class="btn btn-primary" href="{% url 'generate:photo' %}">Вернуться к генерации</a>
     </div>
   {% endif %}
 
@@ -292,7 +292,7 @@
 
   <!-- Back to Generation -->
   <div class="text-center">
-    <a class="btn btn-ghost" href="{% url 'generate:new' %}">
+    <a class="btn btn-ghost" href="{% url 'generate:photo' %}">
       <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
       </svg>

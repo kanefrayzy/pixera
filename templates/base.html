@@ -291,7 +291,7 @@
   {% url 'home' as home_href2 %}
   {% url 'account_login' as account_login_url %}
   {% url 'account_signup' as account_signup_url %}
-  {% url 'generate:new' as gen_url %}
+  {% url 'generate:photo' as gen_url %}
   {% url 'dashboard:notifications' as notifications_url %}
   {% url 'dashboard:my_jobs' as my_jobs_url %}
 
@@ -316,7 +316,7 @@
         {% if not request.user.is_authenticated %}
         <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'gallery:trending' %}">{% trans "Тренды" %}</a>
         {% endif %}
-        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'generate:new' %}">{% trans "Генерация" %}</a>
+        <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'generate:photo' %}">{% trans "Генерация" %}</a>
         <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'blog:index' %}">{% trans "Блог" %}</a>
         {% if request.user.is_staff %}
         <a class="nav-link px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200" href="{% url 'dashboard:slider:list' %}">{% trans "Примеры слайдера" %}</a>
@@ -418,7 +418,7 @@
   <div class="lg:hidden flex items-center gap-0.5 ml-auto">
     {% if request.user.is_authenticated %}
       <a class="btn btn-ghost p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0"
-         href="{% url 'generate:new' %}" aria-label="{% trans 'Генерация' %}">
+         href="{% url 'generate:photo' %}" aria-label="{% trans 'Генерация' %}">
         <svg class="w-[18px] h-[18px] text-[var(--text)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
@@ -462,7 +462,7 @@
       </button>
     {% else %}
       <a class="btn btn-ghost p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 border-0"
-         href="{% url 'generate:new' %}" aria-label="{% trans 'Генерация' %}">
+         href="{% url 'generate:photo' %}" aria-label="{% trans 'Генерация' %}">
         <svg class="w-[18px] h-[18px] text-[var(--text)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
@@ -511,7 +511,7 @@
             <li><a href="{% if home_href1 %}{{ home_href1 }}{% elif home_href2 %}{{ home_href2 }}{% else %}/{% endif %}" class="hover:text-[var(--text)] transition">{% trans "Главная" %}</a></li>
             <li><a href="{% url 'gallery:index' %}" class="hover:text-[var(--text)] transition">{% trans "Галерея" %}</a></li>
             <li><a href="{% url 'gallery:trending' %}" class="hover:text-[var(--text)] transition">{% trans "Тренды" %}</a></li>
-            <li><a href="{% url 'generate:new' %}" class="hover:text-[var(--text)] transition">{% trans "Генерация" %}</a></li>
+            <li><a href="{% url 'generate:photo' %}" class="hover:text-[var(--text)] transition">{% trans "Генерация" %}</a></li>
             <li class="lg:hidden"><a href="{% url 'blog:index' %}" class="hover:text-[var(--text)] transition">{% trans "Блог" %}</a></li>
           </ul>
         </div>

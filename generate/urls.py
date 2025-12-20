@@ -9,7 +9,9 @@ app_name = "generate"
 
 urlpatterns = [
     # ── Страница генерации
-    path("new", views.new, name="new"),
+    path("photo", views.new_photo, name="photo"),
+    path("video", views.new_video, name="video"),
+    path("new", views.new, name="new"),  # Старый URL для совместимости
 
     # ── Управление моделями изображений (admin only)
     path("admin/image-models", views_image_models.image_models_list, name="image_models_list"),

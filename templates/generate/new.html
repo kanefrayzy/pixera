@@ -3952,6 +3952,14 @@ const init=()=>{
       if(pageSubtitle)pageSubtitle.textContent=isImage?'Создавайте уникальные изображения с помощью ИИ':'Создавайте уникальные видео с помощью ИИ';
 
       try{localStorage.setItem('gen.topMode',mode)}catch(_){}
+      
+      // Обновляем URL в браузере для SEO
+      const newPath = isImage ? '/generate/photo' : '/generate/video';
+      const currentPath = window.location.pathname;
+      if (currentPath !== newPath) {
+        const newUrl = newPath + window.location.search;
+        window.history.pushState({mode: mode}, '', newUrl);
+      }
 
       if(!isImage){
         loadVideoAssets();
@@ -3987,7 +3995,23 @@ const init=()=>{
   const usp=new URLSearchParams(location.search);
   const paramType=usp.get('type');
 
-  if(paramType==='video'){
+  // Определяем режим из URL path или параметра type
+  const currentPath = window.location.pathname;
+  let initialMode = null;
+
+  if (currentPath.includes('/generate/video')) {
+    initialMode = 'video';
+  } else if (currentPath.includes('/generate/photo')) {
+    initialMode = 'image';
+  } else if (paramType) {
+    initialMode = paramType;
+  }
+  {% if initial_mode %}
+  // Режим установлен из Django context
+  initialMode = '{{ initial_mode }}';
+  {% endif %}
+
+  if(initialMode==='video'){
     const savedSrc=localStorage.getItem('gen.videoSource');
     if(savedSrc){
       const tab=document.querySelector(`.video-source-tab[data-source="${savedSrc}"]`);
@@ -4096,39 +4120,39 @@ const init=()=>{
     if (modelParam) {
       let attempts = 0;
       const maxAttempts = 10;
-      
+
       const trySelectImageModel = () => {
         attempts++;
         const allCards = document.querySelectorAll('.image-model-card');
-        
+
         if (allCards.length > 0) {
           if (attempts === 1) {
             console.log('[Image] Available models:', Array.from(allCards).map(c => c.dataset.model));
             console.log('[Image] Looking for model:', modelParam);
           }
-          
+
           // Пробуем найти точное совпадение
           let modelCard = document.querySelector(`.image-model-card[data-model="${modelParam}"]`);
-          
+
           if (!modelCard) {
             // Если не нашли точное совпадение, пробуем с CSS.escape
             const escapedModel = CSS.escape(modelParam);
             modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
           }
-          
+
           if (!modelCard) {
             // Если всё равно не нашли, берем первую доступную
             modelCard = allCards[0];
             console.warn('[Image] Model', modelParam, 'not found, using default:', modelCard.dataset.model);
           }
-          
+
           if (modelCard) {
             modelCard.click();
             console.log('[Image] ✓ Model selected:', modelCard.dataset.model);
             return true;
           }
         }
-        
+
         if (attempts < maxAttempts) {
           setTimeout(trySelectImageModel, 200);
         } else {
@@ -4136,7 +4160,72 @@ const init=()=>{
         }
         return false;
       };
-      
+
+      setTimeout(trySelectImageModel, 500);
+    }
+  }else if(initialMode==='image'){
+    switchMode('image');
+    localStorage.setItem('gen.topMode','image');
+
+    // Обработка URL параметров для изображений
+    const promptParam = usp.get('prompt');
+    const modelParam = usp.get('model');
+
+    if (promptParam) {
+      setTimeout(() => {
+        const promptInput = document.getElementById('prompt');
+        if (promptInput) {
+          promptInput.value = decodeURIComponent(promptParam);
+          promptInput.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('[Image] Prompt set from URL');
+        }
+      }, 300);
+    }
+
+    if (modelParam) {
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      const trySelectImageModel = () => {
+        attempts++;
+        const allCards = document.querySelectorAll('.image-model-card');
+
+        if (allCards.length > 0) {
+          if (attempts === 1) {
+            console.log('[Image] Available models:', Array.from(allCards).map(c => c.dataset.model));
+            console.log('[Image] Looking for model:', modelParam);
+          }
+
+          // Пробуем найти точное совпадение
+          let modelCard = document.querySelector(`.image-model-card[data-model="${modelParam}"]`);
+
+          if (!modelCard) {
+            // Если не нашли точное совпадение, пробуем с CSS.escape
+            const escapedModel = CSS.escape(modelParam);
+            modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
+          }
+
+          if (!modelCard) {
+            // Если всё равно не нашли, берем первую доступную
+            modelCard = allCards[0];
+            console.warn('[Image] Model', modelParam, 'not found, using default:', modelCard.dataset.model);
+          }
+
+          if (modelCard) {
+            modelCard.click();
+            console.log('[Image] ✓ Model selected:', modelCard.dataset.model);
+            return true;
+          }
+        }
+
+        if (attempts < maxAttempts) {
+          setTimeout(trySelectImageModel, 200);
+        } else {
+          console.error('[Image] ✗ Failed to select model after', maxAttempts, 'attempts');
+        }
+        return false;
+      };
+
       setTimeout(trySelectImageModel, 500);
     }
   }else{
@@ -4161,21 +4250,21 @@ const init=()=>{
         if (modelParam) {
           let attempts = 0;
           const maxAttempts = 10;
-          
+
           const trySelectImageModel = () => {
             attempts++;
             const allCards = document.querySelectorAll('.image-model-card');
-            
+
             if (allCards.length > 0) {
               // Пробуем найти точное совпадение
               let modelCard = document.querySelector(`.image-model-card[data-model="${modelParam}"]`);
-              
+
               if (!modelCard) {
                 // Если не нашли, пробуем с CSS.escape
                 const escapedModel = CSS.escape(modelParam);
                 modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
               }
-              
+
               if (!modelCard && allCards.length > 0) {
                 // Берем первую доступную
                 modelCard = allCards[0];
@@ -4183,20 +4272,20 @@ const init=()=>{
                   console.warn('[Image] Model', modelParam, 'not found, using default');
                 }
               }
-              
+
               if (modelCard) {
                 modelCard.click();
                 console.log('[Image] ✓ Model selected (no type param)');
                 return true;
               }
             }
-            
+
             if (attempts < maxAttempts) {
               setTimeout(trySelectImageModel, 200);
             }
             return false;
           };
-          
+
           setTimeout(trySelectImageModel, 300);
         }
       }, 500);

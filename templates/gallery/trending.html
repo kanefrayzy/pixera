@@ -22,7 +22,7 @@
         </svg>
         Галерея
       </a>
-      <a class="btn btn-primary" href="{% url 'generate:new' %}">
+      <a class="btn btn-primary" href="{% url 'generate:photo' %}">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
@@ -246,7 +246,7 @@
                   </a>
                 </div>
                 {% if p.source_job and p.source_job.prompt %}
-                <a href="{% url 'generate:new' %}?prompt={{ p.source_job.prompt|urlencode }}&model={{ p.source_job.model_id|urlencode }}"
+                <a href="{% url 'generate:photo' %}?prompt={{ p.source_job.prompt|urlencode }}&model={{ p.source_job.model_id|urlencode }}"
                    class="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition whitespace-nowrap"
                    title="Использовать этот промпт">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -317,7 +317,7 @@
       </p>
 
       <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <a class="btn btn-primary" href="{% url 'generate:new' %}">
+        <a class="btn btn-primary" href="{% url 'generate:photo' %}">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>

@@ -17,7 +17,7 @@
         <p class="text-[var(--muted)] mt-1 sm:mt-2 text-sm sm:text-base">Управляйте своим аккаунтом и создавайте удивительные изображения</p>
       </div>
       <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-        <a class="btn btn-primary text-sm sm:text-base whitespace-nowrap" href="{% url 'generate:new' %}">
+        <a class="btn btn-primary text-sm sm:text-base whitespace-nowrap" href="{% url 'generate:photo' %}">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
@@ -363,7 +363,7 @@
             </svg>
             Пополнить баланс
           </a>
-          <a class="btn btn-ghost text-sm sm:text-base" href="{% url 'generate:new' %}">
+          <a class="btn btn-ghost text-sm sm:text-base" href="{% url 'generate:photo' %}">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
@@ -430,7 +430,7 @@
             </div>
             <h3 class="font-semibold mb-2 text-sm sm:text-base text-[var(--text)]">Пока нет обработок</h3>
             <p class="text-[var(--muted)] mb-3 sm:mb-4 text-xs sm:text-sm">Создайте первое изображение, чтобы увидеть историю здесь</p>
-            <a class="btn btn-primary text-sm sm:text-base" href="{% url 'generate:new' %}">Создать изображение</a>
+            <a class="btn btn-primary text-sm sm:text-base" href="{% url 'generate:photo' %}">Создать изображение</a>
           </div>
         {% endif %}
       </section>
@@ -461,7 +461,7 @@
             <span class="font-medium text-sm sm:text-base text-[var(--text)]">Галерея</span>
           </a>
 
-          <a class="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'generate:new' %}">
+          <a class="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl hover:bg-black/[.04] dark:hover:bg-white/10 transition group" href="{% url 'generate:photo' %}">
             <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-green-500/15 flex items-center justify-center group-hover:bg-green-500/25 transition flex-shrink-0">
               <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>

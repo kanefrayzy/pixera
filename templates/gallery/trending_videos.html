@@ -21,7 +21,7 @@
         </svg>
         Галерея
       </a>
-      <a class="btn btn-primary" href="{% url 'generate:new' %}">
+      <a class="btn btn-primary" href="{% url 'generate:video' %}">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
@@ -204,7 +204,7 @@
                   </a>
                 </div>
                 {% if v.source_job and v.source_job.prompt %}
-                <a href="{% url 'generate:new' %}?type=video&prompt={{ v.source_job.prompt|urlencode }}&model={{ v.source_job.model_id|urlencode }}"
+                <a href="{% url 'generate:video' %}?prompt={{ v.source_job.prompt|urlencode }}&model={{ v.source_job.model_id|urlencode }}"
                    class="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition whitespace-nowrap"
                    title="Использовать этот промпт">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -271,7 +271,7 @@
         Станьте первым, кто опубликует трендовое видео. Поделитесь своим творением с сообществом.
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <a class="btn btn-primary" href="{% url 'generate:new' %}">Создать видео</a>
+        <a class="btn btn-primary" href="{% url 'generate:video' %}">Создать видео</a>
         <a class="btn btn-ghost" href="{% url 'gallery:index' %}">Смотреть галерею</a>
       </div>
     </div>

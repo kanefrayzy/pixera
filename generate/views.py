@@ -514,6 +514,24 @@ def _merge_grant_to_wallet_once(request: HttpRequest, wallet: Wallet) -> None:
 #        views
 # =======================
 @require_http_methods(["GET"])
+def new_photo(request: HttpRequest) -> HttpResponse:
+    """Страница генерации изображений (photo mode)."""
+    response = new(request)
+    # Добавляем параметр type=image для автоматического переключения
+    if hasattr(response, 'context_data'):
+        response.context_data['initial_mode'] = 'image'
+    return response
+
+
+def new_video(request: HttpRequest) -> HttpResponse:
+    """Страница генерации видео (video mode)."""
+    response = new(request)
+    # Добавляем параметр type=video для автоматического переключения
+    if hasattr(response, 'context_data'):
+        response.context_data['initial_mode'] = 'video'
+    return response
+
+
 def new(request: HttpRequest) -> HttpResponse:
     is_staff = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
     price = 0 if (FREE_FOR_STAFF and is_staff) else TOKEN_COST

@@ -43,7 +43,7 @@
         </p>
 
         <div class="hero-buttons">
-          <a class="btn btn-primary text-sm sm:text-base lg:text-sm px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:px-5" href="{% url 'generate:new' %}" data-generate-url="{% url 'generate:new' %}">
+          <a class="btn btn-primary text-sm sm:text-base lg:text-sm px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:px-5" href="{% url 'generate:photo' %}" data-generate-url="{% url 'generate:photo' %}">
             <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
@@ -217,7 +217,7 @@
                   <div class="font-semibold mb-1 text-sm sm:text-base">{% trans "Готово за" %} <span id="generationTime">26</span> {% trans "секунд" %}</div>
                   <div class="text-xs sm:text-sm text-[var(--muted)] mb-3">{% trans "Сохранено в галерее и доступно в «Моих обработках»" %}</div>
                   <div class="flex flex-col sm:flex-row gap-2">
-                    <a class="btn btn-primary text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'generate:new' %}">{% trans "Попробовать" %}</a>
+                    <a class="btn btn-primary text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'generate:photo' %}">{% trans "Попробовать" %}</a>
                     <a class="btn btn-ghost text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'gallery:index' %}">{% trans "Смотреть похожие" %}</a>
                   </div>
                 </div>
@@ -565,7 +565,7 @@
       </p>
 
       <div class="cta-buttons">
-        <a class="btn btn-primary text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-10 py-2 sm:py-3 lg:py-5" href="{% url 'generate:new' %}">
+        <a class="btn btn-primary text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-10 py-2 sm:py-3 lg:py-5" href="{% url 'generate:photo' %}">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
