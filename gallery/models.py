@@ -119,20 +119,25 @@ class PublicPhoto(models.Model):
         if getattr(self, "slug", None) and self.category and self.category.slug:
             slug_with_id = f"{self.slug}-{self.pk}"
             return reverse("gallery:category_photo_detail", args=[self.category.slug, slug_with_id])
-        
+
         # Если нет категории, но есть slug - используем простой URL с ID
         if getattr(self, "slug", None):
             slug_with_id = f"{self.slug}-{self.pk}"
             return reverse("gallery:slug_detail", args=[slug_with_id])
-        
+
         # Legacy: фото без slug - используем ID
         return reverse("gallery:photo_detail", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация slug из title при отсутствии (транслитерация в ASCII)
+        # Автогенерация slug из промпта (если есть source_job), иначе из title
         if not getattr(self, "slug", None):
-            # make_slug гарантирует английский slug из любого языка
-            base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
+            # Приоритет: используем промпт из source_job
+            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
+                base = make_slug(self.source_job.prompt)[:120] or "photo"
+            else:
+                # Fallback: используем title
+                base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
+
             candidate = base or "photo"
             i = 1
             # обеспечиваем уникальность слага, добавляя суффикс -1, -2, ...
@@ -335,19 +340,25 @@ class PublicVideo(models.Model):
         if getattr(self, "slug", None) and self.category and self.category.slug:
             slug_with_id = f"{self.slug}-{self.pk}"
             return reverse("gallery:category_video_detail", args=[self.category.slug, slug_with_id])
-        
+
         # Если нет категории, но есть slug - используем простой URL с ID
         if getattr(self, "slug", None):
             slug_with_id = f"{self.slug}-{self.pk}"
             return reverse("gallery:slug_detail", args=[slug_with_id])
-        
+
         # Legacy: видео без slug - используем редирект по ID
         return reverse("gallery:video_detail_by_pk", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация слага из заголовка; обеспечение уникальности
+        # Автогенерация slug из промпта (если есть source_job), иначе из title
         if not getattr(self, "slug", None):
-            base = slugify(self.title or "")[:120] or "video"
+            # Приоритет: используем промпт из source_job
+            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
+                base = make_slug(self.source_job.prompt)[:120] or "video"
+            else:
+                # Fallback: используем title
+                base = slugify(self.title or "")[:120] or "video"
+
             candidate = base
             i = 1
             # избегаем коллизий
