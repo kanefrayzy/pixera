@@ -212,6 +212,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
 
     При нехватке средств — {"redirect": "<тарифы>"}.
     """
+    log.info(f"IMAGE API SUBMIT: user={request.user}, is_authenticated={request.user.is_authenticated}, is_staff={request.user.is_staff if request.user.is_authenticated else False}")
     prompt = (request.POST.get("prompt") or "").strip()
     if not prompt:
         return _err("Пустой промпт")
@@ -301,16 +302,21 @@ def api_submit(request: HttpRequest) -> JsonResponse:
 
         wallet, _ = Wallet.objects.get_or_create(user=request.user)
         tokens_spent = 0
+        
+        log.info(f"IMAGE GEN: user={request.user.id}, wallet_balance={wallet.balance}, cost={cost}, is_staff={is_staff_user}, FREE_FOR_STAFF={free_for_staff_enabled}")
 
         if cost > 0:
             with transaction.atomic():
                 w = Wallet.objects.select_for_update().get(pk=wallet.pk)
                 bal = int(w.balance or 0)
+                log.info(f"IMAGE GEN: Checking balance: bal={bal}, cost={cost}, sufficient={bal >= cost}")
                 if bal < cost:
+                    log.warning(f"IMAGE GEN: Insufficient balance for user {request.user.id}: {bal} < {cost}, redirecting to tariffs")
                     return JsonResponse({"redirect": _tariffs_url()})
                 w.balance = bal - cost
                 w.save(update_fields=["balance"])
                 tokens_spent = cost
+                log.info(f"IMAGE GEN: Charged {cost} tokens from user {request.user.id}, new balance: {w.balance}")
 
         # Создаем несколько задач согласно number_results
         created_jobs = []
