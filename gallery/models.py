@@ -124,35 +124,20 @@ class PublicPhoto(models.Model):
         return reverse("gallery:photo_detail", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация slug из промпта генерации (если есть source_job) или из title
-        if not getattr(self, "slug", None):
-            # Если есть связь с задачей генерации, используем промпт
-            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
-                from generate.views import _job_slug
-                base = _job_slug(self.source_job)[:120]
-            else:
-                # Иначе используем title
-                base = make_slug(self.title)[:120] or "photo"
-            
-            # Сначала сохраняем без slug, чтобы получить pk
-            if not self.pk:
-                self.slug = "temp"  # временный slug
-                super().save(*args, **kwargs)
-            
-            # Теперь генерируем финальный slug с ID
-            base = base or "photo"
-            candidate = f"{base}-{self.pk}"[:180]
-            
-            # Обеспечиваем уникальность (на всякий случай)
-            i = 1
-            while PublicPhoto.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
-                suffix = f"-{i}"
-                candidate = f"{base}-{self.pk}{suffix}"[:180]
-                i += 1
-            
-            self.slug = candidate
+        # Сначала сохраняем чтобы получить pk, если его еще нет
+        is_new = self.pk is None
+        if is_new:
+            super().save(*args, **kwargs)
         
-        super().save(*args, **kwargs)
+        # Автогенерация slug из title при отсутствии (транслитерация в ASCII)
+        if not getattr(self, "slug", None):
+            # make_slug гарантирует английский slug из любого языка
+            base = make_slug(self.title)[:120] or "photo"
+            # Добавляем ID в конец slug для уникальности и совместимости с generate
+            self.slug = f"{base}-{self.pk}"
+        
+        if not is_new:
+            super().save(*args, **kwargs)
 
 
 class PhotoLike(models.Model):
@@ -351,35 +336,19 @@ class PublicVideo(models.Model):
         return reverse("gallery:video_detail_by_pk", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация slug из промпта генерации (если есть source_job) или из title
-        if not getattr(self, "slug", None):
-            # Если есть связь с задачей генерации, используем промпт
-            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
-                from generate.views import _job_slug
-                base = _job_slug(self.source_job)[:120]
-            else:
-                # Иначе используем title
-                base = slugify(self.title or "")[:120] or "video"
-            
-            # Сначала сохраняем без slug, чтобы получить pk
-            if not self.pk:
-                self.slug = "temp"  # временный slug
-                super().save(*args, **kwargs)
-            
-            # Теперь генерируем финальный slug с ID
-            base = base or "video"
-            candidate = f"{base}-{self.pk}"[:180]
-            
-            # Обеспечиваем уникальность (на всякий случай)
-            i = 1
-            while PublicVideo.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
-                suffix = f"-{i}"
-                candidate = f"{base}-{self.pk}{suffix}"[:180]
-                i += 1
-            
-            self.slug = candidate
+        # Сначала сохраняем чтобы получить pk, если его еще нет
+        is_new = self.pk is None
+        if is_new:
+            super().save(*args, **kwargs)
         
-        super().save(*args, **kwargs)
+        # Автогенерация слага из заголовка; обеспечение уникальности
+        if not getattr(self, "slug", None):
+            base = slugify(self.title or "")[:120] or "video"
+            # Добавляем ID в конец slug для уникальности и совместимости с generate
+            self.slug = f"{base}-{self.pk}"
+        
+        if not is_new:
+            super().save(*args, **kwargs)
 
 
 class VideoLike(models.Model):
