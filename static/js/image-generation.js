@@ -1167,7 +1167,16 @@
       headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'fetch' },
       credentials: 'same-origin'
     });
+    
+    // Логируем статус ответа
+    console.log('[image-gen] Response status:', resp.status, resp.statusText);
+    console.log('[image-gen] Response headers:', Object.fromEntries(resp.headers.entries()));
+    
     const j = await resp.json().catch(()=> ({}));
+    
+    // Логируем полный ответ сервера
+    console.log('[image-gen] Server response:', JSON.stringify(j, null, 2));
+    
     if (!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status));
     return j;
   }
