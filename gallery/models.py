@@ -115,29 +115,30 @@ class PublicPhoto(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<photo-slug>
-        if getattr(self, "slug", None) and self.category and self.category.slug:
-            return reverse("gallery:category_photo_detail", args=[self.category.slug, self.slug])
-        elif getattr(self, "slug", None):
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<photo-slug-id>
+        if getattr(self, "slug", None) and self.pk and self.category and self.category.slug:
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:category_photo_detail", args=[self.category.slug, slug_with_id])
+        elif getattr(self, "slug", None) and self.pk:
             # Fallback: без категории
-            return reverse("gallery:slug_detail", args=[self.slug])
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:slug_detail", args=[slug_with_id])
         return reverse("gallery:photo_detail", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Сначала сохраняем чтобы получить pk, если его еще нет
-        is_new = self.pk is None
-        if is_new:
-            super().save(*args, **kwargs)
-        
         # Автогенерация slug из title при отсутствии (транслитерация в ASCII)
         if not getattr(self, "slug", None):
             # make_slug гарантирует английский slug из любого языка
-            base = make_slug(self.title)[:120] or "photo"
-            # Добавляем ID в конец slug для уникальности и совместимости с generate
-            self.slug = f"{base}-{self.pk}"
-        
-        if not is_new:
-            super().save(*args, **kwargs)
+            base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
+            candidate = base or "photo"
+            i = 1
+            # обеспечиваем уникальность слага, добавляя суффикс -1, -2, ...
+            while PublicPhoto.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
+                suffix = f"-{i}"
+                candidate = (base + suffix)[:180]
+                i += 1
+            self.slug = candidate
+        super().save(*args, **kwargs)
 
 
 class PhotoLike(models.Model):
@@ -327,28 +328,29 @@ class PublicVideo(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/video/<video-slug>
-        if getattr(self, "slug", None) and self.category and self.category.slug:
-            return reverse("gallery:category_video_detail", args=[self.category.slug, self.slug])
-        elif getattr(self, "slug", None):
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/video/<video-slug-id>
+        if getattr(self, "slug", None) and self.pk and self.category and self.category.slug:
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:category_video_detail", args=[self.category.slug, slug_with_id])
+        elif getattr(self, "slug", None) and self.pk:
             # Fallback: без категории
-            return reverse("gallery:slug_detail", args=[self.slug])
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:slug_detail", args=[slug_with_id])
         return reverse("gallery:video_detail_by_pk", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Сначала сохраняем чтобы получить pk, если его еще нет
-        is_new = self.pk is None
-        if is_new:
-            super().save(*args, **kwargs)
-        
         # Автогенерация слага из заголовка; обеспечение уникальности
         if not getattr(self, "slug", None):
             base = slugify(self.title or "")[:120] or "video"
-            # Добавляем ID в конец slug для уникальности и совместимости с generate
-            self.slug = f"{base}-{self.pk}"
-        
-        if not is_new:
-            super().save(*args, **kwargs)
+            candidate = base
+            i = 1
+            # избегаем коллизий
+            while PublicVideo.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
+                suffix = f"-{i}"
+                candidate = (base + suffix)[:180]
+                i += 1
+            self.slug = candidate
+        super().save(*args, **kwargs)
 
 
 class VideoLike(models.Model):
