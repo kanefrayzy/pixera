@@ -103,7 +103,11 @@ urlpatterns = [
     path("job/<int:pk>/status", views.job_status_no_slug, name="job_status_no_slug"),
     path("job/<int:pk>/<slug:slug>/image", views.job_image, name="job_image"),
 
-    # ── Новые URL для фото и видео по slug с категорией
+    # ── URL для фото и видео по slug БЕЗ категории (для профиля/my jobs)
+    path("photo/<slug:slug>", views.photo_detail_no_category, name="photo_detail_no_category"),
+    path("video/<slug:slug>", views.video_detail_no_category, name="video_detail_no_category"),
+    
+    # ── URL для фото и видео по slug С категорией (для галереи)
     path("photo/<slug:category_slug>/<slug:slug>", views.photo_detail, name="photo_detail"),
     path("video/<slug:category_slug>/<slug:slug>", views.video_detail, name="video_detail"),
 

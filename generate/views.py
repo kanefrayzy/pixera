@@ -788,7 +788,7 @@ def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
     # Редирект на новый URL формат: photo/<category>/<slug>-<pk> или video/<category>/<slug>-<pk>
     slug = _job_slug(job)
     slug_with_id = f"{slug}-{job.pk}"
-    
+
     # Получаем категорию из связанного PublicPhoto/PublicVideo
     category_slug = "uncategorized"
     try:
@@ -800,7 +800,7 @@ def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
             category_slug = public_entry.category.slug
     except Exception:
         pass
-    
+
     if job.generation_type == 'video':
         return redirect("generate:video_detail", category_slug=category_slug, slug=slug_with_id)
     else:
@@ -822,7 +822,7 @@ def photo_detail(request: HttpRequest, category_slug: str, slug: str) -> HttpRes
 
     # Проверка корректности slug и категории
     expected_slug = f"{_job_slug(job)}-{job.pk}"
-    
+
     # Получаем категорию из PublicPhoto, если есть
     expected_category_slug = "uncategorized"  # default
     try:
@@ -831,7 +831,7 @@ def photo_detail(request: HttpRequest, category_slug: str, slug: str) -> HttpRes
             expected_category_slug = public_photo.category.slug
     except Exception:
         pass
-    
+
     if slug != expected_slug or category_slug != expected_category_slug:
         return redirect("generate:photo_detail", category_slug=expected_category_slug, slug=expected_slug)
 
@@ -854,7 +854,7 @@ def video_detail(request: HttpRequest, category_slug: str, slug: str) -> HttpRes
 
     # Проверка корректности slug и категории
     expected_slug = f"{_job_slug(job)}-{job.pk}"
-    
+
     # Получаем категорию из PublicVideo, если есть
     expected_category_slug = "uncategorized"  # default
     try:
@@ -863,11 +863,49 @@ def video_detail(request: HttpRequest, category_slug: str, slug: str) -> HttpRes
             expected_category_slug = public_video.category.slug
     except Exception:
         pass
-    
+
     if slug != expected_slug or category_slug != expected_category_slug:
         return redirect("generate:video_detail", category_slug=expected_category_slug, slug=expected_slug)
 
     # Используем существующую логику job_detail
+    return job_detail(request, pk=job.pk, slug=_job_slug(job))
+
+
+def photo_detail_no_category(request: HttpRequest, slug: str) -> HttpResponse:
+    """Детали фото по slug БЕЗ категории (для профиля)"""
+    parts = slug.rsplit('-', 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        pk = int(parts[1])
+        job = get_object_or_404(GenerationJob, pk=pk, generation_type='image')
+    else:
+        raise Http404("Invalid slug format")
+
+    if not _viewer_allowed_on_job(request, job):
+        return HttpResponseForbidden("Forbidden")
+
+    expected_slug = f"{_job_slug(job)}-{job.pk}"
+    if slug != expected_slug:
+        return redirect("generate:photo_detail_no_category", slug=expected_slug)
+
+    return job_detail(request, pk=job.pk, slug=_job_slug(job))
+
+
+def video_detail_no_category(request: HttpRequest, slug: str) -> HttpResponse:
+    """Детали видео по slug БЕЗ категории (для профиля)"""
+    parts = slug.rsplit('-', 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        pk = int(parts[1])
+        job = get_object_or_404(GenerationJob, pk=pk, generation_type='video')
+    else:
+        raise Http404("Invalid slug format")
+
+    if not _viewer_allowed_on_job(request, job):
+        return HttpResponseForbidden("Forbidden")
+
+    expected_slug = f"{_job_slug(job)}-{job.pk}"
+    if slug != expected_slug:
+        return redirect("generate:video_detail_no_category", slug=expected_slug)
+
     return job_detail(request, pk=job.pk, slug=_job_slug(job))
 
 
@@ -1074,7 +1112,7 @@ def job_like_toggle(request: HttpRequest, pk: int) -> JsonResponse:
             # Determine if it's photo or video based on generation_type
             gen_type = getattr(job, "generation_type", "image")
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
-            
+
             # Получаем категорию из связанного PublicPhoto/PublicVideo
             category_slug = "uncategorized"
             try:
@@ -1086,7 +1124,7 @@ def job_like_toggle(request: HttpRequest, pk: int) -> JsonResponse:
                     category_slug = public_entry.category.slug
             except Exception:
                 pass
-            
+
             if gen_type == "video":
                 message_text = f"@{request.user.username} понравилось ваше видео"
                 link_url = reverse("generate:video_detail", args=[category_slug, slug_with_id])
