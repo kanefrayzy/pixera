@@ -2106,34 +2106,36 @@ def category_content_detail(request: HttpRequest, category_slug: str, content_sl
         from django.http import Http404
         raise Http404("Content not found")
 
-    # Пытаемся как фото
-    try:
+    # Пытаемся как фото (сначала с категорией, потом без)
+    photo = PublicPhoto.objects.filter(pk=pk, is_active=True).first()
+    if photo:
+        # Проверяем категорию только для валидации URL, но не для поиска
         category = Category.objects.filter(slug=category_slug).first()
-        if category:
-            photo = PublicPhoto.objects.filter(
-                pk=pk,
-                category=category,
-                is_active=True
-            ).first()
-            if photo:
-                return photo_detail(request, pk)
-    except Exception:
-        pass
+        if category and photo.category == category:
+            return photo_detail(request, pk)
+        # Если категория не совпадает, но фото существует - редирект на правильный URL
+        elif photo.category and photo.category.slug:
+            from django.shortcuts import redirect
+            return redirect(photo.get_absolute_url(), permanent=True)
+        else:
+            # Фото без категории - показываем его
+            return photo_detail(request, pk)
 
     # Пытаемся как видео
-    try:
+    video = PublicVideo.objects.filter(pk=pk, is_active=True).first()
+    if video:
         video_category = VideoCategory.objects.filter(slug=category_slug).first()
-        if video_category:
-            video = PublicVideo.objects.filter(
-                pk=pk,
-                category=video_category,
-                is_active=True
-            ).first()
-            if video:
-                from . import views_video as vvid
-                return vvid.video_detail_by_pk(request, pk)
-    except Exception:
-        pass
+        if video_category and video.category == video_category:
+            from . import views_video as vvid
+            return vvid.video_detail_by_pk(request, pk)
+        # Если категория не совпадает, но видео существует - редирект на правильный URL
+        elif video.category and video.category.slug:
+            from django.shortcuts import redirect
+            return redirect(video.get_absolute_url(), permanent=True)
+        else:
+            # Видео без категории - показываем его
+            from . import views_video as vvid
+            return vvid.video_detail_by_pk(request, pk)
 
     # Если не нашли ни фото, ни видео - 404
     from django.http import Http404
