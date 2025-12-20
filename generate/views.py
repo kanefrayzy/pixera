@@ -792,7 +792,10 @@ def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
     # Получаем категорию из связанного PublicPhoto/PublicVideo
     category_slug = "uncategorized"
     try:
-        public_entry = job.public_entries.first()
+        if job.generation_type == 'video':
+            public_entry = job.public_video_entries.first()
+        else:
+            public_entry = job.public_entries.first()
         if public_entry and public_entry.category:
             category_slug = public_entry.category.slug
     except Exception:
@@ -855,7 +858,7 @@ def video_detail(request: HttpRequest, category_slug: str, slug: str) -> HttpRes
     # Получаем категорию из PublicVideo, если есть
     expected_category_slug = "uncategorized"  # default
     try:
-        public_video = job.public_entries.first()
+        public_video = job.public_video_entries.first()
         if public_video and public_video.category:
             expected_category_slug = public_video.category.slug
     except Exception:
@@ -1075,7 +1078,10 @@ def job_like_toggle(request: HttpRequest, pk: int) -> JsonResponse:
             # Получаем категорию из связанного PublicPhoto/PublicVideo
             category_slug = "uncategorized"
             try:
-                public_entry = job.public_entries.first()
+                if gen_type == "video":
+                    public_entry = job.public_video_entries.first()
+                else:
+                    public_entry = job.public_entries.first()
                 if public_entry and public_entry.category:
                     category_slug = public_entry.category.slug
             except Exception:
