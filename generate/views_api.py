@@ -319,7 +319,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 "original_prompt": original_prompt,
                 "status": GenerationJob.Status.PENDING,
                 "error": "",
-                "tokens_spent": base_cost if i == 0 else 0,  # Токены списываем только с первой задачи
+                "tokens_spent": tokens_spent if i == 0 else 0,  # Используем реально списанные токены (0 для админов)
             }
             if model_id_in:
                 job_kwargs["model_id"] = model_id_in
@@ -420,7 +420,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 "original_prompt": original_prompt,
                 "status": GenerationJob.Status.PENDING,
                 "error": "",
-                "tokens_spent": base_cost if i == 0 else 0,  # Токены списываем только с первой задачи
+                "tokens_spent": cost if i == 0 else 0,  # Используем реально списанную стоимость
             }
             if model_id_in:
                 job_kwargs["model_id"] = model_id_in
