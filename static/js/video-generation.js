@@ -2659,9 +2659,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Поля провайдера
     const providerFields = this.collectProviderFields();
-    const numResults = parseInt(
-      (providerFields.numberResults ?? providerFields.number_results ?? 1), 10
-    ) || 1;
+    
+    // Читаем количество видео из ползунка (не из провайдера!)
+    const videoQuantityEl = document.getElementById('video-quantity');
+    const numResults = videoQuantityEl ? parseInt(videoQuantityEl.value, 10) : 1;
 
     // Прячем блок с настройками и готовим контейнер для результатов
     const modeBlock = document.getElementById('video-mode-block');
@@ -3322,14 +3323,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Умное масштабирование: на мобилке выше, на ПК 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;"
+      <div class="video-tile-container" style="position: relative; overflow: hidden; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 0.75rem;"
         <!-- Видео -->
         <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
-               preload="metadata"
+               preload="auto"
                loop
                muted
-               playsinline
-               poster="${videoUrl}#t=0.1">
+               playsinline>
           <source src="${videoUrl}" type="video/mp4">
           Ваш браузер не поддерживает видео.
         </video>
@@ -3396,18 +3396,43 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         // Загружаем метаданные для отображения первого кадра
         videoEl.load();
 
-        // Принудительно загружаем первый кадр для превью
+        // Показываем первый кадр когда метаданные загружены
         videoEl.addEventListener('loadedmetadata', () => {
           try {
             videoEl.currentTime = 0.1;
           } catch(_) {}
         }, { once: true });
 
-        // Убираем черный экран после загрузки
+        // Убираем градиентный фон после загрузки видео
         videoEl.addEventListener('loadeddata', () => {
           try {
-            if (videoEl.style) {
-              videoEl.style.opacity = '1';
+            const container = tile.querySelector('.video-tile-container');
+            if (container) {
+              container.style.background = '#000';
+            }
+          } catch(_) {}
+        }, { once: true });
+
+        // Обработка ошибок загрузки
+        videoEl.addEventListener('error', () => {
+          try {
+            console.warn('[video-gen] Video load error:', videoUrl);
+            const container = tile.querySelector('.video-tile-container');
+            if (container) {
+              container.style.background = '#1a1a2e';
+              container.innerHTML = `
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.875rem; padding: 1rem; text-align: center;">
+                  <div>
+                    <svg style="width: 2rem; height: 2rem; margin: 0 auto 0.5rem; opacity: 0.5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p style="opacity: 0.7;">Ошибка загрузки видео</p>
+                    <a href="${videoUrl}" target="_blank" style="color: #6366f1; text-decoration: underline; font-size: 0.75rem; margin-top: 0.5rem; display: block;">Открыть напрямую</a>
+                  </div>
+                </div>
+              `;
             }
           } catch(_) {}
         }, { once: true });
