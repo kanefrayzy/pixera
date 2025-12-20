@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 
 from dashboard.models import Wallet
 from .models import GenerationJob
+from .models_image import ImageModelConfiguration
 from ai_gallery.services.runware_client import _extract_video_url as _rw_extract_video_url
 
 try:
@@ -91,19 +92,34 @@ def _submit_sync_direct(prompt: str, model_id: str, *, width: int, height: int) 
     """
     api = getattr(settings, "RUNWARE_API_URL",
                   "https://api.runware.ai/v1").rstrip("/")
-    special = (model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0"}
+    
+    # Получаем конфигурацию модели из БД
+    model_config = None
+    try:
+        model_config = ImageModelConfiguration.objects.get(model_id=model_id)
+    except ImageModelConfiguration.DoesNotExist:
+        log.warning(f"Model config not found for {model_id}, using defaults")
+    
     payload = {
         "model": model_id,
         "prompt": prompt,
         "width": width,
         "height": height,
     }
-    # Для Flux/Seedream не отправляем steps/cfg_scale (API возвращает unsupportedArchitectureSteps)
-    if not special:
+    
+    # Добавляем параметры только если модель их поддерживает
+    if model_config:
+        if model_config.supports_steps:
+            payload["steps"] = model_config.default_steps or 33
+        if model_config.supports_cfg_scale:
+            payload["cfg_scale"] = float(model_config.default_cfg_scale or 3.1)
+    else:
+        # Fallback для моделей без конфигурации (старое поведение)
         payload.update({
             "steps": 33,
             "cfg_scale": 3.1,
         })
+    
     r = requests.post(f"{api}/images/generate", json=payload,
                       headers=_auth_headers(), timeout=60)
     if r.status_code == 401:

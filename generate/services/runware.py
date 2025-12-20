@@ -17,6 +17,15 @@ class RunwareError(Exception):
     """Ошибки взаимодействия с Runware API."""
 
 
+def _get_model_config(model_id: str):
+    """Получает конфигурацию модели из БД или возвращает None"""
+    try:
+        from ..models_image import ImageModelConfiguration
+        return ImageModelConfiguration.objects.get(model_id=model_id)
+    except Exception:
+        return None
+
+
 # ───────────────────────────────── helpers ───────────────────────────────── #
 
 def _get_api_url() -> str:
@@ -149,9 +158,23 @@ def submit_image_inference_async(
 ) -> str:
     """Отправляет задачу (deliveryMethod=async) и возвращает taskUUID."""
     task_uuid = str(uuid.uuid4())
-    special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
-    if special:
-        # Flux/Seedream: без steps/CFG/scheduler, и с includeCost, JPEG, outputType=["URL"]
+    
+    # Получаем конфигурацию модели
+    model_config = _get_model_config(model_id)
+    
+    # Определяем, является ли модель "специальной" (по конфигурации или по старой логике)
+    is_special = False
+    if model_config:
+        is_special = (not model_config.supports_steps or 
+                     not model_config.supports_cfg_scale or 
+                     not model_config.supports_scheduler or
+                     model_config.is_special_model)
+    else:
+        # Fallback для моделей без конфигурации
+        is_special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
+    
+    if is_special:
+        # Специальные модели: без steps/CFG/scheduler, и с includeCost, JPEG, outputType=["URL"]
         task: Dict[str, Any] = {
             "taskType": "imageInference",
             "taskUUID": task_uuid,
@@ -178,12 +201,24 @@ def submit_image_inference_async(
             "height": int(height),
             "width": int(width),
             "model": model_id,
-            "steps": int(steps),
-            "CFGScale": float(cfg_scale),
             "numberResults": 1,
         }
-        if scheduler:
-            task["scheduler"] = scheduler
+        
+        # Добавляем параметры только если модель их поддерживает
+        if model_config:
+            if model_config.supports_steps:
+                task["steps"] = int(model_config.default_steps or steps)
+            if model_config.supports_cfg_scale:
+                task["CFGScale"] = float(model_config.default_cfg_scale or cfg_scale)
+            if model_config.supports_scheduler and scheduler:
+                task["scheduler"] = scheduler
+        else:
+            # Fallback для моделей без конфигурации
+            task["steps"] = int(steps)
+            task["CFGScale"] = float(cfg_scale)
+            if scheduler:
+                task["scheduler"] = scheduler
+        
         if number_results is not None:
             task["numberResults"] = int(number_results)
     if webhook_url:
@@ -278,8 +313,22 @@ def submit_image_inference_sync(
     number_results: int | None = None,
 ) -> str:
     """Синхронная генерация (deliveryMethod=sync). Возвращает imageURL."""
-    special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
-    if special:
+    
+    # Получаем конфигурацию модели
+    model_config = _get_model_config(model_id)
+    
+    # Определяем, является ли модель "специальной"
+    is_special = False
+    if model_config:
+        is_special = (not model_config.supports_steps or 
+                     not model_config.supports_cfg_scale or 
+                     not model_config.supports_scheduler or
+                     model_config.is_special_model)
+    else:
+        # Fallback для моделей без конфигурации
+        is_special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
+    
+    if is_special:
         task: Dict[str, Any] = {
             "taskType": "imageInference",
             "taskUUID": str(uuid.uuid4()),
@@ -306,12 +355,24 @@ def submit_image_inference_sync(
             "width": int(width),
             "height": int(height),
             "model": model_id,
-            "steps": int(steps),
-            "CFGScale": float(cfg_scale),
             "numberResults": 1,
         }
-        if scheduler:
-            task["scheduler"] = scheduler
+        
+        # Добавляем параметры только если модель их поддерживает
+        if model_config:
+            if model_config.supports_steps:
+                task["steps"] = int(model_config.default_steps or steps)
+            if model_config.supports_cfg_scale:
+                task["CFGScale"] = float(model_config.default_cfg_scale or cfg_scale)
+            if model_config.supports_scheduler and scheduler:
+                task["scheduler"] = scheduler
+        else:
+            # Fallback для моделей без конфигурации
+            task["steps"] = int(steps)
+            task["CFGScale"] = float(cfg_scale)
+            if scheduler:
+                task["scheduler"] = scheduler
+        
         if number_results is not None:
             task["numberResults"] = int(number_results)
 
