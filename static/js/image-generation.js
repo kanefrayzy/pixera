@@ -1253,6 +1253,7 @@
 
       const doneUrl = j?.image?.url || j?.image_url || '';
       const jid = String(j?.id || j?.job_id || '').trim();
+      const jobIds = j?.job_ids || []; // Массив всех созданных задач
 
       if (doneUrl) {
         // Single result returned immediately
@@ -1261,14 +1262,25 @@
         }
         // Remove extra tiles
         tiles.slice(1).forEach(t => { try { t.remove(); } catch(_) {} });
+      } else if (jobIds.length > 0) {
+        // Multiple jobs created - assign each tile to its job
+        jobIds.forEach((jobId, idx) => {
+          if (tiles[idx]) {
+            setTileProgress(tiles[idx], 5, 'Генерация изображения…');
+            addOrUpdateEntry(jobId, { status: 'pending' });
+            pollStatusInline(jobId, tiles[idx]);
+          }
+        });
+        // Remove extra tiles if any
+        tiles.slice(jobIds.length).forEach(t => { try { t.remove(); } catch(_) {} });
       } else if (jid) {
-        // Job queued - update first tile and poll
+        // Single job queued - update first tile and poll
         if (tiles[0]) {
           setTileProgress(tiles[0], 5, `Генерация ${count} изображени${count === 1 ? 'я' : count < 5 ? 'й' : 'й'}…`);
           addOrUpdateEntry(jid, { status: 'pending' });
           pollStatusInline(jid, tiles[0]);
         }
-        // Remove extra tiles - backend will generate multiple results for one job
+        // Remove extra tiles
         tiles.slice(1).forEach(t => { try { t.remove(); } catch(_) {} });
       } else {
         // Error - show on first tile

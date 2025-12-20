@@ -656,12 +656,17 @@ def video_submit(request):
                     created_job.status = GenerationJob.Status.RUNNING
                     created_job.save()
 
-            return JsonResponse({
+            # Возвращаем ID всех созданных задач
+            response_data = {
                 'success': True,
-                'job_id': job.id,  # Возвращаем ID первой задачи
+                'job_id': job.id,  # Первая задача для обратной совместимости
                 'status': 'processing',
                 'message': f'Генерируется {len(created_jobs)} видео асинхронно...'
-            })
+            }
+            if len(created_jobs) > 1:
+                response_data['job_ids'] = [j.id for j in created_jobs]
+            
+            return JsonResponse(response_data)
         else:
             # Синхронный режим (для разработки) - генерируем только первое видео
             logger.info(f"Запуск синхронной генерации видео: job_id={job.id}, mode={generation_mode}, model={video_model.model_id}")

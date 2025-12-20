@@ -463,8 +463,15 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             except Exception as e:
                 return _err(f"local-run-failed: {e}", 500)
 
-    # Фронт ждёт {"id": <job_id>} либо {"redirect": "..."} — используем id
-    return JsonResponse({"id": job.id})
+    # Возвращаем ID всех созданных задач для фронтенда
+    if len(created_jobs) > 1:
+        return JsonResponse({
+            "id": created_jobs[0].id,
+            "job_ids": [j.id for j in created_jobs]
+        })
+    else:
+        # Обратная совместимость - один результат
+        return JsonResponse({"id": job.id})
 
 
 # =============================================================================

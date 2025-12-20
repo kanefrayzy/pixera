@@ -2669,61 +2669,93 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     this.ensureQueueUI();
     const resultsGrid = document.getElementById('video-results-grid');
 
-    // Отправляем N независимых задач (каждая с numberResults=1)
+    // Создаём плитки для всех ожидаемых результатов
+    const tiles = [];
     for (let i = 0; i < numResults; i++) {
-      // Создаём плитку для каждой задачи
-      let tile = null;
       if (resultsGrid) {
-        tile = this.createPendingTile();
+        const tile = this.createPendingTile();
         resultsGrid.prepend(tile);
+        tiles.push(tile);
       }
-
-      // Готовим FormData для одной задачи
-      const fd = new FormData();
-      fd.append('prompt', prompt);
-      fd.append('auto_translate', this.autoTranslate ? '1' : '0');
-      fd.append('video_model_id', this.selectedModel.id);
-      fd.append('generation_mode', this.currentMode);
-      fd.append('duration', duration);
-      fd.append('aspect_ratio', aspectRatio);
-      fd.append('resolution', resolution);
-      if (camera) fd.append('camera_movement', camera);
-
-      // Пересчёт seed для уникальности результатов (если указан и не -1)
-      if (seedInput && seedInput !== '-1') {
-        const seedValue = String((parseInt(seedInput, 10) || 0) + i);
-        fd.append('seed', seedValue);
-      } else if (seedInput) {
-        // '-1' или пустое не добавляем — сервер сгенерирует случайный
-        fd.append('seed', seedInput);
-      }
-
-      // provider_fields: принудительно numberResults=1 для fan-out
-      const perReqFields = { ...(providerFields || {}) };
-      delete perReqFields.numberResults;
-      delete perReqFields.number_results;
-      perReqFields.numberResults = 1;
-      if (Object.keys(perReqFields).length > 0) {
-        fd.append('provider_fields', JSON.stringify(perReqFields));
-      }
-
-      // Для I2V добавляем изображение и силу движения
-      if (this.currentMode === 'i2v') {
-        fd.append('source_image', this.sourceImage);
-        const motionStrength = document.getElementById('video-motion-strength')?.value || 45;
-        fd.append('motion_strength', motionStrength);
-      }
-
-      // Для T2V добавляем референсное изображение (одно фото)
-      if (this.currentMode === 't2v' && this.t2vReferenceFile) {
-        fd.append('reference_images', this.t2vReferenceFile);
-      }
-
-      // Отправляем одну задачу последовательно, чтобы не блокировать SQLite
-      await this.submitVideoRequest(fd, tile);
-      // Небольшая пауза между запросами снижает риск "database is locked" на SQLite
-      await this.sleep(120);
     }
+
+    // Готовим FormData для одного запроса с number_videos
+    const fd = new FormData();
+    fd.append('prompt', prompt);
+    fd.append('auto_translate', this.autoTranslate ? '1' : '0');
+    fd.append('video_model_id', this.selectedModel.id);
+    fd.append('generation_mode', this.currentMode);
+    fd.append('duration', duration);
+    fd.append('aspect_ratio', aspectRatio);
+    fd.append('resolution', resolution);
+    if (camera) fd.append('camera_movement', camera);
+    if (seedInput) fd.append('seed', seedInput);
+
+    // Указываем количество видео
+    fd.append('number_videos', String(numResults));
+
+    // provider_fields
+    if (providerFields && Object.keys(providerFields).length > 0) {
+      fd.append('provider_fields', JSON.stringify(providerFields));
+    }
+
+    // Для I2V добавляем изображение и силу движения
+    if (this.currentMode === 'i2v') {
+      fd.append('source_image', this.sourceImage);
+      const motionStrength = document.getElementById('video-motion-strength')?.value || 45;
+      fd.append('motion_strength', motionStrength);
+    }
+
+    // Для T2V добавляем референсное изображение (одно фото)
+    if (this.currentMode === 't2v' && this.t2vReferenceFile) {
+      fd.append('reference_images', this.t2vReferenceFile);
+    }
+
+    // Отправляем один запрос
+    try {
+      const response = await fetch('/generate/api/video/submit', {
+        method: 'POST',
+        body: fd,
+        headers: {
+          'X-CSRFToken': this.getCSRFToken(),
+          'X-Requested-With': 'fetch'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const jobIds = data.job_ids || (data.job_id ? [data.job_id] : []);
+        
+        // Привязываем каждую плитку к своей задаче
+        jobIds.forEach((jobId, idx) => {
+          if (tiles[idx]) {
+            try { 
+              this.addOrUpdateQueueEntry(jobId, { status: 'pending' }); 
+              localStorage.setItem(`gen.video.pendingJob::${this.userKey}`, String(jobId));
+            } catch (_) {}
+            this.setTileProgress(tiles[idx], 5, 'Генерация видео…');
+            this.pollVideoStatusInline(jobId, tiles[idx]);
+          }
+        });
+        
+        // Удаляем лишние плитки если создали больше чем задач
+        tiles.slice(jobIds.length).forEach(t => { try { t.remove(); } catch(_) {} });
+      } else {
+        // Ошибка - показываем на первой плитке
+        if (tiles[0]) {
+          this.renderTileError(tiles[0], data.error || 'Ошибка при генерации видео');
+        }
+        tiles.slice(1).forEach(t => { try { t.remove(); } catch(_) {} });
+      }
+    } catch (error) {
+      // Ошибка запроса
+      if (tiles[0]) {
+        this.renderTileError(tiles[0], error.message || 'Ошибка отправки запроса');
+      }
+      tiles.slice(1).forEach(t => { try { t.remove(); } catch(_) {} });
+    }
+
     this.isGenerating = false;
   }
 
