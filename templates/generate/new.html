@@ -975,6 +975,59 @@ html[data-theme="light"] .category-card-compact:hover {
 document.addEventListener('DOMContentLoaded', function() {
   const IS_STAFF = (document.getElementById('gen-root')?.dataset.isStaff || 'false') === 'true';
 
+  // Вставка промпта и модели из URL параметров
+  function applyUrlParams() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const promptFromUrl = urlParams.get('prompt');
+      const modelFromUrl = urlParams.get('model');
+      
+      console.log('URL params:', { prompt: promptFromUrl, model: modelFromUrl });
+      
+      if (promptFromUrl) {
+        const promptInput = document.getElementById('prompt');
+        console.log('Prompt input element:', promptInput);
+        if (promptInput) {
+          // URLSearchParams.get() уже декодирует значение
+          promptInput.value = promptFromUrl;
+          // Триггерим событие input для обновления счетчика символов
+          promptInput.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('✓ Prompt set:', promptFromUrl);
+        } else {
+          console.error('✗ Prompt input not found!');
+        }
+      }
+      
+      if (modelFromUrl) {
+        const imageModelSelect = document.querySelector('select[name="model_id"]');
+        console.log('Model select element:', imageModelSelect);
+        if (imageModelSelect) {
+          const options = Array.from(imageModelSelect.options);
+          console.log('Available models:', options.map(o => o.value));
+          const option = options.find(opt => opt.value === modelFromUrl);
+          if (option) {
+            imageModelSelect.value = modelFromUrl;
+            imageModelSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('✓ Model set:', modelFromUrl);
+          } else {
+            console.warn('✗ Model not found in options:', modelFromUrl);
+          }
+        } else {
+          console.error('✗ Model select not found!');
+        }
+      }
+    } catch (e) {
+      console.error('✗ Error loading URL params:', e);
+    }
+  }
+  
+  // Пробуем сразу
+  applyUrlParams();
+  
+  // И через задержку на случай если элементы еще не готовы
+  setTimeout(applyUrlParams, 200);
+  setTimeout(applyUrlParams, 500);
+
   // CSRF helper
   function getCSRF() {
     return (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';

@@ -188,19 +188,31 @@
               </a>
 
               <!-- Author (avatar + username) like in gallery -->
-              <div class="flex items-center gap-2 mb-3">
-                {% if v.uploaded_by and v.uploaded_by.profile and v.uploaded_by.profile.avatar %}
-                  <img src="{{ v.uploaded_by.profile.avatar.url }}" alt="{{ v.uploaded_by.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
-                {% else %}
-                  <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
-                    {{ v.uploaded_by.username|default:"U"|slice:":1"|upper }}
-                  </span>
-                {% endif %}
-                <a href="{% if v.uploaded_by and v.uploaded_by.username %}{% url 'profile_short' v.uploaded_by.username %}{% else %}#{% endif %}"
-                   class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal"
-                   aria-label="@{{ v.uploaded_by.username|default:'unknown' }}">
-                  @{{ v.uploaded_by.username|default:"unknown" }}
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2 min-w-0">
+                  {% if v.uploaded_by and v.uploaded_by.profile and v.uploaded_by.profile.avatar %}
+                    <img src="{{ v.uploaded_by.profile.avatar.url }}" alt="{{ v.uploaded_by.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
+                  {% else %}
+                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">
+                      {{ v.uploaded_by.username|default:"U"|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  <a href="{% if v.uploaded_by and v.uploaded_by.username %}{% url 'profile_short' v.uploaded_by.username %}{% else %}#{% endif %}"
+                     class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal truncate"
+                     aria-label="@{{ v.uploaded_by.username|default:'unknown' }}">
+                    @{{ v.uploaded_by.username|default:"unknown" }}
+                  </a>
+                </div>
+                {% if v.source_job and v.source_job.prompt %}
+                <a href="{% url 'generate:new' %}?prompt={{ v.source_job.prompt|urlencode }}&model={{ v.source_job.model_id|urlencode }}"
+                   class="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition whitespace-nowrap"
+                   title="Использовать этот промпт">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span class="hidden sm:inline">Использовать</span>
                 </a>
+                {% endif %}
               </div>
 
               <div class="flex items-center justify-between gap-2 flex-nowrap">

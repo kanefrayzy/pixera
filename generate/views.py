@@ -431,7 +431,7 @@ def _viewer_allowed_on_job(request: HttpRequest, job: GenerationJob) -> bool:
     """
     if _owner_allowed(request, job):
         return True
-    
+
     # Проверяем, опубликован ли этот job (PublicPhoto или PublicVideo)
     try:
         from gallery.models import PublicPhoto, PublicVideo
@@ -443,7 +443,7 @@ def _viewer_allowed_on_job(request: HttpRequest, job: GenerationJob) -> bool:
                 return True
     except Exception:
         pass
-    
+
     try:
         from dashboard.models import Profile
         prof = Profile.objects.filter(user_id=job.user_id).only("is_private").first()
