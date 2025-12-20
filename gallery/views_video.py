@@ -33,9 +33,6 @@ from .models import (
 )
 from .forms import PhotoCommentForm  # Переиспользуем ту же форму
 
-# Для совместимости с кодом
-VideoCommentForm = PhotoCommentForm
-
 # Доп. импорты для прокси/стриминга и фоновой оптимизации
 import os
 import mimetypes
@@ -780,84 +777,11 @@ def video_detail_by_pk(request: HttpRequest, pk: int) -> HttpResponse:
     return redirect(video.get_absolute_url())
 
 
-def category_video_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
-    """
-    SEO-friendly URL для видео: /gallery/video/<category-slug>/<content-slug-id>
-    content_slug в формате: "slug-123" (извлекаем ID из конца)
-    """
-    from .models import VideoCategory
-    from django.http import Http404
-    from django.shortcuts import get_object_or_404
+# ───────────────────────── VIDEO LIKE ─────────────────────────
 
-    # Извлекаем ID из конца slug
-    try:
-        video_id = int(content_slug.split('-')[-1])
-    except (ValueError, IndexError):
-        raise Http404("Неверный формат slug")
-
-    category = get_object_or_404(VideoCategory, slug=category_slug)
-
-    video = get_object_or_404(
-        PublicVideo.objects.select_related("uploaded_by", "category"),
-        pk=video_id,
-        category=category,
-        is_active=True
-    )
-
-    # Respect owner's hide setting
-    try:
-        from .models import JobHide
-        if getattr(video, "source_job_id", None):
-            is_hidden = JobHide.objects.filter(user=video.uploaded_by, job_id=video.source_job_id).exists()
-            if is_hidden and (not request.user.is_authenticated or request.user.id != video.uploaded_by_id):
-                raise Http404()
-    except Http404:
-        raise
-    except Exception:
-        pass
-
-    # Инкремент просмотров
-    _ensure_session_key(request)
-    _mark_video_viewed_once(request, video.pk)
-    try:
-        video.refresh_from_db(fields=["view_count", "likes_count", "comments_count"])
-    except Exception:
-        pass
-
-    # Корневые комментарии
-    comments = (
-        video.comments.select_related("user")
-        .prefetch_related("replies__user", "likes")
-        .filter(is_visible=True, parent__isnull=True)
-        .order_by("created_at")
-    )
-
-    # Лайкнуто ли
-    liked = False
-    if request.user.is_authenticated:
-        liked = VideoLike.objects.filter(user=request.user, video=video).exists()
-    else:
-        sk = request.session.get("session_key", "")
-        if sk:
-            liked = VideoLike.objects.filter(video=video, session_key=sk).exists()
-
-    # Сохранено ли
-    saved = False
-    if request.user.is_authenticated:
-        from .models import SavedVideo
-        saved = SavedVideo.objects.filter(user=request.user, video=video).exists()
-
-    return render(
-        request,
-        "gallery/video_detail.html",
-        {
-            "video": video,
-            "comments": comments,
-            "liked": liked,
-            "saved": saved,
-            "comment_form": VideoCommentForm(),
-        },
-    )
+@require_POST
+def video_like(request: HttpRequest, pk: int) -> HttpResponse:
+    """Тоггл лайка видео."""
     try:
         video = PublicVideo.objects.get(pk=pk, is_active=True)
     except PublicVideo.DoesNotExist:

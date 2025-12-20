@@ -2093,105 +2093,11 @@ def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
     )
 
 
-def category_photo_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
-    """
-    SEO-friendly URL для фото: /gallery/photo/<category-slug>/<content-slug-id>
-    content_slug в формате: "slug-123" (извлекаем ID из конца)
-    """
-    from django.http import Http404
-    from django.shortcuts import get_object_or_404
-
-    # Извлекаем ID из конца slug
-    try:
-        photo_id = int(content_slug.split('-')[-1])
-    except (ValueError, IndexError):
-        raise Http404("Неверный формат slug")
-
-    category = get_object_or_404(Category, slug=category_slug)
-
-    photo = get_object_or_404(
-        PublicPhoto.objects.select_related("uploaded_by", "category"),
-        pk=photo_id,
-        category=category,
-        is_active=True
-    )
-
-    # Respect owner's hide setting
-    try:
-        from .models import JobHide
-        job_id = getattr(photo, "source_job_id", None)
-        if job_id is None:
-            job_id = getattr(photo, "job_id", None)
-        if job_id:
-            is_hidden = JobHide.objects.filter(
-                user=photo.uploaded_by, job_id=job_id).exists()
-            if is_hidden and (not request.user.is_authenticated or request.user.id != photo.uploaded_by_id):
-                raise Http404()
-    except Http404:
-        raise
-    except Exception:
-        pass
-
-    # Инкремент просмотров
-    _ensure_session_key(request)
-    _mark_photo_viewed_once(request, photo.pk)
-    try:
-        photo.refresh_from_db(fields=["view_count", "likes_count", "comments_count"])
-    except Exception:
-        pass
-
-    # Корневые комментарии
-    comments = (
-        photo.comments.select_related("user")
-        .prefetch_related("replies__user", "likes")
-        .filter(is_visible=True, parent__isnull=True)
-        .order_by("created_at")
-    )
-
-    # Лайкнуто ли
-    liked = False
-    if request.user.is_authenticated:
-        liked = PhotoLike.objects.filter(user=request.user, photo=photo).exists()
-    else:
-        sk = request.session.get("session_key", "")
-        if sk:
-            liked = PhotoLike.objects.filter(photo=photo, session_key=sk).exists()
-
-    # Сохранено ли
-    saved = False
-    if request.user.is_authenticated:
-        from .models import SavedPhoto
-        saved = SavedPhoto.objects.filter(user=request.user, photo=photo).exists()
-
-    # Похожие фото
-    related_photos = (
-        PublicPhoto.objects.filter(
-            category=photo.category,
-            is_active=True
-        )
-        .exclude(pk=photo.pk)
-        .order_by("-created_at")[:6]
-    )
-
-    return render(
-        request,
-        "gallery/photo_detail.html",
-        {
-            "photo": photo,
-            "comments": comments,
-            "liked": liked,
-            "saved": saved,
-            "comment_form": PhotoCommentForm(),
-            "related_photos": related_photos,
-        },
-    )
-
-
 def category_content_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
     """
-    Legacy SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug>
+    SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug>
     - Сначала ищем фото по Category.slug + PublicPhoto.slug
-    - Если не нашли - ищем видео по VideoCategory.slug + PublicVideo.slug
+    - Если не нашли — ищем видео по VideoCategory.slug + PublicVideo.slug
     """
     # Пытаемся как фото
     try:
@@ -2229,32 +2135,17 @@ def category_content_detail(request: HttpRequest, category_slug: str, content_sl
 
 def slug_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """
-    Универсальный детальный маршрут по слагу с ID: slug-123
-    - Сначала ищем фото по ID
-    - Если не нашли — ищем видео по ID
+    Универсальный детальный маршрут по слагу:
+    - Сначала ищем фото по PublicPhoto.slug
+    - Если не нашли — ищем видео по PublicVideo.slug
     """
-    from django.http import Http404
-
-    # Извлекаем ID из конца slug
-    try:
-        content_id = int(slug.split('-')[-1])
-    except (ValueError, IndexError):
-        raise Http404("Invalid slug format")
-
     # Пытаемся как фото
     try:
-        if PublicPhoto.objects.filter(pk=content_id, is_active=True).exists():
-            return photo_detail(request, content_id)
+        if PublicPhoto.objects.filter(slug=slug, is_active=True).exists():
+            return photo_detail_by_slug(request, slug)
     except Exception:
         pass
 
     # Пытаемся как видео
     from . import views_video as vvid
-    try:
-        if vvid.PublicVideo.objects.filter(pk=content_id, is_active=True).exists():
-            return vvid.video_detail_by_pk(request, content_id)
-    except Exception:
-        pass
-
-    raise Http404("Content not found")
     return vvid.video_detail(request, slug)

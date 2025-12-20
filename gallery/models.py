@@ -115,29 +115,28 @@ class PublicPhoto(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # Приоритет: SEO-friendly URL с категорией /gallery/photo/<category-slug>/<photo-slug-id>
+        # Если фото связано с задачей генерации, используем новый формат
+        if hasattr(self, 'source_job') and self.source_job:
+            from generate.views import _job_slug
+            job = self.source_job
+            slug_with_id = f"{_job_slug(job)}-{job.pk}"
+            # Получаем категорию
+            category_slug = self.category.slug if self.category else "uncategorized"
+            return reverse("generate:photo_detail", args=[category_slug, slug_with_id])
+
+        # SEO-friendly URL с категорией: /gallery/photo/<category-slug>/<photo-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
-            slug_with_id = f"{self.slug}-{self.pk}"
-            return reverse("gallery:category_photo_detail", args=[self.category.slug, slug_with_id])
-
-        # Если нет категории, но есть slug - используем простой URL с ID
-        if getattr(self, "slug", None):
-            slug_with_id = f"{self.slug}-{self.pk}"
-            return reverse("gallery:slug_detail", args=[slug_with_id])
-
-        # Legacy: фото без slug - используем ID
+            return reverse("gallery:category_photo_detail", args=[self.category.slug, self.slug])
+        elif getattr(self, "slug", None):
+            # Fallback: без категории
+            return reverse("gallery:slug_detail", args=[self.slug])
         return reverse("gallery:photo_detail", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация slug из промпта (если есть source_job), иначе из title
+        # Автогенерация slug из title при отсутствии (транслитерация в ASCII)
         if not getattr(self, "slug", None):
-            # Приоритет: используем промпт из source_job
-            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
-                base = make_slug(self.source_job.prompt)[:120] or "photo"
-            else:
-                # Fallback: используем title
-                base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
-
+            # make_slug гарантирует английский slug из любого языка
+            base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
             candidate = base or "photo"
             i = 1
             # обеспечиваем уникальность слага, добавляя суффикс -1, -2, ...
@@ -336,29 +335,27 @@ class PublicVideo(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # Приоритет: SEO-friendly URL с категорией /gallery/video/<category-slug>/<video-slug-id>
+        # Если видео связано с задачей генерации, используем новый формат
+        if hasattr(self, 'source_job') and self.source_job:
+            from generate.views import _job_slug
+            job = self.source_job
+            slug_with_id = f"{_job_slug(job)}-{job.pk}"
+            # Получаем категорию
+            category_slug = self.category.slug if self.category else "uncategorized"
+            return reverse("generate:video_detail", args=[category_slug, slug_with_id])
+
+        # SEO-friendly URL с категорией: /gallery/video/<category-slug>/<video-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
-            slug_with_id = f"{self.slug}-{self.pk}"
-            return reverse("gallery:category_video_detail", args=[self.category.slug, slug_with_id])
-
-        # Если нет категории, но есть slug - используем простой URL с ID
-        if getattr(self, "slug", None):
-            slug_with_id = f"{self.slug}-{self.pk}"
-            return reverse("gallery:slug_detail", args=[slug_with_id])
-
-        # Legacy: видео без slug - используем редирект по ID
+            return reverse("gallery:category_video_detail", args=[self.category.slug, self.slug])
+        elif getattr(self, "slug", None):
+            # Fallback: без категории
+            return reverse("gallery:slug_detail", args=[self.slug])
         return reverse("gallery:video_detail_by_pk", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация slug из промпта (если есть source_job), иначе из title
+        # Автогенерация слага из заголовка; обеспечение уникальности
         if not getattr(self, "slug", None):
-            # Приоритет: используем промпт из source_job
-            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
-                base = make_slug(self.source_job.prompt)[:120] or "video"
-            else:
-                # Fallback: используем title
-                base = slugify(self.title or "")[:120] or "video"
-
+            base = slugify(self.title or "")[:120] or "video"
             candidate = base
             i = 1
             # избегаем коллизий
