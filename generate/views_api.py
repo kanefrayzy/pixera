@@ -2,6 +2,7 @@
 from __future__ import annotations
 from django.views.decorators.http import require_GET
 import json
+import logging
 from typing import Any, Dict
 import os
 import requests
@@ -28,6 +29,8 @@ import io
 from PIL import Image
 import tempfile
 import subprocess
+
+log = logging.getLogger(__name__)
 import shutil
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
@@ -262,8 +265,12 @@ def api_submit(request: HttpRequest) -> JsonResponse:
     is_staff_user = request.user.is_authenticated and (
         request.user.is_staff or request.user.is_superuser
     )
-    if _free_for_staff() and is_staff_user:
+    free_for_staff_enabled = _free_for_staff()
+    if free_for_staff_enabled and is_staff_user:
         cost = 0
+        log.info(f"IMAGE GEN: Staff user {request.user.id}, cost set to 0 (FREE_FOR_STAFF=True)")
+    elif is_staff_user:
+        log.warning(f"IMAGE GEN: Staff user {request.user.id}, but FREE_FOR_STAFF={free_for_staff_enabled}, cost={cost}")
 
     # --- авторизованный пользователь -----------------------------------------
     if request.user.is_authenticated:
