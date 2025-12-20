@@ -4036,18 +4036,24 @@ const init=()=>{
               console.log('[Video] Looking for model_id:', modelParam);
             }
             
-            const videoModel = window.videoGeneration.models.find(m => m.model_id === modelParam);
+            // Ищем точное совпадение
+            let videoModel = window.videoGeneration.models.find(m => m.model_id === modelParam);
+            
+            if (!videoModel) {
+              // Если модель не найдена, выбираем первую доступную
+              videoModel = window.videoGeneration.models[0];
+              console.warn('[Video] Model', modelParam, 'not found, using default:', videoModel.model_id);
+            }
+            
             if (videoModel) {
               const videoCard = cardsContainer.querySelector(`.model-card[data-id="${videoModel.id}"]`);
               if (videoCard) {
                 videoCard.click();
-                console.log('[Video] ✓ Model selected from URL:', modelParam, '(id:', videoModel.id, ')');
+                console.log('[Video] ✓ Model selected:', videoModel.model_id, '(id:', videoModel.id, ')');
                 return true;
               } else {
                 console.warn('[Video] Model found in data but card not in DOM:', videoModel.id);
               }
-            } else {
-              console.warn('[Video] Model not found in models array:', modelParam);
             }
           }
           
