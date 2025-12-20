@@ -4016,59 +4016,91 @@ const init=()=>{
       }, 800);
     }
     
-    // Для модели делаем несколько попыток с увеличивающейся задержкой
+    // Для модели ждем появления карточек с помощью MutationObserver
     if (modelParam) {
-      const trySelectVideoModel = (attempt = 1) => {
-        if (window.videoGeneration && window.videoGeneration.models && window.videoGeneration.models.length > 0) {
-          const videoModel = window.videoGeneration.models.find(m => m.model_id === modelParam);
-          if (videoModel) {
-            const videoCard = document.querySelector(`.model-card[data-id="${videoModel.id}"]`);
-            if (videoCard) {
-              videoCard.click();
-              console.log('[Video] Model selected from URL:', modelParam);
-              return;
+      const cardsContainer = document.getElementById('model-cards');
+      if (cardsContainer) {
+        let attempts = 0;
+        const maxAttempts = 20;
+        
+        const trySelectModel = () => {
+          attempts++;
+          
+          // Проверяем наличие карточек
+          const cards = cardsContainer.querySelectorAll('.model-card');
+          
+          if (cards.length > 0 && window.videoGeneration && window.videoGeneration.models && window.videoGeneration.models.length > 0) {
+            // Логируем доступные модели при первой попытке
+            if (attempts === 1) {
+              console.log('[Video] Available models:', window.videoGeneration.models.map(m => ({id: m.id, model_id: m.model_id, name: m.name})));
+              console.log('[Video] Looking for model_id:', modelParam);
+            }
+            
+            const videoModel = window.videoGeneration.models.find(m => m.model_id === modelParam);
+            if (videoModel) {
+              const videoCard = cardsContainer.querySelector(`.model-card[data-id="${videoModel.id}"]`);
+              if (videoCard) {
+                videoCard.click();
+                console.log('[Video] ✓ Model selected from URL:', modelParam, '(id:', videoModel.id, ')');
+                return true;
+              } else {
+                console.warn('[Video] Model found in data but card not in DOM:', videoModel.id);
+              }
+            } else {
+              console.warn('[Video] Model not found in models array:', modelParam);
             }
           }
-        }
+          
+          // Если не получилось и не превысили лимит попыток
+          if (attempts < maxAttempts) {
+            if (attempts % 5 === 0) {
+              console.log(`[Video] Attempt ${attempts}/${maxAttempts} - cards: ${cards.length}, models: ${window.videoGeneration?.models?.length || 0}`);
+            }
+            setTimeout(trySelectModel, 300);
+          } else {
+            console.error('[Video] ✗ Failed to select model after', maxAttempts, 'attempts:', modelParam);
+            console.log('[Video] Final state - cards:', cards.length, 'models:', window.videoGeneration?.models?.length || 0);
+          }
+          return false;
+        };
         
-        // Если не получилось и это не последняя попытка
-        if (attempt < 5) {
-          console.log(`[Video] Retry ${attempt}/5 - waiting for models...`);
-          setTimeout(() => trySelectVideoModel(attempt + 1), attempt * 500);
-        } else {
-          console.warn('[Video] Failed to select model after 5 attempts:', modelParam);
-        }
-      };
-      
-      setTimeout(() => trySelectVideoModel(), 1000);
+        // Начинаем попытки через 1 секунду после переключения
+        setTimeout(trySelectModel, 1000);
+      }
     }
   }else if(paramType==='image'){
     switchMode('image');
     localStorage.setItem('gen.topMode','image');
     
     // Обработка URL параметров для изображений
-    setTimeout(() => {
-      const promptParam = usp.get('prompt');
-      const modelParam = usp.get('model');
-      
-      if (promptParam) {
+    const promptParam = usp.get('prompt');
+    const modelParam = usp.get('model');
+    
+    if (promptParam) {
+      setTimeout(() => {
         const promptInput = document.getElementById('prompt');
         if (promptInput) {
           promptInput.value = decodeURIComponent(promptParam);
           promptInput.dispatchEvent(new Event('input', { bubbles: true }));
           console.log('[Image] Prompt set from URL');
         }
-      }
-      
-      if (modelParam) {
+      }, 300);
+    }
+    
+    if (modelParam) {
+      setTimeout(() => {
         const escapedModel = CSS.escape(modelParam);
         const modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
         if (modelCard) {
           modelCard.click();
           console.log('[Image] Model selected from URL:', modelParam);
+        } else {
+          console.warn('[Image] Model card not found:', modelParam);
+          console.log('[Image] Available models:', 
+            Array.from(document.querySelectorAll('.image-model-card')).map(c => c.dataset.model));
         }
-      }
-    }, 500);
+      }, 500);
+    }
   }else{
     // Если нет type, но есть prompt или model - переключаем на image
     const promptParam = usp.get('prompt');
