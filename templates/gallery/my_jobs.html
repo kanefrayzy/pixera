@@ -1301,8 +1301,15 @@ data-count-target="save-count-{{ p.id }}"
                   {% endif %}
                 {% endif %}
 
-                <!-- Time Badge -->
-                <div class="absolute bottom-3 right-3">
+                <!-- Model badge + Time Badge -->
+                <div class="absolute bottom-3 right-3 flex flex-col items-end gap-1">
+                  {% with mdl=j|model_display %}
+                  {% if mdl %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ mdl }}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
                   <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ j.created_at|date:'c' }}">
                     {{ j.created_at|date:"d.m.Y H:i" }}
                   </time>
