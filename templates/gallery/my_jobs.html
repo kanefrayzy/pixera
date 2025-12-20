@@ -1238,7 +1238,16 @@ data-count-target="save-count-{{ p.id }}"
                 <a class="absolute inset-0 cursor-zoom-in" href="{{ open_href }}" aria-label="Открыть"></a>
                 {% endif %}
 
-
+                <!-- Model badge (top-right, no hover needed) -->
+                <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
+                  {% with mdl=j|model_display %}
+                  {% if mdl %}
+                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
+                    {{ mdl }}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                </div>
 
                 <!-- Overlay Controls -->
                 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none">
