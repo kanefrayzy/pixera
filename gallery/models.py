@@ -126,7 +126,7 @@ class PublicPhoto(models.Model):
             # Если нет ни того, ни другого - используем только ID
             return reverse("gallery:photo_detail", args=[self.pk])
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<slug-id>
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/<slug-id>
         if self.category and self.category.slug:
             return reverse("gallery:category_photo_detail", args=[self.category.slug, slug_with_id])
         else:
@@ -347,7 +347,7 @@ class PublicVideo(models.Model):
             # Если нет ни того, ни другого - используем только ID
             return reverse("gallery:video_detail_by_pk", args=[self.pk])
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/video/<slug-id>
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/<slug-id>
         if self.category and self.category.slug:
             return reverse("gallery:category_video_detail", args=[self.category.slug, slug_with_id])
         else:

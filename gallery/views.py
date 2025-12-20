@@ -2095,7 +2095,7 @@ def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
 
 def category_content_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
     """
-    SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<content-slug-id>
+    SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug-id>
     - content_slug имеет формат: название-123 (slug-id)
     - Извлекаем ID из конца и ищем по нему
     """
