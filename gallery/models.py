@@ -124,18 +124,34 @@ class PublicPhoto(models.Model):
         return reverse("gallery:photo_detail", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация slug из title при отсутствии (транслитерация в ASCII)
+        # Автогенерация slug из промпта генерации (если есть source_job) или из title
         if not getattr(self, "slug", None):
-            # make_slug гарантирует английский slug из любого языка
-            base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
-            candidate = base or "photo"
+            # Если есть связь с задачей генерации, используем промпт
+            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
+                from generate.views import _job_slug
+                base = _job_slug(self.source_job)[:120]
+            else:
+                # Иначе используем title
+                base = make_slug(self.title)[:120] or "photo"
+            
+            # Сначала сохраняем без slug, чтобы получить pk
+            if not self.pk:
+                self.slug = "temp"  # временный slug
+                super().save(*args, **kwargs)
+            
+            # Теперь генерируем финальный slug с ID
+            base = base or "photo"
+            candidate = f"{base}-{self.pk}"[:180]
+            
+            # Обеспечиваем уникальность (на всякий случай)
             i = 1
-            # обеспечиваем уникальность слага, добавляя суффикс -1, -2, ...
             while PublicPhoto.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
                 suffix = f"-{i}"
-                candidate = (base + suffix)[:180]
+                candidate = f"{base}-{self.pk}{suffix}"[:180]
                 i += 1
+            
             self.slug = candidate
+        
         super().save(*args, **kwargs)
 
 
@@ -335,17 +351,34 @@ class PublicVideo(models.Model):
         return reverse("gallery:video_detail_by_pk", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
-        # Автогенерация слага из заголовка; обеспечение уникальности
+        # Автогенерация slug из промпта генерации (если есть source_job) или из title
         if not getattr(self, "slug", None):
-            base = slugify(self.title or "")[:120] or "video"
-            candidate = base
+            # Если есть связь с задачей генерации, используем промпт
+            if hasattr(self, 'source_job') and self.source_job and self.source_job.prompt:
+                from generate.views import _job_slug
+                base = _job_slug(self.source_job)[:120]
+            else:
+                # Иначе используем title
+                base = slugify(self.title or "")[:120] or "video"
+            
+            # Сначала сохраняем без slug, чтобы получить pk
+            if not self.pk:
+                self.slug = "temp"  # временный slug
+                super().save(*args, **kwargs)
+            
+            # Теперь генерируем финальный slug с ID
+            base = base or "video"
+            candidate = f"{base}-{self.pk}"[:180]
+            
+            # Обеспечиваем уникальность (на всякий случай)
             i = 1
-            # избегаем коллизий
             while PublicVideo.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
                 suffix = f"-{i}"
-                candidate = (base + suffix)[:180]
+                candidate = f"{base}-{self.pk}{suffix}"[:180]
                 i += 1
+            
             self.slug = candidate
+        
         super().save(*args, **kwargs)
 
 
