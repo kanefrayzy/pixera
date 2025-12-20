@@ -423,6 +423,7 @@ def _viewer_allowed_on_job(request: HttpRequest, job: GenerationJob) -> bool:
     """
     Разрешаем взаимодействия с job не только владельцу:
     - владелец/тот же гость — как раньше (_owner_allowed)
+    - если job опубликован (PublicPhoto/PublicVideo) — доступен всем
     - если профиль автора НЕ приватный — позволяем лайки/комментарии другим пользователям
       (используется на странице профиля открытых аккаунтов).
     Для приватного профиля оставляем запрет.
@@ -430,6 +431,19 @@ def _viewer_allowed_on_job(request: HttpRequest, job: GenerationJob) -> bool:
     """
     if _owner_allowed(request, job):
         return True
+    
+    # Проверяем, опубликован ли этот job (PublicPhoto или PublicVideo)
+    try:
+        from gallery.models import PublicPhoto, PublicVideo
+        if job.generation_type == 'image':
+            if PublicPhoto.objects.filter(source_job_id=job.pk).exists():
+                return True
+        elif job.generation_type == 'video':
+            if PublicVideo.objects.filter(source_job_id=job.pk).exists():
+                return True
+    except Exception:
+        pass
+    
     try:
         from dashboard.models import Profile
         prof = Profile.objects.filter(user_id=job.user_id).only("is_private").first()
