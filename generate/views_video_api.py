@@ -378,17 +378,26 @@ def video_submit(request):
             # Используем конфигурацию напрямую
             video_model = None
 
+        # Читаем количество видео (по умолчанию 1)
+        number_videos = 1
+        try:
+            nv = int(request.POST.get("number_videos") or "1")
+            number_videos = max(1, min(4, nv))  # Ограничиваем 1-4
+        except (ValueError, TypeError):
+            number_videos = 1
+
         # Проверяем баланс/токены
         user = request.user if request.user.is_authenticated else None
-        token_cost = video_model.token_cost
+        base_token_cost = video_model.token_cost
+        total_token_cost = base_token_cost * number_videos  # Умножаем на количество
 
         if not getattr(settings, 'ALLOW_FREE_LOCAL_VIDEO', False):
             if user and not user.is_staff:
                 wallet = Wallet.objects.filter(user=user).first()
-                if not wallet or wallet.balance < token_cost:
+                if not wallet or wallet.balance < total_token_cost:
                     return JsonResponse({
                         'success': False,
-                        'error': f'Недостаточно токенов. Требуется: {token_cost} TOK'
+                        'error': f'Недостаточно токенов. Требуется: {total_token_cost} TOK'
                     }, status=402)
             elif not user:
                 from .security import ensure_guest_grant_with_security
@@ -401,15 +410,18 @@ def video_submit(request):
                         'error': error or 'Ошибка получения токенов'
                     }, status=403)
 
-                if grant.left < token_cost:
+                if grant.left < total_token_cost:
                     return JsonResponse({
                         'success': False,
-                        'error': f'Недостаточно токенов. Требуется: {token_cost} TOK'
+                        'error': f'Недостаточно токенов. Требуется: {total_token_cost} TOK'
                     }, status=402)
         else:
             logger.info("DEV MODE: ALLOW_FREE_LOCAL_VIDEO=True — пропускаем проверку баланса")
 
-        # Создаем задачу в БД
+        # Создаем несколько задач согласно number_videos
+        created_jobs = []
+        
+        # Создаем задачи в БД
         guest_session_key = ''
         guest_gid = ''
         guest_fp = ''
@@ -423,68 +435,75 @@ def video_submit(request):
             guest_fp = _hard_fingerprint(request)
 
         with transaction.atomic():
-            job = GenerationJob.objects.create(
-                user=user,
-                generation_type='video',
-                prompt=prompt,
-                original_prompt=original_prompt,
-                video_model=video_model,
-                video_duration=duration,
-                video_aspect_ratio=aspect_ratio,
-                video_resolution=resolution,
-                video_camera_movement=camera_movement or '',
-                video_seed=seed or '',
-                status=GenerationJob.Status.PENDING,
-                tokens_spent=0,
-                guest_session_key=guest_session_key,
-                guest_gid=guest_gid,
-                guest_fp=guest_fp,
-            )
+            for i in range(number_videos):
+                job = GenerationJob.objects.create(
+                    user=user,
+                    generation_type='video',
+                    prompt=prompt,
+                    original_prompt=original_prompt,
+                    video_model=video_model,
+                    video_duration=duration,
+                    video_aspect_ratio=aspect_ratio,
+                    video_resolution=resolution,
+                    video_camera_movement=camera_movement or '',
+                    video_seed=seed or '',
+                    status=GenerationJob.Status.PENDING,
+                    tokens_spent=base_token_cost if i == 0 else 0,  # Токены списываем только с первой задачи
+                    guest_session_key=guest_session_key,
+                    guest_gid=guest_gid,
+                    guest_fp=guest_fp,
+                )
+                created_jobs.append(job)
 
-            # Save reference images if any and upload to Runware
+            # Save reference images if any and upload to Runware - только для первой задачи
             reference_uuids = []
-            try:
-                from .models import ReferenceImage
-                from ai_gallery.services.runware_client import _upload_image_to_runware
+            if created_jobs:
+                job = created_jobs[0]
+                try:
+                    from .models import ReferenceImage
+                    from ai_gallery.services.runware_client import _upload_image_to_runware
 
-                reference_images = request.FILES.getlist('reference_images')
-                send_debug_log("📥 Получены референсные изображения", {
-                    'count': len(reference_images),
-                    'filenames': [img.name for img in reference_images],
-                    'sizes': [f"{img.size / 1024:.1f}KB" for img in reference_images]
-                })
+                    reference_images = request.FILES.getlist('reference_images')
+                    send_debug_log("📥 Получены референсные изображения", {
+                        'count': len(reference_images),
+                        'filenames': [img.name for img in reference_images],
+                        'sizes': [f"{img.size / 1024:.1f}KB" for img in reference_images]
+                    })
 
-                for idx, ref_img in enumerate(reference_images[:5], 1):  # Max 5 images
-                    # Save to database
-                    ref_obj = ReferenceImage.objects.create(
-                        job=job,
-                        image=ref_img
-                    )
+                    for idx, ref_img in enumerate(reference_images[:5], 1):  # Max 5 images
+                        # Save to database
+                        ref_obj = ReferenceImage.objects.create(
+                            job=job,
+                            image=ref_img
+                        )
 
-                    # Upload to Runware to get UUID
-                    try:
-                        ref_img.seek(0)  # Reset file pointer
-                        image_data = ref_img.read()
-                        send_debug_log(f"📤 Загружаем референс #{idx} в Runware", {
-                            'filename': ref_img.name,
-                            'size': f"{len(image_data) / 1024:.1f}KB"
-                        })
-                        ref_uuid = _upload_image_to_runware(image_data)
-                        reference_uuids.append(ref_uuid)
-                        send_debug_log(f"✅ Референс #{idx} загружен", {
-                            'uuid': ref_uuid,
-                            'filename': ref_img.name
-                        })
-                        logger.info(f"Uploaded reference image to Runware: {ref_uuid}")
-                    except Exception as upload_err:
-                        send_debug_log(f"❌ Ошибка загрузки референса #{idx}", {
-                            'error': str(upload_err),
-                            'filename': ref_img.name
-                        })
-                        logger.error(f"Failed to upload reference image to Runware: {upload_err}")
-            except Exception as e:
-                send_debug_log("❌ Ошибка обработки референсов", {'error': str(e)})
-                logger.error(f"Failed to save reference images for video: {e}")
+                        # Upload to Runware to get UUID
+                        try:
+                            ref_img.seek(0)  # Reset file pointer
+                            image_data = ref_img.read()
+                            send_debug_log(f"📤 Загружаем референс #{idx} в Runware", {
+                                'filename': ref_img.name,
+                                'size': f"{len(image_data) / 1024:.1f}KB"
+                            })
+                            ref_uuid = _upload_image_to_runware(image_data)
+                            reference_uuids.append(ref_uuid)
+                            send_debug_log(f"✅ Референс #{idx} загружен", {
+                                'uuid': ref_uuid,
+                                'filename': ref_img.name
+                            })
+                            logger.info(f"Uploaded reference image to Runware: {ref_uuid}")
+                        except Exception as upload_err:
+                            send_debug_log(f"❌ Ошибка загрузки референса #{idx}", {
+                                'error': str(upload_err),
+                                'filename': ref_img.name
+                            })
+                            logger.error(f"Failed to upload reference image to Runware: {upload_err}")
+                except Exception as e:
+                    send_debug_log("❌ Ошибка обработки референсов", {'error': str(e)})
+                    logger.error(f"Failed to save reference images for video: {e}")
+
+        # Используем первую задачу для I2V обработки и других операций
+        job = created_jobs[0]
 
 
         # Для I2V обрабатываем изображение
@@ -620,34 +639,35 @@ def video_submit(request):
         use_celery = getattr(settings, 'USE_CELERY', False)
         celery_always_eager = getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', True)
 
+        # Запускаем генерацию для всех созданных задач
+        from generate.tasks import process_video_generation_async
+        
         if use_celery and not celery_always_eager:
             # Асинхронный режим через Celery/Redis
-            logger.info(f"Запуск асинхронной генерации видео: job_id={job.id}, mode={generation_mode}, model={video_model.model_id}")
+            logger.info(f"Запуск асинхронной генерации {len(created_jobs)} видео: mode={generation_mode}, model={video_model.model_id}")
 
-            from generate.tasks import process_video_generation_async
-            process_video_generation_async.apply_async(
-                args=[job.id, generation_mode, source_image_url, None, provider_fields],
-                queue=getattr(settings, 'CELERY_QUEUE_SUBMIT', 'runware_submit')
-            )
+            for created_job in created_jobs:
+                process_video_generation_async.apply_async(
+                    args=[created_job.id, generation_mode, source_image_url, None, provider_fields],
+                    queue=getattr(settings, 'CELERY_QUEUE_SUBMIT', 'runware_submit')
+                )
 
-            with transaction.atomic():
-                job.status = GenerationJob.Status.RUNNING
-                job.save()
+                with transaction.atomic():
+                    created_job.status = GenerationJob.Status.RUNNING
+                    created_job.save()
 
             return JsonResponse({
                 'success': True,
-                'job_id': job.id,
+                'job_id': job.id,  # Возвращаем ID первой задачи
                 'status': 'processing',
-                'message': 'Видео генерируется асинхронно...'
+                'message': f'Генерируется {len(created_jobs)} видео асинхронно...'
             })
         else:
-            # Синхронный режим (для разработки)
+            # Синхронный режим (для разработки) - генерируем только первое видео
             logger.info(f"Запуск синхронной генерации видео: job_id={job.id}, mode={generation_mode}, model={video_model.model_id}")
 
-            from generate.tasks import process_video_generation_async
-
             try:
-                # Вызываем задачу напрямую (синхронно)
+                # Вызываем задачу напрямую (синхронно) для первой задачи
                 process_video_generation_async(
                     job_id=job.id,
                     generation_mode=generation_mode,

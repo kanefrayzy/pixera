@@ -305,67 +305,75 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 w.save(update_fields=["balance"])
                 tokens_spent = cost
 
-        job_kwargs = {
-            "user": request.user,
-            "guest_session_key": "",
-            "guest_gid": "",
-            "guest_fp": "",
-            "cluster": cluster,
-            "prompt": prompt,
-            "original_prompt": original_prompt,
-            "status": GenerationJob.Status.PENDING,
-            "error": "",
-            "tokens_spent": tokens_spent,
-        }
-        if model_id_in:
-            job_kwargs["model_id"] = model_id_in
-        job = GenerationJob.objects.create(**job_kwargs)
+        # Создаем несколько задач согласно number_results
+        created_jobs = []
+        for i in range(number_results):
+            job_kwargs = {
+                "user": request.user,
+                "guest_session_key": "",
+                "guest_gid": "",
+                "guest_fp": "",
+                "cluster": cluster,
+                "prompt": prompt,
+                "original_prompt": original_prompt,
+                "status": GenerationJob.Status.PENDING,
+                "error": "",
+                "tokens_spent": base_cost if i == 0 else 0,  # Токены списываем только с первой задачи
+            }
+            if model_id_in:
+                job_kwargs["model_id"] = model_id_in
+            job = GenerationJob.objects.create(**job_kwargs)
+            created_jobs.append(job)
 
-        # Save reference images if any (up to 5 images)
-        try:
-            reference_images = request.FILES.getlist('reference_images')
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info(f"📸 Received {len(reference_images)} reference images for job {job.pk}")
-            for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
-                ref_obj = ReferenceImage.objects.create(
-                    job=job,
-                    image=ref_img,
-                    order=idx
-                )
-                logger.info(f"  ✅ Saved reference image {idx}: {ref_img.name} ({ref_img.size} bytes) -> {ref_obj.pk}")
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).error(f"❌ Failed to save reference images: {e}", exc_info=True)
+            # Save reference images if any (up to 5 images) - только для первой задачи
+            if i == 0:
+                try:
+                    reference_images = request.FILES.getlist('reference_images')
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"📸 Received {len(reference_images)} reference images for job {job.pk}")
+                    for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
+                        ref_obj = ReferenceImage.objects.create(
+                            job=job,
+                            image=ref_img,
+                            order=idx
+                        )
+                        logger.info(f"  ✅ Saved reference image {idx}: {ref_img.name} ({ref_img.size} bytes) -> {ref_obj.pk}")
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).error(f"❌ Failed to save reference images: {e}", exc_info=True)
 
-        # Face Retouch (runware:108@22): persist uploaded reference image for special processing
-        try:
-            model_effective = (job.model_id or model_id_in or "").strip().lower()
-            if model_effective == "runware:108@22" and "reference_image" in request.FILES:
-                ref_file = request.FILES["reference_image"]
-                if getattr(ref_file, "size", 0) > 15 * 1024 * 1024:
-                    return JsonResponse({"ok": False, "error": "Слишком большой файл для ретуши (макс 15MB)"}, status=400)
-                save_path = default_storage.save(f"retouch_refs/{ref_file.name}", ref_file)
-                ref_url = request.build_absolute_uri(default_storage.url(save_path))
-                payload = job.provider_payload or {}
-                if not isinstance(payload, dict):
-                    payload = {}
-                payload.update({
-                    "retouch_ref_url": ref_url,
-                    "retouch_ref_path": save_path,
-                    "cfg_scale": (request.POST.get("cfg_scale") or "4"),
-                    "scheduler": (request.POST.get("scheduler") or "FlowMatchEulerDiscreteScheduler"),
-                    "acceleration": (request.POST.get("acceleration") or "medium"),
-                    "retouch_ratio": (request.POST.get("retouch_ratio") or ""),
-                    "retouch_width": (request.POST.get("retouch_width") or ""),
-                    "retouch_height": (request.POST.get("retouch_height") or ""),
-                    "number_results": (request.POST.get("number_results") or ""),
-                })
-                job.provider_payload = payload
-                job.save(update_fields=["provider_payload"])
-        except Exception as _e:
-            import logging
-            logging.getLogger(__name__).error(f"Face Retouch payload prepare error: {_e}", exc_info=True)
+                # Face Retouch (runware:108@22): persist uploaded reference image for special processing
+                try:
+                    model_effective = (job.model_id or model_id_in or "").strip().lower()
+                    if model_effective == "runware:108@22" and "reference_image" in request.FILES:
+                        ref_file = request.FILES["reference_image"]
+                        if getattr(ref_file, "size", 0) > 15 * 1024 * 1024:
+                            return JsonResponse({"ok": False, "error": "Слишком большой файл для ретуши (макс 15MB)"}, status=400)
+                        save_path = default_storage.save(f"retouch_refs/{ref_file.name}", ref_file)
+                        ref_url = request.build_absolute_uri(default_storage.url(save_path))
+                        payload = job.provider_payload or {}
+                        if not isinstance(payload, dict):
+                            payload = {}
+                        payload.update({
+                            "retouch_ref_url": ref_url,
+                            "retouch_ref_path": save_path,
+                            "cfg_scale": (request.POST.get("cfg_scale") or "4"),
+                            "scheduler": (request.POST.get("scheduler") or "FlowMatchEulerDiscreteScheduler"),
+                            "acceleration": (request.POST.get("acceleration") or "medium"),
+                            "retouch_ratio": (request.POST.get("retouch_ratio") or ""),
+                            "retouch_width": (request.POST.get("retouch_width") or ""),
+                            "retouch_height": (request.POST.get("retouch_height") or ""),
+                            "number_results": (request.POST.get("number_results") or ""),
+                        })
+                        job.provider_payload = payload
+                        job.save(update_fields=["provider_payload"])
+                except Exception as _e:
+                    import logging
+                    logging.getLogger(__name__).error(f"Face Retouch payload prepare error: {_e}", exc_info=True)
+        
+        # Используем первую задачу как основную для ответа
+        job = created_jobs[0]
 
     # --- гость ----------------------------------------------------------------
     else:
@@ -398,53 +406,62 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             g.consumed = int(g.consumed) + cost
             g.save(update_fields=["consumed"])
 
-        job_kwargs = {
-            "user": None,
-            "guest_session_key": request.session.session_key,
-            "guest_gid": grant.gid,
-            "guest_fp": grant.fp,
-            "cluster": cluster,
-            "prompt": prompt,
-            "original_prompt": original_prompt,
-            "status": GenerationJob.Status.PENDING,
-            "error": "",
-            "tokens_spent": cost,
-        }
-        if model_id_in:
-            job_kwargs["model_id"] = model_id_in
-        job = GenerationJob.objects.create(**job_kwargs)
+        # Создаем несколько задач согласно number_results
+        created_jobs = []
+        for i in range(number_results):
+            job_kwargs = {
+                "user": None,
+                "guest_session_key": request.session.session_key,
+                "guest_gid": grant.gid,
+                "guest_fp": grant.fp,
+                "cluster": cluster,
+                "prompt": prompt,
+                "original_prompt": original_prompt,
+                "status": GenerationJob.Status.PENDING,
+                "error": "",
+                "tokens_spent": base_cost if i == 0 else 0,  # Токены списываем только с первой задачи
+            }
+            if model_id_in:
+                job_kwargs["model_id"] = model_id_in
+            job = GenerationJob.objects.create(**job_kwargs)
+            created_jobs.append(job)
 
-        # Save reference images if any (for guests)
-        try:
-            reference_images = request.FILES.getlist('reference_images')
-            for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
-                ReferenceImage.objects.create(
-                    job=job,
-                    image=ref_img,
-                    order=idx
-                )
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).error(f"Failed to save reference images (guest): {e}", exc_info=True)
+            # Save reference images if any (for guests) - только для первой задачи
+            if i == 0:
+                try:
+                    reference_images = request.FILES.getlist('reference_images')
+                    for idx, ref_img in enumerate(reference_images[:5]):  # Max 5 images
+                        ReferenceImage.objects.create(
+                            job=job,
+                            image=ref_img,
+                            order=idx
+                        )
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).error(f"Failed to save reference images (guest): {e}", exc_info=True)
+        
+        # Используем первую задачу как основную для ответа
+        job = created_jobs[0]
 
-    # Публикуем задачу в очередь Celery (или выполняем синхронно — см. helper)
+    # Публикуем все задачи в очередь Celery (или выполняем синхронно — см. helper)
     queue_name = getattr(settings, "CELERY_QUEUE_SUBMIT", "runware_submit")
-    try:
-        _enqueue_or_run_sync(
-            run_generation_async,
-            args=[job.id],
-            kwargs={},  # на будущее
-            queue=queue_name,
-        )
-    except (KombuOperationalError, CeleryOperationalError, ConnectionRefusedError):
-        # В проде явно сигнализируем, что очередь недоступна
-        if not settings.DEBUG:
-            return JsonResponse({"ok": False, "error": "queue-unavailable"}, status=503)
-        # В DEBUG сюда обычно не попадём (фолбэк уже сработал), но на всякий:
+    for created_job in created_jobs:
         try:
-            run_generation_async.apply(args=[job.id], throw=True)
-        except Exception as e:
-            return _err(f"local-run-failed: {e}", 500)
+            _enqueue_or_run_sync(
+                run_generation_async,
+                args=[created_job.id],
+                kwargs={},  # на будущее
+                queue=queue_name,
+            )
+        except (KombuOperationalError, CeleryOperationalError, ConnectionRefusedError):
+            # В проде явно сигнализируем, что очередь недоступна
+            if not settings.DEBUG:
+                return JsonResponse({"ok": False, "error": "queue-unavailable"}, status=503)
+            # В DEBUG сюда обычно не попадём (фолбэк уже сработал), но на всякий:
+            try:
+                run_generation_async.apply(args=[created_job.id], throw=True)
+            except Exception as e:
+                return _err(f"local-run-failed: {e}", 500)
 
     # Фронт ждёт {"id": <job_id>} либо {"redirect": "..."} — используем id
     return JsonResponse({"id": job.id})
