@@ -122,7 +122,7 @@ class PublicPhoto(models.Model):
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
             return reverse("generate:photo_detail", args=[slug_with_id])
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/<photo-slug>
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<photo-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
             return reverse("gallery:category_photo_detail", args=[self.category.slug, self.slug])
         elif getattr(self, "slug", None):
@@ -340,7 +340,7 @@ class PublicVideo(models.Model):
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
             return reverse("generate:video_detail", args=[slug_with_id])
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/<video-slug>
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/video/<video-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
             return reverse("gallery:category_video_detail", args=[self.category.slug, self.slug])
         elif getattr(self, "slug", None):

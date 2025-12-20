@@ -98,9 +98,9 @@ urlpatterns = [
     path("admin/public/add/",                   views.admin_public_add,    name="admin_public_add"),
     path("admin/public/<int:pk>/delete/",       views.admin_public_delete, name="admin_public_delete"),
 
-    # SEO-friendly URLs с категорией (добавлены перед общим slug-роутом)
-    path("<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_photo_detail"),
-    path("<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_video_detail"),
+    # SEO-friendly URLs с категорией и типом контента
+    path("<slug:category_slug>/photo/<slug:content_slug>", views.category_content_detail, name="category_photo_detail"),
+    path("<slug:category_slug>/video/<slug:content_slug>", views.category_content_detail, name="category_video_detail"),
 
     # Человекопонятный SLUG-роут без префикса для видео (и потенциально для других сущностей, если понадобится)
     # ВАЖНО: держим в самом конце, чтобы не перекрывать остальные маршруты.
