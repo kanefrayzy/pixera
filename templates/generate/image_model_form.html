@@ -210,6 +210,23 @@
                 </div>
             </div>
 
+            <!-- Aspect Ratios -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Соотношения сторон
+                </h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {% for field in form %}
+                    {% if 'aspect_ratio_' in field.name %}
+                    <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                        {{ field }}
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
+                    </label>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
             <!-- Generation Parameters -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
                 <div class="flex items-center justify-between mb-4">

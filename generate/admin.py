@@ -752,8 +752,24 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
         }),
         ("Соотношения сторон", {
             "fields": (
-                ("aspect_ratio_1_1", "aspect_ratio_16_9", "aspect_ratio_9_16"),
-                ("aspect_ratio_4_3", "aspect_ratio_3_4", "aspect_ratio_21_9"),
+                # 🔲 Квадратные
+                ("aspect_ratio_1_1",),
+                # 📺 Классические (старые мониторы / ТВ)
+                ("aspect_ratio_4_3", "aspect_ratio_3_2", "aspect_ratio_5_4"),
+                # 🖥 Современные широкоэкранные
+                ("aspect_ratio_16_9", "aspect_ratio_16_10", "aspect_ratio_15_9", "aspect_ratio_17_9"),
+                # 🎬 Киноформаты
+                ("aspect_ratio_1_85_1", "aspect_ratio_2_00_1", "aspect_ratio_2_20_1"),
+                ("aspect_ratio_2_35_1", "aspect_ratio_2_39_1", "aspect_ratio_2_40_1"),
+                # 🖥 Ультраширокие
+                ("aspect_ratio_18_9", "aspect_ratio_19_9", "aspect_ratio_20_9"),
+                ("aspect_ratio_21_9", "aspect_ratio_24_10", "aspect_ratio_32_9"),
+                # 📱 Вертикальные (мобильные, соцсети)
+                ("aspect_ratio_9_16", "aspect_ratio_3_4", "aspect_ratio_2_3"),
+                ("aspect_ratio_4_5", "aspect_ratio_5_8", "aspect_ratio_10_16"),
+                ("aspect_ratio_9_19_5", "aspect_ratio_9_20", "aspect_ratio_9_21"),
+                # 🖼 Фотографические
+                ("aspect_ratio_7_5", "aspect_ratio_8_10"),
             ),
             "classes": ("collapse",),
             "description": "Доступные соотношения сторон"

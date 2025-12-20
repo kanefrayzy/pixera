@@ -348,18 +348,18 @@ class ImageModelConfiguration(models.Model):
         ratio_fields = [
             # 🔲 Квадратные
             ('1:1', self.aspect_ratio_1_1),
-            
+
             # 📺 Классические
             ('4:3', self.aspect_ratio_4_3),
             ('3:2', self.aspect_ratio_3_2),
             ('5:4', self.aspect_ratio_5_4),
-            
+
             # 🖥 Современные широкоэкранные
             ('16:9', self.aspect_ratio_16_9),
             ('16:10', self.aspect_ratio_16_10),
             ('15:9', self.aspect_ratio_15_9),
             ('17:9', self.aspect_ratio_17_9),
-            
+
             # 🎬 Киноформаты
             ('1.85:1', self.aspect_ratio_1_85_1),
             ('2.00:1', self.aspect_ratio_2_00_1),
@@ -367,7 +367,7 @@ class ImageModelConfiguration(models.Model):
             ('2.35:1', self.aspect_ratio_2_35_1),
             ('2.39:1', self.aspect_ratio_2_39_1),
             ('2.40:1', self.aspect_ratio_2_40_1),
-            
+
             # 🖥 Ультраширокие
             ('18:9', self.aspect_ratio_18_9),
             ('19:9', self.aspect_ratio_19_9),
@@ -375,7 +375,7 @@ class ImageModelConfiguration(models.Model):
             ('21:9', self.aspect_ratio_21_9),
             ('24:10', self.aspect_ratio_24_10),
             ('32:9', self.aspect_ratio_32_9),
-            
+
             # 📱 Вертикальные
             ('9:16', self.aspect_ratio_9_16),
             ('3:4', self.aspect_ratio_3_4),
@@ -386,7 +386,7 @@ class ImageModelConfiguration(models.Model):
             ('9:19.5', self.aspect_ratio_9_19_5),
             ('9:20', self.aspect_ratio_9_20),
             ('9:21', self.aspect_ratio_9_21),
-            
+
             # 🖼 Фотографические
             ('7:5', self.aspect_ratio_7_5),
             ('8:10', self.aspect_ratio_8_10),
@@ -439,6 +439,7 @@ class ImageModelConfiguration(models.Model):
             'token_cost': self.token_cost,
             'optional_fields': optional_fields,
             'available_resolutions': self.get_available_resolutions(),
+            'available_aspect_ratios': self.get_available_aspect_ratios(),
             'min_steps': self.min_steps,
             'max_steps': self.max_steps,
             'default_steps': self.default_steps,
