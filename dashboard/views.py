@@ -1324,7 +1324,7 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
             from gallery.models import JobHide
             hidden_ids = list(JobHide.objects.filter(
                 user=target).values_list("job_id", flat=True))
-            pf_qs = PublicPhoto.objects.filter(uploaded_by=target, is_active=True).annotate(
+            pf_qs = PublicPhoto.objects.filter(uploaded_by=target, is_active=True).select_related('source_job').annotate(
                 saves_count=Count("saves", distinct=True))
             if hidden_ids:
                 pf_qs = pf_qs.exclude(source_job_id__in=hidden_ids)
@@ -1335,7 +1335,7 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
             from gallery.models import JobHide
             hidden_ids = list(JobHide.objects.filter(
                 user=target).values_list("job_id", flat=True))
-            pv_qs = PublicVideo.objects.filter(uploaded_by=target, is_active=True).annotate(
+            pv_qs = PublicVideo.objects.filter(uploaded_by=target, is_active=True).select_related('source_job').annotate(
                 saves_count=Count("saves", distinct=True))
             if hidden_ids:
                 pv_qs = pv_qs.exclude(source_job_id__in=hidden_ids)

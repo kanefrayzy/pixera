@@ -2659,7 +2659,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Поля провайдера
     const providerFields = this.collectProviderFields();
-    
+
     // Читаем количество видео из ползунка (не из провайдера!)
     const videoQuantityEl = document.getElementById('video-quantity');
     const numResults = videoQuantityEl ? parseInt(videoQuantityEl.value, 10) : 1;
@@ -2727,19 +2727,19 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
       if (data.success) {
         const jobIds = data.job_ids || (data.job_id ? [data.job_id] : []);
-        
+
         // Привязываем каждую плитку к своей задаче
         jobIds.forEach((jobId, idx) => {
           if (tiles[idx]) {
-            try { 
-              this.addOrUpdateQueueEntry(jobId, { status: 'pending' }); 
+            try {
+              this.addOrUpdateQueueEntry(jobId, { status: 'pending' });
               localStorage.setItem(`gen.video.pendingJob::${this.userKey}`, String(jobId));
             } catch (_) {}
             this.setTileProgress(tiles[idx], 5, 'Генерация видео…');
             this.pollVideoStatusInline(jobId, tiles[idx]);
           }
         });
-        
+
         // Удаляем лишние плитки если создали больше чем задач
         tiles.slice(jobIds.length).forEach(t => { try { t.remove(); } catch(_) {} });
       } else {

@@ -420,7 +420,7 @@ def video_submit(request):
 
         # Создаем несколько задач согласно number_videos
         created_jobs = []
-        
+
         # Создаем задачи в БД
         guest_session_key = ''
         guest_gid = ''
@@ -641,7 +641,7 @@ def video_submit(request):
 
         # Запускаем генерацию для всех созданных задач
         from generate.tasks import process_video_generation_async
-        
+
         if use_celery and not celery_always_eager:
             # Асинхронный режим через Celery/Redis
             logger.info(f"Запуск асинхронной генерации {len(created_jobs)} видео: mode={generation_mode}, model={video_model.model_id}")
@@ -665,7 +665,7 @@ def video_submit(request):
             }
             if len(created_jobs) > 1:
                 response_data['job_ids'] = [j.id for j in created_jobs]
-            
+
             return JsonResponse(response_data)
         else:
             # Синхронный режим (для разработки) - генерируем только первое видео

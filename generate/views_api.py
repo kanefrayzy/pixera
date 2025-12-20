@@ -371,7 +371,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 except Exception as _e:
                     import logging
                     logging.getLogger(__name__).error(f"Face Retouch payload prepare error: {_e}", exc_info=True)
-        
+
         # Используем первую задачу как основную для ответа
         job = created_jobs[0]
 
@@ -439,7 +439,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 except Exception as e:
                     import logging
                     logging.getLogger(__name__).error(f"Failed to save reference images (guest): {e}", exc_info=True)
-        
+
         # Используем первую задачу как основную для ответа
         job = created_jobs[0]
 
