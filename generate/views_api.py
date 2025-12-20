@@ -293,14 +293,19 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             cluster = None  # анти-абуз не должен ломать поток
 
         wallet, _ = Wallet.objects.get_or_create(user=request.user)
-        
+
         # Определяем, сколько токенов нужно списать
         # Админы не платят при FREE_FOR_STAFF=True
-        if _free_for_staff() and is_staff_user:
+        free_for_staff = _free_for_staff()
+        logger.info(f"[IMAGE GEN] User {request.user.id}: is_staff={is_staff_user}, FREE_FOR_STAFF={free_for_staff}, cost={cost}")
+
+        if free_for_staff and is_staff_user:
             tokens_spent = 0
+            logger.info(f"[IMAGE GEN] Admin free generation: tokens_spent=0")
         else:
             tokens_spent = cost
-        
+            logger.info(f"[IMAGE GEN] Regular generation: tokens_spent={tokens_spent}")
+
         # Списываем токены только если нужно
         if tokens_spent > 0:
             with transaction.atomic():
