@@ -33,6 +33,9 @@ from .models import (
 )
 from .forms import PhotoCommentForm  # Переиспользуем ту же форму
 
+# Для совместимости с кодом
+VideoCommentForm = PhotoCommentForm
+
 # Доп. импорты для прокси/стриминга и фоновой оптимизации
 import os
 import mimetypes
