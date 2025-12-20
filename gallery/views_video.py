@@ -774,7 +774,14 @@ def video_detail_by_pk(request: HttpRequest, pk: int) -> HttpResponse:
         except Exception:
             pass
 
-    return redirect(video.get_absolute_url())
+    # Редирект только если текущий URL не совпадает с каноническим (избегаем бесконечного редиректа)
+    canonical_url = video.get_absolute_url()
+    current_path = request.path
+    if canonical_url != current_path and not current_path.startswith('/gallery/' + (video.category.slug + '/' if video.category else '')):
+        return redirect(canonical_url)
+    
+    # Если мы уже на правильном URL, показываем видео
+    return video_detail(request, video.slug)
 
 
 # ───────────────────────── VIDEO LIKE ─────────────────────────
