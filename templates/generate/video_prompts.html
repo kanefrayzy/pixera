@@ -719,3 +719,82 @@ html[data-theme="light"] .showcase-item:hover {
   .showcase-media { aspect-ratio: 4/5; }
 }
 </style>
+
+<script>
+(function() {
+  'use strict';
+
+  // Helper function for POST requests
+  async function postFD(url, fd) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '' },
+      body: fd
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  async function postJSON(url, data) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  // Check if user is staff
+  const IS_STAFF = {{ request.user.is_staff|yesno:"true,false" }};
+
+  if (IS_STAFF) {
+    // Admin: create video category
+    document.getElementById('vpcCreateBtn')?.addEventListener('click', async () => {
+      const name = (document.getElementById('vpcName')?.value || '').trim();
+      const desc = (document.getElementById('vpcDesc')?.value || '').trim();
+      const order = document.getElementById('vpcOrder')?.value || '0';
+      const mode = document.getElementById('vpcMode')?.value || 't2v';
+      const active = document.getElementById('vpcActive')?.checked ? '1' : '0';
+      const imgInput = document.getElementById('vpcImage');
+
+      if (!name) {
+        alert('Введите название категории');
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('name', name);
+      if (desc) fd.append('description', desc);
+      fd.append('order', order);
+      fd.append('mode', mode);
+      fd.append('is_active', active);
+      if (imgInput?.files?.[0]) fd.append('image', imgInput.files[0]);
+
+      try {
+        const statusEl = document.getElementById('vpcStatus');
+        if (statusEl) statusEl.textContent = 'Создание...';
+
+        await postFD('/generate/api/video/categories/create/', fd);
+
+        if (statusEl) statusEl.textContent = 'Категория создана! Обновление страницы...';
+
+        setTimeout(() => location.reload(), 500);
+      } catch (e) {
+        const statusEl = document.getElementById('vpcStatus');
+        if (statusEl) statusEl.textContent = 'Ошибка: ' + (e.message || String(e));
+        alert('Ошибка: ' + (e.message || String(e)));
+      }
+    });
+  }
+})();
+</script>
