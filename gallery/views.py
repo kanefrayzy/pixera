@@ -2097,49 +2097,37 @@ def category_content_detail(request: HttpRequest, category_slug: str, content_sl
     """
     SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug-id>
     - content_slug имеет формат: название-123 (slug-id)
-    - Извлекаем ID из конца и ищем по нему
+    - Извлекаем ID из конца и ищем по нему (категория используется только для SEO URL)
     """
     # Извлекаем ID из конца slug (формат: slug-123)
     try:
         pk = int(content_slug.split('-')[-1])
     except (ValueError, IndexError):
         from django.http import Http404
-        raise Http404("Content not found")
+        raise Http404("Invalid content slug format")
 
-    # Пытаемся как фото (сначала с категорией, потом без)
-    photo = PublicPhoto.objects.filter(pk=pk, is_active=True).first()
-    if photo:
-        # Проверяем категорию только для валидации URL, но не для поиска
-        category = Category.objects.filter(slug=category_slug).first()
-        if category and photo.category == category:
+    # Пытаемся найти фото по ID
+    try:
+        photo = PublicPhoto.objects.filter(pk=pk).first()
+        if photo:
+            # Нашли фото - показываем его (категория в URL используется только для SEO)
             return photo_detail(request, pk)
-        # Если категория не совпадает, но фото существует - редирект на правильный URL
-        elif photo.category and photo.category.slug:
-            from django.shortcuts import redirect
-            return redirect(photo.get_absolute_url(), permanent=True)
-        else:
-            # Фото без категории - показываем его
-            return photo_detail(request, pk)
+    except Exception as e:
+        pass
 
-    # Пытаемся как видео
-    video = PublicVideo.objects.filter(pk=pk, is_active=True).first()
-    if video:
-        video_category = VideoCategory.objects.filter(slug=category_slug).first()
-        if video_category and video.category == video_category:
+    # Пытаемся найти видео по ID
+    try:
+        video = PublicVideo.objects.filter(pk=pk).first()
+        if video:
+            # Нашли видео - показываем его
             from . import views_video as vvid
             return vvid.video_detail_by_pk(request, pk)
-        # Если категория не совпадает, но видео существует - редирект на правильный URL
-        elif video.category and video.category.slug:
-            from django.shortcuts import redirect
-            return redirect(video.get_absolute_url(), permanent=True)
-        else:
-            # Видео без категории - показываем его
-            from . import views_video as vvid
-            return vvid.video_detail_by_pk(request, pk)
+    except Exception as e:
+        pass
 
     # Если не нашли ни фото, ни видео - 404
     from django.http import Http404
-    raise Http404("Content not found")
+    raise Http404(f"Content with ID {pk} not found")
 
 
 def slug_detail(request: HttpRequest, slug: str) -> HttpResponse:
