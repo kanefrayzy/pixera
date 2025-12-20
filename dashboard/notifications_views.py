@@ -132,15 +132,14 @@ def notifications_list(request: HttpRequest):
             if pid:
                 if is_deleted:
                     link = "/dashboard/publication-deleted"
-                elif not link:
+                elif not link and p:
+                    # Use get_absolute_url() which handles source_job correctly
                     try:
-                        # Use slug if available
-                        if p and getattr(p, "slug", None):
-                            link = reverse("gallery:slug_detail", args=[p.slug])
-                        else:
-                            link = reverse("gallery:photo_detail", args=[pid])
+                        link = p.get_absolute_url()
                     except Exception:
                         link = f"/gallery/photo/{pid}"
+                elif not link:
+                    link = f"/gallery/photo/{pid}"
             # Prefer reply text/anchor if present
             anchor_id = rid or cid
             if anchor_id and not is_deleted:
@@ -212,15 +211,14 @@ def notifications_list(request: HttpRequest):
             if vid:
                 if is_deleted:
                     link = "/dashboard/publication-deleted"
-                else:
+                elif not link and v:
+                    # Use get_absolute_url() which handles source_job correctly
                     try:
-                        # Use slug if available
-                        if v and getattr(v, "slug", None):
-                            link = reverse("gallery:slug_detail", args=[v.slug])
-                        else:
-                            link = reverse("gallery:video_detail_by_pk", args=[vid])
+                        link = v.get_absolute_url()
                     except Exception:
                         link = f"/gallery/video/{vid}"
+                elif not link:
+                    link = f"/gallery/video/{vid}"
             # Prefer reply text/anchor if present
             anchor_id = rid or cid
             if anchor_id and not is_deleted:
