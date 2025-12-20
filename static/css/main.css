@@ -1,3 +1,17 @@
+/* Gilroy Font Import */
+@font-face {
+  font-family: 'Gilroy';
+  src: url('../fonts/Gilroy Light/Gilroy-Regular.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Logo Text */
+.logo-text {
+  font-family: 'Gilroy', sans-serif;
+}
+
 /* Base Container Styles */
 .container {
   width: 100%;

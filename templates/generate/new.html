@@ -3952,7 +3952,7 @@ const init=()=>{
       if(pageSubtitle)pageSubtitle.textContent=isImage?'Создавайте уникальные изображения с помощью ИИ':'Создавайте уникальные видео с помощью ИИ';
 
       try{localStorage.setItem('gen.topMode',mode)}catch(_){}
-      
+
       // Обновляем URL в браузере для SEO
       const newPath = isImage ? '/generate/photo' : '/generate/video';
       const currentPath = window.location.pathname;

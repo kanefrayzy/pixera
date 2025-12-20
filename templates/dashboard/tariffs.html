@@ -45,7 +45,7 @@
         </div>
       </div>
     {% endif %}
-    
+
     <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
         <path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/>
@@ -61,7 +61,7 @@
       {% widthratio p.tokens 10 1 as gens_for_pack %}
       <article class="relative group" role="listitem" itemscope itemtype="https://schema.org/Offer">
         <meta itemprop="priceCurrency" content="USD">
-        
+
         {% if p.unlimited %}
           <!-- Popular badge -->
           <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
@@ -88,7 +88,7 @@
                 </svg>
               {% endif %}
             </div>
-            
+
             <h3 class="text-xl font-bold mb-2" itemprop="name">
               {% if p.unlimited %}
                 Безлимит
@@ -96,12 +96,12 @@
                 {{ p.tokens }} TOK
               {% endif %}
             </h3>
-            
+
             <div class="flex items-baseline justify-center gap-1" itemprop="priceSpecification" itemscope itemtype="https://schema.org/PriceSpecification">
               <span class="text-3xl font-extrabold" itemprop="price">${{ p.price_usd }}</span>
               <span class="text-[var(--muted)]">USD</span>
             </div>
-            
+
             {% if not p.unlimited %}
               <div class="mt-2 text-sm text-[var(--muted)]">
                 ≈ {{ gens_for_pack }} обработок
@@ -165,8 +165,8 @@
           </ul>
 
           <!-- CTA Button -->
-          <a class="{% if p.unlimited %}btn btn-primary{% else %}btn btn-ghost{% endif %} w-full" 
-             href="{% url 'dashboard:purchase_start' p.id %}" 
+          <a class="{% if p.unlimited %}btn btn-primary{% else %}btn btn-ghost{% endif %} w-full"
+             href="{% url 'dashboard:purchase_start' p.id %}"
              itemprop="url">
             {% if p.unlimited %}Оформить план{% else %}Купить токены{% endif %}
           </a>
@@ -200,7 +200,7 @@
         <h3 class="font-semibold mb-2">Мгновенное зачисление</h3>
         <p class="text-sm text-[var(--muted)]">Токены поступают на баланс сразу после оплаты</p>
       </div>
-      
+
       <div class="text-center">
         <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-blue-500/15 flex items-center justify-center">
           <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
@@ -210,7 +210,7 @@
         <h3 class="font-semibold mb-2">Без срока действия</h3>
         <p class="text-sm text-[var(--muted)]">Токены не сгорают и не имеют ограничений по времени</p>
       </div>
-      
+
       <div class="text-center">
         <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-purple-500/15 flex items-center justify-center">
           <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="currentColor">
@@ -220,7 +220,7 @@
         <h3 class="font-semibold mb-2">Быстрая генерация</h3>
         <p class="text-sm text-[var(--muted)]">Обычно результат готов за 30-90 секунд</p>
       </div>
-      
+
       <div class="text-center">
         <div class="w-12 h-12 mx-auto mb-4 rounded-2xl bg-amber-500/15 flex items-center justify-center">
           <svg class="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="currentColor">
@@ -245,7 +245,7 @@
           </p>
         </div>
       </div>
-      
+
       <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
         <h3 class="font-semibold mb-2" itemprop="name">Что если я гость?</h3>
         <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
@@ -254,7 +254,7 @@
           </p>
         </div>
       </div>
-      
+
       <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
         <h3 class="font-semibold mb-2" itemprop="name">Как считается количество обработок в тарифах?</h3>
         <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
@@ -263,7 +263,7 @@
           </p>
         </div>
       </div>
-      
+
       <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
         <h3 class="font-semibold mb-2" itemprop="name">Можно ли получить возврат?</h3>
         <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
@@ -344,7 +344,7 @@
       }
     },
     {
-      "@type": "Question", 
+      "@type": "Question",
       "name": "Что если я гость?",
       "acceptedAnswer": {
         "@type": "Answer",
@@ -353,7 +353,7 @@
     },
     {
       "@type": "Question",
-      "name": "Как считается количество обработок в тарифах?", 
+      "name": "Как считается количество обработок в тарифах?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Просто делим токены на 10: 100 TOK ≈ 10 обработок, 500 TOK ≈ 50 обработок, и т.д."
