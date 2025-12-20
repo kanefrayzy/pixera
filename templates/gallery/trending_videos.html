@@ -204,7 +204,7 @@
                   </a>
                 </div>
                 {% if v.source_job and v.source_job.prompt %}
-                <a href="{% url 'generate:new' %}?prompt={{ v.source_job.prompt|urlencode }}&model={{ v.source_job.model_id|urlencode }}"
+                <a href="{% url 'generate:new' %}?type=video&prompt={{ v.source_job.prompt|urlencode }}&model={{ v.source_job.model_id|urlencode }}"
                    class="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition whitespace-nowrap"
                    title="Использовать этот промпт">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

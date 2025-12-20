@@ -3999,23 +3999,120 @@ const init=()=>{
     loadVideoAssets();
     switchMode('video');
     localStorage.setItem('gen.topMode','video');
+    
+    // Обработка URL параметров для видео
+    const promptParam = usp.get('prompt');
+    const modelParam = usp.get('model');
+    
+    // Вставляем промпт сразу
+    if (promptParam) {
+      setTimeout(() => {
+        const videoPromptInput = document.getElementById('video-prompt');
+        if (videoPromptInput) {
+          videoPromptInput.value = decodeURIComponent(promptParam);
+          videoPromptInput.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('[Video] Prompt set from URL');
+        }
+      }, 800);
+    }
+    
+    // Для модели делаем несколько попыток с увеличивающейся задержкой
+    if (modelParam) {
+      const trySelectVideoModel = (attempt = 1) => {
+        if (window.videoGeneration && window.videoGeneration.models && window.videoGeneration.models.length > 0) {
+          const videoModel = window.videoGeneration.models.find(m => m.model_id === modelParam);
+          if (videoModel) {
+            const videoCard = document.querySelector(`.model-card[data-id="${videoModel.id}"]`);
+            if (videoCard) {
+              videoCard.click();
+              console.log('[Video] Model selected from URL:', modelParam);
+              return;
+            }
+          }
+        }
+        
+        // Если не получилось и это не последняя попытка
+        if (attempt < 5) {
+          console.log(`[Video] Retry ${attempt}/5 - waiting for models...`);
+          setTimeout(() => trySelectVideoModel(attempt + 1), attempt * 500);
+        } else {
+          console.warn('[Video] Failed to select model after 5 attempts:', modelParam);
+        }
+      };
+      
+      setTimeout(() => trySelectVideoModel(), 1000);
+    }
   }else if(paramType==='image'){
     switchMode('image');
     localStorage.setItem('gen.topMode','image');
-  }else{
-    const savedTop=localStorage.getItem('gen.topMode');
-    if(savedTop==='video'){
-      const savedSrc=localStorage.getItem('gen.videoSource');
-      if(savedSrc){
-        const tab=document.querySelector(`.video-source-tab[data-source="${savedSrc}"]`);
-        if(tab){
-          document.querySelectorAll('.video-source-tab').forEach(t=>t.classList.remove('active'));
-          tab.classList.add('active');
+    
+    // Обработка URL параметров для изображений
+    setTimeout(() => {
+      const promptParam = usp.get('prompt');
+      const modelParam = usp.get('model');
+      
+      if (promptParam) {
+        const promptInput = document.getElementById('prompt');
+        if (promptInput) {
+          promptInput.value = decodeURIComponent(promptParam);
+          promptInput.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('[Image] Prompt set from URL');
         }
       }
-      switchMode('video');
-    }else{
+      
+      if (modelParam) {
+        const escapedModel = CSS.escape(modelParam);
+        const modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
+        if (modelCard) {
+          modelCard.click();
+          console.log('[Image] Model selected from URL:', modelParam);
+        }
+      }
+    }, 500);
+  }else{
+    // Если нет type, но есть prompt или model - переключаем на image
+    const promptParam = usp.get('prompt');
+    const modelParam = usp.get('model');
+    
+    if (promptParam || modelParam) {
       switchMode('image');
+      localStorage.setItem('gen.topMode','image');
+      
+      setTimeout(() => {
+        if (promptParam) {
+          const promptInput = document.getElementById('prompt');
+          if (promptInput) {
+            promptInput.value = decodeURIComponent(promptParam);
+            promptInput.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log('[Image] Prompt set from URL (no type param)');
+          }
+        }
+        
+        if (modelParam) {
+          const escapedModel = CSS.escape(modelParam);
+          const modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
+          if (modelCard) {
+            modelCard.click();
+            console.log('[Image] Model selected from URL (no type param):', modelParam);
+          }
+        }
+      }, 500);
+    } else {
+      // Стандартное поведение без URL параметров
+      const savedTop=localStorage.getItem('gen.topMode');
+      if(savedTop==='video'){
+        const savedSrc=localStorage.getItem('gen.videoSource');
+        if(savedSrc){
+          const tab=document.querySelector(`.video-source-tab[data-source="${savedSrc}"]`);
+          if(tab){
+            document.querySelectorAll('.video-source-tab').forEach(t=>t.classList.remove('active'));
+            tab.classList.add('active');
+          }
+        }
+        switchMode('video');
+      }else{
+        switchMode('image');
+      }
     }
   }
 };
@@ -4334,88 +4431,5 @@ document.addEventListener('DOMContentLoaded', function() {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
 }
 </style>
-
-<script>
-// Вставка промпта и модели из URL - выполняется после полной загрузки страницы
-window.addEventListener('load', function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const promptFromUrl = urlParams.get('prompt');
-  const modelFromUrl = urlParams.get('model');
-  
-  if (!promptFromUrl && !modelFromUrl) return;
-  
-  console.log('[URL Params] Prompt:', promptFromUrl);
-  console.log('[URL Params] Model:', modelFromUrl);
-  
-  // Применяем с задержкой чтобы все скрипты точно отработали
-  setTimeout(() => {
-    // 1. Подставляем промпт
-    if (promptFromUrl) {
-      const promptInput = document.getElementById('prompt');
-      if (promptInput) {
-        promptInput.value = promptFromUrl;
-        promptInput.dispatchEvent(new Event('input', { bubbles: true }));
-        promptInput.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log('[URL Params] ✓ Prompt set');
-      }
-    }
-    
-    // 2. Выбираем модель
-    if (modelFromUrl) {
-      let modelFound = false;
-      let isVideoModel = false;
-      
-      // Экранируем специальные символы для CSS селектора
-      const escapedModel = CSS.escape(modelFromUrl);
-      
-      // A) Проверяем, существует ли карточка изображения
-      let modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
-      
-      if (modelCard) {
-        // Это image модель
-        modelCard.click();
-        console.log('[URL Params] ✓ Image model card clicked:', modelFromUrl);
-        modelFound = true;
-      } else {
-        // B) Проверяем, является ли это видео моделью
-        // Сначала нужно переключить вкладку на video
-        const videoModeTab = document.querySelector('[data-mode="video"]');
-        if (videoModeTab && !videoModeTab.classList.contains('active')) {
-          console.log('[URL Params] Switching to video mode...');
-          videoModeTab.click();
-          isVideoModel = true;
-          
-          // Даем время на переключение вкладки и загрузку видео скриптов
-          setTimeout(() => {
-            if (window.videoGeneration && window.videoGeneration.models) {
-              const videoModel = window.videoGeneration.models.find(m => m.model_id === modelFromUrl);
-              if (videoModel) {
-                // Ищем карточку по data-id (числовой ID модели)
-                const videoCard = document.querySelector(`.model-card[data-id="${videoModel.id}"]`);
-                if (videoCard) {
-                  videoCard.click();
-                  console.log('[URL Params] ✓ Video model card clicked:', modelFromUrl);
-                } else {
-                  console.warn('[URL Params] ✗ Video model card not found for id:', videoModel.id);
-                }
-              } else {
-                console.warn('[URL Params] ✗ Video model not found in models list:', modelFromUrl);
-              }
-            } else {
-              console.warn('[URL Params] ✗ window.videoGeneration not ready');
-            }
-          }, 1500); // Увеличенная задержка для загрузки видео скриптов
-        }
-      }
-      
-      if (!modelFound && !isVideoModel) {
-        console.warn('[URL Params] ✗ Model not found:', modelFromUrl);
-        console.log('[URL Params] Available image models:', 
-          Array.from(document.querySelectorAll('.image-model-card')).map(c => c.dataset.model));
-      }
-    }
-  }, 1000);
-}, { once: true });
-</script>
 
 {% endblock %}
