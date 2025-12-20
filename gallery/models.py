@@ -115,15 +115,23 @@ class PublicPhoto(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<photo-slug-id>
-        if getattr(self, "slug", None) and self.pk and self.category and self.category.slug:
-            slug_with_id = f"{self.slug}-{self.pk}"
-            return reverse("gallery:category_photo_detail", args=[self.category.slug, slug_with_id])
+        # Формируем slug из оригинальной задачи или из самой публикации
+        if hasattr(self, 'source_job') and self.source_job:
+            from generate.views import _job_slug
+            job = self.source_job
+            slug_with_id = f"{_job_slug(job)}-{job.pk}"
         elif getattr(self, "slug", None) and self.pk:
-            # Fallback: без категории
             slug_with_id = f"{self.slug}-{self.pk}"
+        else:
+            # Если нет ни того, ни другого - используем только ID
+            return reverse("gallery:photo_detail", args=[self.pk])
+
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<slug-id>
+        if self.category and self.category.slug:
+            return reverse("gallery:category_photo_detail", args=[self.category.slug, slug_with_id])
+        else:
+            # Fallback: без категории
             return reverse("gallery:slug_detail", args=[slug_with_id])
-        return reverse("gallery:photo_detail", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
         # Автогенерация slug из title при отсутствии (транслитерация в ASCII)
@@ -328,15 +336,23 @@ class PublicVideo(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # SEO-friendly URL с категорией: /gallery/<category-slug>/video/<video-slug-id>
-        if getattr(self, "slug", None) and self.pk and self.category and self.category.slug:
-            slug_with_id = f"{self.slug}-{self.pk}"
-            return reverse("gallery:category_video_detail", args=[self.category.slug, slug_with_id])
+        # Формируем slug из оригинальной задачи или из самой публикации
+        if hasattr(self, 'source_job') and self.source_job:
+            from generate.views import _job_slug
+            job = self.source_job
+            slug_with_id = f"{_job_slug(job)}-{job.pk}"
         elif getattr(self, "slug", None) and self.pk:
-            # Fallback: без категории
             slug_with_id = f"{self.slug}-{self.pk}"
+        else:
+            # Если нет ни того, ни другого - используем только ID
+            return reverse("gallery:video_detail_by_pk", args=[self.pk])
+
+        # SEO-friendly URL с категорией: /gallery/<category-slug>/video/<slug-id>
+        if self.category and self.category.slug:
+            return reverse("gallery:category_video_detail", args=[self.category.slug, slug_with_id])
+        else:
+            # Fallback: без категории
             return reverse("gallery:slug_detail", args=[slug_with_id])
-        return reverse("gallery:video_detail_by_pk", args=[self.pk])
 
     def save(self, *args, **kwargs) -> None:
         # Автогенерация слага из заголовка; обеспечение уникальности
