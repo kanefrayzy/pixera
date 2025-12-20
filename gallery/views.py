@@ -2095,27 +2095,36 @@ def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
 
 def category_photo_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
     """
-    SEO-friendly URL для фото: /gallery/photo/<category-slug>/<content-slug>
+    SEO-friendly URL для фото: /gallery/photo/<category-slug>/<content-slug-id>
+    content_slug в формате: "slug-123" (извлекаем ID из конца)
     """
+    from django.http import Http404
+    
     try:
+        # Извлекаем ID из конца slug
+        try:
+            photo_id = int(content_slug.split('-')[-1])
+        except (ValueError, IndexError):
+            raise Http404("Invalid photo slug format")
+        
         category = Category.objects.filter(slug=category_slug).first()
         if not category:
-            from django.http import Http404
             raise Http404("Category not found")
 
         photo = PublicPhoto.objects.filter(
-            slug=content_slug,
+            pk=photo_id,
             category=category,
             is_active=True
         ).first()
 
         if not photo:
-            from django.http import Http404
             raise Http404("Photo not found")
 
-        return photo_detail_by_slug(request, content_slug)
+        # Используем существующую функцию photo_detail с ID
+        return photo_detail(request, photo_id)
+    except Http404:
+        raise
     except Exception as e:
-        from django.http import Http404
         raise Http404(f"Photo not found: {e}")
 
 
@@ -2161,17 +2170,32 @@ def category_content_detail(request: HttpRequest, category_slug: str, content_sl
 
 def slug_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """
-    Универсальный детальный маршрут по слагу:
-    - Сначала ищем фото по PublicPhoto.slug
-    - Если не нашли — ищем видео по PublicVideo.slug
+    Универсальный детальный маршрут по слагу с ID: slug-123
+    - Сначала ищем фото по ID
+    - Если не нашли — ищем видео по ID
     """
+    from django.http import Http404
+    
+    # Извлекаем ID из конца slug
+    try:
+        content_id = int(slug.split('-')[-1])
+    except (ValueError, IndexError):
+        raise Http404("Invalid slug format")
+    
     # Пытаемся как фото
     try:
-        if PublicPhoto.objects.filter(slug=slug, is_active=True).exists():
-            return photo_detail_by_slug(request, slug)
+        if PublicPhoto.objects.filter(pk=content_id, is_active=True).exists():
+            return photo_detail(request, content_id)
     except Exception:
         pass
 
     # Пытаемся как видео
     from . import views_video as vvid
+    try:
+        if vvid.PublicVideo.objects.filter(pk=content_id, is_active=True).exists():
+            return vvid.video_detail_by_pk(request, content_id)
+    except Exception:
+        pass
+
+    raise Http404("Content not found")
     return vvid.video_detail(request, slug)

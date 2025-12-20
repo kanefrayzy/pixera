@@ -115,13 +115,15 @@ class PublicPhoto(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # Приоритет: SEO-friendly URL с категорией /gallery/photo/<category-slug>/<photo-slug>
+        # Приоритет: SEO-friendly URL с категорией /gallery/photo/<category-slug>/<photo-slug-id>
         if getattr(self, "slug", None) and self.category and self.category.slug:
-            return reverse("gallery:category_photo_detail", args=[self.category.slug, self.slug])
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:category_photo_detail", args=[self.category.slug, slug_with_id])
         
-        # Если нет категории, но есть slug - используем простой URL
+        # Если нет категории, но есть slug - используем простой URL с ID
         if getattr(self, "slug", None):
-            return reverse("gallery:slug_detail", args=[self.slug])
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:slug_detail", args=[slug_with_id])
         
         # Legacy: фото без slug - используем ID
         return reverse("gallery:photo_detail", args=[self.pk])
@@ -329,13 +331,15 @@ class PublicVideo(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # Приоритет: SEO-friendly URL с категорией /gallery/video/<category-slug>/<video-slug>
+        # Приоритет: SEO-friendly URL с категорией /gallery/video/<category-slug>/<video-slug-id>
         if getattr(self, "slug", None) and self.category and self.category.slug:
-            return reverse("gallery:category_video_detail", args=[self.category.slug, self.slug])
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:category_video_detail", args=[self.category.slug, slug_with_id])
         
-        # Если нет категории, но есть slug - используем простой URL
+        # Если нет категории, но есть slug - используем простой URL с ID
         if getattr(self, "slug", None):
-            return reverse("gallery:slug_detail", args=[self.slug])
+            slug_with_id = f"{self.slug}-{self.pk}"
+            return reverse("gallery:slug_detail", args=[slug_with_id])
         
         # Legacy: видео без slug - используем редирект по ID
         return reverse("gallery:video_detail_by_pk", args=[self.pk])

@@ -779,29 +779,37 @@ def video_detail_by_pk(request: HttpRequest, pk: int) -> HttpResponse:
 
 def category_video_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
     """
-    SEO-friendly URL для видео: /gallery/video/<category-slug>/<content-slug>
+    SEO-friendly URL для видео: /gallery/video/<category-slug>/<content-slug-id>
+    content_slug в формате: "slug-123" (извлекаем ID из конца)
     """
     from .models import VideoCategory
+    from django.http import Http404
 
     try:
+        # Извлекаем ID из конца slug
+        try:
+            video_id = int(content_slug.split('-')[-1])
+        except (ValueError, IndexError):
+            raise Http404("Invalid video slug format")
+        
         category = VideoCategory.objects.filter(slug=category_slug).first()
         if not category:
-            from django.http import Http404
             raise Http404("Video category not found")
 
         video = PublicVideo.objects.filter(
-            slug=content_slug,
+            pk=video_id,
             category=category,
             is_active=True
         ).first()
 
         if not video:
-            from django.http import Http404
             raise Http404("Video not found")
 
-        return video_detail(request, content_slug)
+        # Используем существующую функцию video_detail_by_pk с ID
+        return video_detail_by_pk(request, video_id)
+    except Http404:
+        raise
     except Exception as e:
-        from django.http import Http404
         raise Http404(f"Video not found: {e}")
 
 
