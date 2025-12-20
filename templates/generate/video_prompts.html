@@ -11,25 +11,22 @@
   <!-- Admin: Create Video Prompt Category -->
   <div class="pc-admin-create">
     <div class="pc-admin-grid">
-      <form id="vpcForm" method="post" action="/generate/api/video/categories/create/" enctype="multipart/form-data" onsubmit="return window.__vpcSubmit && window.__vpcSubmit(event)" style="display:contents">
-        {% csrf_token %}
-        <input type="text" id="vpcName" name="name" class="field" placeholder="Название категории" maxlength="100" required>
-        <input type="text" id="vpcDesc" name="description" class="field" placeholder="Описание (необязательно)">
-        <input type="number" id="vpcOrder" name="order" class="field" placeholder="Порядок" value="0">
-        <select id="vpcMode" name="mode" class="field">
-          <option value="i2v">Image-to-Video</option>
-          <option value="t2v" selected>Text-to-Video</option>
-        </select>
-        <label class="pc-inline">
-          <input type="checkbox" id="vpcActive" name="is_active" checked>
-          <span>Активна</span>
-        </label>
-        <label class="pc-file">
-          <input type="file" id="vpcImage" name="image" accept="image/*">
-          <span>Изображение</span>
-        </label>
-        <button class="btn btn-primary" id="vpcCreateBtn" type="submit">+ Категория</button>
-      </form>
+      <input type="text" id="vpcName" class="field" placeholder="Название категории" maxlength="100">
+      <input type="text" id="vpcDesc" class="field" placeholder="Описание (необязательно)">
+      <input type="number" id="vpcOrder" class="field" placeholder="Порядок" value="0">
+      <select id="vpcMode" class="field">
+        <option value="i2v">Image-to-Video</option>
+        <option value="t2v" selected>Text-to-Video</option>
+      </select>
+      <label class="pc-inline">
+        <input type="checkbox" id="vpcActive" checked>
+        <span>Активна</span>
+      </label>
+      <label class="pc-file">
+        <input type="file" id="vpcImage" accept="image/*">
+        <span>Изображение</span>
+      </label>
+      <button class="btn btn-primary" id="vpcCreateBtn" type="button">+ Категория</button>
     </div>
     <div class="text-xs text-[var(--muted)] mt-2">Картинка используется как обложка карточки категории.</div>
     <div id="vpcStatus" class="text-xs mt-2"></div>
