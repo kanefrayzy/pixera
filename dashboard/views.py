@@ -269,7 +269,7 @@ def my_jobs(request):
     pub_videos_by_job = {}
     if video_jobs:
         job_ids = [j.id for j in video_jobs]
-        published = PublicVideo.objects.filter(source_job__in=job_ids).only(
+        published = PublicVideo.objects.filter(source_job__in=job_ids).select_related('source_job').only(
             "id", "source_job_id", "view_count", "title", "is_active",
             "likes_count", "comments_count"
         )
@@ -323,6 +323,7 @@ def my_jobs(request):
         published = (
             PublicPhoto.objects
             .filter(**filter_kwargs)
+            .select_related('source_job')
             .only("id", rel_name, "view_count", "title", "image", "is_active",
                   "likes_count", "comments_count")
         )
