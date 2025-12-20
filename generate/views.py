@@ -829,7 +829,7 @@ def job_status_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
 
 def job_image(request: HttpRequest, pk: int, slug: str) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
-    if not _owner_allowed(request, job):
+    if not _viewer_allowed_on_job(request, job):
         return HttpResponseForbidden("Forbidden")
 
     # 1) результат из файла
