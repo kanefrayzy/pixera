@@ -2095,21 +2095,28 @@ def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
 
 def category_content_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
     """
-    SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug>
-    - Сначала ищем фото по Category.slug + PublicPhoto.slug
-    - Если не нашли — ищем видео по VideoCategory.slug + PublicVideo.slug
+    SEO-friendly URL с категорией: /gallery/<category-slug>/photo/<content-slug-id>
+    - content_slug имеет формат: название-123 (slug-id)
+    - Извлекаем ID из конца и ищем по нему
     """
+    # Извлекаем ID из конца slug (формат: slug-123)
+    try:
+        pk = int(content_slug.split('-')[-1])
+    except (ValueError, IndexError):
+        from django.http import Http404
+        raise Http404("Content not found")
+
     # Пытаемся как фото
     try:
         category = Category.objects.filter(slug=category_slug).first()
         if category:
             photo = PublicPhoto.objects.filter(
-                slug=content_slug,
+                pk=pk,
                 category=category,
                 is_active=True
             ).first()
             if photo:
-                return photo_detail_by_slug(request, content_slug)
+                return photo_detail(request, pk)
     except Exception:
         pass
 
@@ -2118,13 +2125,13 @@ def category_content_detail(request: HttpRequest, category_slug: str, content_sl
         video_category = VideoCategory.objects.filter(slug=category_slug).first()
         if video_category:
             video = PublicVideo.objects.filter(
-                slug=content_slug,
+                pk=pk,
                 category=video_category,
                 is_active=True
             ).first()
             if video:
                 from . import views_video as vvid
-                return vvid.video_detail(request, content_slug)
+                return vvid.video_detail_by_pk(request, pk)
     except Exception:
         pass
 
