@@ -101,6 +101,10 @@ urlpatterns = [
     path("job/<int:pk>/status", views.job_status_no_slug, name="job_status_no_slug"),
     path("job/<int:pk>/<slug:slug>/image", views.job_image, name="job_image"),
 
+    # ── Новые URL для фото и видео по slug (без ID)
+    path("photo/<slug:slug>", views.photo_detail, name="photo_detail"),
+    path("video/<slug:slug>", views.video_detail, name="video_detail"),
+
     # ── Детали задачи без слага → редирект на канонический
     path("job/<int:pk>", views.job_detail_no_slug, name="job_detail_no_slug"),
 

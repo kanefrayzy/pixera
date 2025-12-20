@@ -18,6 +18,7 @@ from django.db import connection, transaction, utils as db_utils
 from django.db.models import Q, F, Value
 from django.db.models.functions import Greatest
 from django.http import (
+    Http404,
     HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
@@ -751,7 +752,58 @@ def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
     if not _viewer_allowed_on_job(request, job):
         return HttpResponseForbidden("Forbidden")
-    return redirect("generate:job_detail", pk=pk, slug=_job_slug(job))
+    
+    # Редирект на новый URL формат: photo/<slug>-<pk> или video/<slug>-<pk>
+    slug = _job_slug(job)
+    slug_with_id = f"{slug}-{job.pk}"
+    if job.generation_type == 'video':
+        return redirect("generate:video_detail", slug=slug_with_id)
+    else:
+        return redirect("generate:photo_detail", slug=slug_with_id)
+
+
+def photo_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    """Детали фото по slug (формат: slug-ID)"""
+    # Извлекаем ID из конца slug
+    parts = slug.rsplit('-', 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        pk = int(parts[1])
+        job = get_object_or_404(GenerationJob, pk=pk, generation_type='image')
+    else:
+        raise Http404("Invalid slug format")
+    
+    if not _viewer_allowed_on_job(request, job):
+        return HttpResponseForbidden("Forbidden")
+    
+    # Проверка корректности slug
+    expected_slug = f"{_job_slug(job)}-{job.pk}"
+    if slug != expected_slug:
+        return redirect("generate:photo_detail", slug=expected_slug)
+    
+    # Используем существующую логику job_detail
+    return job_detail(request, pk=job.pk, slug=_job_slug(job))
+
+
+def video_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    """Детали видео по slug (формат: slug-ID)"""
+    # Извлекаем ID из конца slug
+    parts = slug.rsplit('-', 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        pk = int(parts[1])
+        job = get_object_or_404(GenerationJob, pk=pk, generation_type='video')
+    else:
+        raise Http404("Invalid slug format")
+    
+    if not _viewer_allowed_on_job(request, job):
+        return HttpResponseForbidden("Forbidden")
+    
+    # Проверка корректности slug
+    expected_slug = f"{_job_slug(job)}-{job.pk}"
+    if slug != expected_slug:
+        return redirect("generate:video_detail", slug=expected_slug)
+    
+    # Используем существующую логику job_detail
+    return job_detail(request, pk=job.pk, slug=_job_slug(job))
 
 
 def job_status_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
@@ -958,15 +1010,19 @@ def job_like_toggle(request: HttpRequest, pk: int) -> JsonResponse:
             gen_type = getattr(job, "generation_type", "image")
             if gen_type == "video":
                 message_text = f"@{request.user.username} понравилось ваше видео"
+                slug_with_id = f"{_job_slug(job)}-{job.pk}"
+                link_url = reverse("generate:video_detail", args=[slug_with_id])
             else:
                 message_text = f"@{request.user.username} понравилось ваше фото"
+                slug_with_id = f"{_job_slug(job)}-{job.pk}"
+                link_url = reverse("generate:photo_detail", args=[slug_with_id])
 
             Notification.create(
                 recipient=job.user,
                 actor=request.user,
                 type=Notification.Type.LIKE_JOB,
                 message=message_text,
-                link=reverse("generate:job_detail", args=[job.pk, _job_slug(job)]),
+                link=link_url,
                 payload={"job_id": job.pk, "count": int(count), "generation_type": gen_type},
             )
     except Exception:
