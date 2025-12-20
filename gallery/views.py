@@ -1111,11 +1111,11 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
         pk=pk,
         is_active=True,
     )
-    # Canonicalize: редирект только если текущий URL не совпадает с каноническим
+    # редирект только если текущий URL не совпадает с каноническим
     if getattr(photo, "slug", None):
         canonical_url = photo.get_absolute_url()
         current_path = request.path
-        # Редиректим только если пути разные (избегаем бесконечного редиректа)
+        # Редиректим только если пути разные
         if canonical_url != current_path and not current_path.startswith('/gallery/' + (photo.category.slug + '/' if photo.category else '')):
             return redirect(canonical_url)
 
@@ -2099,9 +2099,10 @@ def photo_detail_by_slug(request: HttpRequest, slug: str) -> HttpResponse:
 
 def category_content_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
     """
-    SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug-id>
+    SEO-friendly URL: /gallery/photo/<category-slug>/<content-slug-id> или /gallery/video/<category-slug>/<content-slug-id>
     - content_slug имеет формат: название-123 (slug-id)
-    - Извлекаем ID из конца и ищем по нему (категория используется только для SEO URL)
+    - Извлекаем ID из конца и ищем по нему
+    - Тип контента (photo/video) определяется из request.path
     """
     # Извлекаем ID из конца slug (формат: slug-123)
     try:
@@ -2110,24 +2111,28 @@ def category_content_detail(request: HttpRequest, category_slug: str, content_sl
         from django.http import Http404
         raise Http404("Invalid content slug format")
 
-    # Пытаемся найти фото по ID
-    try:
-        photo = PublicPhoto.objects.filter(pk=pk).first()
-        if photo:
-            # Нашли фото - показываем его (категория в URL используется только для SEO)
-            return photo_detail(request, pk)
-    except Exception as e:
-        pass
+    # Определяем тип контента из URL
+    is_photo = '/photo/' in request.path
+    is_video = '/video/' in request.path
 
-    # Пытаемся найти видео по ID
-    try:
-        video = PublicVideo.objects.filter(pk=pk).first()
-        if video:
-            # Нашли видео - показываем его
-            from . import views_video as vvid
-            return vvid.video_detail_by_pk(request, pk)
-    except Exception as e:
-        pass
+    # Если это photo URL - ищем фото
+    if is_photo:
+        try:
+            photo = PublicPhoto.objects.filter(pk=pk).first()
+            if photo:
+                return photo_detail(request, pk)
+        except Exception:
+            pass
+
+    # Если это video URL - ищем видео
+    if is_video:
+        try:
+            video = PublicVideo.objects.filter(pk=pk).first()
+            if video:
+                from . import views_video as vvid
+                return vvid.video_detail_by_pk(request, pk)
+        except Exception:
+            pass
 
     # Если не нашли ни фото, ни видео - 404
     from django.http import Http404

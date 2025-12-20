@@ -27,9 +27,9 @@ urlpatterns = [
     path("populyarnoe/", RedirectView.as_view(pattern_name="gallery:trending", permanent=True)),
     path("trending/snippet/", RedirectView.as_view(pattern_name="gallery:trending_snippet", permanent=True)),
 
-    # SEO-friendly URLs с категорией (ВАЖНО: перед photo/<int:pk>)
-    path("<slug:category_slug>/photo/<slug:content_slug>", views.category_content_detail, name="category_photo_detail"),
-    path("<slug:category_slug>/video/<slug:content_slug>", views.category_content_detail, name="category_video_detail"),
+    # SEO-friendly URLs: /gallery/photo/<category>/<slug> и /gallery/video/<category>/<slug>
+    path("photo/<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_photo_detail"),
+    path("video/<slug:category_slug>/<slug:content_slug>", views.category_content_detail, name="category_video_detail"),
 
     # Фото и действия
     path("photo/<int:pk>", views.photo_detail,  name="photo_detail"),
