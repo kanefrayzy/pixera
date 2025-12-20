@@ -92,21 +92,21 @@ def _submit_sync_direct(prompt: str, model_id: str, *, width: int, height: int) 
     """
     api = getattr(settings, "RUNWARE_API_URL",
                   "https://api.runware.ai/v1").rstrip("/")
-    
+
     # Получаем конфигурацию модели из БД
     model_config = None
     try:
         model_config = ImageModelConfiguration.objects.get(model_id=model_id)
     except ImageModelConfiguration.DoesNotExist:
         log.warning(f"Model config not found for {model_id}, using defaults")
-    
+
     payload = {
         "model": model_id,
         "prompt": prompt,
         "width": width,
         "height": height,
     }
-    
+
     # Добавляем параметры только если модель их поддерживает
     if model_config:
         if model_config.supports_steps:
@@ -119,7 +119,7 @@ def _submit_sync_direct(prompt: str, model_id: str, *, width: int, height: int) 
             "steps": 33,
             "cfg_scale": 3.1,
         })
-    
+
     r = requests.post(f"{api}/images/generate", json=payload,
                       headers=_auth_headers(), timeout=60)
     if r.status_code == 401:

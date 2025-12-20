@@ -295,7 +295,8 @@ def api_submit(request: HttpRequest) -> JsonResponse:
         wallet, _ = Wallet.objects.get_or_create(user=request.user)
         tokens_spent = 0
 
-        if cost > 0:
+        # Админы НЕ списывают токены, если FREE_FOR_STAFF=True
+        if cost > 0 and not (_free_for_staff() and is_staff_user):
             with transaction.atomic():
                 w = Wallet.objects.select_for_update().get(pk=wallet.pk)
                 bal = int(w.balance or 0)

@@ -158,21 +158,21 @@ def submit_image_inference_async(
 ) -> str:
     """Отправляет задачу (deliveryMethod=async) и возвращает taskUUID."""
     task_uuid = str(uuid.uuid4())
-    
+
     # Получаем конфигурацию модели
     model_config = _get_model_config(model_id)
-    
+
     # Определяем, является ли модель "специальной" (по конфигурации или по старой логике)
     is_special = False
     if model_config:
-        is_special = (not model_config.supports_steps or 
-                     not model_config.supports_cfg_scale or 
+        is_special = (not model_config.supports_steps or
+                     not model_config.supports_cfg_scale or
                      not model_config.supports_scheduler or
                      model_config.is_special_model)
     else:
         # Fallback для моделей без конфигурации
         is_special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
-    
+
     if is_special:
         # Специальные модели: без steps/CFG/scheduler, и с includeCost, JPEG, outputType=["URL"]
         task: Dict[str, Any] = {
@@ -203,7 +203,7 @@ def submit_image_inference_async(
             "model": model_id,
             "numberResults": 1,
         }
-        
+
         # Добавляем параметры только если модель их поддерживает
         if model_config:
             if model_config.supports_steps:
@@ -218,7 +218,7 @@ def submit_image_inference_async(
             task["CFGScale"] = float(cfg_scale)
             if scheduler:
                 task["scheduler"] = scheduler
-        
+
         if number_results is not None:
             task["numberResults"] = int(number_results)
     if webhook_url:
@@ -313,21 +313,21 @@ def submit_image_inference_sync(
     number_results: int | None = None,
 ) -> str:
     """Синхронная генерация (deliveryMethod=sync). Возвращает imageURL."""
-    
+
     # Получаем конфигурацию модели
     model_config = _get_model_config(model_id)
-    
+
     # Определяем, является ли модель "специальной"
     is_special = False
     if model_config:
-        is_special = (not model_config.supports_steps or 
-                     not model_config.supports_cfg_scale or 
+        is_special = (not model_config.supports_steps or
+                     not model_config.supports_cfg_scale or
                      not model_config.supports_scheduler or
                      model_config.is_special_model)
     else:
         # Fallback для моделей без конфигурации
         is_special = str(model_id or "").strip().lower() in {"bfl:2@2", "bytedance:5@0", "google:4@2"}
-    
+
     if is_special:
         task: Dict[str, Any] = {
             "taskType": "imageInference",
@@ -357,7 +357,7 @@ def submit_image_inference_sync(
             "model": model_id,
             "numberResults": 1,
         }
-        
+
         # Добавляем параметры только если модель их поддерживает
         if model_config:
             if model_config.supports_steps:
@@ -372,7 +372,7 @@ def submit_image_inference_sync(
             task["CFGScale"] = float(cfg_scale)
             if scheduler:
                 task["scheduler"] = scheduler
-        
+
         if number_results is not None:
             task["numberResults"] = int(number_results)
 
