@@ -4349,6 +4349,7 @@ window.addEventListener('load', function() {
   
   // Применяем с задержкой чтобы все скрипты точно отработали
   setTimeout(() => {
+    // 1. Подставляем промпт
     if (promptFromUrl) {
       const promptInput = document.getElementById('prompt');
       if (promptInput) {
@@ -4359,18 +4360,61 @@ window.addEventListener('load', function() {
       }
     }
     
+    // 2. Выбираем модель
     if (modelFromUrl) {
-      // Ищем карточку модели с нужным data-model
-      const modelCard = document.querySelector(`.image-model-card[data-model="${modelFromUrl}"]`);
+      let modelFound = false;
+      let isVideoModel = false;
+      
+      // Экранируем специальные символы для CSS селектора
+      const escapedModel = CSS.escape(modelFromUrl);
+      
+      // A) Проверяем, существует ли карточка изображения
+      let modelCard = document.querySelector(`.image-model-card[data-model="${escapedModel}"]`);
+      
       if (modelCard) {
-        // Симулируем клик по карточке
+        // Это image модель
         modelCard.click();
-        console.log('[URL Params] ✓ Model card clicked:', modelFromUrl);
+        console.log('[URL Params] ✓ Image model card clicked:', modelFromUrl);
+        modelFound = true;
       } else {
-        console.warn('[URL Params] ✗ Model card not found:', modelFromUrl);
+        // B) Проверяем, является ли это видео моделью
+        // Сначала нужно переключить вкладку на video
+        const videoModeTab = document.querySelector('[data-mode="video"]');
+        if (videoModeTab && !videoModeTab.classList.contains('active')) {
+          console.log('[URL Params] Switching to video mode...');
+          videoModeTab.click();
+          isVideoModel = true;
+          
+          // Даем время на переключение вкладки и загрузку видео скриптов
+          setTimeout(() => {
+            if (window.videoGeneration && window.videoGeneration.models) {
+              const videoModel = window.videoGeneration.models.find(m => m.model_id === modelFromUrl);
+              if (videoModel) {
+                // Ищем карточку по data-id (числовой ID модели)
+                const videoCard = document.querySelector(`.model-card[data-id="${videoModel.id}"]`);
+                if (videoCard) {
+                  videoCard.click();
+                  console.log('[URL Params] ✓ Video model card clicked:', modelFromUrl);
+                } else {
+                  console.warn('[URL Params] ✗ Video model card not found for id:', videoModel.id);
+                }
+              } else {
+                console.warn('[URL Params] ✗ Video model not found in models list:', modelFromUrl);
+              }
+            } else {
+              console.warn('[URL Params] ✗ window.videoGeneration not ready');
+            }
+          }, 1500); // Увеличенная задержка для загрузки видео скриптов
+        }
+      }
+      
+      if (!modelFound && !isVideoModel) {
+        console.warn('[URL Params] ✗ Model not found:', modelFromUrl);
+        console.log('[URL Params] Available image models:', 
+          Array.from(document.querySelectorAll('.image-model-card')).map(c => c.dataset.model));
       }
     }
-  }, 500);
+  }, 1000);
 }, { once: true });
 </script>
 
