@@ -2111,8 +2111,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Advanced Parameters -->
         <div class="space-y-4" id="image-advanced-params">
-          <!-- Resolution -->
-          <div id="resolution-field" class="field-container">
+          <!-- Aspect Ratio Selector -->
+          <div id="aspect-ratio-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Соотношение сторон</label>
+            <select id="aspect-ratio-selector" name="aspect_ratio" class="field w-full">
+              <option value="" disabled selected>Выберите соотношение сторон</option>
+            </select>
+          </div>
+
+          <!-- Custom Width and Height -->
+          <div id="custom-dimensions-field" class="field-container">
+            <label class="block text-sm font-medium mb-2">Размеры (автоматически рассчитываются)</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Ширина (px)</label>
+                <input type="number" id="width-input" name="width" class="field w-full" readonly>
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Высота (px)</label>
+                <input type="number" id="height-input" name="height" class="field w-full" readonly>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Итого: <span id="total-pixels">0</span> пикселей</p>
+          </div>
+
+          <!-- Resolution (for backward compatibility - will be hidden by default) -->
+          <div id="resolution-field" class="field-container" style="display: none;">
             <label class="block text-sm font-medium mb-2">Разрешение</label>
             <select id="resolution-selector" name="resolution" class="field w-full">
               <option value="512x512">512x512</option>

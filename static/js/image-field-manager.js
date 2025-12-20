@@ -9,6 +9,8 @@ class ImageFieldManager {
         this.fieldMap = {
             // Basic parameters
             'resolution': () => document.getElementById('resolution-selector'),
+            'aspect_ratio': () => document.getElementById('aspect-ratio-selector'),
+            'custom_dimensions': () => document.getElementById('custom-dimensions-field'),
             'steps': () => document.getElementById('steps-input'),
             'cfg_scale': () => document.getElementById('cfg-scale-input'),
             'scheduler': () => document.getElementById('scheduler-select'),
@@ -22,6 +24,113 @@ class ImageFieldManager {
             'auto_translate': () => document.getElementById('auto-translate-toggle'),
             'prompt_generator': () => document.getElementById('prompt-generator-button'),
         };
+        this.targetPixels = 8294400; // Default: ~4K (3840x2160)
+        this.initializeAspectRatioHandler();
+    }
+
+    /**
+     * Initialize aspect ratio change handler
+     */
+    initializeAspectRatioHandler() {
+        const aspectRatioSelect = document.getElementById('aspect-ratio-selector');
+        if (aspectRatioSelect) {
+            aspectRatioSelect.addEventListener('change', (e) => {
+                const selectedRatio = e.target.value;
+                if (selectedRatio && this.currentModel) {
+                    this.calculateDimensions(selectedRatio);
+                }
+            });
+        }
+    }
+
+    /**
+     * Calculate width and height based on aspect ratio
+     * @param {string} aspectRatioStr - Format: "16:9" or "16_9"
+     */
+    calculateDimensions(aspectRatioStr) {
+        // Parse aspect ratio (handle both : and _ separators)
+        const parts = aspectRatioStr.replace('_', ':').split(':').map(p => parseFloat(p));
+        if (parts.length !== 2 || parts[0] <= 0 || parts[1] <= 0) {
+            console.error('Invalid aspect ratio:', aspectRatioStr);
+            return;
+        }
+
+        const [ratioW, ratioH] = parts;
+        const ratio = ratioW / ratioH;
+        const constraints = this.getModelConstraints();
+
+        // Вычисляем размеры, стараясь максимально использовать доступное пространство
+        // при сохранении соотношения сторон
+        let width, height;
+        
+        if (ratio >= 1) {
+            // Горизонтальное или квадратное
+            width = constraints.maxWidth;
+            height = Math.round(width / ratio);
+            
+            // Если высота превышает лимит, уменьшаем по высоте
+            if (height > constraints.maxHeight) {
+                height = constraints.maxHeight;
+                width = Math.round(height * ratio);
+            }
+        } else {
+            // Вертикальное
+            height = constraints.maxHeight;
+            width = Math.round(height * ratio);
+            
+            // Если ширина превышает лимит, уменьшаем по ширине
+            if (width > constraints.maxWidth) {
+                width = constraints.maxWidth;
+                height = Math.round(width / ratio);
+            }
+        }
+        
+        // Убедимся, что не выходим за минимальные пределы
+        width = Math.max(constraints.minWidth, Math.min(constraints.maxWidth, width));
+        height = Math.max(constraints.minHeight, Math.min(constraints.maxHeight, height));
+
+        // Update UI
+        this.updateDimensionsUI(width, height);
+        
+        console.log(`Aspect ratio ${aspectRatioStr} → ${width}×${height} (${width * height} pixels)`);
+    }
+
+    /**
+     * Clamp value between min and max
+     */
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    /**
+     * Get model constraints for dimensions
+     */
+    getModelConstraints() {
+        if (!this.currentModel) {
+            return { minWidth: 512, maxWidth: 4096, minHeight: 512, maxHeight: 4096 };
+        }
+        return {
+            minWidth: this.currentModel.min_width || 512,
+            maxWidth: this.currentModel.max_width || 4096,
+            minHeight: this.currentModel.min_height || 512,
+            maxHeight: this.currentModel.max_height || 4096
+        };
+    }
+
+    /**
+     * Update dimensions in UI
+     */
+    updateDimensionsUI(width, height) {
+        const widthInput = document.getElementById('width-input');
+        const heightInput = document.getElementById('height-input');
+        const totalPixelsSpan = document.getElementById('total-pixels');
+
+        if (widthInput) widthInput.value = width;
+        if (heightInput) heightInput.value = height;
+        if (totalPixelsSpan) {
+            const total = width * height;
+            totalPixelsSpan.textContent = total.toLocaleString('ru-RU');
+        }
     }
 
     /**
@@ -136,9 +245,27 @@ class ImageFieldManager {
      * @param {Object} model - Model configuration object
      */
     updateModelParameters(model) {
-        // Update available resolutions
-        if (model.available_resolutions && model.available_resolutions.length > 0) {
-            this.updateResolutionOptions(model.available_resolutions);
+        // Update available aspect ratios (NEW!)
+        if (model.available_aspect_ratios && model.available_aspect_ratios.length > 0) {
+            this.updateAspectRatioOptions(model.available_aspect_ratios);
+            // Hide old resolution selector, show aspect ratio
+            const resField = document.getElementById('resolution-field');
+            const aspectField = document.getElementById('aspect-ratio-field');
+            const customDimField = document.getElementById('custom-dimensions-field');
+            if (resField) resField.style.display = 'none';
+            if (aspectField) aspectField.style.display = '';
+            if (customDimField) customDimField.style.display = '';
+        } else {
+            // No aspect ratios configured - use old resolution selector
+            const resField = document.getElementById('resolution-field');
+            const aspectField = document.getElementById('aspect-ratio-field');
+            const customDimField = document.getElementById('custom-dimensions-field');
+            if (resField && model.available_resolutions && model.available_resolutions.length > 0) {
+                resField.style.display = '';
+                this.updateResolutionOptions(model.available_resolutions);
+            }
+            if (aspectField) aspectField.style.display = 'none';
+            if (customDimField) customDimField.style.display = 'none';
         }
 
         // Update steps limits
@@ -159,6 +286,91 @@ class ImageFieldManager {
         // Update number of results limit
         if (model.supports_multiple_results) {
             this.updateNumberResultsLimit(model.max_number_results);
+        }
+    }
+
+    /**
+     * Update available aspect ratio options
+     * @param {Array} aspectRatios - Array of aspect ratios like ["1:1", "16:9", "4:3"]
+     */
+    updateAspectRatioOptions(aspectRatios) {
+        const aspectRatioSelect = document.getElementById('aspect-ratio-selector');
+        if (!aspectRatioSelect) return;
+
+        // Clear existing options except first (placeholder)
+        aspectRatioSelect.innerHTML = '<option value="" disabled selected>Выберите соотношение сторон</option>';
+
+        // Group labels
+        const groups = {
+            square: 'Квадратные',
+            classic: 'Классические',
+            modern: 'Современные',
+            cinema: 'Киноформаты',
+            ultrawide: 'Ультраширокие',
+            vertical: 'Вертикальные',
+            photo: 'Фотографические'
+        };
+
+        // Categorize aspect ratios
+        const categorized = {
+            square: ['1:1'],
+            classic: ['4:3', '3:2', '5:4'],
+            modern: ['16:9', '16:10'],
+            cinema: ['21:9', '2.35:1', '2.39:1', '1.85:1'],
+            ultrawide: ['32:9', '18:9'],
+            vertical: ['9:16', '2:3', '3:4', '9:19.5'],
+            photo: ['3:2', '2:3', '4:5', '5:4']
+        };
+
+        // Add options grouped
+        const addedRatios = new Set();
+        Object.entries(categorized).forEach(([groupKey, ratios]) => {
+            const matchingRatios = aspectRatios.filter(r => {
+                const normalized = r.replace('_', ':');
+                return ratios.some(target => {
+                    // Handle both "2.35:1" and "2_35_1" formats
+                    const targetNorm = target.replace('.', '_').replace(':', '_');
+                    const rNorm = normalized.replace('.', '_').replace(':', '_');
+                    return targetNorm === rNorm || target === normalized;
+                }) && !addedRatios.has(r);
+            });
+
+            if (matchingRatios.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = groups[groupKey];
+                matchingRatios.forEach(ratio => {
+                    const option = document.createElement('option');
+                    option.value = ratio;
+                    const display = ratio.replace('_', ':');
+                    option.textContent = display;
+                    optgroup.appendChild(option);
+                    addedRatios.add(ratio);
+                });
+                aspectRatioSelect.appendChild(optgroup);
+            }
+        });
+
+        // Add ungrouped ratios
+        const ungrouped = aspectRatios.filter(r => !addedRatios.has(r));
+        if (ungrouped.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = 'Другие';
+            ungrouped.forEach(ratio => {
+                const option = document.createElement('option');
+                option.value = ratio;
+                const display = ratio.replace('_', ':');
+                option.textContent = display;
+                optgroup.appendChild(option);
+            });
+            aspectRatioSelect.appendChild(optgroup);
+        }
+
+        console.log('Updated aspect ratio options:', aspectRatios);
+        
+        // Auto-select first ratio and calculate dimensions
+        if (aspectRatios.length > 0) {
+            aspectRatioSelect.value = aspectRatios[0];
+            this.calculateDimensions(aspectRatios[0]);
         }
     }
 

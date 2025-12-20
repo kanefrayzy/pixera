@@ -795,16 +795,40 @@ def run_generation_async(self, job_id: int) -> None:
     # Per-model resolution mapping
     w = 1024
     h = 1024
-    try:
-        mid = (job.model_id or model_id or "").strip().lower()
-    except Exception:
-        mid = (model_id or "").strip().lower()
-    if mid == "bfl:2@2":
-        w = 2048
-        h = 2048
-    elif mid == "bytedance:5@0":
-        w = 1024
-        h = 1024
+    
+    # Попытка извлечь width и height из video_resolution (используется для хранения aspect ratio размеров)
+    if job.video_resolution and 'x' in job.video_resolution.lower():
+        try:
+            parts = job.video_resolution.lower().split('x')
+            if len(parts) == 2:
+                w = int(parts[0].strip())
+                h = int(parts[1].strip())
+                log.info(f"Using custom dimensions from job.video_resolution: {w}x{h}")
+        except (ValueError, AttributeError) as e:
+            log.warning(f"Failed to parse video_resolution '{job.video_resolution}': {e}")
+            # Fallback to model defaults
+            try:
+                mid = (job.model_id or model_id or "").strip().lower()
+            except Exception:
+                mid = (model_id or "").strip().lower()
+            if mid == "bfl:2@2":
+                w = 2048
+                h = 2048
+            elif mid == "bytedance:5@0":
+                w = 1024
+                h = 1024
+    else:
+        # No custom resolution - use model defaults
+        try:
+            mid = (job.model_id or model_id or "").strip().lower()
+        except Exception:
+            mid = (model_id or "").strip().lower()
+        if mid == "bfl:2@2":
+            w = 2048
+            h = 2048
+        elif mid == "bytedance:5@0":
+            w = 1024
+            h = 1024
 
     # Определяем режим: если USE_CELERY=True и брокер НЕ memory — используем async
     use_celery = getattr(settings, 'USE_CELERY', False)
