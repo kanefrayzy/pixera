@@ -133,26 +133,46 @@ except Exception:  # pragma: no cover
 def _lookup_model_name_by_id(model_id: str) -> str:
     """
     Resolve site-friendly model name in priority:
-      1) VideoModel table by model_id
-      2) Hard-coded overrides (popular image/video ids used in UI)
-      3) Raw model_id
+      1) ImageModelConfiguration table by model_id (title or name)
+      2) VideoModel table by model_id (title or name)
+      3) Hard-coded overrides (popular image/video ids used in UI)
+      4) Raw model_id
     """
     mid = (model_id or "").strip()
     if not mid:
         return ""
-    # 1) DB-backed names
+    
+    # 1) Check ImageModelConfiguration first
     try:
-        if VideoModel is not None:
-            name = (
-                VideoModel.objects.filter(model_id=mid)
-                .values_list("name", flat=True)
-                .first()
-            )
+        from generate.models_image import ImageModelConfiguration
+        img_model = ImageModelConfiguration.objects.filter(model_id=mid).first()
+        if img_model:
+            # Prefer title over name
+            title = getattr(img_model, "title", None)
+            if title:
+                return _canonicalize_name(title)
+            name = getattr(img_model, "name", None)
             if name:
                 return _canonicalize_name(name)
     except Exception:
         pass
-    # 2) UI overrides
+    
+    # 2) Check VideoModel
+    try:
+        if VideoModel is not None:
+            vm = VideoModel.objects.filter(model_id=mid).first()
+            if vm:
+                # Prefer title over name
+                title = getattr(vm, "title", None)
+                if title:
+                    return _canonicalize_name(title)
+                name = getattr(vm, "name", None)
+                if name:
+                    return _canonicalize_name(name)
+    except Exception:
+        pass
+    
+    # 3) UI overrides
     try:
         return _canonicalize_name(MODEL_NAME_OVERRIDES.get(mid.lower(), mid))
     except Exception:
@@ -196,10 +216,15 @@ def _model_display_from(obj: Any) -> str:
         if name:
             return _canonicalize_name(str(name))
 
-        # 2) related video_model.name
+        # 2) related video_model (check title first, then name)
         vm = getattr(obj, "video_model", None)
-        if vm and getattr(vm, "name", ""):
-            return _canonicalize_name(str(getattr(vm, "name")))
+        if vm:
+            title = getattr(vm, "title", None)
+            if title:
+                return _canonicalize_name(str(title))
+            name = getattr(vm, "name", None)
+            if name:
+                return _canonicalize_name(str(name))
 
         # 3) model_id -> lookup
         mid = getattr(obj, "model_id", None)
