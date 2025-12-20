@@ -977,7 +977,7 @@
     <div id="published-grid-inner" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {% if show_only_published %}
         {% for v in pub_videos %}
-          <article class="group cursor-pointer js-open-video"
+          <article class="group"
                    data-detail-url="{{ v.get_absolute_url }}"
                    data-video-url="{{ v.video_url }}"
                    data-poster="{% if v.thumbnail %}{{ v.thumbnail.url }}{% endif %}">
@@ -1100,7 +1100,7 @@ data-count-target="video-save-count-{{ v.id }}"
         {% endfor %}
 
         {% for p in pub_photos %}
-          <article class="group cursor-pointer js-open-photo"
+          <article class="group"
                    data-detail-url="{{ p.get_absolute_url }}"
                    data-media-url="{% if p.image %}{{ p.image.url }}{% endif %}"
                    data-title="{{ p.title|default_if_none:'' }}">
