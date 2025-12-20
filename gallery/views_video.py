@@ -849,12 +849,21 @@ def video_like(request: HttpRequest, pk: int) -> HttpResponse:
         try:
             from dashboard.models import Notification
             if liked and request.user.is_authenticated and getattr(video, "uploaded_by_id", None) and request.user.id != video.uploaded_by_id:
+                # Если видео связано с задачей генерации, используем новый формат URL
+                if video.source_job:
+                    from generate.views import _job_slug
+                    job = video.source_job
+                    slug_with_id = f"{_job_slug(job)}-{job.pk}"
+                    link_url = reverse("generate:video_detail", args=[slug_with_id])
+                else:
+                    link_url = video.get_absolute_url()
+                
                 Notification.create(
                     recipient=video.uploaded_by,
                     actor=request.user,
                     type=Notification.Type.LIKE_VIDEO,
                     message=f"@{request.user.username} понравилось ваше видео",
-                    link=video.get_absolute_url(),
+                    link=link_url,
                     payload={"video_id": video.pk, "count": int(new_count)},
                 )
         except Exception:
