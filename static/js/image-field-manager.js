@@ -62,12 +62,12 @@ class ImageFieldManager {
         // Вычисляем размеры, стараясь максимально использовать доступное пространство
         // при сохранении соотношения сторон
         let width, height;
-        
+
         if (ratio >= 1) {
             // Горизонтальное или квадратное
             width = constraints.maxWidth;
             height = Math.round(width / ratio);
-            
+
             // Если высота превышает лимит, уменьшаем по высоте
             if (height > constraints.maxHeight) {
                 height = constraints.maxHeight;
@@ -77,21 +77,21 @@ class ImageFieldManager {
             // Вертикальное
             height = constraints.maxHeight;
             width = Math.round(height * ratio);
-            
+
             // Если ширина превышает лимит, уменьшаем по ширине
             if (width > constraints.maxWidth) {
                 width = constraints.maxWidth;
                 height = Math.round(width / ratio);
             }
         }
-        
+
         // Убедимся, что не выходим за минимальные пределы
         width = Math.max(constraints.minWidth, Math.min(constraints.maxWidth, width));
         height = Math.max(constraints.minHeight, Math.min(constraints.maxHeight, height));
 
         // Update UI
         this.updateDimensionsUI(width, height);
-        
+
         console.log(`Aspect ratio ${aspectRatioStr} → ${width}×${height} (${width * height} pixels)`);
     }
 
@@ -247,25 +247,49 @@ class ImageFieldManager {
     updateModelParameters(model) {
         // Update available aspect ratios (NEW!)
         if (model.available_aspect_ratios && model.available_aspect_ratios.length > 0) {
+            console.log('Model has aspect ratios, showing aspect ratio selector');
             this.updateAspectRatioOptions(model.available_aspect_ratios);
             // Hide old resolution selector, show aspect ratio
             const resField = document.getElementById('resolution-field');
             const aspectField = document.getElementById('aspect-ratio-field');
             const customDimField = document.getElementById('custom-dimensions-field');
-            if (resField) resField.style.display = 'none';
-            if (aspectField) aspectField.style.display = '';
-            if (customDimField) customDimField.style.display = '';
+            if (resField) {
+                resField.style.display = 'none';
+                const container = resField.closest('.field-container');
+                if (container) container.style.display = 'none';
+            }
+            if (aspectField) {
+                aspectField.style.display = '';
+                const container = aspectField.closest('.field-container');
+                if (container) container.style.display = '';
+            }
+            if (customDimField) {
+                customDimField.style.display = '';
+                const container = customDimField.closest('.field-container');
+                if (container) container.style.display = '';
+            }
         } else {
+            console.log('Model has NO aspect ratios, using old resolution selector');
             // No aspect ratios configured - use old resolution selector
             const resField = document.getElementById('resolution-field');
             const aspectField = document.getElementById('aspect-ratio-field');
             const customDimField = document.getElementById('custom-dimensions-field');
             if (resField && model.available_resolutions && model.available_resolutions.length > 0) {
                 resField.style.display = '';
+                const container = resField.closest('.field-container');
+                if (container) container.style.display = '';
                 this.updateResolutionOptions(model.available_resolutions);
             }
-            if (aspectField) aspectField.style.display = 'none';
-            if (customDimField) customDimField.style.display = 'none';
+            if (aspectField) {
+                aspectField.style.display = 'none';
+                const container = aspectField.closest('.field-container');
+                if (container) container.style.display = 'none';
+            }
+            if (customDimField) {
+                customDimField.style.display = 'none';
+                const container = customDimField.closest('.field-container');
+                if (container) container.style.display = 'none';
+            }
         }
 
         // Update steps limits
@@ -366,7 +390,7 @@ class ImageFieldManager {
         }
 
         console.log('Updated aspect ratio options:', aspectRatios);
-        
+
         // Auto-select first ratio and calculate dimensions
         if (aspectRatios.length > 0) {
             aspectRatioSelect.value = aspectRatios[0];

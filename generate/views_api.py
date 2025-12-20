@@ -322,7 +322,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             }
             if model_id_in:
                 job_kwargs["model_id"] = model_id_in
-            
+
             # Сохраняем width и height из aspect ratio селектора
             width_str = request.POST.get("width", "").strip()
             height_str = request.POST.get("height", "").strip()
@@ -331,7 +331,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                     job_kwargs["video_resolution"] = f"{width_str}x{height_str}"
                 except (ValueError, TypeError):
                     pass  # Используем значения по умолчанию
-            
+
             job = GenerationJob.objects.create(**job_kwargs)
             created_jobs.append(job)
 
@@ -433,7 +433,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             }
             if model_id_in:
                 job_kwargs["model_id"] = model_id_in
-            
+
             # Сохраняем width и height из aspect ratio селектора
             width_str = request.POST.get("width", "").strip()
             height_str = request.POST.get("height", "").strip()
@@ -442,7 +442,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                     job_kwargs["video_resolution"] = f"{width_str}x{height_str}"
                 except (ValueError, TypeError):
                     pass  # Используем значения по умолчанию
-            
+
             job = GenerationJob.objects.create(**job_kwargs)
             created_jobs.append(job)
 

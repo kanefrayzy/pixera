@@ -795,7 +795,7 @@ def run_generation_async(self, job_id: int) -> None:
     # Per-model resolution mapping
     w = 1024
     h = 1024
-    
+
     # Попытка извлечь width и height из video_resolution (используется для хранения aspect ratio размеров)
     if job.video_resolution and 'x' in job.video_resolution.lower():
         try:

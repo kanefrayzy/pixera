@@ -2112,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- Advanced Parameters -->
         <div class="space-y-4" id="image-advanced-params">
           <!-- Aspect Ratio Selector -->
-          <div id="aspect-ratio-field" class="field-container">
+          <div id="aspect-ratio-field" class="field-container" style="display: none;">
             <label class="block text-sm font-medium mb-2">Соотношение сторон</label>
             <select id="aspect-ratio-selector" name="aspect_ratio" class="field w-full">
               <option value="" disabled selected>Выберите соотношение сторон</option>
@@ -2120,7 +2120,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
 
           <!-- Custom Width and Height -->
-          <div id="custom-dimensions-field" class="field-container">
+          <div id="custom-dimensions-field" class="field-container" style="display: none;">
             <label class="block text-sm font-medium mb-2">Размеры (автоматически рассчитываются)</label>
             <div class="grid grid-cols-2 gap-3">
               <div>
