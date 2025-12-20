@@ -4360,14 +4360,14 @@ window.addEventListener('load', function() {
     }
     
     if (modelFromUrl) {
-      const modelSelect = document.querySelector('select[name="model_id"]');
-      if (modelSelect) {
-        const option = Array.from(modelSelect.options).find(o => o.value === modelFromUrl);
-        if (option) {
-          modelSelect.value = modelFromUrl;
-          modelSelect.dispatchEvent(new Event('change', { bubbles: true }));
-          console.log('[URL Params] ✓ Model set');
-        }
+      // Ищем карточку модели с нужным data-model
+      const modelCard = document.querySelector(`.image-model-card[data-model="${modelFromUrl}"]`);
+      if (modelCard) {
+        // Симулируем клик по карточке
+        modelCard.click();
+        console.log('[URL Params] ✓ Model card clicked:', modelFromUrl);
+      } else {
+        console.warn('[URL Params] ✗ Model card not found:', modelFromUrl);
       }
     }
   }, 500);
