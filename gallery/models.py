@@ -114,14 +114,14 @@ class PublicPhoto(models.Model):
 
     def get_absolute_url(self) -> str:
         from django.urls import reverse
-        
+
         # Если фото связано с задачей генерации, используем новый формат
         if hasattr(self, 'source_job') and self.source_job:
             from generate.views import _job_slug
             job = self.source_job
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
             return reverse("generate:photo_detail", args=[slug_with_id])
-        
+
         # SEO-friendly URL с категорией: /gallery/<category-slug>/<photo-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
             return reverse("gallery:category_photo_detail", args=[self.category.slug, self.slug])
@@ -332,14 +332,14 @@ class PublicVideo(models.Model):
 
     def get_absolute_url(self) -> str:
         from django.urls import reverse
-        
+
         # Если видео связано с задачей генерации, используем новый формат
         if hasattr(self, 'source_job') and self.source_job:
             from generate.views import _job_slug
             job = self.source_job
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
             return reverse("generate:video_detail", args=[slug_with_id])
-        
+
         # SEO-friendly URL с категорией: /gallery/<category-slug>/<video-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
             return reverse("gallery:category_video_detail", args=[self.category.slug, self.slug])

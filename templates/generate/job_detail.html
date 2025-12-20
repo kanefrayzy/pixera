@@ -51,7 +51,10 @@
         {% if p %}
           <div class="relative p-4 rounded-2xl border border-white/10 dark:border-white/10 bg-black text-white shadow-sm" itemprop="description">
             <div class="text-xs uppercase tracking-wide text-white/60 mb-1">Промпт</div>
-            <pre class="whitespace-pre-wrap break-words font-medium text-sm leading-relaxed pr-10" title="{{ p }}">{{ p }}</pre>
+            <pre id="promptText" class="whitespace-pre-wrap break-words font-medium text-sm leading-relaxed pr-10 overflow-hidden transition-all duration-300" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;" title="{{ p }}">{{ p }}</pre>
+            <button type="button" id="togglePrompt" class="text-xs text-white/70 hover:text-white mt-2 underline hidden">
+              Показать полностью
+            </button>
             <button type="button"
                     class="absolute top-2 right-2 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition"
                     data-prompt="{{ p|escapejs }}"
@@ -60,6 +63,31 @@
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
             </button>
           </div>
+          <script>
+            (function() {
+              const promptText = document.getElementById('promptText');
+              const toggleBtn = document.getElementById('togglePrompt');
+              let isExpanded = false;
+
+              // Check if text is truncated
+              if (promptText && promptText.scrollHeight > promptText.clientHeight) {
+                toggleBtn.classList.remove('hidden');
+              }
+
+              toggleBtn?.addEventListener('click', function() {
+                isExpanded = !isExpanded;
+                if (isExpanded) {
+                  promptText.style.display = 'block';
+                  promptText.style.webkitLineClamp = 'unset';
+                  toggleBtn.textContent = 'Скрыть';
+                } else {
+                  promptText.style.display = '-webkit-box';
+                  promptText.style.webkitLineClamp = '3';
+                  toggleBtn.textContent = 'Показать полностью';
+                }
+              });
+            })();
+          </script>
         {% endif %}
         {% endwith %}
       </div>
@@ -441,7 +469,7 @@
 
   function setProgress(percentage) {
     if (!pctNum || !pctText || !progressCircle) return;
-    
+
     percentage = Math.max(0, Math.min(100, percentage));
     const circumference = 2 * Math.PI * 40; // radius = 40
     const offset = circumference - (percentage / 100) * circumference;
@@ -453,7 +481,7 @@
 
   function setEta(ms) {
     if (!etaEl) return;
-    
+
     if (ms <= 0) {
       etaEl.textContent = "~0:00";
       return;
@@ -466,7 +494,7 @@
 
   function updateStatus(status, isError = false) {
     if (!badge) return;
-    
+
     const statusDot = badge.querySelector('.w-2');
     const statusText = badge.querySelector('span');
 

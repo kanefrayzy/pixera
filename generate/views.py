@@ -752,7 +752,7 @@ def job_detail_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
     if not _viewer_allowed_on_job(request, job):
         return HttpResponseForbidden("Forbidden")
-    
+
     # Редирект на новый URL формат: photo/<slug>-<pk> или video/<slug>-<pk>
     slug = _job_slug(job)
     slug_with_id = f"{slug}-{job.pk}"
@@ -771,15 +771,15 @@ def photo_detail(request: HttpRequest, slug: str) -> HttpResponse:
         job = get_object_or_404(GenerationJob, pk=pk, generation_type='image')
     else:
         raise Http404("Invalid slug format")
-    
+
     if not _viewer_allowed_on_job(request, job):
         return HttpResponseForbidden("Forbidden")
-    
+
     # Проверка корректности slug
     expected_slug = f"{_job_slug(job)}-{job.pk}"
     if slug != expected_slug:
         return redirect("generate:photo_detail", slug=expected_slug)
-    
+
     # Используем существующую логику job_detail
     return job_detail(request, pk=job.pk, slug=_job_slug(job))
 
@@ -793,15 +793,15 @@ def video_detail(request: HttpRequest, slug: str) -> HttpResponse:
         job = get_object_or_404(GenerationJob, pk=pk, generation_type='video')
     else:
         raise Http404("Invalid slug format")
-    
+
     if not _viewer_allowed_on_job(request, job):
         return HttpResponseForbidden("Forbidden")
-    
+
     # Проверка корректности slug
     expected_slug = f"{_job_slug(job)}-{job.pk}"
     if slug != expected_slug:
         return redirect("generate:video_detail", slug=expected_slug)
-    
+
     # Используем существующую логику job_detail
     return job_detail(request, pk=job.pk, slug=_job_slug(job))
 
