@@ -1040,13 +1040,15 @@
               </div>
 
               <div class="p-4">
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ v.title|default_if_none:'' }}</h3>
+                <a href="{{ v.get_absolute_url }}" class="block pointer-events-auto">
+                  <h3 class="font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">{{ v.title|default_if_none:'' }}</h3>
+                </a>
 
                 <div class="flex items-center gap-2 mb-3">
                   {% if target_profile and target_profile.avatar %}
                     <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
                   {% endif %}
-                  <a href="/profile-{{ target.username }}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal" aria-label="@{{ target.username }}">
+                  <a href="/profile-{{ target.username }}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal pointer-events-auto" aria-label="@{{ target.username }}">
                     @{{ target.username }}
                   </a>
                 </div>
@@ -1109,7 +1111,6 @@ data-count-target="video-save-count-{{ v.id }}"
                      src="{{ p.image.url }}"
                      alt="{{ p.title|default_if_none:'' }}"
                      loading="lazy">
-                <a class="absolute inset-0 cursor-zoom-in" href="{{ p.get_absolute_url }}" aria-label="Открыть"></a>
                 <!-- Top-right overlays (model + views) -->
                 <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
                   {% with job=p.source_job %}
@@ -1136,13 +1137,15 @@ data-count-target="video-save-count-{{ v.id }}"
               </div>
 
               <div class="p-4">
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ p.title|default_if_none:'' }}</h3>
+                <a href="{{ p.get_absolute_url }}" class="block pointer-events-auto">
+                  <h3 class="font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">{{ p.title|default_if_none:'' }}</h3>
+                </a>
 
                 <div class="flex items-center gap-2 mb-3">
                   {% if target_profile and target_profile.avatar %}
                     <img src="{{ target_profile.avatar.url }}" alt="{{ target.username }}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">
                   {% endif %}
-                  <a href="/profile-{{ target.username }}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal" aria-label="@{{ target.username }}">
+                  <a href="/profile-{{ target.username }}" class="min-w-0 text-xs sm:text-sm font-medium text-[var(--text)] hover:text-primary break-all whitespace-normal pointer-events-auto" aria-label="@{{ target.username }}">
                     @{{ target.username }}
                   </a>
                 </div>
@@ -1310,15 +1313,8 @@ data-count-target="save-count-{{ p.id }}"
                   {% endif %}
                 {% endif %}
 
-                <!-- Model badge + Time Badge -->
-                <div class="absolute bottom-3 right-3 flex flex-col items-end gap-1">
-                  {% with mdl=j|model_display %}
-                  {% if mdl %}
-                  <div class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm whitespace-normal break-words">
-                    {{ mdl }}
-                  </div>
-                  {% endif %}
-                  {% endwith %}
+                <!-- Time Badge (bottom-right) -->
+                <div class="absolute bottom-3 right-3">
                   <time class="px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium" datetime="{{ j.created_at|date:'c' }}">
                     {{ j.created_at|date:"d.m.Y H:i" }}
                   </time>
