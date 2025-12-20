@@ -440,6 +440,8 @@
   let start = performance.now(), stop = false, raf;
 
   function setProgress(percentage) {
+    if (!pctNum || !pctText || !progressCircle) return;
+    
     percentage = Math.max(0, Math.min(100, percentage));
     const circumference = 2 * Math.PI * 40; // radius = 40
     const offset = circumference - (percentage / 100) * circumference;
@@ -450,6 +452,8 @@
   }
 
   function setEta(ms) {
+    if (!etaEl) return;
+    
     if (ms <= 0) {
       etaEl.textContent = "~0:00";
       return;
@@ -461,8 +465,12 @@
   }
 
   function updateStatus(status, isError = false) {
+    if (!badge) return;
+    
     const statusDot = badge.querySelector('.w-2');
     const statusText = badge.querySelector('span');
+
+    if (!statusDot || !statusText) return;
 
     if (isError) {
       badge.className = 'flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400';

@@ -155,11 +155,11 @@ const ReplyManager = {
       const isHidden = form.classList.contains('hidden');
       form.classList.toggle('hidden', !isHidden);
 
-      // Focus on textarea when showing
+      // Focus on input when showing
       if (isHidden) {
-        const textarea = form.querySelector('textarea');
-        if (textarea) {
-          setTimeout(() => textarea.focus(), 100);
+        const input = form.querySelector('input[name="text"]') || form.querySelector('textarea');
+        if (input) {
+          setTimeout(() => input.focus(), 100);
         }
       }
 
@@ -182,11 +182,11 @@ const CommentManager = {
 
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
-    const textarea = form.querySelector('textarea');
+    const input = form.querySelector('input[name="text"]') || form.querySelector('textarea');
 
-    if (!textarea.value.trim()) {
+    if (!input || !input.value.trim()) {
       window.AIGallery.Toast.show('Напишите комментарий', 'warning');
-      textarea.focus();
+      if (input) input.focus();
       return;
     }
 

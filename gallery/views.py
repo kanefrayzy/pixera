@@ -1330,21 +1330,12 @@ def photo_like(request: HttpRequest, pk: int) -> HttpResponse:
         # Уведомление автору фото о лайке
         try:
             if liked and request.user.is_authenticated and getattr(photo, "uploaded_by_id", None) and request.user.id != photo.uploaded_by_id:
-                # Если фото связано с задачей генерации, используем новый формат URL
-                if hasattr(photo, 'source_job') and photo.source_job:
-                    from generate.views import _job_slug
-                    job = photo.source_job
-                    slug_with_id = f"{_job_slug(job)}-{job.pk}"
-                    link_url = reverse("generate:photo_detail", args=[slug_with_id])
-                else:
-                    link_url = reverse("gallery:photo_detail", args=[photo.pk])
-                
                 Notification.create(
                     recipient=photo.uploaded_by,
                     actor=request.user,
                     type=Notification.Type.LIKE_PHOTO,
                     message=f"@{request.user.username} понравилось ваше фото",
-                    link=link_url,
+                    link=photo.get_absolute_url(),
                     payload={"photo_id": photo.pk, "count": int(new_count)},
                 )
         except Exception:
