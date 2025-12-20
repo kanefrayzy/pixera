@@ -115,12 +115,14 @@ class PublicPhoto(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # Если фото связано с задачей генерации, используем формат БЕЗ категории (для профиля)
+        # Если фото связано с задачей генерации, используем новый формат
         if hasattr(self, 'source_job') and self.source_job:
             from generate.views import _job_slug
             job = self.source_job
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
-            return reverse("generate:photo_detail_no_category", args=[slug_with_id])
+            # Получаем категорию
+            category_slug = self.category.slug if self.category else "uncategorized"
+            return reverse("generate:photo_detail", args=[category_slug, slug_with_id])
 
         # SEO-friendly URL с категорией: /gallery/photo/<category-slug>/<photo-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
@@ -333,12 +335,14 @@ class PublicVideo(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # Если видео связано с задачей генерации, используем формат БЕЗ категории (для профиля)
+        # Если видео связано с задачей генерации, используем новый формат
         if hasattr(self, 'source_job') and self.source_job:
             from generate.views import _job_slug
             job = self.source_job
             slug_with_id = f"{_job_slug(job)}-{job.pk}"
-            return reverse("generate:video_detail_no_category", args=[slug_with_id])
+            # Получаем категорию
+            category_slug = self.category.slug if self.category else "uncategorized"
+            return reverse("generate:video_detail", args=[category_slug, slug_with_id])
 
         # SEO-friendly URL с категорией: /gallery/video/<category-slug>/<video-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:

@@ -871,44 +871,6 @@ def video_detail(request: HttpRequest, category_slug: str, slug: str) -> HttpRes
     return job_detail(request, pk=job.pk, slug=_job_slug(job))
 
 
-def photo_detail_no_category(request: HttpRequest, slug: str) -> HttpResponse:
-    """Детали фото по slug БЕЗ категории (для профиля)"""
-    parts = slug.rsplit('-', 1)
-    if len(parts) == 2 and parts[1].isdigit():
-        pk = int(parts[1])
-        job = get_object_or_404(GenerationJob, pk=pk, generation_type='image')
-    else:
-        raise Http404("Invalid slug format")
-
-    if not _viewer_allowed_on_job(request, job):
-        return HttpResponseForbidden("Forbidden")
-
-    expected_slug = f"{_job_slug(job)}-{job.pk}"
-    if slug != expected_slug:
-        return redirect("generate:photo_detail_no_category", slug=expected_slug)
-
-    return job_detail(request, pk=job.pk, slug=_job_slug(job))
-
-
-def video_detail_no_category(request: HttpRequest, slug: str) -> HttpResponse:
-    """Детали видео по slug БЕЗ категории (для профиля)"""
-    parts = slug.rsplit('-', 1)
-    if len(parts) == 2 and parts[1].isdigit():
-        pk = int(parts[1])
-        job = get_object_or_404(GenerationJob, pk=pk, generation_type='video')
-    else:
-        raise Http404("Invalid slug format")
-
-    if not _viewer_allowed_on_job(request, job):
-        return HttpResponseForbidden("Forbidden")
-
-    expected_slug = f"{_job_slug(job)}-{job.pk}"
-    if slug != expected_slug:
-        return redirect("generate:video_detail_no_category", slug=expected_slug)
-
-    return job_detail(request, pk=job.pk, slug=_job_slug(job))
-
-
 def job_status_no_slug(request: HttpRequest, pk: int) -> HttpResponse:
     job = get_object_or_404(GenerationJob, pk=pk)
     if not _viewer_allowed_on_job(request, job):
