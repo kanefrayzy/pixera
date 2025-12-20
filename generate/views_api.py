@@ -293,28 +293,17 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             cluster = None  # анти-абуз не должен ломать поток
 
         wallet, _ = Wallet.objects.get_or_create(user=request.user)
+        tokens_spent = 0
 
-        # Определяем, сколько токенов нужно списать
-        # Админы не платят при FREE_FOR_STAFF=True
-        free_for_staff = _free_for_staff()
-        logger.info(f"[IMAGE GEN] User {request.user.id}: is_staff={is_staff_user}, FREE_FOR_STAFF={free_for_staff}, cost={cost}")
-
-        if free_for_staff and is_staff_user:
-            tokens_spent = 0
-            logger.info(f"[IMAGE GEN] Admin free generation: tokens_spent=0")
-        else:
-            tokens_spent = cost
-            logger.info(f"[IMAGE GEN] Regular generation: tokens_spent={tokens_spent}")
-
-        # Списываем токены только если нужно
-        if tokens_spent > 0:
+        if cost > 0:
             with transaction.atomic():
                 w = Wallet.objects.select_for_update().get(pk=wallet.pk)
                 bal = int(w.balance or 0)
-                if bal < tokens_spent:
+                if bal < cost:
                     return JsonResponse({"redirect": _tariffs_url()})
-                w.balance = bal - tokens_spent
+                w.balance = bal - cost
                 w.save(update_fields=["balance"])
+                tokens_spent = cost
 
         # Создаем несколько задач согласно number_results
         created_jobs = []
@@ -329,7 +318,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 "original_prompt": original_prompt,
                 "status": GenerationJob.Status.PENDING,
                 "error": "",
-                "tokens_spent": tokens_spent if i == 0 else 0,  # Используем реально списанные токены (0 для админов)
+                "tokens_spent": base_cost if i == 0 else 0,  # Токены списываем только с первой задачи
             }
             if model_id_in:
                 job_kwargs["model_id"] = model_id_in
@@ -405,7 +394,10 @@ def api_submit(request: HttpRequest) -> JsonResponse:
             return JsonResponse({"redirect": _tariffs_url()})
 
 
-        # Резервируем токены из FreeGrant
+        # 2) Теперь резервируем токены FreeGrant (если cost==0, всё равно допускаем)
+        if cost <= 0:
+            cost = _token_cost()
+
         with transaction.atomic():
             g = FreeGrant.objects.select_for_update().get(pk=grant.pk)
             left = max(0, int(g.total) - int(g.consumed))
@@ -427,7 +419,7 @@ def api_submit(request: HttpRequest) -> JsonResponse:
                 "original_prompt": original_prompt,
                 "status": GenerationJob.Status.PENDING,
                 "error": "",
-                "tokens_spent": cost if i == 0 else 0,  # Используем реально списанную стоимость
+                "tokens_spent": base_cost if i == 0 else 0,  # Токены списываем только с первой задачи
             }
             if model_id_in:
                 job_kwargs["model_id"] = model_id_in
