@@ -119,7 +119,7 @@ class PublicPhoto(models.Model):
         if hasattr(self, 'source_job') and self.source_job:
             from generate.views import _job_slug
             job = self.source_job
-            slug_with_id = f"{_job_slug(job)}-{job.pk}"
+            slug_with_id = f"{_job_slug(job)}-{self.pk}"
         elif getattr(self, "slug", None) and self.pk:
             slug_with_id = f"{self.slug}-{self.pk}"
         else:
@@ -340,7 +340,7 @@ class PublicVideo(models.Model):
         if hasattr(self, 'source_job') and self.source_job:
             from generate.views import _job_slug
             job = self.source_job
-            slug_with_id = f"{_job_slug(job)}-{job.pk}"
+            slug_with_id = f"{_job_slug(job)}-{self.pk}"
         elif getattr(self, "slug", None) and self.pk:
             slug_with_id = f"{self.slug}-{self.pk}"
         else:
