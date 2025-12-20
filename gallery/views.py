@@ -2102,17 +2102,17 @@ def category_photo_detail(request: HttpRequest, category_slug: str, content_slug
         if not category:
             from django.http import Http404
             raise Http404("Category not found")
-        
+
         photo = PublicPhoto.objects.filter(
             slug=content_slug,
             category=category,
             is_active=True
         ).first()
-        
+
         if not photo:
             from django.http import Http404
             raise Http404("Photo not found")
-            
+
         return photo_detail_by_slug(request, content_slug)
     except Exception as e:
         from django.http import Http404
