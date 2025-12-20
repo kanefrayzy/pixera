@@ -1111,9 +1111,13 @@ def photo_detail(request: HttpRequest, pk: int) -> HttpResponse:
         pk=pk,
         is_active=True,
     )
-    # Canonicalize: always redirect legacy /gallery/photo/<pk> to slug URL /gallery/<slug>
+    # Canonicalize: редирект только если текущий URL не совпадает с каноническим
     if getattr(photo, "slug", None):
-        return redirect(photo.get_absolute_url())
+        canonical_url = photo.get_absolute_url()
+        current_path = request.path
+        # Редиректим только если пути разные (избегаем бесконечного редиректа)
+        if canonical_url != current_path and not current_path.startswith('/gallery/' + (photo.category.slug + '/' if photo.category else '')):
+            return redirect(canonical_url)
 
     # Respect owner's hide setting: hidden publications are not visible to others
     try:
