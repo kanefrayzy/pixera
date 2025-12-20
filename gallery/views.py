@@ -2100,22 +2100,22 @@ def category_photo_detail(request: HttpRequest, category_slug: str, content_slug
     """
     from django.http import Http404
     from django.shortcuts import get_object_or_404
-    
+
     # Извлекаем ID из конца slug
     try:
         photo_id = int(content_slug.split('-')[-1])
     except (ValueError, IndexError):
         raise Http404("Неверный формат slug")
-    
+
     category = get_object_or_404(Category, slug=category_slug)
-    
+
     photo = get_object_or_404(
         PublicPhoto.objects.select_related("uploaded_by", "category"),
         pk=photo_id,
         category=category,
         is_active=True
     )
-    
+
     # Respect owner's hide setting
     try:
         from .models import JobHide
@@ -2185,7 +2185,13 @@ def category_photo_detail(request: HttpRequest, category_slug: str, content_slug
             "related_photos": related_photos,
         },
     )
-    - Если не нашли — ищем видео по VideoCategory.slug + PublicVideo.slug
+
+
+def category_content_detail(request: HttpRequest, category_slug: str, content_slug: str) -> HttpResponse:
+    """
+    Legacy SEO-friendly URL с категорией: /gallery/<category-slug>/<content-slug>
+    - Сначала ищем фото по Category.slug + PublicPhoto.slug
+    - Если не нашли - ищем видео по VideoCategory.slug + PublicVideo.slug
     """
     # Пытаемся как фото
     try:

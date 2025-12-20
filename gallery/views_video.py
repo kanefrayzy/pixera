@@ -794,16 +794,16 @@ def category_video_detail(request: HttpRequest, category_slug: str, content_slug
         video_id = int(content_slug.split('-')[-1])
     except (ValueError, IndexError):
         raise Http404("Неверный формат slug")
-    
+
     category = get_object_or_404(VideoCategory, slug=category_slug)
-    
+
     video = get_object_or_404(
         PublicVideo.objects.select_related("uploaded_by", "category"),
         pk=video_id,
         category=category,
         is_active=True
     )
-    
+
     # Respect owner's hide setting
     try:
         from .models import JobHide
