@@ -767,6 +767,7 @@ def _refund_if_needed(job: GenerationJob) -> None:
     max_retries=3,
     autoretry_for=(requests.RequestException,),
 )
+@transaction.atomic
 def run_generation_async(self, job_id: int) -> None:
     try:
         job = GenerationJob.objects.select_for_update().get(pk=job_id)
