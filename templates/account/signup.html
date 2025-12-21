@@ -225,30 +225,6 @@
         </button>
       {% endif %}
 
-      {# Facebook #}
-      {% if FACEBOOK_ENABLED %}
-        {% if redirect_field_value %}
-          <a class="btn btn-ghost w-full text-base py-3" href="{% provider_login_url 'facebook' process='signup' next=redirect_field_value %}">
-            <img src="{% static 'img/social/facebook.svg' %}" alt="Facebook" class="w-5 h-5">
-            Регистрация через Facebook
-          </a>
-        {% elif request.GET.next %}
-          <a class="btn btn-ghost w-full text-base py-3" href="{% provider_login_url 'facebook' process='signup' next=request.GET.next %}">
-            <img src="{% static 'img/social/facebook.svg' %}" alt="Facebook" class="w-5 h-5">
-            Регистрация через Facebook
-          </a>
-        {% else %}
-          <a class="btn btn-ghost w-full text-base py-3" href="{% provider_login_url 'facebook' process='signup' %}">
-            <img src="{% static 'img/social/facebook.svg' %}" alt="Facebook" class="w-5 h-5">
-            Регистрация через Facebook
-          </a>
-        {% endif %}
-      {% else %}
-        <button class="btn btn-ghost w-full text-base py-3 opacity-60 cursor-not-allowed" type="button" disabled>
-          <img src="{% static 'img/social/facebook.svg' %}" alt="Facebook" class="w-5 h-5">
-          Facebook не настроен
-        </button>
-      {% endif %}
 
       {# Discord #}
       {% if DISCORD_ENABLED %}

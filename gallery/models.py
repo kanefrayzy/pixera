@@ -137,7 +137,6 @@ class PublicPhoto(models.Model):
                 base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
                 candidate = base or "photo"
                 i = 1
-                # обеспечиваем уникальность слага, добавляя суффикс -1, -2, ...
                 while PublicPhoto.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
                     suffix = f"-{i}"
                     candidate = (base + suffix)[:180]
