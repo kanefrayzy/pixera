@@ -1,12 +1,12 @@
 #!/bin/bash
 set -e
 
-echo "Waiting for MySQL..."
-until nc -z db 3306 2>/dev/null; do
-  echo "MySQL is unavailable - sleeping"
+echo "Waiting for PostgreSQL..."
+until nc -z db 5432 2>/dev/null; do
+  echo "PostgreSQL is unavailable - sleeping"
   sleep 2
 done
-echo "MySQL started"
+echo "PostgreSQL started"
 
 echo "Running migrations..."
 python manage.py migrate --noinput

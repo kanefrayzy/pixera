@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     gcc \
-    default-libmysqlclient-dev \
+    libpq-dev \
     pkg-config \
     netcat-openbsd \
     curl \

@@ -182,7 +182,7 @@ CHANNEL_LAYERS = {
     }
 }
 
-# ── database (MySQL в продакшн, SQLite в dev) ────────────────────────────────
+# ── database (PostgreSQL в продакшн, SQLite в dev) ──────────────────────────
 if DEBUG:
     # Development: SQLite
     DATABASES = {
@@ -195,23 +195,16 @@ if DEBUG:
         }
     }
 else:
-    # Production: MySQL
+    # Production: PostgreSQL
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.getenv("MYSQL_DATABASE", "pixera"),
-            "USER": os.getenv("MYSQL_USER", "pixera_user"),
-            "PASSWORD": os.getenv("MYSQL_PASSWORD", ""),
-            "HOST": os.getenv("MYSQL_HOST", "db"),
-            "PORT": os.getenv("MYSQL_PORT", "3306"),
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "pixera"),
+            "USER": os.getenv("POSTGRES_USER", "pixera_user"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
+            "HOST": os.getenv("POSTGRES_HOST", "db"),
+            "PORT": os.getenv("POSTGRES_PORT", "5432"),
             "CONN_MAX_AGE": 60,
-            "OPTIONS": {
-                "charset": "utf8mb4",
-                "init_command": (
-                    "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,"
-                    "NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_ENGINE_SUBSTITUTION'"
-                ),
-            },
         }
     }
 
