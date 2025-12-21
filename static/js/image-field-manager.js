@@ -322,81 +322,17 @@ class ImageFieldManager {
         const aspectRatioSelect = document.getElementById('aspect-ratio-selector');
         if (!aspectRatioSelect) return;
 
-        // Clear existing options except first (placeholder)
-        aspectRatioSelect.innerHTML = '<option value="" disabled selected>Выберите соотношение сторон</option>';
+        // Clear existing options
+        aspectRatioSelect.innerHTML = '';
 
-        // Group labels
-        const groups = {
-            square: 'Квадратные',
-            classic: 'Классические',
-            modern: 'Современные',
-            cinema: 'Киноформаты',
-            ultrawide: 'Ультраширокие',
-            vertical: 'Вертикальные',
-            photo: 'Фотографические'
-        };
-
-        // Categorize aspect ratios
-        const categorized = {
-            square: ['1:1'],
-            classic: ['4:3', '3:2', '5:4'],
-            modern: ['16:9', '16:10'],
-            cinema: ['21:9', '2.35:1', '2.39:1', '1.85:1'],
-            ultrawide: ['32:9', '18:9'],
-            vertical: ['9:16', '2:3', '3:4', '9:19.5'],
-            photo: ['3:2', '2:3', '4:5', '5:4']
-        };
-
-        // Add options grouped
-        const addedRatios = new Set();
-        Object.entries(categorized).forEach(([groupKey, ratios]) => {
-            const matchingRatios = aspectRatios.filter(r => {
-                const normalized = r.replace('_', ':');
-                return ratios.some(target => {
-                    // Handle both "2.35:1" and "2_35_1" formats
-                    const targetNorm = target.replace('.', '_').replace(':', '_');
-                    const rNorm = normalized.replace('.', '_').replace(':', '_');
-                    return targetNorm === rNorm || target === normalized;
-                }) && !addedRatios.has(r);
-            });
-
-            if (matchingRatios.length > 0) {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = groups[groupKey];
-                matchingRatios.forEach(ratio => {
-                    const option = document.createElement('option');
-                    option.value = ratio;
-                    const display = ratio.replace('_', ':');
-                    option.textContent = display;
-                    optgroup.appendChild(option);
-                    addedRatios.add(ratio);
-                });
-                aspectRatioSelect.appendChild(optgroup);
-            }
+        // Add options in order - simple flat list
+        aspectRatios.forEach(ratio => {
+            const option = document.createElement('option');
+            option.value = ratio;
+            const display = ratio.replace('_', ':');
+            option.textContent = display;
+            aspectRatioSelect.appendChild(option);
         });
-
-        // Add ungrouped ratios
-        const ungrouped = aspectRatios.filter(r => !addedRatios.has(r));
-        if (ungrouped.length > 0) {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = 'Другие';
-            ungrouped.forEach(ratio => {
-                const option = document.createElement('option');
-                option.value = ratio;
-                const display = ratio.replace('_', ':');
-                option.textContent = display;
-                optgroup.appendChild(option);
-            });
-            aspectRatioSelect.appendChild(optgroup);
-        }
-
-        console.log('Updated aspect ratio options:', aspectRatios);
-
-        // Auto-select first ratio and calculate dimensions
-        if (aspectRatios.length > 0) {
-            aspectRatioSelect.value = aspectRatios[0];
-            this.calculateDimensions(aspectRatios[0]);
-        }
     }
 
     /**

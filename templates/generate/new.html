@@ -2113,9 +2113,14 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="space-y-4" id="image-advanced-params">
           <!-- Aspect Ratio Selector -->
           <div id="aspect-ratio-field" class="field-container" style="display: none;">
-            <label class="block text-sm font-medium mb-2">Соотношение сторон</label>
-            <select id="aspect-ratio-selector" name="aspect_ratio" class="field w-full">
-              <option value="" disabled selected>Выберите соотношение сторон</option>
+            <label class="block text-sm font-medium mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+              Соотношение сторон
+            </label>
+            <select id="aspect-ratio-selector" name="aspect_ratio" class="field w-full px-4 py-2.5 bg-[var(--bg-card)] border-2 border-[var(--bord)] rounded-xl text-[var(--text)] font-medium transition-all duration-200 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer appearance-none" style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23a855f7%27 stroke-width=%272%27%3e%3cpolyline points=%276 9 12 15 18 9%27/%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25rem; padding-right: 2.5rem;">
             </select>
           </div>
 
