@@ -115,17 +115,7 @@ class PublicPhoto(models.Model):
     def get_absolute_url(self) -> str:
         from django.urls import reverse
 
-        # Если фото связано с задачей генерации, используем новый формат
-        if hasattr(self, 'source_job') and self.source_job:
-            from generate.views import _job_slug
-            job = self.source_job
-            slug_with_id = f"{_job_slug(job)}-{job.pk}"
-            # Для опубликованных - URL с категорией
-            if self.category:
-                return reverse("generate:photo_detail_with_category", args=[self.category.slug, slug_with_id])
-            else:
-                return reverse("generate:photo_detail", args=[slug_with_id])
-
+        # Для PublicPhoto всегда используем галерейные URL
         # SEO-friendly URL с категорией: /gallery/photo/<category-slug>/<photo-slug>
         if getattr(self, "slug", None) and self.category and self.category.slug:
             return reverse("gallery:category_photo_detail", args=[self.category.slug, self.slug])
