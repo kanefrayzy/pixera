@@ -1100,6 +1100,22 @@
     try { fd.append('auto_translate', imgAutoTranslate ? '1' : '0'); } catch(_) {}
     if (selectedModel) fd.append('model_id', selectedModel);
 
+    // Add width and height from aspect ratio selector
+    try {
+      const widthInput = document.getElementById('width-input');
+      const heightInput = document.getElementById('height-input');
+      if (widthInput && widthInput.value) {
+        fd.append('width', widthInput.value);
+        console.log('[image-gen] Added width:', widthInput.value);
+      }
+      if (heightInput && heightInput.value) {
+        fd.append('height', heightInput.value);
+        console.log('[image-gen] Added height:', heightInput.value);
+      }
+    } catch(e) {
+      console.error('[image-gen] Failed to add width/height:', e);
+    }
+
     // Add reference images if any
     try {
       // Try both compact and full component classes
