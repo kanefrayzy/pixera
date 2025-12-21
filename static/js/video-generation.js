@@ -3410,24 +3410,16 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Умное масштабирование: на мобилке выше, на ПК 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
+      <div class="video-tile-container" style="position: relative; overflow: hidden; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 0.75rem;"
         <!-- Видео -->
-        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;"
-               preload="metadata"
+        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
+               preload="auto"
                loop
                muted
                playsinline>
           <source src="${videoUrl}" type="video/mp4">
           Ваш браузер не поддерживает видео.
         </video>
-        
-        <!-- Индикатор загрузки видео -->
-        <div class="video-loading-indicator" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); z-index: 5; transition: opacity 0.3s ease;">
-          <div style="text-align: center;">
-            <div style="width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.3); border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 0.5rem;"></div>
-            <div style="color: white; font-size: 0.75rem; opacity: 0.7;">Загрузка видео...</div>
-          </div>
-        </div>
 
         <!-- Кнопка Play/Pause - центр -->
         <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: none; border: none; padding: 0; cursor: pointer;">
@@ -3484,73 +3476,39 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       videoEl = tile.querySelector('video.video-player');
     } catch (_) { }
 
-    // Профессиональная загрузка видео с индикатором и фоллбэками
+    // Немедленно загружаем видео и устанавливаем src
     if (videoEl && videoUrl) {
-      const loadingIndicator = tile.querySelector('.video-loading-indicator');
-      let videoShown = false;
-      
-      // Функция для показа видео
-      const showVideo = () => {
-        if (videoShown) return;
-        videoShown = true;
-        
-        try {
-          // Показываем видео с плавной анимацией
-          if (videoEl) videoEl.style.opacity = '1';
-          
-          // Скрываем индикатор загрузки
-          if (loadingIndicator) {
-            loadingIndicator.style.opacity = '0';
-            setTimeout(() => {
-              try { 
-                if (loadingIndicator && loadingIndicator.isConnected) {
-                  loadingIndicator.remove(); 
-                }
-              } catch(_) {}
-            }, 300);
-          }
-        } catch(_) {}
-      };
-      
       try {
-        // Загружаем метаданные для быстрого старта
+        // Устанавливаем источник через source элемент (уже есть в innerHTML)
+        // Загружаем метаданные для отображения первого кадра
         videoEl.load();
 
-        // Показываем видео когда загружены метаданные (быстро)
+        // Показываем первый кадр когда метаданные загружены
         videoEl.addEventListener('loadedmetadata', () => {
           try {
-            // Устанавливаем первый кадр
             videoEl.currentTime = 0.1;
           } catch(_) {}
         }, { once: true });
 
-        // Показываем видео как только появились данные (основной триггер)
+        // Убираем градиентный фон после загрузки видео
         videoEl.addEventListener('loadeddata', () => {
-          showVideo();
-        }, { once: true });
-
-        // Фоллбэк: показываем видео когда можно начать воспроизведение
-        videoEl.addEventListener('canplay', () => {
-          showVideo();
-        }, { once: true });
-
-        // Таймаут: показываем видео через 3 секунды в любом случае
-        const fallbackTimeout = setTimeout(() => {
-          if (!videoShown) {
-            console.log('[video-gen] Showing video after timeout fallback');
-            showVideo();
-          }
-        }, 3000);
-
-        // Обработка ошибок загрузки
-        videoEl.addEventListener('error', (e) => {
-          clearTimeout(fallbackTimeout);
           try {
-            console.error('[video-gen] Video load error:', videoUrl, e);
             const container = tile.querySelector('.video-tile-container');
             if (container) {
+              container.style.background = '#000';
+            }
+          } catch(_) {}
+        }, { once: true });
+
+        // Обработка ошибок загрузки
+        videoEl.addEventListener('error', () => {
+          try {
+            console.warn('[video-gen] Video load error:', videoUrl);
+            const container = tile.querySelector('.video-tile-container');
+            if (container) {
+              container.style.background = '#1a1a2e';
               container.innerHTML = `
-                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #1a1a2e; color: white; font-size: 0.875rem; padding: 1rem; text-align: center;">
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.875rem; padding: 1rem; text-align: center;">
                   <div>
                     <svg style="width: 2rem; height: 2rem; margin: 0 auto 0.5rem; opacity: 0.5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="10"/>
@@ -3565,15 +3523,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             }
           } catch(_) {}
         }, { once: true });
-
-        // Cleanup timeout если видео успешно загрузилось
-        videoEl.addEventListener('canplaythrough', () => {
-          clearTimeout(fallbackTimeout);
-        }, { once: true });
-        
-      } catch (_) { 
-        console.error('[video-gen] Error setting up video:', _);
-      }
+      } catch (_) { }
     }
 
     // Volume toggle
