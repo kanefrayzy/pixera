@@ -124,10 +124,18 @@ class ImageFieldManager {
     updateDimensionsUI(width, height) {
         const widthInput = document.getElementById('width-input');
         const heightInput = document.getElementById('height-input');
+        const widthDisplay = document.getElementById('width-display');
+        const heightDisplay = document.getElementById('height-display');
         const totalPixelsSpan = document.getElementById('total-pixels');
 
+        // Update hidden inputs (for form submission)
         if (widthInput) widthInput.value = width;
         if (heightInput) heightInput.value = height;
+
+        // Update display inputs (readonly, for user to see)
+        if (widthDisplay) widthDisplay.value = width;
+        if (heightDisplay) heightDisplay.value = height;
+
         if (totalPixelsSpan) {
             const total = width * height;
             totalPixelsSpan.textContent = total.toLocaleString('ru-RU');

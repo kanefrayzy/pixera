@@ -29,7 +29,7 @@ for job in jobs:
     print(f"Status: {job.status}")
     if job.error:
         print(f"Error: {job.error[:200]}")
-    
+
     # Попытка распарсить
     if job.video_resolution and 'x' in job.video_resolution.lower():
         try:
@@ -39,7 +39,7 @@ for job in jobs:
                 h = int(parts[1].strip())
                 total = w * h
                 print(f"✅ Parsed: {w}×{h} = {total:,} pixels")
-                
+
                 # Проверка для Seedream
                 if job.model_id and 'bytedance:5' in job.model_id.lower():
                     if 3686400 <= total <= 16777216:
