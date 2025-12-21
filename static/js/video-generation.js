@@ -1113,6 +1113,42 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     this.saveQueue();
   }
 
+  /**
+   * Удалить задачу из очереди (UI + localStorage + backend)
+   * @param {string} jobId - ID задачи
+   */
+  removeFromQueue(jobId) {
+    if (!jobId) return;
+    const id = String(jobId);
+
+    // 1. Помечаем задачу как удаленную навсегда
+    if (!this.clearedJobs) this.clearedJobs = new Set();
+    this.clearedJobs.add(id);
+    this.saveClearedJobs();
+
+    // 2. Удаляем из локальной очереди
+    const idx = this.queue.findIndex(e => String(e.job_id) === id);
+    if (idx >= 0) {
+      this.queue.splice(idx, 1);
+      this.saveQueue();
+    }
+
+    // 3. Удаляем с сервера (асинхронно, без ожидания)
+    try {
+      fetch('/generate/api/queue/remove', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': this.getCSRFToken()
+        },
+        credentials: 'same-origin',
+        body: 'job_id=' + encodeURIComponent(id)
+      }).catch(() => {}); // Игнорируем ошибки сети
+    } catch (_) { }
+
+    console.log('[removeFromQueue] Removed job:', id);
+  }
+
   // Purge items older than 24h from UI queue and DOM (strict)
   // Any items without createdAt are treated as expired and are marked as cleared forever.
   purgeExpiredQueue() {
@@ -1135,6 +1171,21 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             removed.forEach(id => this.clearedJobs.add(String(id)));
             this.saveClearedJobs && this.saveClearedJobs();
           } catch (_) { }
+
+          // Удаляем устаревшие задачи с сервера (асинхронно)
+          removed.forEach(jobId => {
+            try {
+              fetch('/generate/api/queue/remove', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'same-origin',
+                body: 'job_id=' + encodeURIComponent(String(jobId))
+              }).catch(() => {});
+            } catch (_) { }
+          });
         }
 
         // Remove tiles for purged jobs
@@ -1151,6 +1202,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             const card = document.getElementById('video-queue-card');
             if (card) { try { card.remove(); } catch (_) { } }
           }
+        }
+
+        if (removed.size > 0) {
+          console.log('[purgeExpiredQueue] Removed', removed.size, 'expired jobs');
         }
       }
     } catch (_) { }
@@ -2172,28 +2227,45 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           return;
         }
 
-        // Remove tile from queue UI
+        // Remove tile from queue UI (делегированный обработчик для совместимости)
         const btn = e.target.closest('.tile-remove-btn');
         if (!btn) return;
         const tile = btn.closest('.video-result-tile');
         if (!tile) return;
         const jid = tile.dataset.jobId;
+
+        // Используем общий метод removeFromQueue для удаления
         if (jid) {
-          // backend: permanently remove this job
           try {
-            fetch('/generate/api/queue/remove', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': this.getCSRFToken() },
-              credentials: 'same-origin',
-              body: 'job_id=' + encodeURIComponent(String(jid))
-            });
-          } catch (_) { }
-          this.clearedJobs.add(String(jid));
-          this.saveClearedJobs();
+            this.removeFromQueue(String(jid));
+          } catch (err) {
+            console.error('[setupEventListeners] removeFromQueue error:', err);
+          }
         } else {
-          this.clearedTiles?.add(tile);
+          // Для плиток без jobId просто помечаем в clearedTiles
+          try {
+            if (this.clearedTiles) this.clearedTiles.add(tile);
+          } catch (_) { }
         }
-        try { if (tile.isConnected) tile.remove(); } catch (_) { }
+
+        // Анимированное удаление
+        try {
+          tile.style.transition = 'all 0.3s ease';
+          tile.style.transform = 'scale(0.8)';
+          tile.style.opacity = '0';
+          setTimeout(() => {
+            try {
+              if (tile.isConnected) tile.remove();
+
+              // Проверяем, остались ли карточки
+              const grid = document.getElementById('video-results-grid');
+              if (grid && !grid.querySelector('.video-result-tile')) {
+                const card = document.getElementById('video-queue-card');
+                if (card) card.remove();
+              }
+            } catch (_) { }
+          }, 300);
+        } catch (_) { }
       });
     }
 
@@ -3238,6 +3310,21 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           e.stopPropagation();
           e.preventDefault();
 
+          // Получаем jobId если есть (для pending задач может не быть)
+          const jobId = tile.dataset && tile.dataset.jobId ? String(tile.dataset.jobId) : null;
+
+          // Удаляем из очереди если есть jobId
+          if (jobId) {
+            try {
+              this.removeFromQueue(jobId);
+            } catch (_) { }
+          } else {
+            // Для плиток без jobId просто помечаем в clearedTiles
+            try {
+              if (this.clearedTiles) this.clearedTiles.add(tile);
+            } catch (_) { }
+          }
+
           // Анимация удаления
           tile.style.transition = 'all 0.3s ease';
           tile.style.transform = 'scale(0.8)';
@@ -3323,16 +3410,24 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Умное масштабирование: на мобилке выше, на ПК 16:9
     const arFromDataset = (tile.dataset && tile.dataset.aspectText) ? tile.dataset.aspectText : '';
     tile.innerHTML = `
-      <div class="video-tile-container" style="position: relative; overflow: hidden; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 0.75rem;"
+      <div class="video-tile-container" style="position: relative; overflow: hidden; background: #000; border-radius: 0.75rem;">
         <!-- Видео -->
-        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer;"
-               preload="auto"
+        <video class="video-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;"
+               preload="metadata"
                loop
                muted
                playsinline>
           <source src="${videoUrl}" type="video/mp4">
           Ваш браузер не поддерживает видео.
         </video>
+        
+        <!-- Индикатор загрузки видео -->
+        <div class="video-loading-indicator" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); z-index: 5; transition: opacity 0.3s ease;">
+          <div style="text-align: center;">
+            <div style="width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.3); border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 0.5rem;"></div>
+            <div style="color: white; font-size: 0.75rem; opacity: 0.7;">Загрузка видео...</div>
+          </div>
+        </div>
 
         <!-- Кнопка Play/Pause - центр -->
         <button type="button" class="video-play-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: none; border: none; padding: 0; cursor: pointer;">
@@ -3389,39 +3484,73 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       videoEl = tile.querySelector('video.video-player');
     } catch (_) { }
 
-    // Немедленно загружаем видео и устанавливаем src
+    // Профессиональная загрузка видео с индикатором и фоллбэками
     if (videoEl && videoUrl) {
+      const loadingIndicator = tile.querySelector('.video-loading-indicator');
+      let videoShown = false;
+      
+      // Функция для показа видео
+      const showVideo = () => {
+        if (videoShown) return;
+        videoShown = true;
+        
+        try {
+          // Показываем видео с плавной анимацией
+          if (videoEl) videoEl.style.opacity = '1';
+          
+          // Скрываем индикатор загрузки
+          if (loadingIndicator) {
+            loadingIndicator.style.opacity = '0';
+            setTimeout(() => {
+              try { 
+                if (loadingIndicator && loadingIndicator.isConnected) {
+                  loadingIndicator.remove(); 
+                }
+              } catch(_) {}
+            }, 300);
+          }
+        } catch(_) {}
+      };
+      
       try {
-        // Устанавливаем источник через source элемент (уже есть в innerHTML)
-        // Загружаем метаданные для отображения первого кадра
+        // Загружаем метаданные для быстрого старта
         videoEl.load();
 
-        // Показываем первый кадр когда метаданные загружены
+        // Показываем видео когда загружены метаданные (быстро)
         videoEl.addEventListener('loadedmetadata', () => {
           try {
+            // Устанавливаем первый кадр
             videoEl.currentTime = 0.1;
           } catch(_) {}
         }, { once: true });
 
-        // Убираем градиентный фон после загрузки видео
+        // Показываем видео как только появились данные (основной триггер)
         videoEl.addEventListener('loadeddata', () => {
-          try {
-            const container = tile.querySelector('.video-tile-container');
-            if (container) {
-              container.style.background = '#000';
-            }
-          } catch(_) {}
+          showVideo();
         }, { once: true });
 
+        // Фоллбэк: показываем видео когда можно начать воспроизведение
+        videoEl.addEventListener('canplay', () => {
+          showVideo();
+        }, { once: true });
+
+        // Таймаут: показываем видео через 3 секунды в любом случае
+        const fallbackTimeout = setTimeout(() => {
+          if (!videoShown) {
+            console.log('[video-gen] Showing video after timeout fallback');
+            showVideo();
+          }
+        }, 3000);
+
         // Обработка ошибок загрузки
-        videoEl.addEventListener('error', () => {
+        videoEl.addEventListener('error', (e) => {
+          clearTimeout(fallbackTimeout);
           try {
-            console.warn('[video-gen] Video load error:', videoUrl);
+            console.error('[video-gen] Video load error:', videoUrl, e);
             const container = tile.querySelector('.video-tile-container');
             if (container) {
-              container.style.background = '#1a1a2e';
               container.innerHTML = `
-                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.875rem; padding: 1rem; text-align: center;">
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #1a1a2e; color: white; font-size: 0.875rem; padding: 1rem; text-align: center;">
                   <div>
                     <svg style="width: 2rem; height: 2rem; margin: 0 auto 0.5rem; opacity: 0.5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="10"/>
@@ -3436,7 +3565,15 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             }
           } catch(_) {}
         }, { once: true });
-      } catch (_) { }
+
+        // Cleanup timeout если видео успешно загрузилось
+        videoEl.addEventListener('canplaythrough', () => {
+          clearTimeout(fallbackTimeout);
+        }, { once: true });
+        
+      } catch (_) { 
+        console.error('[video-gen] Error setting up video:', _);
+      }
     }
 
     // Volume toggle
@@ -3541,11 +3678,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           e.stopPropagation();
           e.preventDefault();
 
-          // Удаляем из очереди
+          // Удаляем из очереди (UI + localStorage + backend)
           if (jobId) {
             try {
               this.removeFromQueue(String(jobId));
-            } catch(_) {}
+            } catch (err) {
+              console.error('[renderTileResult] removeFromQueue error:', err);
+            }
           }
 
           // Анимация удаления
