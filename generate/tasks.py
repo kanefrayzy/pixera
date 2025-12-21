@@ -792,6 +792,13 @@ def run_generation_async(self, job_id: int) -> None:
 
     model_id = job.model_id or getattr(
         settings, "RUNWARE_DEFAULT_MODEL", "runware:101@1")
+
+    # Определяем model_id в нижнем регистре для проверок
+    try:
+        mid = (job.model_id or model_id or "").strip().lower()
+    except Exception:
+        mid = (model_id or "").strip().lower()
+
     # Per-model resolution mapping
     w = 1024
     h = 1024
@@ -807,10 +814,6 @@ def run_generation_async(self, job_id: int) -> None:
         except (ValueError, AttributeError) as e:
             log.warning(f"Failed to parse video_resolution '{job.video_resolution}': {e}")
             # Fallback to model defaults
-            try:
-                mid = (job.model_id or model_id or "").strip().lower()
-            except Exception:
-                mid = (model_id or "").strip().lower()
             if mid == "bfl:2@2":
                 w = 2048
                 h = 2048
@@ -819,10 +822,6 @@ def run_generation_async(self, job_id: int) -> None:
                 h = 1024
     else:
         # No custom resolution - use model defaults
-        try:
-            mid = (job.model_id or model_id or "").strip().lower()
-        except Exception:
-            mid = (model_id or "").strip().lower()
         if mid == "bfl:2@2":
             w = 2048
             h = 2048
