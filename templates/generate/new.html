@@ -1768,54 +1768,27 @@ document.addEventListener('DOMContentLoaded', function() {
             maxlength="1500"
             itemprop="actionOption"></textarea>
 
-          <!-- Prompt Generator (visual stub) -->
-          <div id="pg-image" class="mt-3 rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 sm:p-4">
-            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch">
-              <input
-                type="text"
-                id="pg-image-input"
-                class="field w-full h-10 sm:h-11"
-                placeholder="Введите идею (например: «портрет в стиле неона, девушка в наушниках»)"
-                maxlength="240"
-                aria-label="Идея для профессионального промпта">
-              <button
-                type="button"
-                id="pg-image-btn"
-                class="btn btn-primary shrink-0 h-10 sm:h-11 px-4 sm:px-5 text-sm">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span class="hidden xs:inline">Сгенерировать промпт</span>
-                <span class="xs:hidden inline">Сгенерировать</span>
-              </button>
-            </div>
-
-            <!-- Result -->
-            <div id="pg-image-result" class="mt-3 hidden">
-              <div class="rounded-lg border border-[var(--bord)] bg-[var(--bg-card)] p-3">
-                <pre class="whitespace-pre-wrap break-words text-[13px] leading-snug text-[var(--text)]" id="pg-image-text"></pre>
-              </div>
-              <div class="mt-2 flex flex-wrap items-center gap-2">
-                <button type="button" id="pg-image-copy" class="btn btn-ghost text-xs sm:text-sm">
-                  Копировать
-                </button>
-                <button type="button" id="pg-image-insert" class="btn btn-ghost text-xs sm:text-sm">
-                  Вставить в поле выше
-                </button>
-                <label class="inline-flex items-center gap-2 text-xs sm:text-sm text-[var(--muted)] ml-auto">
-                  <input type="checkbox" id="pg-image-append" class="w-4 h-4">
-                  <span>Добавлять к текущему</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Loading shimmer -->
-            <div id="pg-image-loading" class="mt-3 hidden">
-              <div class="h-10 rounded-lg bg-[var(--bord)] overflow-hidden relative">
-                <div class="absolute inset-0 -translate-x-full animate-[shimmer_1.2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-              </div>
-            </div>
+          <!-- Enhanced Prompt Generator - Simplified UI -->
+          <div id="pg-image" class="mt-2 flex items-center justify-end gap-3">
+            <span id="pg-image-status" class="text-xs text-[var(--muted)] hidden"></span>
+            <button
+              type="button"
+              id="pg-image-btn"
+              class="btn btn-primary text-sm"
+              title="Улучшить промпт с помощью AI">
+              <svg id="pg-image-loading" class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" stroke-width="4" class="opacity-25"/>
+                <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"/>
+              </svg>
+              <svg id="pg-image-icon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+              </svg>
+              <span>Улучшить промпт</span>
+            </button>
           </div>
           <style>
-            @keyframes shimmer { 100% { transform: translateX(100%); } }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            .animate-spin { animation: spin 1s linear infinite; }
           </style>
 
           <script>
@@ -1862,77 +1835,84 @@ document.addEventListener('DOMContentLoaded', function() {
                 const root = document.getElementById(`pg-${ns}`);
                 if (!root) return;
 
-                const input = document.getElementById(`pg-${ns}-input`);
                 const btn = document.getElementById(`pg-${ns}-btn`);
                 const loading = document.getElementById(`pg-${ns}-loading`);
-                const resultWrap = document.getElementById(`pg-${ns}-result`);
-                const resultText = document.getElementById(`pg-${ns}-text`);
-                const copyBtn = document.getElementById(`pg-${ns}-copy`);
-                const insertBtn = document.getElementById(`pg-${ns}-insert`);
-                const appendChk = document.getElementById(`pg-${ns}-append`);
+                const icon = document.getElementById(`pg-${ns}-icon`);
+                const status = document.getElementById(`pg-${ns}-status`);
 
                 const targetId = ns === 'image' ? 'prompt' : 'video-prompt';
-                const target = () => document.getElementById(targetId);
+                const promptField = () => document.getElementById(targetId);
 
                 function setLoading(on) {
-                  loading.classList.toggle('hidden', !on);
-                  resultWrap.classList.toggle('hidden', on);
                   btn.disabled = on;
+                  if (loading) loading.classList.toggle('hidden', !on);
+                  if (icon) icon.classList.toggle('hidden', on);
                 }
 
                 btn?.addEventListener('click', async () => {
-                  const idea = (input?.value || '').trim();
-                  if (!idea) {
-                    input?.focus();
+                  const field = promptField();
+                  if (!field) return;
+
+                  const currentText = (field.value || '').trim();
+                  if (!currentText) {
+                    field.focus();
+                    if (status) {
+                      status.textContent = 'Введите промпт для улучшения';
+                      status.classList.remove('hidden');
+                      setTimeout(() => status.classList.add('hidden'), 3000);
+                    }
                     return;
                   }
-                  setLoading(true);
-                  try {
-                    const res = await generateWithGrok(idea, ns === 'video' ? 'video' : 'image');
-                    const pro = (res && res.text) ? res.text : '';
-                    resultText.textContent = pro || 'Не удалось сформировать промпт';
 
-                    // Show warning if backend used local fallback (e.g., provider has no credits)
-                    const noteId = `pg-${ns}-note`;
-                    const prev = document.getElementById(noteId);
-                    if (prev && prev.parentElement) prev.parentElement.removeChild(prev);
-                    if (res && res.fallback) {
-                      const note = document.createElement('div');
-                      note.id = noteId;
-                      note.className = 'mt-2 text-[10px] sm:text-xs text-amber-500';
-                      note.textContent = 'Внимание: используем локальный fallback (временная заглушка из-за отсутствия кредитов у провайдера).';
-                      resultWrap.appendChild(note);
+                  setLoading(true);
+                  if (status) status.classList.add('hidden');
+
+                  try {
+                    const res = await generateWithGrok(currentText, ns === 'video' ? 'video' : 'image');
+                    const improvedPrompt = (res && res.text) ? res.text.trim() : '';
+
+                    if (improvedPrompt) {
+                      // Smoothly replace text in the same field
+                      field.value = improvedPrompt;
+                      field.dispatchEvent(new Event('input', { bubbles: true }));
+
+                      // Show success message
+                      if (status) {
+                        status.textContent = '✓ Промпт улучшен';
+                        status.classList.remove('hidden', 'text-[var(--muted)]');
+                        status.classList.add('text-green-500');
+                        setTimeout(() => {
+                          status.classList.add('hidden');
+                          status.classList.remove('text-green-500');
+                          status.classList.add('text-[var(--muted)]');
+                        }, 3000);
+                      }
+
+                      // Show warning if backend used local fallback
+                      if (res && res.fallback) {
+                        if (status) {
+                          status.textContent = '⚠ Используем локальный fallback (нет кредитов)';
+                          status.classList.remove('hidden', 'text-green-500');
+                          status.classList.add('text-amber-500');
+                        }
+                      }
+                    } else {
+                      throw new Error('Пустой результат');
                     }
                   } catch (e) {
                     const msg = (e && e.message) ? String(e.message) : 'Неизвестная ошибка';
-                    resultText.textContent = 'Ошибка генерации промпта: ' + msg;
+                    if (status) {
+                      status.textContent = '✗ Ошибка: ' + msg;
+                      status.classList.remove('hidden', 'text-[var(--muted)]');
+                      status.classList.add('text-red-500');
+                      setTimeout(() => {
+                        status.classList.add('hidden');
+                        status.classList.remove('text-red-500');
+                        status.classList.add('text-[var(--muted)]');
+                      }, 5000);
+                    }
                   } finally {
                     setLoading(false);
-                    resultWrap.classList.remove('hidden');
-                  }
-                });
-
-                copyBtn?.addEventListener('click', () => {
-                  const t = resultText.textContent || '';
-                  if (t) copyToClipboard(t);
-                });
-
-                insertBtn?.addEventListener('click', () => {
-                  const tgt = target();
-                  if (!tgt) return;
-                  const t = (resultText.textContent || '').trim();
-                  if (!t) return;
-                  const append = !!appendChk?.checked;
-                  const cur = (tgt.value || '').trim();
-                  tgt.value = append && cur ? (cur + ', ' + t) : t;
-                  try { tgt.focus(); } catch(_) {}
-                });
-
-                // Enter key on input triggers generate
-                input?.addEventListener('keydown', (e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    btn?.click();
                   }
                 });
               }
