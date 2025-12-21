@@ -127,15 +127,21 @@ class PublicPhoto(models.Model):
     def save(self, *args, **kwargs) -> None:
         # Автогенерация slug из title при отсутствии (транслитерация в ASCII)
         if not getattr(self, "slug", None):
-            # make_slug гарантирует английский slug из любого языка
-            base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
-            candidate = base or "photo"
-            i = 1
-            # обеспечиваем уникальность слага, добавляя суффикс -1, -2, ...
-            while PublicPhoto.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
-                suffix = f"-{i}"
-                candidate = (base + suffix)[:180]
-                i += 1
+            # Если фото связано с задачей генерации - берем slug из промпта
+            if hasattr(self, 'source_job') and self.source_job:
+                from generate.views import _job_slug
+                base = _job_slug(self.source_job)[:120]
+                candidate = f"{base}-{self.source_job.pk}"[:180]
+            else:
+                # Иначе из title
+                base = make_slug(self.title)[:120] or f"photo-{(self.pk or '')}".strip("-") or "photo"
+                candidate = base or "photo"
+                i = 1
+                # обеспечиваем уникальность слага, добавляя суффикс -1, -2, ...
+                while PublicPhoto.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
+                    suffix = f"-{i}"
+                    candidate = (base + suffix)[:180]
+                    i += 1
             self.slug = candidate
         super().save(*args, **kwargs)
 
