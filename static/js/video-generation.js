@@ -66,7 +66,7 @@ class VideoGeneration {
       console.log('Загружено моделей видео из Django:', this.models.length);
       return;
     }
-    
+
     // Fallback: загрузка через API
     try {
       const response = await fetch('/generate/api/video/models/');

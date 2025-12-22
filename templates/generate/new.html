@@ -3920,8 +3920,9 @@ const init=()=>{
       const s=document.createElement('script');
       s.src=src;s.defer=true;
       s.onload=()=>{
-        if(src.includes('video-generation.js')&&!window.videoGeneration&&typeof VideoGeneration==='function'){
+        if(src.includes('video-generation.js')){
           // Передаем видео модели из Django в JavaScript (точно так же как image_models)
+          // Устанавливаем ДО создания экземпляра VideoGeneration
           window.__VIDEO_MODELS__ = [
             {% for model in video_models %}
             {
@@ -3944,7 +3945,11 @@ const init=()=>{
             {% empty %}
             {% endfor %}
           ];
-          window.videoGeneration=new VideoGeneration();
+          
+          // Создаем экземпляр только если класс доступен и экземпляр еще не создан
+          if(!window.videoGeneration&&typeof VideoGeneration==='function'){
+            window.videoGeneration=new VideoGeneration();
+          }
         }
         if(src.includes('video-prompts.js')){
           const tab=document.querySelector('.video-source-tab.active');
