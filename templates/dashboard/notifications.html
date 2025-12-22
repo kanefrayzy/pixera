@@ -213,8 +213,8 @@
       const uname = (actor.username || '').trim();
       const msgText = cleanMessage(n.message || '', uname);
       const body = (uname ? '@' + uname + ' — ' : '') + (msgText || '{% trans "Новое уведомление" %}');
-      const icon = actor.avatar_url || "{% static 'img/icons/android-chrome-192x192.png' %}";
-      const badge = "{% static 'img/icons/android-chrome-96x96.png' %}";
+      const icon = actor.avatar_url || '/static/favicon.ico';
+      const badge = '/static/favicon.ico';
       const link = n.link || '/dashboard/notifications';
 
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
