@@ -439,6 +439,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         // Обновляем зависящие элементы
         this.updateCost();
         this.updateDurationLimit();
+        this.updateAspectRatioOptions(); // Новый метод для соотношений сторон
         this.updateResolutionOptions();
         this.updateCameraOptions();
         this.updateProviderFields();
@@ -2068,6 +2069,127 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
   }
 
   /**
+   * Обновление опций соотношения сторон на основе конфигурации модели
+   */
+  async updateAspectRatioOptions() {
+    if (!this.selectedModel) return;
+
+    const container = document.getElementById('video-aspect-ratio-container');
+    const hidden = document.getElementById('video-aspect-ratio');
+    const section = document.getElementById('aspect-ratio-section');
+    if (!container || !hidden || !section) return;
+
+    try {
+      // Загружаем доступные соотношения сторон из API
+      const response = await fetch(`/generate/api/aspect-ratio-configs/video/${this.selectedModel.id}`);
+      const data = await response.json();
+
+      if (!data.aspect_ratios || data.aspect_ratios.length === 0) {
+        // Если нет соотношений сторон, скрываем секцию
+        section.style.display = 'none';
+        return;
+      }
+
+      // Показываем секцию
+      section.style.display = '';
+
+      // Получаем список соотношений сторон
+      const aspectRatios = data.aspect_ratios.map(ar => ar.ratio);
+
+      // Находим дефолтное соотношение
+      let defaultRatio = aspectRatios[0];
+      for (const ar of data.aspect_ratios) {
+        const defaultQuality = ar.qualities.find(q => q.is_default);
+        if (defaultQuality) {
+          defaultRatio = ar.ratio;
+          break;
+        }
+      }
+
+      // Текущее значение или дефолтное
+      const current = hidden.value || defaultRatio;
+
+      // Рендерим кнопки
+      container.innerHTML = aspectRatios.map(ratio => `
+        <button type="button"
+                class="aspect-ratio-btn px-4 py-2 rounded-xl border-2 border-[var(--bord)] bg-[var(--bg-card)] text-sm font-medium hover:border-primary/60 hover:text-primary transition-all ${ratio === current ? 'border-primary text-primary bg-primary/10 ring-2 ring-primary/20' : ''}"
+                data-value="${ratio}">
+          ${ratio}
+        </button>
+      `).join('');
+
+      // Устанавливаем текущее значение
+      hidden.value = current;
+
+      // Навешиваем обработчики
+      container.querySelectorAll('.aspect-ratio-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Сбрасываем стили со всех кнопок
+          container.querySelectorAll('.aspect-ratio-btn').forEach(b => {
+            b.classList.remove('border-primary', 'text-primary', 'bg-primary/10', 'ring-2', 'ring-primary/20');
+            b.classList.add('border-[var(--bord)]');
+          });
+          
+          // Применяем стили к выбранной кнопке
+          btn.classList.remove('border-[var(--bord)]');
+          btn.classList.add('border-primary', 'text-primary', 'bg-primary/10', 'ring-2', 'ring-primary/20');
+          
+          // Обновляем скрытое поле
+          hidden.value = btn.dataset.value;
+          
+          // Можно добавить обновление разрешений в зависимости от соотношения
+          this.updateResolutionsForAspectRatio(btn.dataset.value);
+        });
+      });
+
+    } catch (error) {
+      console.error('Ошибка загрузки соотношений сторон:', error);
+      section.style.display = 'none';
+    }
+  }
+
+  /**
+   * Обновление списка разрешений в зависимости от выбранного соотношения сторон
+   */
+  async updateResolutionsForAspectRatio(aspectRatio) {
+    if (!this.selectedModel || !aspectRatio) return;
+
+    const select = document.getElementById('video-resolution');
+    if (!select) return;
+
+    try {
+      // Загружаем конфигурации для текущей модели
+      const response = await fetch(`/generate/api/aspect-ratio-configs/video/${this.selectedModel.id}`);
+      const data = await response.json();
+
+      // Находим качества для выбранного соотношения
+      const aspectConfig = data.aspect_ratios.find(ar => ar.ratio === aspectRatio);
+      if (!aspectConfig || !aspectConfig.qualities || aspectConfig.qualities.length === 0) {
+        return;
+      }
+
+      // Строим список опций из доступных качеств
+      let html = '';
+      aspectConfig.qualities.forEach(quality => {
+        const resolution = quality.resolution;
+        const label = quality.label || resolution;
+        html += `<option value="${resolution}">${label}</option>`;
+      });
+
+      select.innerHTML = html;
+
+      // Выбираем дефолтное качество, если есть
+      const defaultQuality = aspectConfig.qualities.find(q => q.is_default);
+      if (defaultQuality) {
+        select.value = defaultQuality.resolution;
+      }
+
+    } catch (error) {
+      console.error('Ошибка обновления разрешений для соотношения:', error);
+    }
+  }
+
+  /**
    * Обновление опций движения камеры на основе доступных движений модели
    */
   updateCameraOptions() {
@@ -2731,8 +2853,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // Базовые параметры из формы (значения одинаковы для всех fan-out задач)
     const duration = document.getElementById('video-duration')?.value || 5;
-    const activeRatioBtn = document.querySelector('.aspect-ratio-btn.active');
-    const aspectRatio = activeRatioBtn?.dataset.ratio || '16:9';
+    const aspectRatio = document.getElementById('video-aspect-ratio')?.value || '';
     const resolution = document.getElementById('video-resolution')?.value || '1920x1080';
     const camera = document.getElementById('video-camera')?.value || '';
     const seedInput = (document.getElementById('video-seed')?.value || '').trim();
@@ -2767,7 +2888,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     fd.append('video_model_id', this.selectedModel.id);
     fd.append('generation_mode', this.currentMode);
     fd.append('duration', duration);
-    fd.append('aspect_ratio', aspectRatio);
+    if (aspectRatio) fd.append('aspect_ratio', aspectRatio);
     fd.append('resolution', resolution);
     if (camera) fd.append('camera_movement', camera);
     if (seedInput) fd.append('seed', seedInput);
