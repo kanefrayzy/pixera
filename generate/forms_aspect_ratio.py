@@ -146,11 +146,11 @@ class AspectRatioConfigurationWidget(forms.Widget):
         else:
             for preset in presets:
                 ratio_safe = preset.aspect_ratio.replace(':', '_').replace('.', '_')
-                
+
                 # Проверяем есть ли хоть одно выбранное качество для этого соотношения
                 has_selected = any(f"{preset.aspect_ratio}_{q[0]}" in existing_configs for q in qualities)
                 selected_count = sum(1 for q in qualities if f"{preset.aspect_ratio}_{q[0]}" in existing_configs)
-                
+
                 html_parts.append(f'''
                 <div class="ar-ratio-group {'active' if has_selected else ''} bg-white dark:bg-gray-800 border-2 {'border-green-500' if has_selected else 'border-gray-200 dark:border-gray-700'} rounded-lg overflow-hidden shadow-sm transition-all" data-ratio="{preset.aspect_ratio}">
                     <div class="ar-ratio-header {'bg-gradient-to-r from-green-600 to-emerald-600' if has_selected else 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-blue-700 hover:to-purple-700 text-white px-4 py-3 flex items-center gap-3 cursor-pointer transition-all" onclick="this.parentElement.classList.toggle('active')">
@@ -281,12 +281,12 @@ class AspectRatioConfigurationWidget(forms.Widget):
             function handleQualityCheck(checkbox, aspectRatio, quality) {{
                 const item = checkbox.closest('.ar-quality-item');
                 const dimensionsDiv = item.querySelector('.ar-dimensions');
-                
+
                 if (checkbox.checked) {{
                     item.classList.add('ar-quality-selected');
                     dimensionsDiv.classList.remove('hidden');
                     dimensionsDiv.classList.add('flex');
-                    
+
                     // Автоподстановка размеров
                     const widthInput = item.querySelector('[data-dimension="width"]');
                     const heightInput = item.querySelector('[data-dimension="height"]');
@@ -296,7 +296,7 @@ class AspectRatioConfigurationWidget(forms.Widget):
                         widthInput.value = dimensions.width;
                         heightInput.value = dimensions.height;
                     }}
-                    
+
                     // Обновляем заголовок группы
                     updateRatioGroupHeader(aspectRatio);
                 }} else {{
@@ -306,14 +306,14 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     updateRatioGroupHeader(aspectRatio);
                 }}
             }}
-            
+
             function updateRatioGroupHeader(aspectRatio) {{
                 const group = document.querySelector(`.ar-ratio-group[data-ratio="${{aspectRatio}}"]`);
                 if (!group) return;
-                
+
                 const header = group.querySelector('.ar-ratio-header');
                 const checkedCount = group.querySelectorAll('.ar-quality-item.ar-quality-selected').length;
-                
+
                 if (checkedCount > 0) {{
                     group.classList.add('active');
                     header.classList.remove('from-gray-600', 'to-gray-700');
