@@ -61,7 +61,7 @@ class VideoGeneration {
    */
   async loadModels() {
     try {
-      const response = await fetch('/generate/api/video/models');
+      const response = await fetch('/generate/api/video/models/');
       const data = await response.json();
 
       if (data.success) {
