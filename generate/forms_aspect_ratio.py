@@ -440,12 +440,16 @@ class AspectRatioConfigurationFormMixin:
         
         logger.info(f"[AspectRatioMixin] Instance saved, pk={instance.pk}")
 
+        # Сохраняем JSON в переменную экземпляра для использования в save_model админки
+        self._pending_aspect_ratio_configs = self.cleaned_data.get('aspect_ratio_configurations', '')
+        logger.info(f"[AspectRatioMixin] Stored configs in _pending_aspect_ratio_configs")
+
         if commit:
-            # Сохраняем конфигурации
-            logger.info(f"[AspectRatioMixin] Calling _save_aspect_ratio_configurations")
+            # Если commit=True, сохраняем сразу
+            logger.info(f"[AspectRatioMixin] commit=True, calling _save_aspect_ratio_configurations immediately")
             self._save_aspect_ratio_configurations(instance)
         else:
-            logger.warning(f"[AspectRatioMixin] commit=False, skipping config save")
+            logger.warning(f"[AspectRatioMixin] commit=False, configs will be saved later by admin")
 
         return instance
 
@@ -461,7 +465,12 @@ class AspectRatioConfigurationFormMixin:
 
         model_type = 'image' if isinstance(instance, ImageModelConfiguration) else 'video'
         
-        logger.info(f"Saving aspect ratio configurations for {model_type} model ID: {instance.pk}")
+        logger.info(f"[AspectRatioMixin] Saving aspect ratio configurations for {model_type} model ID: {instance.pk}")
+
+        # Получаем JSON из переменной или из cleaned_data
+        configs_json = getattr(self, '_pending_aspect_ratio_configs', None) or self.cleaned_data.get('aspect_ratio_configurations', '')
+        logger.info(f"[AspectRatioMixin] Configs JSON source: {'_pending_aspect_ratio_configs' if hasattr(self, '_pending_aspect_ratio_configs') else 'cleaned_data'}")
+        logger.info(f"[AspectRatioMixin] Configs JSON from form: {configs_json[:200] if configs_json else 'EMPTY'}")
 
         # Удаляем старые конфигурации
         deleted_count = AspectRatioQualityConfig.objects.filter(
@@ -469,16 +478,12 @@ class AspectRatioConfigurationFormMixin:
             model_id=instance.pk
         ).delete()
         
-        logger.info(f"Deleted {deleted_count[0] if deleted_count else 0} old configurations")
-
-        # Создаем новые
-        configs_json = self.cleaned_data.get('aspect_ratio_configurations', '')
-        logger.info(f"Configs JSON from form: {configs_json[:200] if configs_json else 'EMPTY'}")
+        logger.info(f"[AspectRatioMixin] Deleted {deleted_count[0] if deleted_count else 0} old configurations")
         
         if configs_json:
             try:
                 configs = json.loads(configs_json)
-                logger.info(f"Parsed {len(configs)} configurations")
+                logger.info(f"[AspectRatioMixin] Parsed {len(configs)} configurations")
                 
                 for i, config in enumerate(configs):
                     created_config = AspectRatioQualityConfig.objects.create(
@@ -492,10 +497,10 @@ class AspectRatioConfigurationFormMixin:
                         is_default=i == 0,  # Первая конфигурация - по умолчанию
                         order=i
                     )
-                    logger.info(f"Created config: {created_config.aspect_ratio} {created_config.quality} ({created_config.width}x{created_config.height})")
+                    logger.info(f"[AspectRatioMixin] Created config: {created_config.aspect_ratio} {created_config.quality} ({created_config.width}x{created_config.height})")
                     
-                logger.info(f"Successfully saved {len(configs)} configurations")
+                logger.info(f"[AspectRatioMixin] Successfully saved {len(configs)} configurations")
             except Exception as e:
-                logger.error(f"Error saving aspect ratio configurations: {e}", exc_info=True)
+                logger.error(f"[AspectRatioMixin] Error saving aspect ratio configurations: {e}", exc_info=True)
         else:
-            logger.warning("No configurations to save (empty JSON)")
+            logger.warning("[AspectRatioMixin] No configurations to save (empty JSON)")
