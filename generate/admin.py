@@ -718,6 +718,11 @@ class VideoPromptAdmin(admin.ModelAdmin):
 @admin.register(ImageModelConfiguration)
 class ImageModelConfigurationAdmin(admin.ModelAdmin):
     form = ImageModelConfigurationForm
+    
+    def __init__(self, *args, **kwargs):
+        print(">>> [ImageModelAdmin] __init__ called")
+        super().__init__(*args, **kwargs)
+    
     list_display = (
         "name", "model_id", "provider", "token_cost",
         "resolutions_count", "is_active",
@@ -774,6 +779,14 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
         if count > 0:
             return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count)
         return "0"
+    
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        print(f">>> [ImageModelAdmin] change_view called for object_id={object_id}")
+        return super().change_view(request, object_id, form_url, extra_context)
+    
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        print(f">>> [ImageModelAdmin] changeform_view called for object_id={object_id}")
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
         """Auto-generate slug if not provided and save aspect ratio configurations"""
