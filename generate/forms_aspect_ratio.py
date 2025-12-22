@@ -427,6 +427,7 @@ class AspectRatioConfigurationFormMixin:
 
         model_type = 'image' if self.Meta.model == ImageModelConfiguration else 'video'
 
+        print(f">>> [AspectRatioMixin.__init__] model_type={model_type}, instance.pk={self.instance.pk if self.instance else None}")
 
         # Добавляем поле с кастомным виджетом
         self.fields['aspect_ratio_configurations'] = forms.CharField(
@@ -435,6 +436,7 @@ class AspectRatioConfigurationFormMixin:
             label='Конфигурация соотношений сторон и качества',
             help_text='Выберите соотношения галочкой, затем укажите качества и размеры'
         )
+        print(f">>> [AspectRatioMixin.__init__] Added field 'aspect_ratio_configurations' to form")
 
         # Загружаем существующие конфигурации
         if self.instance.pk:
@@ -466,12 +468,16 @@ class AspectRatioConfigurationFormMixin:
         import logging
         logger = logging.getLogger(__name__)
 
+        print(f">>> [AspectRatioMixin.save] Called with commit={commit}")
+        print(f">>> [AspectRatioMixin.save] cleaned_data keys: {list(self.cleaned_data.keys())}")
 
         instance = super().save(commit=commit)
 
+        print(f">>> [AspectRatioMixin.save] After super().save, instance.pk={instance.pk}")
 
         # Сохраняем JSON в переменную экземпляра для использования в save_model админки
         self._pending_aspect_ratio_configs = self.cleaned_data.get('aspect_ratio_configurations', '')
+        print(f">>> [AspectRatioMixin.save] Set _pending_aspect_ratio_configs, length={len(self._pending_aspect_ratio_configs) if self._pending_aspect_ratio_configs else 0}")
 
         # ТАКЖЕ сохраняем в thread-local для сигнала post_save
         configs_json = self.cleaned_data.get('aspect_ratio_configurations', '')
