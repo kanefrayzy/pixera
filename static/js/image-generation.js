@@ -1102,8 +1102,8 @@
 
     // Add width and height from aspect ratio selector
     try {
-      const widthInput = document.getElementById('width-input');
-      const heightInput = document.getElementById('height-input');
+      const widthInput = document.getElementById('id_width');
+      const heightInput = document.getElementById('id_height');
       if (widthInput && widthInput.value) {
         fd.append('width', widthInput.value);
         console.log('[image-gen] Added width:', widthInput.value);
