@@ -1023,11 +1023,16 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
         )
 
     def save_model(self, request, obj, form, change):
-        """Auto-generate slug if not provided"""
+        """Auto-generate slug if not provided and save aspect ratio configurations"""
         if not obj.slug:
             from django.utils.text import slugify
             obj.slug = slugify(obj.name or "")[:120]
+        
         super().save_model(request, obj, form, change)
+        
+        # Сохранить конфигурацию соотношения сторон
+        if hasattr(form, '_save_aspect_ratio_configurations'):
+            form._save_aspect_ratio_configurations(obj)
 
 
 # -- Aspect Ratio Quality Configurations ------------------------------

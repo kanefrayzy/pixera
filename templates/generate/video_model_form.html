@@ -167,73 +167,33 @@
                 </div>
             </div>
 
-            <!-- Resolutions -->
+            <!-- Aspect Ratio & Quality Configuration -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Разрешения
+                        Конфигурация соотношений сторон и качества
                     </h2>
-                    <button type="button" onclick="toggleSection('resolutions')" class="text-blue-600 dark:text-blue-400 text-sm">
+                    <button type="button" onclick="toggleSection('aspect-ratio-config')" class="text-blue-600 dark:text-blue-400 text-sm">
                         Свернуть/Развернуть
                     </button>
                 </div>
-                <div id="resolutions" class="space-y-4">
-                    <div class="flex items-center">
-                        {{ form.supports_custom_resolution }}
-                        <label for="{{ form.supports_custom_resolution.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                            Поддерживает произвольное разрешение
-                        </label>
-                    </div>
+                <div id="aspect-ratio-config" class="space-y-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Настройте доступные соотношения сторон и качество для каждого. Выберите соотношения сторон галочками, затем для каждого выберите качество и укажите точные размеры (ширина × высота).
+                    </p>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. ширина</label>
-                            {{ form.min_width }}
+                    {% if 'aspect_ratio_configurations' in form.fields %}
+                        {{ form.aspect_ratio_configurations }}
+                    {% else %}
+                        <div style="padding: 15px; background: #fee; border: 1px solid #f00; border-radius: 4px;">
+                            <strong>ERROR:</strong> Field 'aspect_ratio_configurations' not found in form.
+                            <br>Available fields: {{ form.fields.keys|join:", " }}
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. ширина</label>
-                            {{ form.max_width }}
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. высота</label>
-                            {{ form.min_height }}
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Макс. высота</label>
-                            {{ form.max_height }}
-                        </div>
-                    </div>
-
-                    <div>
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Предустановленные разрешения:</p>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                            {% for field in form %}
-                            {% if 'resolution_' in field.name %}
-                            <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                                {{ field }}
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
-                            </label>
-                            {% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Aspect Ratios -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Соотношения сторон
-                </h2>
-                <div class="grid gap-2">
-                    {% for field in form %}
-                    {% if 'aspect_ratio_' in field.name %}
-                    <label class="">
-                        {{ field }}
-                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
-                    </label>
                     {% endif %}
-                    {% endfor %}
+
+                    {% if form.aspect_ratio_configurations.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.aspect_ratio_configurations.errors.0 }}</p>
+                    {% endif %}
                 </div>
             </div>
 
