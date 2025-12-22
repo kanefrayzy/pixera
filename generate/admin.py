@@ -870,7 +870,7 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
     form = VideoModelConfigurationForm
     list_display = (
         "name", "model_id", "category", "token_cost",
-        "resolutions_count", "durations_count", "is_active",
+        "aspect_ratios_count", "durations_count", "is_active",
         "is_beta", "is_premium", "order"
     )
     list_editable = ("is_active", "order", "token_cost")
@@ -880,6 +880,7 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
     ordering = ("category", "order", "name")
     actions = (mark_active, mark_inactive)
     readonly_fields = ("created_at", "updated_at")
+    inlines = [AspectRatioQualityConfigInline]
 
     fieldsets = (
         ("Основная информация", {
@@ -888,12 +889,6 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
                 "category", "token_cost", "provider", "provider_version"
             ),
             "description": "Базовые параметры модели"
-        }),
-        ("Конфигурация соотношений сторон и качества", {
-            "fields": (
-                "aspect_ratio_configurations",
-            ),
-            "description": "Настройте доступные соотношения сторон и качество для генерации"
         }),
         ("Длительность", {
             "fields": (
@@ -984,11 +979,15 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
         }),
     )
 
-    @admin.display(description="Разрешения")
-    def resolutions_count(self, obj):
+    @admin.display(description="Соотношения")
+    def aspect_ratios_count(self, obj):
         if not obj.pk:
             return "—"
-        count = len(obj.get_available_resolutions())
+        count = AspectRatioQualityConfig.objects.filter(
+            model_type='video',
+            model_id=obj.pk,
+            is_active=True
+        ).count()
         if count > 0:
             return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count)
         return "0"
