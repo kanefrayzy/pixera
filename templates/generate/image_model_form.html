@@ -171,7 +171,16 @@
                     <p class="text-sm text-gray-600 dark:text-gray-400">
                         Настройте доступные соотношения сторон и качество для каждого. Выберите соотношения сторон галочками, затем для каждого выберите качество и укажите точные размеры (ширина × высота).
                     </p>
-                    {{ form.aspect_ratio_configurations }}
+                    
+                    {% if 'aspect_ratio_configurations' in form.fields %}
+                        {{ form.aspect_ratio_configurations }}
+                    {% else %}
+                        <div style="padding: 15px; background: #fee; border: 1px solid #f00; border-radius: 4px;">
+                            <strong>ERROR:</strong> Field 'aspect_ratio_configurations' not found in form.
+                            <br>Available fields: {{ form.fields.keys|join:", " }}
+                        </div>
+                    {% endif %}
+                    
                     {% if form.aspect_ratio_configurations.errors %}
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.aspect_ratio_configurations.errors.0 }}</p>
                     {% endif %}
