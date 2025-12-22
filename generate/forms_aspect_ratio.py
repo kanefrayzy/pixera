@@ -317,7 +317,7 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
                 const jsonValue = JSON.stringify(configs);
                 document.getElementById('id_{name}').value = jsonValue;
-                
+
                 console.log('[AspectRatio Widget] updateConfigs called');
                 console.log('[AspectRatio Widget] Found ' + configs.length + ' selected configs');
                 console.log('[AspectRatio Widget] JSON value:', jsonValue);
@@ -335,7 +335,7 @@ class AspectRatioConfigurationWidget(forms.Widget):
             document.addEventListener('DOMContentLoaded', function() {{
                 console.log('[AspectRatio Widget] DOMContentLoaded - initializing');
                 updateConfigs();
-                
+
                 // Логирование перед отправкой формы
                 const form = document.querySelector('form');
                 if (form) {{
@@ -362,14 +362,14 @@ class AspectRatioConfigurationWidget(forms.Widget):
         """
         import logging
         logger = logging.getLogger(__name__)
-        
+
         # Получаем JSON из скрытого поля
         json_value = data.get(name, '')
-        
+
         logger.info(f"[AspectRatioWidget] value_from_datadict called for field: {name}")
         logger.info(f"[AspectRatioWidget] Raw value from POST: {json_value[:500] if json_value else 'EMPTY'}")
         logger.info(f"[AspectRatioWidget] All POST keys: {list(data.keys())}")
-        
+
         return json_value if json_value else ''
 
 
@@ -380,7 +380,7 @@ class AspectRatioConfigurationFormMixin:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         import logging
         logger = logging.getLogger(__name__)
         logger.info(f"[AspectRatioMixin] __init__ called, instance.pk: {self.instance.pk if hasattr(self, 'instance') else 'NO INSTANCE'}")
@@ -390,7 +390,7 @@ class AspectRatioConfigurationFormMixin:
         from .models_video import VideoModelConfiguration
 
         model_type = 'image' if self.Meta.model == ImageModelConfiguration else 'video'
-        
+
         logger.info(f"[AspectRatioMixin] Model type: {model_type}")
 
         # Добавляем поле с кастомным виджетом
@@ -431,40 +431,40 @@ class AspectRatioConfigurationFormMixin:
     def save(self, commit=True):
         import logging
         logger = logging.getLogger(__name__)
-        
+
         logger.info(f"[AspectRatioMixin] save() called, commit={commit}")
         logger.info(f"[AspectRatioMixin] cleaned_data keys: {list(self.cleaned_data.keys())}")
         logger.info(f"[AspectRatioMixin] aspect_ratio_configurations value: {self.cleaned_data.get('aspect_ratio_configurations', 'NOT FOUND')[:200]}")
-        
+
         instance = super().save(commit=commit)
-        
+
         logger.info(f"[AspectRatioMixin] Instance saved, pk={instance.pk}")
 
         # Сохраняем JSON в переменную экземпляра для использования в save_model админки
         self._pending_aspect_ratio_configs = self.cleaned_data.get('aspect_ratio_configurations', '')
         logger.info(f"[AspectRatioMixin] Stored configs in _pending_aspect_ratio_configs")
+        
+        # ТАКЖЕ сохраняем в thread-local для сигнала post_save
+        configs_json = self.cleaned_data.get('aspect_ratio_configurations', '')
+        if configs_json:
+            from threading import local
+            # Импортируем функцию сигнала чтобы получить доступ к её thread_locals
+            from generate.admin import save_image_model_aspect_ratio_configs
+            _thread_locals = getattr(save_image_model_aspect_ratio_configs, '_thread_locals', None)
+            if _thread_locals is None:
+                _thread_locals = local()
+                save_image_model_aspect_ratio_configs._thread_locals = _thread_locals
+            
+            _thread_locals.pending_configs = configs_json
+            logger.info(f"[AspectRatioMixin] Stored configs in thread-local for signal")
+            print(f">>> [AspectRatioMixin] Stored configs in thread-local: {configs_json[:100]}")
 
         if commit:
             # Если commit=True, сохраняем сразу
             logger.info(f"[AspectRatioMixin] commit=True, calling _save_aspect_ratio_configurations immediately")
             self._save_aspect_ratio_configurations(instance)
         else:
-            logger.warning(f"[AspectRatioMixin] commit=False, configs will be saved later by admin")
-
-        return instance
-
-    def _save_aspect_ratio_configurations(self, instance):
-        """Сохраняет конфигурации соотношений"""
-        import json
-        import logging
-
-        logger = logging.getLogger(__name__)
-
-        from .models_image import ImageModelConfiguration
-        from .models_video import VideoModelConfiguration
-
-        model_type = 'image' if isinstance(instance, ImageModelConfiguration) else 'video'
-        
+            logger.warning(f"[AspectRatioMixin] commit=False, configs will be saved by signal")
         logger.info(f"[AspectRatioMixin] Saving aspect ratio configurations for {model_type} model ID: {instance.pk}")
 
         # Получаем JSON из переменной или из cleaned_data
@@ -477,14 +477,14 @@ class AspectRatioConfigurationFormMixin:
             model_type=model_type,
             model_id=instance.pk
         ).delete()
-        
+
         logger.info(f"[AspectRatioMixin] Deleted {deleted_count[0] if deleted_count else 0} old configurations")
-        
+
         if configs_json:
             try:
                 configs = json.loads(configs_json)
                 logger.info(f"[AspectRatioMixin] Parsed {len(configs)} configurations")
-                
+
                 for i, config in enumerate(configs):
                     created_config = AspectRatioQualityConfig.objects.create(
                         model_type=model_type,
@@ -498,7 +498,7 @@ class AspectRatioConfigurationFormMixin:
                         order=i
                     )
                     logger.info(f"[AspectRatioMixin] Created config: {created_config.aspect_ratio} {created_config.quality} ({created_config.width}x{created_config.height})")
-                    
+
                 logger.info(f"[AspectRatioMixin] Successfully saved {len(configs)} configurations")
             except Exception as e:
                 logger.error(f"[AspectRatioMixin] Error saving aspect ratio configurations: {e}", exc_info=True)

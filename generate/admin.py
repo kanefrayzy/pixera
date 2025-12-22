@@ -2,6 +2,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django import forms
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from .models import (
     GenerationJob,
     Suggestion,
@@ -24,6 +26,71 @@ from .models_video import VideoModelConfiguration
 from .models_aspect_ratio import AspectRatioQualityConfig, AspectRatioPreset
 from .forms_image_model import ImageModelConfigurationForm
 from .forms_video_model import VideoModelConfigurationForm
+
+# ── Сигнал для сохранения конфигураций соотношений сторон ──────
+@receiver(post_save, sender=ImageModelConfiguration)
+def save_image_model_aspect_ratio_configs(sender, instance, created, **kwargs):
+    """
+    Сохраняет конфигурации соотношений сторон после сохранения ImageModelConfiguration
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    print(f">>> [SIGNAL] post_save for ImageModelConfiguration, pk={instance.pk}, created={created}")
+    logger.info(f"[SIGNAL] post_save for ImageModelConfiguration, pk={instance.pk}, created={created}")
+    
+    # Проверяем есть ли pending configs в текущем request
+    # Django admin сохраняет форму с request, но signal не имеет доступа к request
+    # Поэтому используем thread-local storage
+    from threading import local
+    _thread_locals = getattr(save_image_model_aspect_ratio_configs, '_thread_locals', None)
+    if _thread_locals is None:
+        _thread_locals = local()
+        save_image_model_aspect_ratio_configs._thread_locals = _thread_locals
+    
+    configs_json = getattr(_thread_locals, 'pending_configs', None)
+    
+    if configs_json:
+        print(f">>> [SIGNAL] Found pending configs: {configs_json[:200]}")
+        logger.info(f"[SIGNAL] Found pending configs, saving...")
+        
+        import json
+        # Удаляем старые конфигурации
+        deleted_count = AspectRatioQualityConfig.objects.filter(
+            model_type='image',
+            model_id=instance.pk
+        ).delete()
+        
+        logger.info(f"[SIGNAL] Deleted {deleted_count[0] if deleted_count else 0} old configurations")
+        
+        try:
+            configs = json.loads(configs_json)
+            logger.info(f"[SIGNAL] Parsed {len(configs)} configurations")
+            
+            for i, config in enumerate(configs):
+                created_config = AspectRatioQualityConfig.objects.create(
+                    model_type='image',
+                    model_id=instance.pk,
+                    aspect_ratio=config['aspect_ratio'],
+                    quality=config['quality'],
+                    width=config['width'],
+                    height=config['height'],
+                    is_active=config.get('is_active', True),
+                    is_default=i == 0,
+                    order=i
+                )
+                logger.info(f"[SIGNAL] Created config: {created_config.aspect_ratio} {created_config.quality} ({created_config.width}x{created_config.height})")
+                
+            logger.info(f"[SIGNAL] Successfully saved {len(configs)} configurations")
+            
+            # Очищаем pending configs
+            _thread_locals.pending_configs = None
+            
+        except Exception as e:
+            logger.error(f"[SIGNAL] Error saving aspect ratio configurations: {e}", exc_info=True)
+    else:
+        print(f">>> [SIGNAL] No pending configs found")
+        logger.info(f"[SIGNAL] No pending configs to save")
 
 # ── Вспомогательные экшены ──────────────────────────────────────
 @admin.action(description="Отметить как активные")
@@ -718,11 +785,11 @@ class VideoPromptAdmin(admin.ModelAdmin):
 @admin.register(ImageModelConfiguration)
 class ImageModelConfigurationAdmin(admin.ModelAdmin):
     form = ImageModelConfigurationForm
-    
+
     def __init__(self, *args, **kwargs):
         print(">>> [ImageModelAdmin] __init__ called")
         super().__init__(*args, **kwargs)
-    
+
     list_display = (
         "name", "model_id", "provider", "token_cost",
         "resolutions_count", "is_active",
@@ -779,11 +846,11 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
         if count > 0:
             return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count)
         return "0"
-    
+
     def change_view(self, request, object_id, form_url='', extra_context=None):
         print(f">>> [ImageModelAdmin] change_view called for object_id={object_id}")
         return super().change_view(request, object_id, form_url, extra_context)
-    
+
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         print(f">>> [ImageModelAdmin] changeform_view called for object_id={object_id}")
         return super().changeform_view(request, object_id, form_url, extra_context)
@@ -792,22 +859,22 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
         """Auto-generate slug if not provided and save aspect ratio configurations"""
         import logging
         logger = logging.getLogger(__name__)
-        
+
         print(f">>> [ImageModelAdmin] save_model called, change={change}, obj.pk={obj.pk}")
         logger.info(f"[ImageModelAdmin] save_model called, change={change}, obj.pk={obj.pk}")
         logger.info(f"[ImageModelAdmin] Form class: {form.__class__.__name__}")
         logger.info(f"[ImageModelAdmin] Has _save_aspect_ratio_configurations: {hasattr(form, '_save_aspect_ratio_configurations')}")
-        
+
         if not obj.slug:
             from django.utils.text import slugify
             obj.slug = slugify(obj.name or "")[:120]
-        
+
         # Сохраняем объект
         super().save_model(request, obj, form, change)
-        
+
         print(f">>> [ImageModelAdmin] After super().save_model, obj.pk={obj.pk}")
         logger.info(f"[ImageModelAdmin] After super().save_model, obj.pk={obj.pk}")
-        
+
         # Сохраняем конфигурации соотношений сторон
         if hasattr(form, '_save_aspect_ratio_configurations'):
             print(f">>> [ImageModelAdmin] Has method, calling form._save_aspect_ratio_configurations")
