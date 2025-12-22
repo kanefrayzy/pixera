@@ -310,6 +310,17 @@ class AspectRatioSlider {
             this.heightInput.value = height;
             this.heightInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
+
+        // Показываем информацию о размерах
+        const dimensionsInfo = document.getElementById('dimensions-info');
+        const dimensionsDisplay = document.getElementById('dimensions-display');
+
+        if (dimensionsInfo && dimensionsDisplay && width && height) {
+            dimensionsDisplay.textContent = `${width} × ${height}`;
+            dimensionsInfo.style.display = '';
+        }
+
+        console.log('Updated dimensions:', width, 'x', height);
     }
 
     getCurrentRatio() {
