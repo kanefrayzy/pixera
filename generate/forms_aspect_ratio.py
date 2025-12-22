@@ -167,7 +167,7 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium rounded" id="config-count">0</span>
                 </div>
             </div>
-            
+
             <style>
                 .ar-ratio-group.active .ar-qualities {
                     display: grid !important;
@@ -215,7 +215,7 @@ class AspectRatioConfigurationWidget(forms.Widget):
                 }});
 
                 document.getElementById('id_{name}').value = JSON.stringify(configs);
-                
+
                 // Обновляем счетчик
                 const countBadge = document.getElementById('config-count');
                 if (countBadge) {{

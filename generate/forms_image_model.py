@@ -60,14 +60,14 @@ class ImageModelConfigurationForm(AspectRatioConfigurationFormMixin, forms.Model
             # Если миксин не сработал, добавляем поле вручную
             from .forms_aspect_ratio import AspectRatioConfigurationWidget, AspectRatioQualityConfig
             import json
-            
+
             self.fields['aspect_ratio_configurations'] = forms.CharField(
                 required=False,
                 widget=AspectRatioConfigurationWidget(model_type='image'),
                 label='Конфигурация соотношений сторон и качества',
                 help_text='Выберите соотношения галочкой, затем укажите качества и размеры'
             )
-            
+
             # Загружаем существующие конфигурации
             if self.instance.pk:
                 configs = AspectRatioQualityConfig.objects.filter(
@@ -75,7 +75,7 @@ class ImageModelConfigurationForm(AspectRatioConfigurationFormMixin, forms.Model
                     model_id=self.instance.pk,
                     is_active=True
                 ).order_by('order')
-                
+
                 config_data = []
                 for config in configs:
                     config_data.append({
@@ -85,7 +85,7 @@ class ImageModelConfigurationForm(AspectRatioConfigurationFormMixin, forms.Model
                         'height': config.height,
                         'is_active': config.is_active
                     })
-                
+
                 if config_data:
                     self.fields['aspect_ratio_configurations'].initial = json.dumps(config_data)
 

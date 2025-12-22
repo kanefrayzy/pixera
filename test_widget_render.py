@@ -18,7 +18,7 @@ if 'aspect_ratio_configurations' in form.fields:
     field = form.fields['aspect_ratio_configurations']
     print(f"Widget type: {type(field.widget).__name__}")
     print(f"Widget: {field.widget}")
-    
+
     # Попробуем отрендерить виджет
     try:
         html = field.widget.render('aspect_ratio_configurations', field.initial, {})
