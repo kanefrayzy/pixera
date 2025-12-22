@@ -3921,8 +3921,29 @@ const init=()=>{
       s.src=src;s.defer=true;
       s.onload=()=>{
         if(src.includes('video-generation.js')&&!window.videoGeneration&&typeof VideoGeneration==='function'){
-          // Передаем видео модели из Django в JavaScript
-          window.__VIDEO_MODELS__ = {{ video_models|safe }} || [];
+          // Передаем видео модели из Django в JavaScript (точно так же как image_models)
+          window.__VIDEO_MODELS__ = [
+            {% for model in video_models %}
+            {
+              id: {{ model.id }},
+              name: "{{ model.name|escapejs }}",
+              model_id: "{{ model.model_id|escapejs }}",
+              category: "{% if model.supports_image_to_video %}i2v{% else %}t2v{% endif %}",
+              category_display: "{% if model.supports_image_to_video %}Image-to-Video{% else %}Text-to-Video{% endif %}",
+              description: "{{ model.description|default:''|escapejs }}",
+              token_cost: {{ model.token_cost|default:10 }},
+              image_url: {% if model.image %}"{{ model.image.url }}"{% else %}null{% endif %},
+              available_aspect_ratios: {{ model.get_available_aspect_ratios|safe }},
+              available_resolutions: {{ model.get_available_resolutions|safe }},
+              available_durations: {{ model.get_available_durations|safe }},
+              supports_image_to_video: {{ model.supports_image_to_video|yesno:"true,false" }},
+              supports_camera_movement: {{ model.supports_camera_movement|yesno:"true,false" }},
+              supports_motion_strength: {{ model.supports_motion_strength|yesno:"true,false" }},
+              supports_seed: {{ model.supports_seed|yesno:"true,false" }}
+            }{% if not forloop.last %},{% endif %}
+            {% empty %}
+            {% endfor %}
+          ];
           window.videoGeneration=new VideoGeneration();
         }
         if(src.includes('video-prompts.js')){

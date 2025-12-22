@@ -687,7 +687,7 @@ def new(request: HttpRequest) -> HttpResponse:
         "DEFAULT_IMAGE_MODEL": getattr(settings, "RUNWARE_DEFAULT_MODEL", "runware:101@1"),
         "user_key": user_key,
         "image_models": image_models,
-        "video_models": video_models_json,
+        "video_models": video_models,
     }
 
     resp = render(request, "generate/new.html", ctx)
