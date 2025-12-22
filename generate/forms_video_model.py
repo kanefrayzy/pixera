@@ -84,27 +84,6 @@ class VideoModelConfigurationForm(AspectRatioConfigurationFormMixin, forms.Model
                 'placeholder': 'model-slug',
                 'autocomplete': 'off'
             }),
-            # Resolution limit fields
-            'min_width': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white',
-                'placeholder': '512',
-                'autocomplete': 'off'
-            }),
-            'max_width': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white',
-                'placeholder': '1920',
-                'autocomplete': 'off'
-            }),
-            'min_height': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white',
-                'placeholder': '512',
-                'autocomplete': 'off'
-            }),
-            'max_height': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white',
-                'placeholder': '1080',
-                'autocomplete': 'off'
-            }),
         }
 
     def __init__(self, *args, **kwargs):

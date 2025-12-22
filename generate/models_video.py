@@ -73,10 +73,34 @@ class VideoModelConfiguration(models.Model):
     resolution_3840x2160 = models.BooleanField("3840x2160 (4K)", default=False)
 
     # Custom resolution limits
-    min_width = models.PositiveIntegerField("Минимальная ширина", default=512)
-    max_width = models.PositiveIntegerField("Максимальная ширина", default=1920)
-    min_height = models.PositiveIntegerField("Минимальная высота", default=512)
-    max_height = models.PositiveIntegerField("Максимальная высота", default=1080)
+    min_width = models.PositiveIntegerField(
+        "Минимальная ширина",
+        default=512,
+        null=True,
+        blank=True,
+        help_text="Минимальная ширина видео в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
+    )
+    max_width = models.PositiveIntegerField(
+        "Максимальная ширина",
+        default=1920,
+        null=True,
+        blank=True,
+        help_text="Максимальная ширина видео в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
+    )
+    min_height = models.PositiveIntegerField(
+        "Минимальная высота",
+        default=512,
+        null=True,
+        blank=True,
+        help_text="Минимальная высота видео в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
+    )
+    max_height = models.PositiveIntegerField(
+        "Максимальная высота",
+        default=1080,
+        null=True,
+        blank=True,
+        help_text="Максимальная высота видео в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
+    )
 
     # ============ ASPECT RATIO SETTINGS ============
     # 🔲 Квадратные

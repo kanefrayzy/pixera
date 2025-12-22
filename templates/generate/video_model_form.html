@@ -194,54 +194,6 @@
                     {% if form.aspect_ratio_configurations.errors %}
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.aspect_ratio_configurations.errors.0 }}</p>
                     {% endif %}
-
-                    <!-- Custom Resolution Limits -->
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                            Ограничения пользовательских размеров
-                        </h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                            Задайте минимальные и максимальные размеры для пользовательского ввода (если модель поддерживает произвольные размеры)
-                        </p>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div>
-                                <label for="{{ form.min_width.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    Мин. ширина (px)
-                                </label>
-                                {{ form.min_width }}
-                                {% if form.min_width.errors %}
-                                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.min_width.errors.0 }}</p>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ form.max_width.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    Макс. ширина (px)
-                                </label>
-                                {{ form.max_width }}
-                                {% if form.max_width.errors %}
-                                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.max_width.errors.0 }}</p>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ form.min_height.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    Мин. высота (px)
-                                </label>
-                                {{ form.min_height }}
-                                {% if form.min_height.errors %}
-                                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.min_height.errors.0 }}</p>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ form.max_height.id_for_label }}" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    Макс. высота (px)
-                                </label>
-                                {{ form.max_height }}
-                                {% if form.max_height.errors %}
-                                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.max_height.errors.0 }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
