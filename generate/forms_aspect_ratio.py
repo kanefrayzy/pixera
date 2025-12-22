@@ -89,32 +89,116 @@ class AspectRatioConfigurationWidget(forms.Widget):
         # Скрытое поле для хранения JSON данных
         html_parts.append(f'<input type="hidden" name="{name}" id="id_{name}" value="">')
 
-        # Контейнер
+        # Контейнер с Tailwind стилями
         html_parts.append('''
-        <div class="aspect-ratio-configurator" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <div class="aspect-ratio-configurator space-y-4">
             <style>
-                .ar-ratio-group { background: white; border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; margin-bottom: 15px; }
-                .ar-ratio-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
-                .ar-ratio-toggle { width: 20px; height: 20px; border: 2px solid white; border-radius: 4px; cursor: pointer; flex-shrink: 0; }
-                .ar-ratio-name { font-weight: 600; font-size: 14px; }
-                .ar-ratio-desc { font-size: 12px; opacity: 0.9; margin-top: 2px; }
-                .ar-qualities { padding: 16px; display: none; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
-                .ar-ratio-group.active .ar-qualities { display: grid; }
-                .ar-ratio-group.active .ar-ratio-toggle { background: white; }
-                .ar-quality-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; }
-                .ar-quality-item.selected { background: #e7f3ff; border-color: #0066cc; }
-                .ar-quality-checkbox { width: 18px; height: 18px; border: 2px solid #6c757d; border-radius: 3px; cursor: pointer; flex-shrink: 0; }
-                .ar-quality-label { font-weight: 600; font-size: 13px; color: #495057; min-width: 70px; }
-                .ar-dimensions { display: none; flex: 1; gap: 8px; }
-                .ar-quality-item.selected .ar-dimensions { display: flex; }
-                .ar-dimension-input { display: flex; align-items: center; gap: 6px; flex: 1; }
-                .ar-dimension-input label { font-size: 12px; color: #6c757d; font-weight: 500; }
-                .ar-dimension-input input { width: 100%; padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; }
+                .ar-ratio-group { 
+                    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm;
+                    margin-bottom: 12px; 
+                }
+                .ar-ratio-header { 
+                    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 flex items-center gap-3 cursor-pointer;
+                    transition: all 0.2s;
+                }
+                .ar-ratio-header:hover { 
+                    @apply from-blue-700 to-purple-700;
+                }
+                .ar-ratio-toggle { 
+                    width: 20px; 
+                    height: 20px; 
+                    @apply border-2 border-white rounded flex-shrink-0;
+                    cursor: pointer;
+                    position: relative;
+                }
+                .ar-ratio-group.active .ar-ratio-toggle::after {
+                    content: '✓';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    @apply text-blue-600 font-bold text-sm;
+                    background: white;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .ar-ratio-name { 
+                    @apply font-semibold text-sm;
+                }
+                .ar-ratio-desc { 
+                    @apply text-xs opacity-90 mt-0.5;
+                }
+                .ar-qualities { 
+                    @apply p-4 hidden gap-3;
+                    display: none;
+                }
+                .ar-ratio-group.active .ar-qualities { 
+                    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+                }
+                .ar-quality-item { 
+                    @apply flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+                    transition: all 0.2s;
+                }
+                .ar-quality-item:hover { 
+                    @apply border-blue-400 dark:border-blue-500;
+                }
+                .ar-quality-item.selected { 
+                    @apply bg-blue-50 dark:bg-blue-900/20 border-blue-500;
+                }
+                .ar-quality-header {
+                    @apply flex items-center gap-2;
+                }
+                .ar-quality-checkbox { 
+                    @apply w-5 h-5 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600;
+                    cursor: pointer;
+                }
+                .ar-quality-label { 
+                    @apply font-semibold text-sm text-gray-700 dark:text-gray-300 min-w-16;
+                }
+                .ar-dimensions { 
+                    @apply hidden gap-2;
+                }
+                .ar-quality-item.selected .ar-dimensions { 
+                    @apply flex;
+                }
+                .ar-dimension-input { 
+                    @apply flex items-center gap-1.5 flex-1;
+                }
+                .ar-dimension-input label { 
+                    @apply text-xs text-gray-600 dark:text-gray-400 font-medium;
+                }
+                .ar-dimension-input input { 
+                    @apply w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+                    font-family: ui-monospace, monospace;
+                }
+                .ar-stat-badge {
+                    @apply inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 
+                           text-blue-800 dark:text-blue-200 text-xs font-medium rounded;
+                }
             </style>
         ''')
 
         if not presets:
-            html_parts.append('<div style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; color: #856404;">⚠️ Нет пресетов. Выполните: docker-compose exec web python populate_aspect_ratio_presets.py</div>')
+            html_parts.append('''
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <h3 class="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Нет пресетов соотношений сторон</h3>
+                            <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                                Выполните на сервере: <code class="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-800 rounded text-xs font-mono">docker-compose exec web python populate_aspect_ratio_presets.py</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ''')
         else:
             for preset in presets:
                 ratio_safe = preset.aspect_ratio.replace(':', '_').replace('.', '_')
@@ -140,19 +224,21 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
                     html_parts.append(f'''
                         <div class="ar-quality-item {selected_class}" data-quality="{quality_key}">
-                            <input type="checkbox" class="ar-quality-checkbox" {checked}
-                                   onchange="this.parentElement.classList.toggle('selected', this.checked); updateConfigs()">
-                            <label class="ar-quality-label">{quality_label}</label>
+                            <div class="ar-quality-header">
+                                <input type="checkbox" class="ar-quality-checkbox" {checked}
+                                       onchange="this.parentElement.parentElement.classList.toggle('selected', this.checked); updateConfigs()">
+                                <label class="ar-quality-label">{quality_label}</label>
+                            </div>
                             <div class="ar-dimensions">
                                 <div class="ar-dimension-input">
-                                    <label>W:</label>
-                                    <input type="number" value="{width}" placeholder="Width" min="64" max="8192" step="8"
+                                    <label>Ширина:</label>
+                                    <input type="number" value="{width}" placeholder="1920" min="64" max="8192" step="8"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="width"
                                            onchange="updateConfigs()">
                                 </div>
                                 <div class="ar-dimension-input">
-                                    <label>H:</label>
-                                    <input type="number" value="{height}" placeholder="Height" min="64" max="8192" step="8"
+                                    <label>Высота:</label>
+                                    <input type="number" value="{height}" placeholder="1080" min="64" max="8192" step="8"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="height"
                                            onchange="updateConfigs()">
                                 </div>
@@ -161,6 +247,16 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     ''')
 
                 html_parts.append('</div></div>')
+
+        # Статистика
+        html_parts.append('''
+            <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Выбрано конфигураций:</span>
+                    <span class="ar-stat-badge" id="config-count">0</span>
+                </div>
+            </div>
+        ''')
 
         # JavaScript для сохранения данных
         html_parts.append(f'''
@@ -185,10 +281,18 @@ class AspectRatioConfigurationWidget(forms.Widget):
                 }});
 
                 document.getElementById('id_{name}').value = JSON.stringify(configs);
+                
+                // Обновляем счетчик
+                const countBadge = document.getElementById('config-count');
+                if (countBadge) {{
+                    countBadge.textContent = configs.length;
+                }}
             }}
 
             // Инициализация при загрузке
-            document.addEventListener('DOMContentLoaded', updateConfigs);
+            document.addEventListener('DOMContentLoaded', function() {{
+                updateConfigs();
+            }});
             </script>
         </div>
         ''')
