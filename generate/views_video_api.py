@@ -181,25 +181,27 @@ def video_models_list(request):
         print(f">>> [video_models_list] Found {models.count()} active models")
 
         data = []
-        for model in models:
-            # Формируем данные модели для фронтенда
-            model_data = {
-                'id': model.id,
-                'name': model.name,
-                'model_id': model.runware_model_id,
-                'category': model.get_category_for_js(),  # 't2v', 'i2v', 'anime'
-                'category_display': model.get_category_display_name(),
-                'description': model.description or '',
-                'token_cost': model.token_cost,
-                'max_duration': model.get_max_duration(),
-                'max_resolution': model.get_max_resolution(),
-                'image_url': model.image.url if model.image else None,
+        for i, model in enumerate(models):
+            print(f">>> [video_models_list] Processing model {i+1}: {model.name}")
+            try:
+                # Формируем данные модели для фронтенда
+                model_data = {
+                    'id': model.id,
+                    'name': model.name,
+                    'model_id': model.runware_model_id,
+                    'category': model.get_category_for_js(),  # 't2v', 'i2v', 'anime'
+                    'category_display': model.get_category_display_name(),
+                    'description': model.description or '',
+                    'token_cost': model.token_cost,
+                    'max_duration': model.get_max_duration(),
+                    'max_resolution': model.get_max_resolution(),
+                    'image_url': model.image.url if model.image else None,
 
-                # Параметры модели
-                'available_resolutions': model.get_available_resolutions(),
-                'available_aspect_ratios': model.get_available_aspect_ratios(),
-                'available_durations': model.get_available_durations(),
-                'available_camera_movements': model.get_available_camera_movements() if model.supports_camera_movement else [],
+                    # Параметры модели
+                    'available_resolutions': model.get_available_resolutions(),
+                    'available_aspect_ratios': model.get_available_aspect_ratios(),
+                    'available_durations': model.get_available_durations(),
+                    'available_camera_movements': model.get_available_camera_movements() if model.supports_camera_movement else [],
 
                 # Поддержка функций
                 'supports_image_to_video': model.supports_image_to_video,
@@ -253,7 +255,13 @@ def video_models_list(request):
             }
 
             data.append(model_data)
+            print(f">>> [video_models_list] Successfully added model: {model.name}")
+            except Exception as model_error:
+                print(f">>> [video_models_list] Error processing model {model.name}: {model_error}")
+                import traceback
+                traceback.print_exc()
 
+        print(f">>> [video_models_list] Returning {len(data)} models")
         return JsonResponse({
             'success': True,
             'models': data,
