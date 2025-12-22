@@ -171,12 +171,14 @@ def video_category_prompts_api(request, category_id):
 @require_http_methods(["GET"])
 def video_models_list(request):
     """Список доступных моделей видео из VideoModelConfiguration."""
+    print(">>> [video_models_list] API called")
     try:
         # Импортируем новую модель
         from generate.models_video import VideoModelConfiguration
 
         # Получаем активные модели, отсортированные по порядку
         models = VideoModelConfiguration.objects.filter(is_active=True).order_by('order', 'name')
+        print(f">>> [video_models_list] Found {models.count()} active models")
 
         data = []
         for model in models:
