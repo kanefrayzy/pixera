@@ -1,0 +1,420 @@
+{% load static %}
+
+<div class="aspect-ratio-configurator" data-widget-name="{{ widget.name }}">
+    <style>
+        .aspect-ratio-configurator {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .ar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .ar-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #212529;
+        }
+        
+        .ar-help-text {
+            font-size: 13px;
+            color: #6c757d;
+        }
+        
+        .ar-grid {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .ar-ratio-group {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .ar-ratio-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .ar-ratio-toggle {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .ar-ratio-toggle:checked {
+            background: white;
+        }
+        
+        .ar-ratio-toggle:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #667eea;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .ar-ratio-info {
+            flex: 1;
+        }
+        
+        .ar-ratio-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .ar-ratio-desc {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+        
+        .ar-qualities {
+            padding: 16px;
+            display: none;
+        }
+        
+        .ar-ratio-group.active .ar-qualities {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        
+        .ar-quality-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+        }
+        
+        .ar-quality-item.selected {
+            background: #e7f3ff;
+            border-color: #0066cc;
+        }
+        
+        .ar-quality-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #6c757d;
+            border-radius: 3px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .ar-quality-checkbox:checked {
+            background: #0066cc;
+            border-color: #0066cc;
+        }
+        
+        .ar-quality-checkbox:checked::after {
+            content: '✓';
+            color: white;
+            display: block;
+            text-align: center;
+            line-height: 14px;
+            font-weight: bold;
+        }
+        
+        .ar-quality-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #495057;
+            min-width: 70px;
+        }
+        
+        .ar-dimensions {
+            display: none;
+            flex: 1;
+            gap: 8px;
+        }
+        
+        .ar-quality-item.selected .ar-dimensions {
+            display: flex;
+        }
+        
+        .ar-dimension-input {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+        
+        .ar-dimension-input label {
+            font-size: 12px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .ar-dimension-input input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .ar-dimension-input input:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+        
+        .ar-stats {
+            margin-top: 20px;
+            padding: 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+        }
+        
+        .ar-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .ar-stat-label {
+            color: #6c757d;
+        }
+        
+        .ar-stat-value {
+            font-weight: 600;
+            color: #0066cc;
+        }
+    </style>
+    
+    <div class="ar-header">
+        <div>
+            <h3>Конфигурация соотношений сторон и качества</h3>
+            <div class="ar-help-text">
+                Выберите соотношения сторон галочкой, затем для каждого выберите качества и укажите точные размеры (проверенные на Runware)
+            </div>
+        </div>
+    </div>
+    
+    <div class="ar-grid">
+        {% for preset in presets %}
+        <div class="ar-ratio-group" data-ratio="{{ preset.aspect_ratio }}">
+            <div class="ar-ratio-header">
+                <input type="checkbox" 
+                       class="ar-ratio-toggle" 
+                       data-ratio="{{ preset.aspect_ratio }}"
+                       id="ratio_{{ preset.aspect_ratio|slugify }}">
+                <div class="ar-ratio-info">
+                    <div class="ar-ratio-name">{{ preset.aspect_ratio }} — {{ preset.name }}</div>
+                    <div class="ar-ratio-desc">{{ preset.description }}</div>
+                </div>
+            </div>
+            
+            <div class="ar-qualities">
+                {% for quality_key, quality_label in qualities %}
+                <div class="ar-quality-item" data-quality="{{ quality_key }}">
+                    <input type="checkbox" 
+                           class="ar-quality-checkbox"
+                           name="aspect_ratio_{{ preset.aspect_ratio|cut:':' }}_quality_{{ quality_key }}_enabled"
+                           id="quality_{{ preset.aspect_ratio|slugify }}_{{ quality_key }}">
+                    
+                    <label class="ar-quality-label" for="quality_{{ preset.aspect_ratio|slugify }}_{{ quality_key }}">
+                        {{ quality_label }}
+                    </label>
+                    
+                    <div class="ar-dimensions">
+                        <div class="ar-dimension-input">
+                            <label>W:</label>
+                            <input type="number" 
+                                   name="aspect_ratio_{{ preset.aspect_ratio|cut:':' }}_quality_{{ quality_key }}_width"
+                                   placeholder="Width"
+                                   min="64"
+                                   max="8192"
+                                   step="8">
+                        </div>
+                        
+                        <div class="ar-dimension-input">
+                            <label>H:</label>
+                            <input type="number" 
+                                   name="aspect_ratio_{{ preset.aspect_ratio|cut:':' }}_quality_{{ quality_key }}_height"
+                                   placeholder="Height"
+                                   min="64"
+                                   max="8192"
+                                   step="8">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="ar-stats">
+        <div class="ar-stat">
+            <span class="ar-stat-label">Выбрано соотношений:</span>
+            <span class="ar-stat-value" id="stats-ratios">0</span>
+        </div>
+        <div class="ar-stat">
+            <span class="ar-stat-label">Конфигураций качества:</span>
+            <span class="ar-stat-value" id="stats-configs">0</span>
+        </div>
+    </div>
+    
+    <input type="hidden" name="{{ widget.name }}" id="id_{{ widget.name }}">
+</div>
+
+<script>
+(function() {
+    const container = document.querySelector('.aspect-ratio-configurator');
+    const hiddenInput = container.querySelector('input[type="hidden"]');
+    
+    // Обработчик для чекбоксов соотношений
+    container.querySelectorAll('.ar-ratio-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const group = this.closest('.ar-ratio-group');
+            if (this.checked) {
+                group.classList.add('active');
+            } else {
+                group.classList.remove('active');
+                // Снимаем все галочки с качеств
+                group.querySelectorAll('.ar-quality-checkbox').forEach(cb => {
+                    cb.checked = false;
+                    cb.closest('.ar-quality-item').classList.remove('selected');
+                });
+            }
+            updateStats();
+            updateHiddenValue();
+        });
+    });
+    
+    // Обработчик для чекбоксов качества
+    container.querySelectorAll('.ar-quality-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const item = this.closest('.ar-quality-item');
+            if (this.checked) {
+                item.classList.add('selected');
+                // Фокус на первом поле ввода
+                const firstInput = item.querySelector('input[type="number"]');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 100);
+                }
+            } else {
+                item.classList.remove('selected');
+            }
+            updateStats();
+            updateHiddenValue();
+        });
+    });
+    
+    // Обновление при изменении размеров
+    container.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('input', updateHiddenValue);
+    });
+    
+    function updateStats() {
+        const ratiosCount = container.querySelectorAll('.ar-ratio-toggle:checked').length;
+        const configsCount = container.querySelectorAll('.ar-quality-checkbox:checked').length;
+        
+        container.querySelector('#stats-ratios').textContent = ratiosCount;
+        container.querySelector('#stats-configs').textContent = configsCount;
+    }
+    
+    function updateHiddenValue() {
+        const configs = [];
+        
+        container.querySelectorAll('.ar-quality-checkbox:checked').forEach(checkbox => {
+            const item = checkbox.closest('.ar-quality-item');
+            const group = checkbox.closest('.ar-ratio-group');
+            const ratio = group.dataset.ratio;
+            const quality = item.dataset.quality;
+            
+            const widthInput = item.querySelector('input[name*="_width"]');
+            const heightInput = item.querySelector('input[name*="_height"]');
+            
+            const width = parseInt(widthInput.value) || 0;
+            const height = parseInt(heightInput.value) || 0;
+            
+            if (width && height) {
+                configs.push({
+                    aspect_ratio: ratio,
+                    quality: quality,
+                    width: width,
+                    height: height,
+                    is_active: true
+                });
+            }
+        });
+        
+        hiddenInput.value = JSON.stringify(configs);
+    }
+    
+    // Инициализация из существующих данных
+    function initializeFromData() {
+        const initialData = hiddenInput.value;
+        if (initialData) {
+            try {
+                const configs = JSON.parse(initialData);
+                
+                configs.forEach(config => {
+                    // Активируем соотношение
+                    const ratioToggle = container.querySelector(`.ar-ratio-toggle[data-ratio="${config.aspect_ratio}"]`);
+                    if (ratioToggle) {
+                        ratioToggle.checked = true;
+                        ratioToggle.closest('.ar-ratio-group').classList.add('active');
+                    }
+                    
+                    // Активируем качество и заполняем размеры
+                    const ratioSlug = config.aspect_ratio.replace(':', '');
+                    const qualityCheckbox = container.querySelector(`#quality_${ratioSlug}_${config.quality}`);
+                    if (qualityCheckbox) {
+                        qualityCheckbox.checked = true;
+                        const item = qualityCheckbox.closest('.ar-quality-item');
+                        item.classList.add('selected');
+                        
+                        const widthInput = item.querySelector('input[name*="_width"]');
+                        const heightInput = item.querySelector('input[name*="_height"]');
+                        
+                        if (widthInput) widthInput.value = config.width;
+                        if (heightInput) heightInput.value = config.height;
+                    }
+                });
+                
+                updateStats();
+            } catch (e) {
+                console.error('Error parsing initial data:', e);
+            }
+        }
+    }
+    
+    initializeFromData();
+})();
+</script>
