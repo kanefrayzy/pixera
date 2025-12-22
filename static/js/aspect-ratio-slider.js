@@ -182,6 +182,7 @@ class AspectRatioSlider {
                     flex: 1;
                     text-align: center;
                     min-width: 0;
+                    max-width: 40px;
                 }
 
                 .ar-label:hover {
@@ -226,7 +227,7 @@ class AspectRatioSlider {
     updateUI() {
         // Обновляем только UI элементы без полного перерендера
         const currentRatio = this.ratios[this.currentIndex];
-        
+
         // Обновляем активные метки
         const labels = this.container.querySelectorAll('.ar-label');
         labels.forEach((label, idx) => {
@@ -238,7 +239,7 @@ class AspectRatioSlider {
         if (badgeContainer) {
             const iconContainer = badgeContainer.querySelector('.text-white.flex.items-center');
             const textSpan = badgeContainer.querySelector('.font-bold');
-            
+
             if (iconContainer) {
                 iconContainer.innerHTML = this.getRatioIcon(currentRatio);
             }
