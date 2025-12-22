@@ -18,6 +18,9 @@ from django.utils.text import slugify
 # Import ReferenceImage model
 from .models_reference import ReferenceImage
 
+# Import Aspect Ratio models
+from .models_aspect_ratio import AspectRatioQualityConfig, AspectRatioPreset
+
 
 # ====== helpers / defaults ====================================================
 
