@@ -157,6 +157,27 @@
                 </div>
             </div>
 
+            <!-- Aspect Ratio Quality Configuration -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Конфигурация соотношений сторон и качества
+                    </h2>
+                    <button type="button" onclick="toggleSection('aspect-ratio-config')" class="text-blue-600 dark:text-blue-400 text-sm">
+                        Свернуть/Развернуть
+                    </button>
+                </div>
+                <div id="aspect-ratio-config" class="space-y-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Настройте доступные соотношения сторон и качество для каждого. Выберите соотношения сторон галочками, затем для каждого выберите качество и укажите точные размеры (ширина × высота).
+                    </p>
+                    {{ form.aspect_ratio_configurations }}
+                    {% if form.aspect_ratio_configurations.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.aspect_ratio_configurations.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Resolutions -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
                 <div class="flex items-center justify-between mb-4">
