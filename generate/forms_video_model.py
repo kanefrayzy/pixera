@@ -37,7 +37,25 @@ class VideoModelConfigurationForm(AspectRatioConfigurationFormMixin, forms.Model
 
     class Meta:
         model = VideoModelConfiguration
-        fields = '__all__'
+        exclude = [
+            # Старые поля разрешений (заменены на AspectRatioQualityConfig)
+            'resolution_512x512', 'resolution_512x768', 'resolution_512x1024',
+            'resolution_768x512', 'resolution_768x768', 'resolution_768x1024',
+            'resolution_1024x512', 'resolution_1024x768', 'resolution_1024x1024',
+            'resolution_1280x720', 'resolution_1920x1080', 'resolution_2560x1440',
+            'resolution_3840x2160',
+            # Старые поля соотношений сторон (заменены на AspectRatioQualityConfig)
+            'aspect_ratio_1_1', 'aspect_ratio_4_3', 'aspect_ratio_3_2', 'aspect_ratio_5_4',
+            'aspect_ratio_16_9', 'aspect_ratio_16_10', 'aspect_ratio_15_9', 'aspect_ratio_17_9',
+            'aspect_ratio_1_85_1', 'aspect_ratio_2_00_1', 'aspect_ratio_2_20_1',
+            'aspect_ratio_2_35_1', 'aspect_ratio_2_39_1', 'aspect_ratio_2_40_1',
+            'aspect_ratio_18_9', 'aspect_ratio_19_9', 'aspect_ratio_20_9',
+            'aspect_ratio_21_9', 'aspect_ratio_24_10', 'aspect_ratio_32_9',
+            'aspect_ratio_9_16', 'aspect_ratio_3_4', 'aspect_ratio_2_3',
+            'aspect_ratio_4_5', 'aspect_ratio_5_8', 'aspect_ratio_10_16',
+            'aspect_ratio_9_19_5', 'aspect_ratio_9_20', 'aspect_ratio_9_21',
+            'aspect_ratio_7_5', 'aspect_ratio_8_10',
+        ]
         widgets = {
             'description': forms.Textarea(attrs={
                 'rows': 3,
