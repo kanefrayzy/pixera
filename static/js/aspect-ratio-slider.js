@@ -89,11 +89,11 @@ class AspectRatioSlider {
                     <label class="text-sm font-medium text-[var(--text)]">
                         Соотношение сторон
                     </label>
-                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full shadow-lg">
-                        <div class="text-white">
+                    <div class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full shadow-lg min-h-[40px]">
+                        <div class="text-white flex items-center justify-center w-12 h-10">
                             ${this.getRatioIcon(currentRatio)}
                         </div>
-                        <span class="text-white font-bold text-sm">${currentRatio}</span>
+                        <span class="text-white font-bold text-sm whitespace-nowrap">${currentRatio}</span>
                     </div>
                 </div>
 
@@ -109,7 +109,7 @@ class AspectRatioSlider {
                     />
 
                     <!-- Метки под ползунком -->
-                    <div class="flex justify-between mt-2 px-1">
+                    <div class="flex justify-between mt-2 px-0.5">
                         ${this.ratios.map((ratio, idx) => `
                             <button
                                 type="button"
@@ -179,6 +179,9 @@ class AspectRatioSlider {
                     border-radius: 0.5rem;
                     cursor: pointer;
                     transition: all 0.2s;
+                    flex: 1;
+                    text-align: center;
+                    min-width: 0;
                 }
 
                 .ar-label:hover {
@@ -222,23 +225,26 @@ class AspectRatioSlider {
 
     updateUI() {
         // Обновляем только UI элементы без полного перерендера
-        const badge = this.container.querySelector('.ar-label.active');
-        if (badge) {
-            badge.classList.remove('active');
-        }
-
         const currentRatio = this.ratios[this.currentIndex];
+        
+        // Обновляем активные метки
         const labels = this.container.querySelectorAll('.ar-label');
         labels.forEach((label, idx) => {
             label.classList.toggle('active', idx === this.currentIndex);
         });
 
-        // Обновляем иконку и текст в бейдже
-        const badgeIcon = this.container.querySelector('.flex.items-center.gap-2 .text-white');
-        const badgeText = this.container.querySelector('.flex.items-center.gap-2 .font-bold');
-        if (badgeIcon && badgeText) {
-            badgeIcon.innerHTML = this.getRatioIcon(currentRatio);
-            badgeText.textContent = currentRatio;
+        // Обновляем иконку в бейдже
+        const badgeContainer = this.container.querySelector('.flex.items-center.gap-2.px-3');
+        if (badgeContainer) {
+            const iconContainer = badgeContainer.querySelector('.text-white.flex.items-center');
+            const textSpan = badgeContainer.querySelector('.font-bold');
+            
+            if (iconContainer) {
+                iconContainer.innerHTML = this.getRatioIcon(currentRatio);
+            }
+            if (textSpan) {
+                textSpan.textContent = currentRatio;
+            }
         }
     }
 
