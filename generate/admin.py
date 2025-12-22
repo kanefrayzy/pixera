@@ -20,6 +20,7 @@ from .models import (
 )
 from .models_reference import ReferenceImage
 from .models_video import VideoModelConfiguration
+from .models_aspect_ratio import AspectRatioQualityConfig, AspectRatioPreset
 from .forms_video_model import VideoModelConfigurationForm
 
 # ── Вспомогательные экшены ──────────────────────────────────────
@@ -887,3 +888,146 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
             from django.utils.text import slugify
             obj.slug = slugify(obj.name or "")[:120]
         super().save_model(request, obj, form, change)
+
+
+# ── Aspect Ratio Quality Configurations ──────────────────────────────
+
+class AspectRatioQualityConfigInline(admin.TabularInline):
+    """
+    Inline для редактирования конфигураций прямо в модели
+    """
+    model = AspectRatioQualityConfig
+    extra = 1
+    fields = ('aspect_ratio', 'quality', 'width', 'height', 'is_active', 'is_default', 'order', 'notes')
+    ordering = ['order', 'aspect_ratio', 'quality']
+
+
+@admin.register(AspectRatioQualityConfig)
+class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'model_info',
+        'aspect_ratio',
+        'quality',
+        'dimensions_display',
+        'megapixels_display',
+        'is_default',
+        'is_active',
+        'order'
+    )
+    list_filter = ('model_type', 'quality', 'is_active', 'is_default')
+    search_fields = ('aspect_ratio', 'notes')
+    list_editable = ('is_active', 'is_default', 'order')
+    ordering = ['model_type', 'model_id', 'order', 'aspect_ratio', 'quality']
+    
+    fieldsets = (
+        ("Основная информация", {
+            "fields": (
+                ('model_type', 'model_id'),
+                ('aspect_ratio', 'quality'),
+            )
+        }),
+        ("Размеры (проверено на Runware)", {
+            "fields": (
+                ('width', 'height'),
+            ),
+            "description": "Точные размеры в пикселях, протестированные на Runware"
+        }),
+        ("Настройки", {
+            "fields": (
+                ('is_active', 'is_default'),
+                'order',
+                'notes',
+            )
+        }),
+    )
+    
+    @admin.display(description="Модель")
+    def model_info(self, obj):
+        if obj.model_type == 'image':
+            try:
+                from .models_image import ImageModelConfiguration
+                model = ImageModelConfiguration.objects.get(id=obj.model_id)
+                return format_html(
+                    '<span style="color:#3b82f6">📷 {}</span>',
+                    model.name
+                )
+            except:
+                return format_html('<span style="color:#ef4444">Image #{}</span>', obj.model_id)
+        else:
+            try:
+                from .models_video import VideoModelConfiguration
+                model = VideoModelConfiguration.objects.get(id=obj.model_id)
+                return format_html(
+                    '<span style="color:#8b5cf6">🎬 {}</span>',
+                    model.name
+                )
+            except:
+                return format_html('<span style="color:#ef4444">Video #{}</span>', obj.model_id)
+    
+    @admin.display(description="Размеры")
+    def dimensions_display(self, obj):
+        return format_html(
+            '<span style="font-family:monospace;font-weight:600">{} × {}</span>',
+            obj.width,
+            obj.height
+        )
+    
+    @admin.display(description="MP")
+    def megapixels_display(self, obj):
+        mp = obj.megapixels
+        if mp >= 10:
+            color = "#dc2626"  # red
+        elif mp >= 5:
+            color = "#f59e0b"  # orange
+        else:
+            color = "#10b981"  # green
+        
+        return format_html(
+            '<span style="color:{};font-weight:600">{} MP</span>',
+            color,
+            mp
+        )
+    
+    actions = [mark_active, mark_inactive]
+
+
+@admin.register(AspectRatioPreset)
+class AspectRatioPresetAdmin(admin.ModelAdmin):
+    list_display = (
+        'aspect_ratio',
+        'name',
+        'category',
+        'icon',
+        'is_common',
+        'order'
+    )
+    list_filter = ('category', 'is_common')
+    search_fields = ('aspect_ratio', 'name', 'description')
+    list_editable = ('is_common', 'order')
+    ordering = ['-is_common', 'order', 'aspect_ratio']
+    
+    fieldsets = (
+        ("Основная информация", {
+            "fields": (
+                'aspect_ratio',
+                'name',
+                'category',
+                'icon',
+                'description',
+            )
+        }),
+        ("Рекомендуемые размеры", {
+            "fields": (
+                ('recommended_sd', 'recommended_hd'),
+                ('recommended_full_hd', 'recommended_2k'),
+                ('recommended_4k', 'recommended_8k'),
+            ),
+            "description": "Примеры: 1920x1080, 3840x2160"
+        }),
+        ("Настройки", {
+            "fields": (
+                ('is_common', 'order'),
+            )
+        }),
+    )

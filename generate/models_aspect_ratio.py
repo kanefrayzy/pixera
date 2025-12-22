@@ -11,7 +11,7 @@ class AspectRatioQualityConfig(models.Model):
     Конфигурация размеров для комбинации соотношения сторон + качество
     Администратор создает записи для каждой поддерживаемой модел ью комбинации
     """
-    
+
     class QualityLevel(models.TextChoices):
         SD = 'sd', 'SD (480p)'
         HD = 'hd', 'HD (720p)'
@@ -19,7 +19,7 @@ class AspectRatioQualityConfig(models.Model):
         QHD = '2k', '2K (1440p)'
         UHD = '4k', '4K (2160p)'
         UHD_8K = '8k', '8K (4320p)'
-    
+
     # Связь с моделью (через ContentType для универсальности)
     model_type = models.CharField(
         "Тип модели",
@@ -27,13 +27,13 @@ class AspectRatioQualityConfig(models.Model):
         choices=[('image', 'Фото'), ('video', 'Видео')],
         db_index=True
     )
-    
+
     model_id = models.PositiveIntegerField(
         "ID модели",
         db_index=True,
         help_text="ID ImageModelConfiguration или VideoModelConfiguration"
     )
-    
+
     # Соотношение сторон
     aspect_ratio = models.CharField(
         "Соотношение сторон",
@@ -41,7 +41,7 @@ class AspectRatioQualityConfig(models.Model):
         db_index=True,
         help_text="Например: 1:1, 16:9, 9:16, 4:5, 21:9"
     )
-    
+
     # Качество
     quality = models.CharField(
         "Качество",
@@ -49,48 +49,48 @@ class AspectRatioQualityConfig(models.Model):
         choices=QualityLevel.choices,
         db_index=True
     )
-    
+
     # Точные размеры (проверенные на Runware)
     width = models.PositiveIntegerField(
         "Ширина (px)",
         validators=[MinValueValidator(64), MaxValueValidator(8192)],
         help_text="Точная ширина в пикселях (проверено на Runware)"
     )
-    
+
     height = models.PositiveIntegerField(
         "Высота (px)",
         validators=[MinValueValidator(64), MaxValueValidator(8192)],
         help_text="Точная высота в пикселях (проверено на Runware)"
     )
-    
+
     # Метаданные
     is_active = models.BooleanField(
         "Активно",
         default=True,
         db_index=True
     )
-    
+
     is_default = models.BooleanField(
         "По умолчанию",
         default=False,
         help_text="Использовать эту комбинацию по умолчанию для модели"
     )
-    
+
     order = models.PositiveIntegerField(
         "Порядок отображения",
         default=0,
         help_text="Меньше = выше в списке"
     )
-    
+
     notes = models.TextField(
         "Заметки",
         blank=True,
         help_text="Внутренние заметки (результаты тестов на Runware, особенности и т.д.)"
     )
-    
+
     created_at = models.DateTimeField("Создано", auto_now_add=True)
     updated_at = models.DateTimeField("Обновлено", auto_now=True)
-    
+
     class Meta:
         verbose_name = "Конфигурация соотношения и качества"
         verbose_name_plural = "Конфигурации соотношений и качества"
@@ -100,20 +100,20 @@ class AspectRatioQualityConfig(models.Model):
             models.Index(fields=['model_type', 'model_id', 'is_active']),
             models.Index(fields=['aspect_ratio', 'quality']),
         ]
-    
+
     def __str__(self):
         return f"{self.aspect_ratio} @ {self.get_quality_display()} = {self.width}×{self.height}"
-    
+
     @property
     def resolution_string(self):
         """Возвращает строку разрешения для передачи в API"""
         return f"{self.width}x{self.height}"
-    
+
     @property
     def megapixels(self):
         """Вычисляет мегапиксели"""
         return round((self.width * self.height) / 1_000_000, 2)
-    
+
     def get_aspect_ratio_decimal(self):
         """Вычисляет десятичное соотношение"""
         try:
@@ -123,7 +123,7 @@ class AspectRatioQualityConfig(models.Model):
         except:
             pass
         return None
-    
+
     def validate_dimensions(self):
         """Проверяет, что размеры соответствуют заявленному соотношению сторон"""
         ratio_decimal = self.get_aspect_ratio_decimal()
@@ -132,7 +132,7 @@ class AspectRatioQualityConfig(models.Model):
             # Допускаем погрешность 1%
             return abs(actual_ratio - ratio_decimal) / ratio_decimal < 0.01
         return True
-    
+
     def save(self, *args, **kwargs):
         # Если установлен флаг по умолчанию, сбрасываем его у других конфигураций
         if self.is_default:
@@ -141,7 +141,7 @@ class AspectRatioQualityConfig(models.Model):
                 model_id=self.model_id,
                 is_default=True
             ).update(is_default=False)
-        
+
         super().save(*args, **kwargs)
 
 
@@ -149,39 +149,39 @@ class AspectRatioPreset(models.Model):
     """
     Предустановки соотношений сторон для быстрого добавления
     """
-    
+
     name = models.CharField(
         "Название",
         max_length=100,
         help_text="Описательное название (например: 'Instagram Stories')"
     )
-    
+
     aspect_ratio = models.CharField(
         "Соотношение",
         max_length=20,
         unique=True
     )
-    
+
     category = models.CharField(
         "Категория",
         max_length=50,
         blank=True,
         help_text="Группировка (соцсети, кино, фото и т.д.)"
     )
-    
+
     icon = models.CharField(
         "Иконка",
         max_length=10,
         blank=True,
         help_text="Emoji иконка для отображения"
     )
-    
+
     description = models.TextField(
         "Описание",
         blank=True,
         help_text="Где используется это соотношение"
     )
-    
+
     # Рекомендуемые размеры для разных качеств
     recommended_sd = models.CharField("SD рекомендация", max_length=20, blank=True, help_text="Например: 640x480")
     recommended_hd = models.CharField("HD рекомендация", max_length=20, blank=True, help_text="Например: 1280x720")
@@ -189,25 +189,25 @@ class AspectRatioPreset(models.Model):
     recommended_2k = models.CharField("2K рекомендация", max_length=20, blank=True, help_text="Например: 2560x1440")
     recommended_4k = models.CharField("4K рекомендация", max_length=20, blank=True, help_text="Например: 3840x2160")
     recommended_8k = models.CharField("8K рекомендация", max_length=20, blank=True, help_text="Например: 7680x4320")
-    
+
     is_common = models.BooleanField(
         "Популярное",
         default=False,
         help_text="Часто используемое соотношение"
     )
-    
+
     order = models.PositiveIntegerField("Порядок", default=0)
-    
+
     class Meta:
         verbose_name = "Предустановка соотношения сторон"
         verbose_name_plural = "Предустановки соотношений сторон"
         ordering = ['-is_common', 'order', 'aspect_ratio']
-    
+
     def __str__(self):
         if self.name:
             return f"{self.aspect_ratio} ({self.name})"
         return self.aspect_ratio
-    
+
     def get_recommended_size(self, quality):
         """Возвращает рекомендуемый размер для заданного качества"""
         mapping = {
