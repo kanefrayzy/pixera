@@ -12,59 +12,59 @@ class AspectRatioSlider {
         this.widthInput = options.widthInput;
         this.heightInput = options.heightInput;
         this.onChange = options.onChange || (() => {});
-        
+
         this.configs = {}; // Конфигурации моделей
         this.ratios = []; // Массив доступных соотношений
         this.currentIndex = 0;
-        
+
         this.init();
     }
-    
+
     async init() {
         if (!this.modelId || !this.container) {
             console.warn('AspectRatioSlider: container or model ID not provided');
             return;
         }
-        
+
         await this.loadConfigs();
         this.render();
         this.setupEventListeners();
     }
-    
+
     async loadConfigs() {
         try {
             const response = await fetch(`/generate/api/aspect-ratio-configs/${this.modelType}/${this.modelId}`);
             const data = await response.json();
-            
+
             // Преобразуем в удобный формат
             this.configs = {};
             data.aspect_ratios.forEach(item => {
                 this.configs[item.ratio] = item.qualities;
             });
-            
+
             this.ratios = Object.keys(this.configs);
-            
+
             // Находим индекс дефолтного соотношения или берем первое
             this.currentIndex = 0;
             const defaultRatio = data.aspect_ratios.find(ar => ar.qualities.some(q => q.is_default));
             if (defaultRatio) {
                 this.currentIndex = this.ratios.indexOf(defaultRatio.ratio);
             }
-            
+
             console.log('Loaded aspect ratio configs:', this.configs);
         } catch (error) {
             console.error('Failed to load aspect ratio configs:', error);
         }
     }
-    
+
     render() {
         if (this.ratios.length === 0) {
             this.container.innerHTML = '<div class="text-sm text-gray-400">Нет доступных соотношений сторон</div>';
             return;
         }
-        
+
         const currentRatio = this.ratios[this.currentIndex];
-        
+
         this.container.innerHTML = `
             <div class="flex flex-col gap-3">
                 <!-- Заголовок -->
@@ -76,7 +76,7 @@ class AspectRatioSlider {
                         ${currentRatio}
                     </div>
                 </div>
-                
+
                 <!-- Слайдер с иконкой -->
                 <div class="relative">
                     <!-- Иконка превью -->
@@ -87,19 +87,19 @@ class AspectRatioSlider {
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Сам слайдер -->
                     <div class="pl-16">
-                        <input 
-                            type="range" 
-                            class="aspect-ratio-slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer 
+                        <input
+                            type="range"
+                            class="aspect-ratio-slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer
                                    focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            min="0" 
-                            max="${this.ratios.length - 1}" 
+                            min="0"
+                            max="${this.ratios.length - 1}"
                             value="${this.currentIndex}"
                             step="1"
                         />
-                        
+
                         <!-- Метки под слайдером -->
                         <div class="flex justify-between mt-2 px-1">
                             ${this.ratios.map((ratio, idx) => `
@@ -112,11 +112,11 @@ class AspectRatioSlider {
                 </div>
             </div>
         `;
-        
+
         // Обновляем связанные элементы
         this.updateRelatedElements();
     }
-    
+
     getRatioIconClass(ratio) {
         // Классы для разных соотношений
         const orientationMap = {
@@ -129,17 +129,17 @@ class AspectRatioSlider {
             '4:5': 'portrait',
             '2:3': 'portrait',
         };
-        
+
         return orientationMap[ratio] || 'square';
     }
-    
+
     getRatioIcon(ratio) {
         // SVG иконки для разных ориентаций
         const [w, h] = ratio.split(':').map(Number);
         const isPortrait = h > w;
         const isSquare = h === w;
         const isUltrawide = w / h > 2;
-        
+
         if (isSquare) {
             return `
                 <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -166,34 +166,34 @@ class AspectRatioSlider {
             `;
         }
     }
-    
+
     setupEventListeners() {
         const slider = this.container.querySelector('.aspect-ratio-slider');
         if (!slider) return;
-        
+
         slider.addEventListener('input', (e) => {
             this.currentIndex = parseInt(e.target.value);
             this.render();
             this.onChange(this.ratios[this.currentIndex]);
         });
     }
-    
+
     updateRelatedElements() {
         const currentRatio = this.ratios[this.currentIndex];
         const qualities = this.configs[currentRatio] || [];
-        
+
         // Обновляем селектор качества
         if (this.qualitySelect) {
             this.populateQualitySelect(qualities);
         }
     }
-    
+
     populateQualitySelect(qualities) {
         if (!this.qualitySelect) return;
-        
+
         // Очищаем опции
         this.qualitySelect.innerHTML = '<option value="">Выберите качество</option>';
-        
+
         // Добавляем новые опции
         qualities.forEach(q => {
             const option = document.createElement('option');
@@ -201,14 +201,14 @@ class AspectRatioSlider {
             option.textContent = `${q.quality_label} (${q.width}×${q.height})`;
             option.dataset.width = q.width;
             option.dataset.height = q.height;
-            
+
             if (q.is_default) {
                 option.setAttribute('selected', 'selected');
             }
-            
+
             this.qualitySelect.appendChild(option);
         });
-        
+
         // Автовыбор дефолта
         const defaultQuality = qualities.find(q => q.is_default);
         if (defaultQuality) {
@@ -218,31 +218,31 @@ class AspectRatioSlider {
             this.qualitySelect.value = qualities[0].quality;
             this.updateDimensions(qualities[0].width, qualities[0].height);
         }
-        
+
         // Обработчик изменения качества
         this.qualitySelect.addEventListener('change', () => this.onQualityChange());
     }
-    
+
     onQualityChange() {
         const selectedOption = this.qualitySelect.options[this.qualitySelect.selectedIndex];
-        
+
         if (selectedOption && selectedOption.dataset.width && selectedOption.dataset.height) {
             this.updateDimensions(selectedOption.dataset.width, selectedOption.dataset.height);
         }
     }
-    
+
     updateDimensions(width, height) {
         if (this.widthInput) {
             this.widthInput.value = width;
             this.widthInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        
+
         if (this.heightInput) {
             this.heightInput.value = height;
             this.heightInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
-    
+
     getCurrentRatio() {
         return this.ratios[this.currentIndex];
     }

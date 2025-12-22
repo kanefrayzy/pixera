@@ -19,9 +19,9 @@ def get_default_dimensions(aspect_ratio, quality):
         '4k': 2160,     # 4K: 2160p
         '8k': 4320,     # 8K: 4320p
     }
-    
+
     height = quality_heights.get(quality, 1080)
-    
+
     # Парсим соотношение сторон
     try:
         if ':' in aspect_ratio:
@@ -31,13 +31,13 @@ def get_default_dimensions(aspect_ratio, quality):
             ratio = float(aspect_ratio)
     except:
         ratio = 16 / 9  # По умолчанию 16:9
-    
+
     width = int(height * ratio)
-    
+
     # Округляем до кратного 8 для совместимости с большинством моделей
     width = (width // 8) * 8
     height = (height // 8) * 8
-    
+
     return width, height
 
 
@@ -184,14 +184,14 @@ class AspectRatioConfigurationWidget(forms.Widget):
                             <div class="ar-dimensions hidden gap-2">
                                 <div class="flex items-center gap-1.5 flex-1">
                                     <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Ширина:</label>
-                                    <input type="number" value="{display_width}" placeholder="{default_width}" min="64" max="8192" step="8"
+                                    <input type="number" value="{display_width}" placeholder="{default_width}"
                                            class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="width"
                                            onchange="updateConfigs()">
                                 </div>
                                 <div class="flex items-center gap-1.5 flex-1">
                                     <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Высота:</label>
-                                    <input type="number" value="{display_height}" placeholder="{default_height}" min="64" max="8192" step="8"
+                                    <input type="number" value="{display_height}" placeholder="{default_height}"
                                            class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="height"
                                            onchange="updateConfigs()">
@@ -250,7 +250,7 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
             function calculateDimensions(aspectRatio, quality) {{
                 const height = DEFAULT_DIMENSIONS[quality] || 1080;
-                
+
                 // Парсим соотношение сторон
                 let ratio = 16 / 9;
                 if (aspectRatio.includes(':')) {{
@@ -259,25 +259,25 @@ class AspectRatioConfigurationWidget(forms.Widget):
                 }} else {{
                     ratio = parseFloat(aspectRatio);
                 }}
-                
+
                 let width = Math.round(height * ratio);
-                
+
                 // Округляем до кратного 8
                 width = Math.floor(width / 8) * 8;
                 const roundedHeight = Math.floor(height / 8) * 8;
-                
+
                 return {{ width, height: roundedHeight }};
             }}
 
             function handleQualityCheck(checkbox, aspectRatio, quality) {{
                 const item = checkbox.closest('.ar-quality-item');
                 item.classList.toggle('selected', checkbox.checked);
-                
+
                 if (checkbox.checked) {{
                     // Автоподстановка размеров
                     const widthInput = item.querySelector('[data-dimension="width"]');
                     const heightInput = item.querySelector('[data-dimension="height"]');
-                    
+
                     if (!widthInput.value || !heightInput.value) {{
                         const dimensions = calculateDimensions(aspectRatio, quality);
                         widthInput.value = dimensions.width;
@@ -291,15 +291,25 @@ class AspectRatioConfigurationWidget(forms.Widget):
                 document.querySelectorAll('.ar-quality-item.selected').forEach(item => {{
                     const ratio = item.querySelector('[data-ratio]').dataset.ratio;
                     const quality = item.querySelector('[data-quality]').dataset.quality;
-                    const width = item.querySelector('[data-dimension="width"]').value;
-                    const height = item.querySelector('[data-dimension="height"]').value;
+                    let width = item.querySelector('[data-dimension="width"]').value;
+                    let height = item.querySelector('[data-dimension="height"]').value;
+
+                    // Валидация значений
+                    width = parseInt(width) || 0;
+                    height = parseInt(height) || 0;
+
+                    // Проверяем диапазон
+                    if (width < 64) width = 64;
+                    if (width > 8192) width = 8192;
+                    if (height < 64) height = 64;
+                    if (height > 8192) height = 8192;
 
                     if (width && height) {{
                         configs.push({{
                             aspect_ratio: ratio,
                             quality: quality,
-                            width: parseInt(width),
-                            height: parseInt(height),
+                            width: width,
+                            height: height,
                             is_active: true
                         }});
                     }}

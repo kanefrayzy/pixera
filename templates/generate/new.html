@@ -2112,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <!-- Размеры (скрытые поля, автозаполняются) -->
       <input type="hidden" id="id_width" name="width">
       <input type="hidden" id="id_height" name="height">
-      
+
       <!-- Информация о размерах -->
       <div id="dimensions-info" class="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg" style="display:none;">
         <div class="flex items-center gap-2 text-sm">
@@ -4611,7 +4611,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const qualitySelector = document.getElementById('quality-selector');
   const widthInput = document.getElementById('id_width');
   const heightInput = document.getElementById('id_height');
-  
+
   // Инициализация слайдера соотношений сторон
   let aspectRatioSlider = null;
 
@@ -4620,25 +4620,25 @@ document.addEventListener('DOMContentLoaded', function() {
       console.warn('Aspect ratio selector elements not found');
       return;
     }
-    
+
     const sliderContainer = document.getElementById('aspect-ratio-slider-container');
     if (!sliderContainer) {
       console.warn('Aspect ratio slider container not found');
       return;
     }
-    
+
     if (!modelId) {
       sliderContainer.innerHTML = '<div class="text-sm text-gray-400">Сначала выберите модель</div>';
       qualitySelector.innerHTML = '<option value="">Выберите соотношение сторон</option>';
       qualitySelector.disabled = true;
       return;
     }
-    
+
     // Создаем новый экземпляр слайдера
     if (aspectRatioSlider) {
       aspectRatioSlider = null;
     }
-    
+
     aspectRatioSlider = new AspectRatioSlider({
       container: sliderContainer,
       modelType: 'image',
@@ -4651,7 +4651,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
-  
+
   // Слушаем клики по карточкам моделей изображений
   document.addEventListener('click', function(e) {
     const card = e.target.closest('.image-model-card');
@@ -4665,7 +4665,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
-  
+
   // Инициализируем при загрузке, если модель уже выбрана
   window.addEventListener('load', function() {
     const selectedCard = document.querySelector('.image-model-card[data-selected="1"]');
@@ -4676,16 +4676,16 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
-  
+
   // Логика раскрывающейся шторки "Дополнительные параметры"
   const toggleAdvancedBtn = document.getElementById('toggle-advanced-params');
   const advancedParamsContent = document.getElementById('advanced-params-content');
-  
+
   if (toggleAdvancedBtn && advancedParamsContent) {
     toggleAdvancedBtn.addEventListener('click', function() {
       const isHidden = advancedParamsContent.classList.contains('hidden');
       const btnIcon = this.querySelector('svg');
-      
+
       if (isHidden) {
         advancedParamsContent.classList.remove('hidden');
         btnIcon.style.transform = 'rotate(180deg)';
@@ -4707,9 +4707,9 @@ document.addEventListener('DOMContentLoaded', function() {
 .aspect-ratio-slider {
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(to right, 
-    #3b82f6 0%, 
-    #8b5cf6 50%, 
+  background: linear-gradient(to right,
+    #3b82f6 0%,
+    #8b5cf6 50%,
     #a855f7 100%
   );
   outline: none;
