@@ -30,7 +30,7 @@ from .forms_video_model import VideoModelConfigurationForm
 @receiver(post_save, sender=ImageModelConfiguration)
 def save_image_model_aspect_ratio_configs(sender, instance, created, **kwargs):
     """
-    ��������� ������������ ����������� ������ ����� ���������� ImageModelConfiguration
+    Обновляет конфигурацию соотношения сторон после сохранения ImageModelConfiguration
     """
     import logging
     logger = logging.getLogger(__name__)
@@ -72,22 +72,23 @@ def save_image_model_aspect_ratio_configs(sender, instance, created, **kwargs):
                 )
 
 
-            # ������� pending configs
+            # Очищаем pending configs
             _thread_locals.pending_configs = None
 
         except Exception as e:
+            pass
     else:
         print(f">>> [SIGNAL] No pending configs found")
 
-@admin.action(description="�������� ��� ��������")
+@admin.action(description="Отметить как активное")
 def mark_active(modeladmin, request, queryset):
     queryset.update(is_active=True)
 
-@admin.action(description="������� �����������")
+@admin.action(description="Убрать активность")
 def mark_inactive(modeladmin, request, queryset):
     queryset.update(is_active=False)
 
-# -- ��������� ----------------------------------------------------
+# -- Подсказки ----------------------------------------------------
 class SuggestionInline(admin.StackedInline):
 
     model = Suggestion
@@ -105,7 +106,7 @@ class SuggestionCategoryAdmin(admin.ModelAdmin):
     inlines = [SuggestionInline]
     actions = (mark_active, mark_inactive)
 
-    @admin.display(description="���������", ordering="id")
+    @admin.display(description="Подсказки", ordering="id")
     def suggestions_count(self, obj):
         return obj.suggestions.count() if obj.pk else 0
 
@@ -119,10 +120,10 @@ class SuggestionAdmin(admin.ModelAdmin):
     actions = (mark_active, mark_inactive)
     autocomplete_fields = ("category",)
 
-    @admin.display(description="�����")
+    @admin.display(description="Текст")
     def short_text(self, obj):
         t = (obj.text or "").strip()
-        return (t[:80] + "�") if len(t) > 80 else t
+        return (t[:80] + "…") if len(t) > 80 else t
 
 class ShowcaseAdditionalImageInline(admin.TabularInline):
 
@@ -130,8 +131,8 @@ class ShowcaseAdditionalImageInline(admin.TabularInline):
     model = ShowcaseAdditionalImage
     extra = 2
     fields = ("image", "order", "is_active")
-    verbose_name = "�������������� �����������"
-    verbose_name_plural = "�������������� ����������� ��� ��������"
+    verbose_name = "Дополнительное изображение"
+    verbose_name_plural = "Дополнительные изображения для витрины"
 
 class ShowcaseImageInline(admin.TabularInline):
     model = ShowcaseImage
@@ -160,18 +161,18 @@ class ShowcaseImageAdmin(admin.ModelAdmin):
     inlines = [ShowcaseAdditionalImageInline]
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": ("title", "category", "is_active", "order")
         }),
-        ("�����������", {
+        ("Изображение", {
             "fields": ("image", "preview_image"),
-            "description": "��������� ����������� ��� �������"
+            "description": "Загрузите изображение для витрины"
         }),
-        ("������", {
+        ("Промпт", {
             "fields": ("prompt",),
-            "description": "������� ������, ������� ������������� ��� ��������� ����� �����������"
+            "description": "Текстовое описание, которое использовалось для генерации этого изображения"
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("uploaded_by", "created_at"),
             "classes": ("collapse",)
         }),
@@ -179,35 +180,35 @@ class ShowcaseImageAdmin(admin.ModelAdmin):
 
     actions = (mark_active, mark_inactive)
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def thumb(self, obj):
         if getattr(obj, "image", None):
             return format_html(
                 '<img src="{}" style="height:50px;width:50px;object-fit:cover;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">',
                 obj.image.url
             )
-        return "�"
+        return "–"
 
-    @admin.display(description="������� ������")
+    @admin.display(description="Превью большое")
     def preview_image(self, obj):
         if getattr(obj, "image", None):
             return format_html(
                 '<img src="{}" style="max-width:400px;max-height:400px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15)">',
                 obj.image.url
             )
-        return "����������� �� ���������"
+        return "Изображение не загружено"
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def short_prompt(self, obj):
         p = (obj.prompt or "").strip()
         if not p:
-            return format_html('<span style="color:#999;font-style:italic">�� ������</span>')
-        return (p[:60] + "�") if len(p) > 60 else p
+            return format_html('<span style="color:#999;font-style:italic">Не указан</span>')
+        return (p[:60] + "…") if len(p) > 60 else p
 
-    @admin.display(description="�����������")
+    @admin.display(description="Изображений")
     def images_count(self, obj):
         if not obj.pk:
-            return "�"
+            return "–"
         count = 1 + obj.additional_images.filter(is_active=True).count()
         if count > 1:
             return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count)
@@ -218,25 +219,25 @@ class ShowcaseImageAdmin(admin.ModelAdmin):
             obj.uploaded_by = request.user
         super().save_model(request, obj, form, change)
 
-# -- ����������� ����������� --------------------------------------
+# -- Референсные изображения --------------------------------------
 class ReferenceImageInline(admin.TabularInline):
-    """Inline ��� ����������� ����������� � GenerationJob"""
+    """Inline для референсных изображений в GenerationJob"""
     model = ReferenceImage
     extra = 1
     max_num = 5
     fields = ("image", "order", "influence_weight", "preview")
     readonly_fields = ("preview", "uploaded_at")
-    verbose_name = "����������� �����������"
-    verbose_name_plural = "����������� ����������� (�� 5 ��.)"
+    verbose_name = "Референсное изображение"
+    verbose_name_plural = "Референсные изображения (до 5 шт.)"
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def preview(self, obj):
         if obj.image:
             return format_html(
                 '<img src="{}" style="height:60px;width:60px;object-fit:cover;border-radius:8px">',
                 obj.image.url
             )
-        return "�"
+        return "–"
 
 
 @admin.register(ReferenceImage)
@@ -248,47 +249,47 @@ class ReferenceImageAdmin(admin.ModelAdmin):
     readonly_fields = ("uploaded_at", "preview_image")
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": ("job", "order", "influence_weight")
         }),
-        ("�����������", {
+        ("Изображение", {
             "fields": ("image", "preview_image"),
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("uploaded_at",),
             "classes": ("collapse",)
         }),
     )
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def thumb(self, obj):
         if obj.image:
             return format_html(
                 '<img src="{}" style="height:50px;width:50px;object-fit:cover;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">',
                 obj.image.url
             )
-        return "�"
+        return "–"
 
-    @admin.display(description="������� ������")
+    @admin.display(description="Превью большое")
     def preview_image(self, obj):
         if obj.image:
             return format_html(
                 '<img src="{}" style="max-width:400px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15)">',
                 obj.image.url
             )
-        return "����������� �� ���������"
+        return "Изображение не загружено"
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def job_link(self, obj):
         if obj.job:
             return format_html(
                 '<a href="/admin/generate/generationjob/{}/change/">Job #{}</a>',
                 obj.job.id, obj.job.id
             )
-        return "�"
+        return "–"
 
 
-# -- ��������� ������ (��� ����) ---------------------------------
+# -- Бесплатные гранты (для ботов) ---------------------------------
 @admin.register(GenerationJob)
 class GenerationJobAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "status", "ref_count", "is_public", "is_trending", "created_at")
@@ -297,10 +298,10 @@ class GenerationJobAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at",)
     inlines = [ReferenceImageInline]
 
-    @admin.display(description="����������")
+    @admin.display(description="Устройство")
     def ref_count(self, obj):
         if not obj.pk:
-            return "�"
+            return "–"
         count = obj.reference_images_count()
         if count > 0:
             return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count)
@@ -313,7 +314,7 @@ class FreeGrantAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     list_filter = ("user",)
 
-    @admin.display(description="����������", boolean=True)
+    @admin.display(description="Активность", boolean=True)
     def has_device(self, obj):
         return hasattr(obj, 'device_fingerprint') and obj.device_fingerprint is not None
 
@@ -329,17 +330,17 @@ class DeviceFingerprintAdmin(admin.ModelAdmin):
     list_editable = ("is_blocked",)
 
     fieldsets = (
-        ("�������������� (4-������� ������)", {
+        ("Идентификатор (4-значный номер)", {
             "fields": ("fp", "gid", "ip_hash", "ua_hash", "first_ip", "session_keys")
         }),
-        ("������������", {
+        ("Безопасность", {
             "fields": ("is_blocked", "is_vpn_detected", "is_incognito_detected",
                        "bypass_attempts", "last_bypass_attempt")
         }),
-        ("�����", {
+        ("Даты", {
             "fields": ("free_grant",)
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",)
         }),
@@ -353,26 +354,26 @@ class DeviceFingerprintAdmin(admin.ModelAdmin):
     def gid_short(self, obj):
         return obj.gid[:12] + "..." if len(obj.gid) > 12 else obj.gid
 
-    @admin.display(description="������� ��������")
+    @admin.display(description="Попытки сегодня")
     def grant_left(self, obj):
         if obj.free_grant:
             left = obj.free_grant.left
             if left > 0:
                 return format_html('<span style="color:#10b981;font-weight:600">{}</span>', left)
             return format_html('<span style="color:#ef4444">0</span>')
-        return "�"
+        return "–"
 
     actions = ["block_devices", "unblock_devices"]
 
-    @admin.action(description="������������� ��������� ����������")
+    @admin.action(description="Реактивировать выбранные устройства")
     def block_devices(self, request, queryset):
         updated = queryset.update(is_blocked=True)
-        self.message_user(request, f"������������� ���������: {updated}")
+        self.message_user(request, f"Реактивировано устройств: {updated}")
 
-    @admin.action(description="�������������� ��������� ����������")
+    @admin.action(description="Деактивировать выбранные устройства")
     def unblock_devices(self, request, queryset):
         updated = queryset.update(is_blocked=False, bypass_attempts=0)
-        self.message_user(request, f"�������������� ���������: {updated}")
+        self.message_user(request, f"Деактивировано устройств: {updated}")
 
 
 @admin.register(TokenGrantAttempt)
@@ -386,16 +387,16 @@ class TokenGrantAttemptAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
     fieldsets = (
-        ("��������������", {
+        ("Идентификаторы", {
             "fields": ("fp", "gid", "ip_hash", "ua_hash", "session_key", "ip_address")
         }),
-        ("���������", {
+        ("Видимость", {
             "fields": ("was_granted", "was_blocked", "block_reason")
         }),
-        ("�����", {
+        ("Даты", {
             "fields": ("device",)
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("created_at",),
             "classes": ("collapse",)
         }),
@@ -409,10 +410,10 @@ class TokenGrantAttemptAdmin(admin.ModelAdmin):
     def gid_short(self, obj):
         return obj.gid[:12] + "..." if len(obj.gid) > 12 else obj.gid
 
-    @admin.display(description="������� ����������")
+    @admin.display(description="Попытки устройства")
     def block_reason_short(self, obj):
         if not obj.block_reason:
-            return "�"
+            return "–"
         reason = obj.block_reason[:50]
         if len(obj.block_reason) > 50:
             reason += "..."
@@ -427,7 +428,7 @@ class TokenGrantAttemptAdmin(admin.ModelAdmin):
         return False
 
 
-# -- ��������� �������� � ������������� --------------------------
+# -- Категории промптов и предустановки --------------------------
 class CategoryPromptInline(admin.TabularInline):
     model = CategoryPrompt
     extra = 3
@@ -446,19 +447,19 @@ class PromptCategoryAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at", "preview_image")
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": ("name", "slug", "description", "is_active", "order")
         }),
-        ("����������� ���������", {
+        ("Категории промптов", {
             "fields": ("image", "preview_image"),
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",)
         }),
     )
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def thumb(self, obj):
         if getattr(obj, "image", None):
             try:
@@ -468,21 +469,21 @@ class PromptCategoryAdmin(admin.ModelAdmin):
                 )
             except:
                 pass
-        return format_html('<div style="height:60px;width:80px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:11px">���</div>')
+        return format_html('<div style="height:60px;width:80px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:11px">нет</div>')
 
-    @admin.display(description="������� ������")
+    @admin.display(description="Превью большое")
     def preview_image(self, obj):
         if getattr(obj, "image", None):
             try:
                 return format_html('<img src="{}" style="max-width:600px;border-radius:12px">', obj.image.url)
             except:
                 pass
-        return "����������� �� ���������"
+        return "Изображение не загружено"
 
-    @admin.display(description="��������")
+    @admin.display(description="Категорий")
     def prompts_count(self, obj):
         if not obj.pk:
-            return "�"
+            return "–"
         count = obj.active_prompts_count
         return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count) if count > 0 else "0"
 
@@ -498,36 +499,36 @@ class CategoryPromptAdmin(admin.ModelAdmin):
     autocomplete_fields = ("category",)
     readonly_fields = ("created_at",)
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def short_prompt(self, obj):
         p = (obj.prompt_text or "").strip()
-        return (p[:60] + "�") if len(p) > 60 else p
+        return (p[:60] + "…") if len(p) > 60 else p
 
 
-# -- ������ ����� -------------------------------------------------
+# -- Модели видео -------------------------------------------------
 class VideoModelAdminForm(forms.ModelForm):
-    """����� ��� ������� VideoModel � ���������� ��� ����� ����������."""
+    """Форма для редакции VideoModel с возможностью выбора типов референсов."""
 
-    # ������� ���� � ���������� ��� ������� ���� ���������
+    # Создаем поля с чекбоксами для выбора типа референса
     reference_frameImages = forms.BooleanField(
-        label="Frame Images (������ ����������� ��� I2V)",
+        label="Frame Images (Кадры изображений для I2V)",
         required=False,
-        help_text="������ ������������ frameImages"
+        help_text="Указать поддержку frameImages"
     )
     reference_referenceImages = forms.BooleanField(
-        label="Reference Images (��������, Wan2.5-Preview)",
+        label="Reference Images (Например, Wan2.5-Preview)",
         required=False,
-        help_text="������ ������������ referenceImages"
+        help_text="Указать поддержку referenceImages"
     )
     reference_audioInputs = forms.BooleanField(
-        label="Audio Inputs (����� ��� V2V)",
+        label="Audio Inputs (Аудио для V2V)",
         required=False,
-        help_text="������ ������������ audioInputs"
+        help_text="Указать поддержку audioInputs"
     )
     reference_controlNet = forms.BooleanField(
-        label="ControlNet (���������� ����������)",
+        label="ControlNet (Управление генерацией)",
         required=False,
-        help_text="������ ������������ controlNet"
+        help_text="Указать поддержку controlNet"
     )
 
     class Meta:
@@ -536,7 +537,7 @@ class VideoModelAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # ��������� �������� �� JSON-���� supported_references
+        # Загружаем значения из JSON-поля supported_references
         if self.instance and self.instance.pk:
             supported = self.instance.supported_references or []
             self.fields['reference_frameImages'].initial = 'frameImages' in supported
@@ -547,7 +548,7 @@ class VideoModelAdminForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
 
-        # �������� ������ �������������� ���������� �� ���������
+        # Обновляем список поддерживаемых референсов на основании
         supported = []
         if self.cleaned_data.get('reference_frameImages'):
             supported.append('frameImages')
@@ -577,35 +578,35 @@ class VideoModelAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": ("name", "model_id", "category", "description")
         }),
-        ("���������", {
+        ("Видимость", {
             "fields": ("token_cost", "max_duration", "max_resolution")
         }),
-        ("�������������� ���� ������� ������", {
+        ("Поддерживаемые типы референсных данных", {
             "fields": (
                 "reference_frameImages",
                 "reference_referenceImages",
                 "reference_audioInputs",
                 "reference_controlNet"
             ),
-            "description": "�������, ����� ���� ������� ������ ������������ ������"
+            "description": "Укажите, какие типы референсных данных поддерживает модель"
         }),
-        ("���������", {
+        ("Видимость", {
             "fields": ("is_active", "order")
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",)
         }),
     )
 
-    @admin.display(description="�������������� ���������")
+    @admin.display(description="Поддерживаемые референсы")
     def display_references(self, obj):
-        """����������� �������������� ���������� � ������."""
+        """Отображает поддерживаемые референсы в удобном виде."""
         if not obj.supported_references:
-            return format_html('<span style="color: #999;">�� �������</span>')
+            return format_html('<span style="color: #999;">Не указано</span>')
 
         ref_labels = {
             'frameImages': 'FI',
@@ -621,7 +622,7 @@ class VideoModelAdmin(admin.ModelAdmin):
 
         return format_html(''.join(badges))
 
-    @admin.display(description="���������")
+    @admin.display(description="Категория")
     def token_cost_display(self, obj):
         return format_html('<span style="color:#10b981;font-weight:600">{} TOK</span>', obj.token_cost)
 
@@ -637,18 +638,18 @@ class ShowcaseVideoAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "preview_thumbnail")
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": ("title", "category", "is_active", "order")
         }),
-        ("�����", {
+        ("Даты", {
             "fields": ("video_url", "thumbnail", "preview_thumbnail"),
-            "description": "URL ����� � ������"
+            "description": "URL ссылки на модель"
         }),
-        ("������", {
+        ("Промпт", {
             "fields": ("prompt",),
-            "description": "������, �������������� ��� ���������"
+            "description": "Модели, доступные для генерации"
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("uploaded_by", "created_at"),
             "classes": ("collapse",)
         }),
@@ -656,30 +657,30 @@ class ShowcaseVideoAdmin(admin.ModelAdmin):
 
     actions = (mark_active, mark_inactive)
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def thumb(self, obj):
         if getattr(obj, "thumbnail", None):
             return format_html(
                 '<img src="{}" style="height:50px;width:80px;object-fit:cover;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">',
                 obj.thumbnail.url
             )
-        return "�"
+        return "–"
 
-    @admin.display(description="������� ������")
+    @admin.display(description="Превью большое")
     def preview_thumbnail(self, obj):
         if getattr(obj, "thumbnail", None):
             return format_html(
                 '<img src="{}" style="max-width:400px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15)">',
                 obj.thumbnail.url
             )
-        return "������ �� ���������"
+        return "Модель не настроена"
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def short_prompt(self, obj):
         p = (obj.prompt or "").strip()
         if not p:
-            return format_html('<span style="color:#999;font-style:italic">�� ������</span>')
-        return (p[:60] + "�") if len(p) > 60 else p
+            return format_html('<span style="color:#999;font-style:italic">Не указан</span>')
+        return (p[:60] + "…") if len(p) > 60 else p
 
     def save_model(self, request, obj, form, change):
         if not obj.uploaded_by_id:
@@ -687,7 +688,7 @@ class ShowcaseVideoAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-# -- ��������� �������� ��� ����� --------------------------------
+# -- Категории промптов для видео --------------------------------
 class VideoPromptInline(admin.TabularInline):
     model = VideoPrompt
     extra = 3
@@ -706,19 +707,19 @@ class VideoPromptCategoryAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at", "preview_image")
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": ("name", "slug", "description", "is_active", "order")
         }),
-        ("����������� ���������", {
+        ("Категории промптов", {
             "fields": ("image", "preview_image"),
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",)
         }),
     )
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def thumb(self, obj):
         if getattr(obj, "image", None):
             try:
@@ -728,21 +729,21 @@ class VideoPromptCategoryAdmin(admin.ModelAdmin):
                 )
             except:
                 pass
-        return format_html('<div style="height:60px;width:80px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:11px">���</div>')
+        return format_html('<div style="height:60px;width:80px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:11px">нет</div>')
 
-    @admin.display(description="������� ������")
+    @admin.display(description="Превью большое")
     def preview_image(self, obj):
         if getattr(obj, "image", None):
             try:
                 return format_html('<img src="{}" style="max-width:600px;border-radius:12px">', obj.image.url)
             except:
                 pass
-        return "����������� �� ���������"
+        return "Изображение не загружено"
 
-    @admin.display(description="��������")
+    @admin.display(description="Категорий")
     def prompts_count(self, obj):
         if not obj.pk:
-            return "�"
+            return "–"
         count = obj.active_prompts_count
         return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count) if count > 0 else "0"
 
@@ -758,13 +759,13 @@ class VideoPromptAdmin(admin.ModelAdmin):
     autocomplete_fields = ("category",)
     readonly_fields = ("created_at",)
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def short_prompt(self, obj):
         p = (obj.prompt_text or "").strip()
-        return (p[:60] + "�") if len(p) > 60 else p
+        return (p[:60] + "…") if len(p) > 60 else p
 
 
-# -- ������������ ����������� ������� (�����������) ----------------
+# -- Конфигурация соотношений сторон (универсальная) ----------------
 @admin.register(ImageModelConfiguration)
 class ImageModelConfigurationAdmin(admin.ModelAdmin):
     form = ImageModelConfigurationForm
@@ -787,27 +788,27 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": (
                 "name", "model_id", "slug", "description",
                 "token_cost", "provider", "provider_version"
             ),
-            "description": "������� ��������� ������"
+            "description": "Размеры (варианты обоих)"
         }),
-        ("������������ ����������� ������ � ��������", {
+        ("Конфигурация соотношений сторон и качества", {
             "fields": (
                 "aspect_ratio_configurations",
             ),
-            "description": "��������� ��������� ����������� ������ � �������� ��� �������"
+            "description": "Доступные варианты соотношения сторон и качества для генерации"
         }),
-        ("����������", {
+        ("Настройки", {
             "fields": (
                 ("is_active", "is_beta", "is_premium"),
                 "order",
             ),
-            "description": "������ � ������� �����������"
+            "description": "Сортировка и внешний вид"
         }),
-        ("�������������", {
+        ("Метаинформация", {
             "fields": (
                 "admin_notes",
                 ("created_at", "updated_at"),
@@ -816,10 +817,10 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
         }),
     )
 
-    @admin.display(description="����������")
+    @admin.display(description="Устройство")
     def resolutions_count(self, obj):
         if not obj.pk:
-            return "�"
+            return "–"
         from .models_aspect_ratio import AspectRatioQualityConfig
         count = AspectRatioQualityConfig.objects.filter(
             model_type='image',
@@ -849,12 +850,12 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
             from django.utils.text import slugify
             obj.slug = slugify(obj.name or "")[:120]
 
-        # ��������� ������
+        # Доступные модели
         super().save_model(request, obj, form, change)
 
         print(f">>> [ImageModelAdmin] After super().save_model, obj.pk={obj.pk}")
 
-        # ��������� ������������ ����������� ������
+        # Сохранить конфигурацию соотношения сторон
         if hasattr(form, '_save_aspect_ratio_configurations'):
             print(f">>> [ImageModelAdmin] Has method, calling form._save_aspect_ratio_configurations")
             form._save_aspect_ratio_configurations(obj)
@@ -863,7 +864,7 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
             print(f">>> [ImageModelAdmin] Form does NOT have _save_aspect_ratio_configurations method!")
 
 
-# -- ������������ ����� ������� (�����������) ---------------------
+# -- Конфигурация моделей изображений (универсальная) ---------------------
 @admin.register(VideoModelConfiguration)
 class VideoModelConfigurationAdmin(admin.ModelAdmin):
     form = VideoModelConfigurationForm
@@ -1013,7 +1014,7 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
 
 class AspectRatioQualityConfigInline(admin.TabularInline):
     """
-    Inline ��� �������������� ������������ ����� � ������
+    Inline для редактирования соотношений сторон и качества у модели
     """
     model = AspectRatioQualityConfig
     extra = 1
@@ -1040,19 +1041,19 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
     ordering = ['model_type', 'model_id', 'order', 'aspect_ratio', 'quality']
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": (
                 ('model_type', 'model_id'),
                 ('aspect_ratio', 'quality'),
             )
         }),
-        ("������� (��������� �� Runware)", {
+        ("Размеры (получаются от Runware)", {
             "fields": (
                 ('width', 'height'),
             ),
-            "description": "������ ������� � ��������, ���������������� �� Runware"
+            "description": "Ширина и высота в пикселях, поддерживаемые от Runware"
         }),
-        ("���������", {
+        ("Настройки", {
             "fields": (
                 ('is_active', 'is_default'),
                 'order',
@@ -1061,14 +1062,14 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
         }),
     )
 
-    @admin.display(description="������")
+    @admin.display(description="Модель")
     def model_info(self, obj):
         if obj.model_type == 'image':
             try:
                 from .models_image import ImageModelConfiguration
                 model = ImageModelConfiguration.objects.get(id=obj.model_id)
                 return format_html(
-                    '<span style="color:#3b82f6">?? {}</span>',
+                    '<span style="color:#3b82f6">🖼 {}</span>',
                     model.name
                 )
             except:
@@ -1078,16 +1079,16 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
                 from .models_video import VideoModelConfiguration
                 model = VideoModelConfiguration.objects.get(id=obj.model_id)
                 return format_html(
-                    '<span style="color:#8b5cf6">?? {}</span>',
+                    '<span style="color:#8b5cf6">🎬 {}</span>',
                     model.name
                 )
             except:
                 return format_html('<span style="color:#ef4444">Video #{}</span>', obj.model_id)
 
-    @admin.display(description="�������")
+    @admin.display(description="Размеры")
     def dimensions_display(self, obj):
         return format_html(
-            '<span style="font-family:monospace;font-weight:600">{} ? {}</span>',
+            '<span style="font-family:monospace;font-weight:600">{} × {}</span>',
             obj.width,
             obj.height
         )
@@ -1127,7 +1128,7 @@ class AspectRatioPresetAdmin(admin.ModelAdmin):
     ordering = ['-is_common', 'order', 'aspect_ratio']
 
     fieldsets = (
-        ("�������� ����������", {
+        ("Основная информация", {
             "fields": (
                 'aspect_ratio',
                 'name',
@@ -1136,15 +1137,15 @@ class AspectRatioPresetAdmin(admin.ModelAdmin):
                 'description',
             )
         }),
-        ("������������� �������", {
+        ("Примеры разрешений", {
             "fields": (
                 ('recommended_sd', 'recommended_hd'),
                 ('recommended_full_hd', 'recommended_2k'),
                 ('recommended_4k', 'recommended_8k'),
             ),
-            "description": "�������: 1920x1080, 3840x2160"
+            "description": "Примеры: 1920x1080, 3840x2160"
         }),
-        ("���������", {
+        ("Видимость", {
             "fields": (
                 ('is_common', 'order'),
             )

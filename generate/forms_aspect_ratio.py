@@ -458,7 +458,9 @@ class AspectRatioConfigurationFormMixin:
             if config_data:
                 self.fields['aspect_ratio_configurations'].initial = json.dumps(config_data)
             else:
+                pass
         else:
+            pass
 
     def save(self, commit=True):
         import logging
@@ -489,6 +491,7 @@ class AspectRatioConfigurationFormMixin:
             # Если commit=True, сохраняем сразу
             self._save_aspect_ratio_configurations(instance)
         else:
+            pass
 
         return instance
 
@@ -533,5 +536,7 @@ class AspectRatioConfigurationFormMixin:
                     )
 
             except Exception as e:
+                pass
         else:
+            pass
 
