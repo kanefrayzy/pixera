@@ -152,8 +152,6 @@ class ImageFieldManager {
         this.currentModel = model;
         const optionalFields = model.optional_fields || {};
 
-        const optionalFields = model.optional_fields || {};
-
         // Check if optional_fields is empty (no configuration set)
         const hasConfiguration = Object.keys(optionalFields).length > 0;
 
