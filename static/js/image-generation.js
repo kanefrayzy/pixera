@@ -503,14 +503,36 @@
 
   function restoreQueueInto(grid) {
     if (!grid) return;
+    const now = Date.now();
+    const TTL_24H = 24 * 60 * 60 * 1000; // 24 часа
+    const toRemove = [];
+
     const items = [...queue].sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
     items.forEach(item => {
+      // 1. Проверяем что задача не удалена
       if (clearedJobs.has(String(item.job_id))) return;
-      // Skip legacy mixed-in video entries (no image_url but has video_url)
+
+      // 2. СТРОГАЯ ПРОВЕРКА: если задача создана ДО момента очистки
+      const createdAt = item.createdAt || 0;
+      if (clearedAt && createdAt && createdAt <= clearedAt) {
+        toRemove.push(item.job_id);
+        if (item.job_id) clearedJobs.add(String(item.job_id));
+        return;
+      }
+
+      // 3. Автоудаление задач старше 24 часов
+      if (createdAt && (now - createdAt > TTL_24H)) {
+        toRemove.push(item.job_id);
+        if (item.job_id) clearedJobs.add(String(item.job_id));
+        return;
+      }
+
+      // 4. Skip legacy mixed-in video entries
       if (item && !item.image_url && item.video_url) {
         try { clearedJobs.add(String(item.job_id)); saveClearedJobs(clearedJobs); } catch(_) {}
         return;
       }
+
       const tile = createPendingTile();
       grid.appendChild(tile);
       if (item.status === 'done' && item.image_url) {
@@ -522,6 +544,13 @@
         pollStatusInline(item.job_id, tile);
       }
     });
+
+    // Удаляем устаревшие задачи
+    if (toRemove.length > 0) {
+      queue = queue.filter(item => !toRemove.includes(item.job_id));
+      saveQueue(queue);
+      saveClearedJobs(clearedJobs);
+    }
   }
 
   function addOrUpdateEntry(jobId, patch) {

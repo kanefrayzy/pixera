@@ -1136,11 +1136,17 @@ def api_completed_jobs(request: HttpRequest) -> JsonResponse:
     """
     Вернуть список ТОЛЬКО завершённых (DONE) генераций для текущего пользователя/гостя.
     Используется для отображения в очереди - показываем только готовые результаты.
+    Автоматически фильтрует задачи старше 24 часов.
     """
     try:
-        # Фильтруем только завершенные задачи
+        from django.utils import timezone
+        from datetime import timedelta
+
+        # Фильтруем только завершенные задачи не старше 24 часов
+        cutoff_time = timezone.now() - timedelta(hours=24)
         qs = GenerationJob.objects.filter(
             status=GenerationJob.Status.DONE,
+            created_at__gte=cutoff_time,  # Только задачи не старше 24 часов
         ).filter(
             (Q(result_image__isnull=False) & ~Q(result_image__exact='')) |
             (Q(result_video_url__isnull=False) & ~Q(result_video_url__exact=''))

@@ -1305,9 +1305,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           return;
         }
 
-        // 2. Автоудаление задач старше 24 часов
-        const completedAt = item.completedAt || item.createdAt || 0;
-        if (completedAt && (now - completedAt > TTL_24H)) {
+        // 2. СТРОГАЯ ПРОВЕРКА: если задача создана ДО момента очистки очереди - удаляем
+        const createdAt = item.createdAt || 0;
+        if (this.clearedAt && createdAt && createdAt <= this.clearedAt) {
           toRemove.push(item.job_id);
           if (item.job_id) {
             this.clearedJobs.add(String(item.job_id));
@@ -1315,7 +1315,16 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           return;
         }
 
-        // 3. Skip legacy mixed-in IMAGE entries (no video_url but has image_url)
+        // 3. Автоудаление задач старше 24 часов
+        if (createdAt && (now - createdAt > TTL_24H)) {
+          toRemove.push(item.job_id);
+          if (item.job_id) {
+            this.clearedJobs.add(String(item.job_id));
+          }
+          return;
+        }
+
+        // 4. Skip legacy mixed-in IMAGE entries (no video_url but has image_url)
         if (item && !item.video_url && item.image_url) {
           try { this.clearedJobs.add(String(item.job_id)); this.saveClearedJobs(); } catch (_) { }
           return;
