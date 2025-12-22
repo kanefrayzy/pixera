@@ -199,6 +199,9 @@ class AspectRatioSlider {
         // Сохраняем ссылку на экземпляр
         window.aspectRatioSliderInstance = this;
 
+        // Настраиваем обработчики после рендера
+        this.setupEventListeners();
+
         // Автовыбор
         if (this.ratios[this.currentIndex]) {
             this.updateQualitySelect();
@@ -211,9 +214,32 @@ class AspectRatioSlider {
 
         slider.addEventListener('input', (e) => {
             this.currentIndex = parseInt(e.target.value);
-            this.render();
+            this.updateUI();
+            this.updateQualitySelect();
             this.onChange(this.ratios[this.currentIndex]);
         });
+    }
+
+    updateUI() {
+        // Обновляем только UI элементы без полного перерендера
+        const badge = this.container.querySelector('.ar-label.active');
+        if (badge) {
+            badge.classList.remove('active');
+        }
+
+        const currentRatio = this.ratios[this.currentIndex];
+        const labels = this.container.querySelectorAll('.ar-label');
+        labels.forEach((label, idx) => {
+            label.classList.toggle('active', idx === this.currentIndex);
+        });
+
+        // Обновляем иконку и текст в бейдже
+        const badgeIcon = this.container.querySelector('.flex.items-center.gap-2 .text-white');
+        const badgeText = this.container.querySelector('.flex.items-center.gap-2 .font-bold');
+        if (badgeIcon && badgeText) {
+            badgeIcon.innerHTML = this.getRatioIcon(currentRatio);
+            badgeText.textContent = currentRatio;
+        }
     }
 
     jumpToIndex(index) {
