@@ -864,7 +864,7 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
             print(f">>> [ImageModelAdmin] Form does NOT have _save_aspect_ratio_configurations method!")
 
 
-# -- Конфигурация моделей изображений (универсальная) ---------------------
+# -- Конфигурация моделей видео (универсальная) ---------------------
 @admin.register(VideoModelConfiguration)
 class VideoModelConfigurationAdmin(admin.ModelAdmin):
     form = VideoModelConfigurationForm
@@ -879,8 +879,7 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     ordering = ("category", "order", "name")
     actions = (mark_active, mark_inactive)
-    readonly_fields = ("created_at", "updated_at")
-    inlines = [AspectRatioQualityConfigInline]
+    readonly_fields = ("created_at", "updated_at", "aspect_ratio_link")
 
     fieldsets = (
         ("Основная информация", {
@@ -889,6 +888,12 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
                 "category", "token_cost", "provider", "provider_version"
             ),
             "description": "Базовые параметры модели"
+        }),
+        ("Конфигурация соотношений сторон и качества", {
+            "fields": (
+                "aspect_ratio_link",
+            ),
+            "description": "Используйте кнопку выше для настройки доступных соотношений сторон и качества"
         }),
         ("Длительность", {
             "fields": (
@@ -1001,6 +1006,22 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
             return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count)
         return "0"
 
+    @admin.display(description="Конфигурации соотношений")
+    def aspect_ratio_link(self, obj):
+        if not obj.pk:
+            return "—"
+        from django.urls import reverse
+        url = reverse('admin:generate_aspectratioqualityconfig_changelist')
+        url += f'?model_type=video&model_id={obj.pk}'
+        count = AspectRatioQualityConfig.objects.filter(
+            model_type='video',
+            model_id=obj.pk
+        ).count()
+        return format_html(
+            '<a href="{}" class="button" style="padding:5px 10px;background:#3b82f6;color:white;border-radius:4px;text-decoration:none">Редактировать ({} шт.)</a>',
+            url, count
+        )
+
     def save_model(self, request, obj, form, change):
         """Auto-generate slug if not provided"""
         if not obj.slug:
@@ -1010,16 +1031,6 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
 
 
 # -- Aspect Ratio Quality Configurations ------------------------------
-
-class AspectRatioQualityConfigInline(admin.TabularInline):
-    """
-    Inline для редактирования соотношений сторон и качества у модели
-    """
-    model = AspectRatioQualityConfig
-    extra = 1
-    fields = ('aspect_ratio', 'quality', 'width', 'height', 'is_active', 'is_default', 'order', 'notes')
-    ordering = ['order', 'aspect_ratio', 'quality']
-
 
 @admin.register(AspectRatioQualityConfig)
 class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
