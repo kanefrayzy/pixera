@@ -146,16 +146,29 @@ class AspectRatioConfigurationWidget(forms.Widget):
         else:
             for preset in presets:
                 ratio_safe = preset.aspect_ratio.replace(':', '_').replace('.', '_')
+                
+                # Проверяем есть ли хоть одно выбранное качество для этого соотношения
+                has_selected = any(f"{preset.aspect_ratio}_{q[0]}" in existing_configs for q in qualities)
+                selected_count = sum(1 for q in qualities if f"{preset.aspect_ratio}_{q[0]}" in existing_configs)
+                
                 html_parts.append(f'''
-                <div class="ar-ratio-group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm" data-ratio="{preset.aspect_ratio}">
-                    <div class="ar-ratio-header bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-3 flex items-center gap-3 cursor-pointer transition-all" onclick="this.parentElement.classList.toggle('active')">
-                        <div class="ar-ratio-toggle w-5 h-5 border-2 border-white rounded flex-shrink-0 flex items-center justify-center"></div>
-                        <div class="flex-1">
-                            <div class="font-semibold text-sm">{preset.aspect_ratio} — {preset.name}</div>
-                            <div class="text-xs opacity-90 mt-0.5">{preset.description or ''}</div>
+                <div class="ar-ratio-group {'active' if has_selected else ''} bg-white dark:bg-gray-800 border-2 {'border-green-500' if has_selected else 'border-gray-200 dark:border-gray-700'} rounded-lg overflow-hidden shadow-sm transition-all" data-ratio="{preset.aspect_ratio}">
+                    <div class="ar-ratio-header {'bg-gradient-to-r from-green-600 to-emerald-600' if has_selected else 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-blue-700 hover:to-purple-700 text-white px-4 py-3 flex items-center gap-3 cursor-pointer transition-all" onclick="this.parentElement.classList.toggle('active')">
+                        <div class="ar-ratio-toggle w-5 h-5 border-2 border-white rounded flex-shrink-0 flex items-center justify-center">
+                            {f'<svg class="w-4 h-4" fill="white" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' if has_selected else ''}
                         </div>
+                        <div class="flex-1">
+                            <div class="font-semibold text-sm flex items-center gap-2">
+                                {preset.aspect_ratio} — {preset.name}
+                                {f'<span class="px-2 py-0.5 bg-white/20 rounded-full text-xs font-bold">{selected_count}</span>' if has_selected else ''}
+                            </div>
+                            <div class="text-xs opacity-90 mt-0.5">{preset.description or 'Кликните чтобы настроить качество'}</div>
+                        </div>
+                        <svg class="w-5 h-5 transition-transform ar-chevron" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
                     </div>
-                    <div class="ar-qualities hidden p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div class="ar-qualities {'block' if has_selected else 'hidden'} p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 ''')
 
                 for quality_key, quality_label in qualities:
@@ -163,8 +176,9 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     existing = existing_configs.get(config_key, {})
                     width = existing.get('width', '')
                     height = existing.get('height', '')
-                    checked = 'checked' if existing else ''
-                    selected_class = 'selected' if existing else ''
+                    is_checked = config_key in existing_configs
+                    checked = 'checked' if is_checked else ''
+                    selected_class = 'ar-quality-selected' if is_checked else ''
 
                     # Определяем размеры по умолчанию на основе соотношения сторон и качества
                     default_width, default_height = '', ''
@@ -175,24 +189,25 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     display_height = height or default_height
 
                     html_parts.append(f'''
-                        <div class="ar-quality-item flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all {selected_class}" data-quality="{quality_key}">
+                        <div class="ar-quality-item {selected_class} flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-700 border-2 {'border-green-500 bg-green-50 dark:bg-green-900/20' if is_checked else 'border-gray-200 dark:border-gray-600'} rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all" data-quality="{quality_key}">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {checked}
+                                <input type="checkbox" class="w-5 h-5 rounded text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 cursor-pointer" {checked}
                                        onchange="handleQualityCheck(this, '{preset.aspect_ratio}', '{quality_key}'); updateConfigs()">
-                                <label class="font-semibold text-sm text-gray-700 dark:text-gray-300">{quality_label}</label>
+                                <label class="font-semibold text-sm {'text-green-700 dark:text-green-300' if is_checked else 'text-gray-700 dark:text-gray-300'} cursor-pointer" onclick="this.previousElementSibling.click()">{quality_label}</label>
+                                {f'<svg class="w-4 h-4 text-green-600 ml-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' if is_checked else ''}
                             </div>
-                            <div class="ar-dimensions hidden gap-2">
-                                <div class="flex items-center gap-1.5 flex-1">
-                                    <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Ширина:</label>
+                            <div class="ar-dimensions {'flex' if is_checked else 'hidden'} flex-col gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <label class="text-xs text-gray-600 dark:text-gray-400 font-medium w-16">Ширина:</label>
                                     <input type="number" value="{display_width}" placeholder="{default_width}"
-                                           class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                                           class="flex-1 px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="width"
                                            onchange="updateConfigs()">
                                 </div>
-                                <div class="flex items-center gap-1.5 flex-1">
-                                    <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Высота:</label>
+                                <div class="flex items-center gap-1.5">
+                                    <label class="text-xs text-gray-600 dark:text-gray-400 font-medium w-16">Высота:</label>
                                     <input type="number" value="{display_height}" placeholder="{default_height}"
-                                           class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                                           class="flex-1 px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="height"
                                            onchange="updateConfigs()">
                                 </div>
@@ -204,10 +219,10 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
         # Статистика и стили
         html_parts.append('''
-            <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div class="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Выбрано конфигураций:</span>
-                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium rounded" id="config-count">0</span>
+                    <span class="text-gray-700 dark:text-gray-300 font-medium">Выбрано конфигураций:</span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded-full shadow" id="config-count">0</span>
                 </div>
             </div>
 
@@ -215,22 +230,16 @@ class AspectRatioConfigurationWidget(forms.Widget):
                 .ar-ratio-group.active .ar-qualities {
                     display: grid !important;
                 }
-                .ar-ratio-group.active .ar-ratio-toggle::after {
-                    content: '✓';
-                    color: #2563eb;
-                    font-weight: bold;
-                    font-size: 14px;
+                .ar-ratio-group.active .ar-chevron {
+                    transform: rotate(180deg);
                 }
-                .ar-quality-item.selected {
-                    background-color: #eff6ff !important;
-                    border-color: #3b82f6 !important;
+                .ar-quality-item.ar-quality-selected {
+                    background-color: #f0fdf4 !important;
+                    border-color: #22c55e !important;
                 }
-                .dark .ar-quality-item.selected {
-                    background-color: rgba(29, 78, 216, 0.2) !important;
-                    border-color: #3b82f6 !important;
-                }
-                .ar-quality-item.selected .ar-dimensions {
-                    display: flex !important;
+                .dark .ar-quality-item.ar-quality-selected {
+                    background-color: rgba(34, 197, 94, 0.15) !important;
+                    border-color: #22c55e !important;
                 }
             </style>
         ''')
@@ -271,9 +280,13 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
             function handleQualityCheck(checkbox, aspectRatio, quality) {{
                 const item = checkbox.closest('.ar-quality-item');
-                item.classList.toggle('selected', checkbox.checked);
-
+                const dimensionsDiv = item.querySelector('.ar-dimensions');
+                
                 if (checkbox.checked) {{
+                    item.classList.add('ar-quality-selected');
+                    dimensionsDiv.classList.remove('hidden');
+                    dimensionsDiv.classList.add('flex');
+                    
                     // Автоподстановка размеров
                     const widthInput = item.querySelector('[data-dimension="width"]');
                     const heightInput = item.querySelector('[data-dimension="height"]');
@@ -283,12 +296,39 @@ class AspectRatioConfigurationWidget(forms.Widget):
                         widthInput.value = dimensions.width;
                         heightInput.value = dimensions.height;
                     }}
+                    
+                    // Обновляем заголовок группы
+                    updateRatioGroupHeader(aspectRatio);
+                }} else {{
+                    item.classList.remove('ar-quality-selected');
+                    dimensionsDiv.classList.add('hidden');
+                    dimensionsDiv.classList.remove('flex');
+                    updateRatioGroupHeader(aspectRatio);
+                }}
+            }}
+            
+            function updateRatioGroupHeader(aspectRatio) {{
+                const group = document.querySelector(`.ar-ratio-group[data-ratio="${{aspectRatio}}"]`);
+                if (!group) return;
+                
+                const header = group.querySelector('.ar-ratio-header');
+                const checkedCount = group.querySelectorAll('.ar-quality-item.ar-quality-selected').length;
+                
+                if (checkedCount > 0) {{
+                    group.classList.add('active');
+                    header.classList.remove('from-gray-600', 'to-gray-700');
+                    header.classList.add('from-green-600', 'to-emerald-600');
+                    group.style.borderColor = '#22c55e';
+                }} else {{
+                    header.classList.remove('from-green-600', 'to-emerald-600');
+                    header.classList.add('from-gray-600', 'to-gray-700');
+                    group.style.borderColor = '';
                 }}
             }}
 
             function updateConfigs() {{
                 const configs = [];
-                document.querySelectorAll('.ar-quality-item.selected').forEach(item => {{
+                document.querySelectorAll('.ar-quality-item.ar-quality-selected').forEach(item => {{
                     const ratio = item.querySelector('[data-ratio]').dataset.ratio;
                     const quality = item.querySelector('[data-quality]').dataset.quality;
                     let width = item.querySelector('[data-dimension="width"]').value;
@@ -479,7 +519,7 @@ class AspectRatioConfigurationFormMixin:
         from .models_video import VideoModelConfiguration
 
         model_type = 'image' if isinstance(instance, ImageModelConfiguration) else 'video'
-        
+
         logger.info(f"[AspectRatioMixin] Saving aspect ratio configurations for {model_type} model ID: {instance.pk}")
 
         # Получаем JSON из переменной или из cleaned_data
