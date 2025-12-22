@@ -1027,9 +1027,9 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
         if not obj.slug:
             from django.utils.text import slugify
             obj.slug = slugify(obj.name or "")[:120]
-        
+
         super().save_model(request, obj, form, change)
-        
+
         # Сохранить конфигурацию соотношения сторон
         if hasattr(form, '_save_aspect_ratio_configurations'):
             form._save_aspect_ratio_configurations(obj)
