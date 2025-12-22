@@ -89,99 +89,8 @@ class AspectRatioConfigurationWidget(forms.Widget):
         # Скрытое поле для хранения JSON данных
         html_parts.append(f'<input type="hidden" name="{name}" id="id_{name}" value="">')
 
-        # Контейнер с Tailwind стилями
-        html_parts.append('''
-        <div class="aspect-ratio-configurator space-y-4">
-            <style>
-                .ar-ratio-group { 
-                    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm;
-                    margin-bottom: 12px; 
-                }
-                .ar-ratio-header { 
-                    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 flex items-center gap-3 cursor-pointer;
-                    transition: all 0.2s;
-                }
-                .ar-ratio-header:hover { 
-                    @apply from-blue-700 to-purple-700;
-                }
-                .ar-ratio-toggle { 
-                    width: 20px; 
-                    height: 20px; 
-                    @apply border-2 border-white rounded flex-shrink-0;
-                    cursor: pointer;
-                    position: relative;
-                }
-                .ar-ratio-group.active .ar-ratio-toggle::after {
-                    content: '✓';
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    @apply text-blue-600 font-bold text-sm;
-                    background: white;
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .ar-ratio-name { 
-                    @apply font-semibold text-sm;
-                }
-                .ar-ratio-desc { 
-                    @apply text-xs opacity-90 mt-0.5;
-                }
-                .ar-qualities { 
-                    @apply p-4 hidden gap-3;
-                    display: none;
-                }
-                .ar-ratio-group.active .ar-qualities { 
-                    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
-                }
-                .ar-quality-item { 
-                    @apply flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
-                    transition: all 0.2s;
-                }
-                .ar-quality-item:hover { 
-                    @apply border-blue-400 dark:border-blue-500;
-                }
-                .ar-quality-item.selected { 
-                    @apply bg-blue-50 dark:bg-blue-900/20 border-blue-500;
-                }
-                .ar-quality-header {
-                    @apply flex items-center gap-2;
-                }
-                .ar-quality-checkbox { 
-                    @apply w-5 h-5 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600;
-                    cursor: pointer;
-                }
-                .ar-quality-label { 
-                    @apply font-semibold text-sm text-gray-700 dark:text-gray-300 min-w-16;
-                }
-                .ar-dimensions { 
-                    @apply hidden gap-2;
-                }
-                .ar-quality-item.selected .ar-dimensions { 
-                    @apply flex;
-                }
-                .ar-dimension-input { 
-                    @apply flex items-center gap-1.5 flex-1;
-                }
-                .ar-dimension-input label { 
-                    @apply text-xs text-gray-600 dark:text-gray-400 font-medium;
-                }
-                .ar-dimension-input input { 
-                    @apply w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm 
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
-                    font-family: ui-monospace, monospace;
-                }
-                .ar-stat-badge {
-                    @apply inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 
-                           text-blue-800 dark:text-blue-200 text-xs font-medium rounded;
-                }
-            </style>
-        ''')
+        # Контейнер
+        html_parts.append('<div class="aspect-ratio-configurator space-y-3">')
 
         if not presets:
             html_parts.append('''
@@ -203,15 +112,15 @@ class AspectRatioConfigurationWidget(forms.Widget):
             for preset in presets:
                 ratio_safe = preset.aspect_ratio.replace(':', '_').replace('.', '_')
                 html_parts.append(f'''
-                <div class="ar-ratio-group" data-ratio="{preset.aspect_ratio}">
-                    <div class="ar-ratio-header" onclick="this.parentElement.classList.toggle('active')">
-                        <div class="ar-ratio-toggle"></div>
-                        <div>
-                            <div class="ar-ratio-name">{preset.aspect_ratio} — {preset.name}</div>
-                            <div class="ar-ratio-desc">{preset.description or ''}</div>
+                <div class="ar-ratio-group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm" data-ratio="{preset.aspect_ratio}">
+                    <div class="ar-ratio-header bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-3 flex items-center gap-3 cursor-pointer transition-all" onclick="this.parentElement.classList.toggle('active')">
+                        <div class="ar-ratio-toggle w-5 h-5 border-2 border-white rounded flex-shrink-0 flex items-center justify-center"></div>
+                        <div class="flex-1">
+                            <div class="font-semibold text-sm">{preset.aspect_ratio} — {preset.name}</div>
+                            <div class="text-xs opacity-90 mt-0.5">{preset.description or ''}</div>
                         </div>
                     </div>
-                    <div class="ar-qualities">
+                    <div class="ar-qualities hidden p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 ''')
 
                 for quality_key, quality_label in qualities:
@@ -223,22 +132,24 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     selected_class = 'selected' if existing else ''
 
                     html_parts.append(f'''
-                        <div class="ar-quality-item {selected_class}" data-quality="{quality_key}">
-                            <div class="ar-quality-header">
-                                <input type="checkbox" class="ar-quality-checkbox" {checked}
-                                       onchange="this.parentElement.parentElement.classList.toggle('selected', this.checked); updateConfigs()">
-                                <label class="ar-quality-label">{quality_label}</label>
+                        <div class="ar-quality-item flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all {selected_class}" data-quality="{quality_key}">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {checked}
+                                       onchange="this.closest('.ar-quality-item').classList.toggle('selected', this.checked); updateConfigs()">
+                                <label class="font-semibold text-sm text-gray-700 dark:text-gray-300">{quality_label}</label>
                             </div>
-                            <div class="ar-dimensions">
-                                <div class="ar-dimension-input">
-                                    <label>Ширина:</label>
+                            <div class="ar-dimensions hidden gap-2">
+                                <div class="flex items-center gap-1.5 flex-1">
+                                    <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Ширина:</label>
                                     <input type="number" value="{width}" placeholder="1920" min="64" max="8192" step="8"
+                                           class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="width"
                                            onchange="updateConfigs()">
                                 </div>
-                                <div class="ar-dimension-input">
-                                    <label>Высота:</label>
+                                <div class="flex items-center gap-1.5 flex-1">
+                                    <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Высота:</label>
                                     <input type="number" value="{height}" placeholder="1080" min="64" max="8192" step="8"
+                                           class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="height"
                                            onchange="updateConfigs()">
                                 </div>
@@ -248,14 +159,37 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
                 html_parts.append('</div></div>')
 
-        # Статистика
+        # Статистика и стили
         html_parts.append('''
             <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Выбрано конфигураций:</span>
-                    <span class="ar-stat-badge" id="config-count">0</span>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-medium rounded" id="config-count">0</span>
                 </div>
             </div>
+            
+            <style>
+                .ar-ratio-group.active .ar-qualities {
+                    display: grid !important;
+                }
+                .ar-ratio-group.active .ar-ratio-toggle::after {
+                    content: '✓';
+                    color: #2563eb;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                .ar-quality-item.selected {
+                    background-color: #eff6ff !important;
+                    border-color: #3b82f6 !important;
+                }
+                .dark .ar-quality-item.selected {
+                    background-color: rgba(29, 78, 216, 0.2) !important;
+                    border-color: #3b82f6 !important;
+                }
+                .ar-quality-item.selected .ar-dimensions {
+                    display: flex !important;
+                }
+            </style>
         ''')
 
         # JavaScript для сохранения данных
