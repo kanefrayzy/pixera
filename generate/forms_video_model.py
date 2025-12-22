@@ -4,11 +4,13 @@ Provides comprehensive admin interface for managing video models
 """
 from django import forms
 from .models_video import VideoModelConfiguration, VALID_FPS
+from .forms_aspect_ratio import AspectRatioConfigurationFormMixin
 
 
-class VideoModelConfigurationForm(forms.ModelForm):
+class VideoModelConfigurationForm(AspectRatioConfigurationFormMixin, forms.ModelForm):
     """
     Comprehensive form for video model configuration with organized fieldsets
+    Includes aspect ratio + quality configuration
     """
 
     # Чекбоксы для типов референсов
