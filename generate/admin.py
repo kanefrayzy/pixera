@@ -919,7 +919,7 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
     search_fields = ('aspect_ratio', 'notes')
     list_editable = ('is_active', 'is_default', 'order')
     ordering = ['model_type', 'model_id', 'order', 'aspect_ratio', 'quality']
-    
+
     fieldsets = (
         ("Основная информация", {
             "fields": (
@@ -941,7 +941,7 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
             )
         }),
     )
-    
+
     @admin.display(description="Модель")
     def model_info(self, obj):
         if obj.model_type == 'image':
@@ -964,7 +964,7 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
                 )
             except:
                 return format_html('<span style="color:#ef4444">Video #{}</span>', obj.model_id)
-    
+
     @admin.display(description="Размеры")
     def dimensions_display(self, obj):
         return format_html(
@@ -972,7 +972,7 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
             obj.width,
             obj.height
         )
-    
+
     @admin.display(description="MP")
     def megapixels_display(self, obj):
         mp = obj.megapixels
@@ -982,13 +982,13 @@ class AspectRatioQualityConfigAdmin(admin.ModelAdmin):
             color = "#f59e0b"  # orange
         else:
             color = "#10b981"  # green
-        
+
         return format_html(
             '<span style="color:{};font-weight:600">{} MP</span>',
             color,
             mp
         )
-    
+
     actions = [mark_active, mark_inactive]
 
 
@@ -1006,7 +1006,7 @@ class AspectRatioPresetAdmin(admin.ModelAdmin):
     search_fields = ('aspect_ratio', 'name', 'description')
     list_editable = ('is_common', 'order')
     ordering = ['-is_common', 'order', 'aspect_ratio']
-    
+
     fieldsets = (
         ("Основная информация", {
             "fields": (

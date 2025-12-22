@@ -18,7 +18,6 @@ PRESETS = [
         'aspect_ratio': '1:1',
         'name': 'Квадрат',
         'category': 'Соцсети',
-        'icon': '🔲',
         'description': 'Instagram посты, иконки, аватары',
         'recommended_sd': '512x512',
         'recommended_hd': '720x720',
@@ -29,13 +28,12 @@ PRESETS = [
         'is_common': True,
         'order': 1
     },
-    
+
     # Вертикальные (соцсети)
     {
         'aspect_ratio': '9:16',
         'name': 'Вертикальный Stories/Reels',
         'category': 'Соцсети',
-        'icon': '📱',
         'description': 'Instagram Stories, TikTok, YouTube Shorts',
         'recommended_sd': '480x854',
         'recommended_hd': '720x1280',
@@ -50,7 +48,6 @@ PRESETS = [
         'aspect_ratio': '4:5',
         'name': 'Instagram портрет',
         'category': 'Соцсети',
-        'icon': '📸',
         'description': 'Instagram вертикальные посты',
         'recommended_sd': '512x640',
         'recommended_hd': '720x900',
@@ -64,7 +61,6 @@ PRESETS = [
         'aspect_ratio': '2:3',
         'name': 'Фотография 2:3',
         'category': 'Фотография',
-        'icon': '📷',
         'description': 'Классическая фотопропорция',
         'recommended_sd': '480x720',
         'recommended_hd': '720x1080',
@@ -78,7 +74,6 @@ PRESETS = [
         'aspect_ratio': '3:4',
         'name': 'Вертикальный стандарт',
         'category': 'Фотография',
-        'icon': '🖼️',
         'description': 'Портретная фотография',
         'recommended_sd': '512x683',
         'recommended_hd': '720x960',
@@ -88,13 +83,12 @@ PRESETS = [
         'is_common': False,
         'order': 5
     },
-    
+
     # Горизонтальные широкоэкранные
     {
         'aspect_ratio': '16:9',
         'name': 'Широкоэкранный HD',
         'category': 'Видео/Мониторы',
-        'icon': '🖥️',
         'description': 'YouTube, мониторы, телевизоры',
         'recommended_sd': '854x480',
         'recommended_hd': '1280x720',
@@ -109,7 +103,6 @@ PRESETS = [
         'aspect_ratio': '16:10',
         'name': 'Рабочий монитор',
         'category': 'Видео/Мониторы',
-        'icon': '💻',
         'description': 'Ноутбуки, рабочие мониторы',
         'recommended_sd': '768x480',
         'recommended_hd': '1280x800',
@@ -123,7 +116,6 @@ PRESETS = [
         'aspect_ratio': '21:9',
         'name': 'Ультраширокий',
         'category': 'Видео/Мониторы',
-        'icon': '🎮',
         'description': 'Ультраширокие мониторы, киноэффект',
         'recommended_sd': '1024x439',
         'recommended_hd': '1280x549',
@@ -133,13 +125,12 @@ PRESETS = [
         'is_common': False,
         'order': 12
     },
-    
+
     # Классические
     {
         'aspect_ratio': '4:3',
         'name': 'Классический 4:3',
         'category': 'Классика',
-        'icon': '📺',
         'description': 'Старые мониторы, CRT телевизоры',
         'recommended_sd': '640x480',
         'recommended_hd': '1024x768',
@@ -153,7 +144,6 @@ PRESETS = [
         'aspect_ratio': '3:2',
         'name': 'Фотоаппараты',
         'category': 'Фотография',
-        'icon': '📷',
         'description': '35mm плёнка, зеркальные камеры',
         'recommended_sd': '720x480',
         'recommended_hd': '1080x720',
@@ -167,7 +157,6 @@ PRESETS = [
         'aspect_ratio': '5:4',
         'name': 'Старые LCD',
         'category': 'Классика',
-        'icon': '🖵',
         'description': '1280×1024 мониторы',
         'recommended_sd': '640x512',
         'recommended_hd': '1280x1024',
@@ -175,13 +164,12 @@ PRESETS = [
         'is_common': False,
         'order': 22
     },
-    
+
     # Киноформаты
     {
         'aspect_ratio': '2.35:1',
         'name': 'CinemaScope',
         'category': 'Кино',
-        'icon': '🎬',
         'description': 'Широкоэкранное кино',
         'recommended_sd': '1024x436',
         'recommended_hd': '1280x545',
@@ -195,7 +183,6 @@ PRESETS = [
         'aspect_ratio': '1.85:1',
         'name': 'Кинотеатры (Flat)',
         'category': 'Кино',
-        'icon': '🎦',
         'description': 'Стандарт кинотеатров',
         'recommended_sd': '888x480',
         'recommended_hd': '1332x720',
@@ -209,7 +196,6 @@ PRESETS = [
         'aspect_ratio': '2.39:1',
         'name': 'Современное кино',
         'category': 'Кино',
-        'icon': '🎞️',
         'description': 'Anamorphic widescreen',
         'recommended_full_hd': '2048x857',
         'recommended_2k': '2560x1071',
@@ -217,13 +203,12 @@ PRESETS = [
         'is_common': False,
         'order': 32
     },
-    
+
     # Дополнительные соцсети
     {
         'aspect_ratio': '5:7',
         'name': 'Pinterest портрет',
         'category': 'Соцсети',
-        'icon': '📌',
         'description': 'Pinterest оптимальный размер',
         'recommended_sd': '600x840',
         'recommended_hd': '720x1008',
@@ -235,7 +220,6 @@ PRESETS = [
         'aspect_ratio': '10:16',
         'name': 'Вертикальный 10:16',
         'category': 'Соцсети',
-        'icon': '📲',
         'description': 'Альтернативный вертикальный формат',
         'recommended_sd': '480x768',
         'recommended_hd': '720x1152',
@@ -249,20 +233,20 @@ def populate_presets():
     """Заполняет базу предустановками"""
     created_count = 0
     updated_count = 0
-    
+
     for preset_data in PRESETS:
         preset, created = AspectRatioPreset.objects.update_or_create(
             aspect_ratio=preset_data['aspect_ratio'],
             defaults=preset_data
         )
-        
+
         if created:
             created_count += 1
             print(f"✅ Создано: {preset}")
         else:
             updated_count += 1
             print(f"🔄 Обновлено: {preset}")
-    
+
     print(f"\n📊 Итого:")
     print(f"   Создано: {created_count}")
     print(f"   Обновлено: {updated_count}")
