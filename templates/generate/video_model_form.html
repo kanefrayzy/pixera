@@ -228,7 +228,7 @@
                 <div class="grid gap-2">
                     {% for field in form %}
                     {% if 'aspect_ratio_' in field.name %}
-                    <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                    <label class="">
                         {{ field }}
                         <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</span>
                     </label>
