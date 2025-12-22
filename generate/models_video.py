@@ -424,81 +424,35 @@ class VideoModelConfiguration(models.Model):
         return dict(self.Category.choices).get(self.category, self.category)
 
     def get_available_resolutions(self):
-        """Returns list of available resolutions"""
+        """Returns list of available resolutions from AspectRatioQualityConfig"""
+        from generate.models_aspect_ratio import AspectRatioQualityConfig
+
+        configs = AspectRatioQualityConfig.objects.filter(
+            model_type='video',
+            model_id=self.pk,
+            is_active=True
+        ).order_by('order', 'aspect_ratio', 'quality')
+
         resolutions = []
-        resolution_fields = [
-            ('512x512', self.resolution_512x512),
-            ('512x768', self.resolution_512x768),
-            ('512x1024', self.resolution_512x1024),
-            ('768x512', self.resolution_768x512),
-            ('768x768', self.resolution_768x768),
-            ('768x1024', self.resolution_768x1024),
-            ('1024x512', self.resolution_1024x512),
-            ('1024x768', self.resolution_1024x768),
-            ('1024x1024', self.resolution_1024x1024),
-            ('1280x720', self.resolution_1280x720),
-            ('1920x1080', self.resolution_1920x1080),
-            ('2560x1440', self.resolution_2560x1440),
-            ('3840x2160', self.resolution_3840x2160),
-        ]
-        for res, enabled in resolution_fields:
-            if enabled:
-                resolutions.append(res)
+        for config in configs:
+            if config.width and config.height:
+                res_str = f"{config.width}x{config.height}"
+                if res_str not in resolutions:
+                    resolutions.append(res_str)
+
         return resolutions
 
     def get_available_aspect_ratios(self):
-        """Returns list of available aspect ratios"""
-        ratios = []
-        ratio_fields = [
-            # 🔲 Квадратные
-            ('1:1', self.aspect_ratio_1_1),
+        """Returns list of available aspect ratios from AspectRatioQualityConfig"""
+        from generate.models_aspect_ratio import AspectRatioQualityConfig
 
-            # 📺 Классические
-            ('4:3', self.aspect_ratio_4_3),
-            ('3:2', self.aspect_ratio_3_2),
-            ('5:4', self.aspect_ratio_5_4),
+        configs = AspectRatioQualityConfig.objects.filter(
+            model_type='video',
+            model_id=self.pk,
+            is_active=True
+        ).values_list('aspect_ratio', flat=True).distinct().order_by('order', 'aspect_ratio')
 
-            # 🖥 Современные широкоэкранные
-            ('16:9', self.aspect_ratio_16_9),
-            ('16:10', self.aspect_ratio_16_10),
-            ('15:9', self.aspect_ratio_15_9),
-            ('17:9', self.aspect_ratio_17_9),
-
-            # 🎬 Киноформаты
-            ('1.85:1', self.aspect_ratio_1_85_1),
-            ('2.00:1', self.aspect_ratio_2_00_1),
-            ('2.20:1', self.aspect_ratio_2_20_1),
-            ('2.35:1', self.aspect_ratio_2_35_1),
-            ('2.39:1', self.aspect_ratio_2_39_1),
-            ('2.40:1', self.aspect_ratio_2_40_1),
-
-            # 🖥 Ультраширокие
-            ('18:9', self.aspect_ratio_18_9),
-            ('19:9', self.aspect_ratio_19_9),
-            ('20:9', self.aspect_ratio_20_9),
-            ('21:9', self.aspect_ratio_21_9),
-            ('24:10', self.aspect_ratio_24_10),
-            ('32:9', self.aspect_ratio_32_9),
-
-            # 📱 Вертикальные
-            ('9:16', self.aspect_ratio_9_16),
-            ('3:4', self.aspect_ratio_3_4),
-            ('2:3', self.aspect_ratio_2_3),
-            ('4:5', self.aspect_ratio_4_5),
-            ('5:8', self.aspect_ratio_5_8),
-            ('10:16', self.aspect_ratio_10_16),
-            ('9:19.5', self.aspect_ratio_9_19_5),
-            ('9:20', self.aspect_ratio_9_20),
-            ('9:21', self.aspect_ratio_9_21),
-
-            # 🖼 Фотографические
-            ('7:5', self.aspect_ratio_7_5),
-            ('8:10', self.aspect_ratio_8_10),
-        ]
-        for ratio, enabled in ratio_fields:
-            if enabled:
-                ratios.append(ratio)
-        return ratios
+        return list(configs)
 
     def get_available_durations(self):
         """Returns list of available durations"""

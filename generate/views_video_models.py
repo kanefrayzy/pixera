@@ -78,11 +78,11 @@ def video_model_create(request):
         form = VideoModelConfigurationForm(request.POST, request.FILES)
         if form.is_valid():
             model = form.save()
-            
+
             # Сохранить конфигурацию соотношения сторон
             if hasattr(form, '_save_aspect_ratio_configurations'):
                 form._save_aspect_ratio_configurations(model)
-            
+
             messages.success(request, f'Модель "{model.name}" успешно создана!')
             return redirect('generate:video_models_list')
         else:
@@ -110,11 +110,11 @@ def video_model_edit(request, pk):
         form = VideoModelConfigurationForm(request.POST, request.FILES, instance=model)
         if form.is_valid():
             model = form.save()
-            
+
             # Сохранить конфигурацию соотношения сторон
             if hasattr(form, '_save_aspect_ratio_configurations'):
                 form._save_aspect_ratio_configurations(model)
-            
+
             messages.success(request, f'Модель "{model.name}" успешно обновлена!')
             return redirect('generate:video_models_list')
         else:
