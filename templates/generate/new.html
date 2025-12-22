@@ -3920,7 +3920,8 @@ const init=()=>{
       const s=document.createElement('script');
       s.src=src;s.defer=true;
       s.onload=()=>{
-        if(src.includes('video-generation.js')){
+        // Проверяем по частичному совпадению (учитывая хеш в имени файла)
+        if(src.indexOf('video-generation') !== -1){
           // Передаем видео модели из Django в JavaScript (точно так же как image_models)
           // Устанавливаем ДО создания экземпляра VideoGeneration
           window.__VIDEO_MODELS__ = [
@@ -3945,7 +3946,7 @@ const init=()=>{
             {% empty %}
             {% endfor %}
           ];
-          
+
           // Создаем экземпляр только если класс доступен и экземпляр еще не создан
           if(!window.videoGeneration&&typeof VideoGeneration==='function'){
             window.videoGeneration=new VideoGeneration();
