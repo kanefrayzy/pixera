@@ -13,32 +13,42 @@ def get_model_aspect_ratio_configs(request, model_type, model_id):
     
     Args:
         model_type: 'image' или 'video'
-        model_id: ID модели
+        model_id: ID модели (может быть числовой pk или строковый model_id вроде "runware:101@1")
         
     Returns:
-        JSON со структурой:
-        {
-            "aspect_ratios": [
-                {
-                    "ratio": "16:9",
-                    "qualities": [
-                        {
-                            "quality": "hd",
-                            "quality_label": "HD",
-                            "width": 1920,
-                            "height": 1080,
-                            "is_default": true
-                        }
-                    ]
-                }
-            ]
-        }
+        JSON со структурой
     """
-    configs = AspectRatioQualityConfig.objects.filter(
-        model_type=model_type,
-        model_id=model_id,
-        is_active=True
-    ).order_by('order', 'aspect_ratio', 'quality')
+    # Пробуем найти модель по model_id (строка) или по pk (число)
+    try:
+        # Сначала пробуем как числовой pk
+        pk = int(model_id)
+        configs = AspectRatioQualityConfig.objects.filter(
+            model_type=model_type,
+            model_id=pk,
+            is_active=True
+        ).order_by('order', 'aspect_ratio', 'quality')
+    except (ValueError, TypeError):
+        # Если не число, значит это строковый model_id - нужно найти pk модели
+        if model_type == 'image':
+            from .models_image import ImageModelConfiguration
+            try:
+                model = ImageModelConfiguration.objects.get(model_id=model_id, is_active=True)
+                pk = model.pk
+            except ImageModelConfiguration.DoesNotExist:
+                return JsonResponse({'error': 'Model not found', 'aspect_ratios': [], 'count': 0}, status=404)
+        else:  # video
+            from .models_video import VideoModelConfiguration
+            try:
+                model = VideoModelConfiguration.objects.get(model_id=model_id, is_active=True)
+                pk = model.pk
+            except VideoModelConfiguration.DoesNotExist:
+                return JsonResponse({'error': 'Model not found', 'aspect_ratios': [], 'count': 0}, status=404)
+        
+        configs = AspectRatioQualityConfig.objects.filter(
+            model_type=model_type,
+            model_id=pk,
+            is_active=True
+        ).order_by('order', 'aspect_ratio', 'quality')
     
     # Группируем по aspect_ratio
     result = {}
