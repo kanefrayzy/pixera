@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load i18n %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -225,7 +225,7 @@
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Соотношения сторон
                 </h2>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div class="grid gap-2">
                     {% for field in form %}
                     {% if 'aspect_ratio_' in field.name %}
                     <label class="flex items-center p-2 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
