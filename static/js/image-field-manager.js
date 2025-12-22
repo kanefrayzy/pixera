@@ -254,51 +254,20 @@ class ImageFieldManager {
      * @param {Object} model - Model configuration object
      */
     updateModelParameters(model) {
-        // Update available aspect ratios (NEW!)
-        if (model.available_aspect_ratios && model.available_aspect_ratios.length > 0) {
-            console.log('Model has aspect ratios, showing aspect ratio selector');
-            this.updateAspectRatioOptions(model.available_aspect_ratios);
-            // Hide old resolution selector, show aspect ratio
-            const resField = document.getElementById('resolution-field');
-            const aspectField = document.getElementById('aspect-ratio-field');
-            const customDimField = document.getElementById('custom-dimensions-field');
-            if (resField) {
-                resField.style.display = 'none';
-                const container = resField.closest('.field-container');
-                if (container) container.style.display = 'none';
-            }
-            if (aspectField) {
-                aspectField.style.display = '';
-                const container = aspectField.closest('.field-container');
-                if (container) container.style.display = '';
-            }
-            if (customDimField) {
-                customDimField.style.display = '';
-                const container = customDimField.closest('.field-container');
-                if (container) container.style.display = '';
-            }
-        } else {
-            console.log('Model has NO aspect ratios, using old resolution selector');
-            // No aspect ratios configured - use old resolution selector
-            const resField = document.getElementById('resolution-field');
-            const aspectField = document.getElementById('aspect-ratio-field');
-            const customDimField = document.getElementById('custom-dimensions-field');
-            if (resField && model.available_resolutions && model.available_resolutions.length > 0) {
-                resField.style.display = '';
-                const container = resField.closest('.field-container');
-                if (container) container.style.display = '';
-                this.updateResolutionOptions(model.available_resolutions);
-            }
-            if (aspectField) {
-                aspectField.style.display = 'none';
-                const container = aspectField.closest('.field-container');
-                if (container) container.style.display = 'none';
-            }
-            if (customDimField) {
-                customDimField.style.display = 'none';
-                const container = customDimField.closest('.field-container');
-                if (container) container.style.display = 'none';
-            }
+        // Всегда показываем aspect ratio поле - данные загружаются через API
+        const aspectField = document.getElementById('aspect-ratio-field');
+        if (aspectField) {
+            aspectField.style.display = '';
+            const container = aspectField.closest('.field-container');
+            if (container) container.style.display = '';
+        }
+
+        // Скрываем старый селектор разрешений
+        const resField = document.getElementById('resolution-field');
+        if (resField) {
+            resField.style.display = 'none';
+            const container = resField.closest('.field-container');
+            if (container) container.style.display = 'none';
         }
 
         // Update steps limits
