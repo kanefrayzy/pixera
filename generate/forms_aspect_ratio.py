@@ -190,12 +190,12 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
                     html_parts.append(f'''
                         <div class="ar-quality-item {selected_class} flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-700 border-2 {'border-green-500 bg-green-50 dark:bg-green-900/20' if is_checked else 'border-gray-200 dark:border-gray-600'} rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all" data-quality="{quality_key}">
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" class="w-5 h-5 rounded text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 cursor-pointer" {checked}
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" class="w-5 h-5 rounded text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600" {checked}
                                        onchange="handleQualityCheck(this, '{preset.aspect_ratio}', '{quality_key}'); updateConfigs()">
-                                <label class="font-semibold text-sm {'text-green-700 dark:text-green-300' if is_checked else 'text-gray-700 dark:text-gray-300'} cursor-pointer" onclick="this.previousElementSibling.click()">{quality_label}</label>
+                                <span class="font-semibold text-sm {'text-green-700 dark:text-green-300' if is_checked else 'text-gray-700 dark:text-gray-300'}">{quality_label}</span>
                                 {f'<svg class="w-4 h-4 text-green-600 ml-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' if is_checked else ''}
-                            </div>
+                            </label>
                             <div class="ar-dimensions {'flex' if is_checked else 'hidden'} flex-col gap-2">
                                 <div class="flex items-center gap-1.5">
                                     <label class="text-xs text-gray-600 dark:text-gray-400 font-medium w-16">Ширина:</label>
