@@ -507,9 +507,12 @@ class AspectRatioConfigurationFormMixin:
 
         model_type = 'image' if isinstance(instance, ImageModelConfiguration) else 'video'
 
+        print(f">>> [_save_aspect_ratio_configurations] Called for {model_type} model_id={instance.pk}")
 
         # Получаем JSON из переменной или из cleaned_data
         configs_json = getattr(self, '_pending_aspect_ratio_configs', None) or self.cleaned_data.get('aspect_ratio_configurations', '')
+
+        print(f">>> [_save_aspect_ratio_configurations] configs_json length: {len(configs_json) if configs_json else 0}")
 
         # Удаляем старые конфигурации
         deleted_count = AspectRatioQualityConfig.objects.filter(
@@ -517,10 +520,12 @@ class AspectRatioConfigurationFormMixin:
             model_id=instance.pk
         ).delete()
 
+        print(f">>> [_save_aspect_ratio_configurations] Deleted {deleted_count[0] if deleted_count else 0} old configs")
 
         if configs_json:
             try:
                 configs = json.loads(configs_json)
+                print(f">>> [_save_aspect_ratio_configurations] Parsed {len(configs)} configs from JSON")
 
                 for i, config in enumerate(configs):
                     created_config = AspectRatioQualityConfig.objects.create(
@@ -534,9 +539,11 @@ class AspectRatioConfigurationFormMixin:
                         is_default=i == 0,  # Первая конфигурация - по умолчанию
                         order=i
                     )
+                    print(f">>> [_save_aspect_ratio_configurations] Created config #{i}: {config['aspect_ratio']} @ {config['quality']}")
 
             except Exception as e:
-                pass
+                print(f">>> [_save_aspect_ratio_configurations] ERROR: {str(e)}")
         else:
-            pass
+            print(f">>> [_save_aspect_ratio_configurations] No configs_json to save")
+
 
