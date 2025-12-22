@@ -55,7 +55,7 @@ class AspectRatioConfigurationWidget(forms.Widget):
         context = super().get_context(name, value, attrs)
 
         # Получаем все соотношения сторон, отсортированные по порядку
-        presets = AspectRatioPreset.objects.all().order_by('order', 'aspect_ratio')
+        presets = list(AspectRatioPreset.objects.all().order_by('order', 'aspect_ratio'))
 
         # Парсим существующие конфигурации из value (JSON)
         existing_configs = {}
@@ -73,16 +73,20 @@ class AspectRatioConfigurationWidget(forms.Widget):
             except:
                 pass
 
-        context['presets'] = presets
-        context['existing_configs'] = existing_configs
-        context['qualities'] = [
-            ('sd', 'SD'),
-            ('hd', 'HD'),
-            ('full_hd', 'Full HD'),
-            ('2k', '2K'),
-            ('4k', '4K'),
-            ('8k', '8K'),
-        ]
+        context.update({
+            'presets': presets,
+            'existing_configs': existing_configs,
+            'qualities': [
+                ('sd', 'SD'),
+                ('hd', 'HD'),
+                ('full_hd', 'Full HD'),
+                ('2k', '2K'),
+                ('4k', '4K'),
+                ('8k', '8K'),
+            ],
+            'widget_name': name,
+            'model_type': self.model_type,
+        })
 
         return context
 
