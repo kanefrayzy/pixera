@@ -2076,7 +2076,10 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     const container = document.getElementById('video-aspect-ratio-slider-container');
     const qualitySelect = document.getElementById('video-quality-selector');
-    if (!container || !qualitySelect) return;
+    const widthInput = document.getElementById('video-resolution-width');
+    const heightInput = document.getElementById('video-resolution-height');
+
+    if (!container || !qualitySelect || !widthInput || !heightInput) return;
 
     try {
       // Создаём экземпляр слайдера (если класс AspectRatioSlider доступен)
@@ -2094,13 +2097,29 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         modelType: 'video',
         modelId: this.selectedModel.id,
         qualitySelect: qualitySelect,
-        widthInput: document.getElementById('video-resolution-width'),
-        heightInput: document.getElementById('video-resolution-height'),
+        widthInput: widthInput,
+        heightInput: heightInput,
         onChange: (ratio) => {
           console.log('[VideoGeneration] Aspect ratio changed:', ratio);
           // Показываем информацию о разрешении
           this.updateVideoDimensionsDisplay();
         }
+      });
+
+      // Добавляем обработчик изменения селекта качества
+      qualitySelect.addEventListener('change', () => {
+        this.updateVideoDimensionsDisplay();
+      });
+
+      // Добавляем обработчики изменения скрытых полей
+      widthInput.addEventListener('change', () => {
+        console.log('[VideoGeneration] Width changed:', widthInput.value);
+        this.updateVideoDimensionsDisplay();
+      });
+
+      heightInput.addEventListener('change', () => {
+        console.log('[VideoGeneration] Height changed:', heightInput.value);
+        this.updateVideoDimensionsDisplay();
       });
 
     } catch (error) {
@@ -2120,6 +2139,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (dimensionsInfo && dimensionsDisplay && widthInput && heightInput) {
       const width = widthInput.value;
       const height = heightInput.value;
+
+      console.log('[VideoGeneration] Updating dimensions display:', { width, height });
 
       if (width && height) {
         dimensionsDisplay.textContent = `${width} × ${height}`;
@@ -2799,6 +2820,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     const resolution = (width && height) ? `${width}x${height}` : '1920x1080';
     const camera = document.getElementById('video-camera')?.value || '';
     const seedInput = (document.getElementById('video-seed')?.value || '').trim();
+
+    console.log('[VideoGeneration] Submitting video with resolution:', { width, height, resolution });
 
     // Поля провайдера
     const providerFields = this.collectProviderFields();

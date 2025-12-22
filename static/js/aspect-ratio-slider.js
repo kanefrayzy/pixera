@@ -298,6 +298,8 @@ class AspectRatioSlider {
     }
 
     updateDimensions(width, height) {
+        console.log('[AspectRatioSlider] Updating dimensions:', { width, height, modelType: this.modelType });
+
         if (this.widthInput) {
             this.widthInput.value = width;
             this.widthInput.dispatchEvent(new Event('change', { bubbles: true }));
@@ -308,13 +310,15 @@ class AspectRatioSlider {
             this.heightInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
-        // Показываем информацию о размерах
-        const dimensionsInfo = document.getElementById('dimensions-info');
-        const dimensionsDisplay = document.getElementById('dimensions-display');
+        // Показываем информацию о размерах (только для изображений, у видео свой обработчик)
+        if (this.modelType === 'image') {
+            const dimensionsInfo = document.getElementById('dimensions-info');
+            const dimensionsDisplay = document.getElementById('dimensions-display');
 
-        if (dimensionsInfo && dimensionsDisplay && width && height) {
-            dimensionsDisplay.textContent = `${width} × ${height}`;
-            dimensionsInfo.style.display = '';
+            if (dimensionsInfo && dimensionsDisplay && width && height) {
+                dimensionsDisplay.textContent = `${width} × ${height}`;
+                dimensionsInfo.style.display = '';
+            }
         }
     }
 
