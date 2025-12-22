@@ -400,25 +400,36 @@ class AspectRatioConfigurationFormMixin:
     def _save_aspect_ratio_configurations(self, instance):
         """Сохраняет конфигурации соотношений"""
         import json
+        import logging
+
+        logger = logging.getLogger(__name__)
 
         from .models_image import ImageModelConfiguration
         from .models_video import VideoModelConfiguration
 
         model_type = 'image' if isinstance(instance, ImageModelConfiguration) else 'video'
+        
+        logger.info(f"Saving aspect ratio configurations for {model_type} model ID: {instance.pk}")
 
         # Удаляем старые конфигурации
-        AspectRatioQualityConfig.objects.filter(
+        deleted_count = AspectRatioQualityConfig.objects.filter(
             model_type=model_type,
             model_id=instance.pk
         ).delete()
+        
+        logger.info(f"Deleted {deleted_count[0] if deleted_count else 0} old configurations")
 
         # Создаем новые
         configs_json = self.cleaned_data.get('aspect_ratio_configurations', '')
+        logger.info(f"Configs JSON from form: {configs_json[:200] if configs_json else 'EMPTY'}")
+        
         if configs_json:
             try:
                 configs = json.loads(configs_json)
+                logger.info(f"Parsed {len(configs)} configurations")
+                
                 for i, config in enumerate(configs):
-                    AspectRatioQualityConfig.objects.create(
+                    created_config = AspectRatioQualityConfig.objects.create(
                         model_type=model_type,
                         model_id=instance.pk,
                         aspect_ratio=config['aspect_ratio'],
@@ -429,7 +440,10 @@ class AspectRatioConfigurationFormMixin:
                         is_default=i == 0,  # Первая конфигурация - по умолчанию
                         order=i
                     )
+                    logger.info(f"Created config: {created_config.aspect_ratio} {created_config.quality} ({created_config.width}x{created_config.height})")
+                    
+                logger.info(f"Successfully saved {len(configs)} configurations")
             except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error saving aspect ratio configurations: {e}")
+                logger.error(f"Error saving aspect ratio configurations: {e}", exc_info=True)
+        else:
+            logger.warning("No configurations to save (empty JSON)")
