@@ -6,6 +6,41 @@ from django.forms import formset_factory
 from .models_aspect_ratio import AspectRatioQualityConfig, AspectRatioPreset
 
 
+def get_default_dimensions(aspect_ratio, quality):
+    """
+    Рассчитывает размеры по умолчанию на основе соотношения сторон и качества
+    """
+    # Базовые размеры для каждого качества (высота)
+    quality_heights = {
+        'sd': 480,      # SD: 480p
+        'hd': 720,      # HD: 720p
+        'full_hd': 1080, # Full HD: 1080p
+        '2k': 1440,     # 2K: 1440p
+        '4k': 2160,     # 4K: 2160p
+        '8k': 4320,     # 8K: 4320p
+    }
+    
+    height = quality_heights.get(quality, 1080)
+    
+    # Парсим соотношение сторон
+    try:
+        if ':' in aspect_ratio:
+            w, h = map(float, aspect_ratio.split(':'))
+            ratio = w / h
+        else:
+            ratio = float(aspect_ratio)
+    except:
+        ratio = 16 / 9  # По умолчанию 16:9
+    
+    width = int(height * ratio)
+    
+    # Округляем до кратного 8 для совместимости с большинством моделей
+    width = (width // 8) * 8
+    height = (height // 8) * 8
+    
+    return width, height
+
+
 class AspectRatioQualityForm(forms.Form):
     """
     Форма для одной комбинации соотношение + качество
@@ -131,24 +166,32 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     checked = 'checked' if existing else ''
                     selected_class = 'selected' if existing else ''
 
+                    # Определяем размеры по умолчанию на основе соотношения сторон и качества
+                    default_width, default_height = '', ''
+                    if not width or not height:
+                        default_width, default_height = get_default_dimensions(preset.aspect_ratio, quality_key)
+
+                    display_width = width or default_width
+                    display_height = height or default_height
+
                     html_parts.append(f'''
                         <div class="ar-quality-item flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all {selected_class}" data-quality="{quality_key}">
                             <div class="flex items-center gap-2">
                                 <input type="checkbox" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" {checked}
-                                       onchange="this.closest('.ar-quality-item').classList.toggle('selected', this.checked); updateConfigs()">
+                                       onchange="handleQualityCheck(this, '{preset.aspect_ratio}', '{quality_key}'); updateConfigs()">
                                 <label class="font-semibold text-sm text-gray-700 dark:text-gray-300">{quality_label}</label>
                             </div>
                             <div class="ar-dimensions hidden gap-2">
                                 <div class="flex items-center gap-1.5 flex-1">
                                     <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Ширина:</label>
-                                    <input type="number" value="{width}" placeholder="1920" min="64" max="8192" step="8"
+                                    <input type="number" value="{display_width}" placeholder="{default_width}" min="64" max="8192" step="8"
                                            class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="width"
                                            onchange="updateConfigs()">
                                 </div>
                                 <div class="flex items-center gap-1.5 flex-1">
                                     <label class="text-xs text-gray-600 dark:text-gray-400 font-medium">Высота:</label>
-                                    <input type="number" value="{height}" placeholder="1080" min="64" max="8192" step="8"
+                                    <input type="number" value="{display_height}" placeholder="{default_height}" min="64" max="8192" step="8"
                                            class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                            data-ratio="{preset.aspect_ratio}" data-quality="{quality_key}" data-dimension="height"
                                            onchange="updateConfigs()">
@@ -195,6 +238,54 @@ class AspectRatioConfigurationWidget(forms.Widget):
         # JavaScript для сохранения данных
         html_parts.append(f'''
             <script>
+            // Таблица размеров по умолчанию
+            const DEFAULT_DIMENSIONS = {{
+                'sd': 480,
+                'hd': 720,
+                'full_hd': 1080,
+                '2k': 1440,
+                '4k': 2160,
+                '8k': 4320
+            }};
+
+            function calculateDimensions(aspectRatio, quality) {{
+                const height = DEFAULT_DIMENSIONS[quality] || 1080;
+                
+                // Парсим соотношение сторон
+                let ratio = 16 / 9;
+                if (aspectRatio.includes(':')) {{
+                    const [w, h] = aspectRatio.split(':').map(Number);
+                    ratio = w / h;
+                }} else {{
+                    ratio = parseFloat(aspectRatio);
+                }}
+                
+                let width = Math.round(height * ratio);
+                
+                // Округляем до кратного 8
+                width = Math.floor(width / 8) * 8;
+                const roundedHeight = Math.floor(height / 8) * 8;
+                
+                return {{ width, height: roundedHeight }};
+            }}
+
+            function handleQualityCheck(checkbox, aspectRatio, quality) {{
+                const item = checkbox.closest('.ar-quality-item');
+                item.classList.toggle('selected', checkbox.checked);
+                
+                if (checkbox.checked) {{
+                    // Автоподстановка размеров
+                    const widthInput = item.querySelector('[data-dimension="width"]');
+                    const heightInput = item.querySelector('[data-dimension="height"]');
+                    
+                    if (!widthInput.value || !heightInput.value) {{
+                        const dimensions = calculateDimensions(aspectRatio, quality);
+                        widthInput.value = dimensions.width;
+                        heightInput.value = dimensions.height;
+                    }}
+                }}
+            }}
+
             function updateConfigs() {{
                 const configs = [];
                 document.querySelectorAll('.ar-quality-item.selected').forEach(item => {{
@@ -236,36 +327,11 @@ class AspectRatioConfigurationWidget(forms.Widget):
     def value_from_datadict(self, data, files, name):
         """
         Собирает данные из POST запроса
+        Теперь данные приходят из скрытого поля с JSON
         """
-        import json
-        configs = []
-
-        # Ищем все поля вида aspect_ratio_RATIO_quality_QUALITY_enabled
-        for key in data.keys():
-            if key.startswith('aspect_ratio_') and '_quality_' in key and key.endswith('_enabled'):
-                # Парсим ключ: aspect_ratio_1:1_quality_hd_enabled
-                parts = key.replace('aspect_ratio_', '').replace('_enabled', '').split('_quality_')
-                if len(parts) == 2:
-                    aspect_ratio = parts[0].replace('_', ':')  # Восстанавливаем :
-                    quality = parts[1]
-
-                    # Получаем width и height
-                    width_key = f'aspect_ratio_{parts[0]}_quality_{quality}_width'
-                    height_key = f'aspect_ratio_{parts[0]}_quality_{quality}_height'
-
-                    width = data.get(width_key)
-                    height = data.get(height_key)
-
-                    if width and height:
-                        configs.append({
-                            'aspect_ratio': aspect_ratio,
-                            'quality': quality,
-                            'width': int(width),
-                            'height': int(height),
-                            'is_active': True
-                        })
-
-        return json.dumps(configs) if configs else ''
+        # Получаем JSON из скрытого поля
+        json_value = data.get(name, '')
+        return json_value if json_value else ''
 
 
 class AspectRatioConfigurationFormMixin:
