@@ -254,8 +254,8 @@ def video_models_list(request):
                 'optional_fields': model.optional_fields or {},
             }
 
-            data.append(model_data)
-            print(f">>> [video_models_list] Successfully added model: {model.name}")
+                data.append(model_data)
+                print(f">>> [video_models_list] Successfully added model: {model.name}")
             except Exception as model_error:
                 print(f">>> [video_models_list] Error processing model {model.name}: {model_error}")
                 import traceback
