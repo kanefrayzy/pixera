@@ -594,13 +594,45 @@ def video_submit(request):
             provider_fields['numberResults'] = max(1, min(4, nr))
             provider_fields.pop('number_results', None)
 
-            ar = (aspect_ratio or '16:9').strip()
-            if ar == '9:16':
-                w, h = 480, 864
-            elif ar == '1:1':
-                w, h = 720, 720
+            # Получаем разрешение из POST параметров (приоритет: width/height > resolution > aspect_ratio)
+            width_str = request.POST.get('width', '').strip()
+            height_str = request.POST.get('height', '').strip()
+
+            if width_str and height_str:
+                # Используем переданные width/height
+                try:
+                    w = int(width_str)
+                    h = int(height_str)
+                    logger.info(f"Using width/height from POST: {w}x{h}")
+                except ValueError:
+                    # Fallback на resolution
+                    w, h = None, None
             else:
-                w, h = 864, 480
+                w, h = None, None
+
+            # Если width/height не переданы, пробуем распарсить resolution
+            if w is None or h is None:
+                res = resolution or '1920x1080'
+                if 'x' in res:
+                    try:
+                        parts = res.split('x')
+                        w = int(parts[0])
+                        h = int(parts[1])
+                        logger.info(f"Using resolution from POST: {w}x{h}")
+                    except (ValueError, IndexError):
+                        w, h = None, None
+
+            # Если ничего не сработало, используем aspect_ratio (старая логика)
+            if w is None or h is None:
+                ar = (aspect_ratio or '16:9').strip()
+                if ar == '9:16':
+                    w, h = 480, 864
+                elif ar == '1:1':
+                    w, h = 720, 720
+                else:
+                    w, h = 864, 480
+                logger.info(f"Using fallback aspect_ratio {ar}: {w}x{h}")
+
             provider_fields['width'] = w
             provider_fields['height'] = h
 
