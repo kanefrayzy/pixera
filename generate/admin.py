@@ -777,6 +777,13 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """Auto-generate slug if not provided and save aspect ratio configurations"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[ImageModelAdmin] save_model called, change={change}, obj.pk={obj.pk}")
+        logger.info(f"[ImageModelAdmin] Form class: {form.__class__.__name__}")
+        logger.info(f"[ImageModelAdmin] Has _save_aspect_ratio_configurations: {hasattr(form, '_save_aspect_ratio_configurations')}")
+        
         if not obj.slug:
             from django.utils.text import slugify
             obj.slug = slugify(obj.name or "")[:120]
@@ -784,9 +791,14 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
         # Сохраняем объект
         super().save_model(request, obj, form, change)
         
+        logger.info(f"[ImageModelAdmin] After super().save_model, obj.pk={obj.pk}")
+        
         # Сохраняем конфигурации соотношений сторон
         if hasattr(form, '_save_aspect_ratio_configurations'):
+            logger.info(f"[ImageModelAdmin] Calling form._save_aspect_ratio_configurations")
             form._save_aspect_ratio_configurations(obj)
+        else:
+            logger.error(f"[ImageModelAdmin] Form does not have _save_aspect_ratio_configurations method!")
 
 
 # ── Конфигурация видео моделей (расширенная) ─────────────────────

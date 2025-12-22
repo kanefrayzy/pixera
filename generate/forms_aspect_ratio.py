@@ -315,7 +315,14 @@ class AspectRatioConfigurationWidget(forms.Widget):
                     }}
                 }});
 
-                document.getElementById('id_{name}').value = JSON.stringify(configs);
+                const jsonValue = JSON.stringify(configs);
+                document.getElementById('id_{name}').value = jsonValue;
+                
+                console.log('[AspectRatio Widget] updateConfigs called');
+                console.log('[AspectRatio Widget] Found ' + configs.length + ' selected configs');
+                console.log('[AspectRatio Widget] JSON value:', jsonValue);
+                console.log('[AspectRatio Widget] Hidden field ID: id_{name}');
+                console.log('[AspectRatio Widget] Hidden field exists:', !!document.getElementById('id_{name}'));
 
                 // Обновляем счетчик
                 const countBadge = document.getElementById('config-count');
@@ -326,7 +333,21 @@ class AspectRatioConfigurationWidget(forms.Widget):
 
             // Инициализация при загрузке
             document.addEventListener('DOMContentLoaded', function() {{
+                console.log('[AspectRatio Widget] DOMContentLoaded - initializing');
                 updateConfigs();
+                
+                // Логирование перед отправкой формы
+                const form = document.querySelector('form');
+                if (form) {{
+                    form.addEventListener('submit', function(e) {{
+                        const hiddenField = document.getElementById('id_{name}');
+                        console.log('[AspectRatio Widget] Form submitting');
+                        console.log('[AspectRatio Widget] Hidden field value:', hiddenField ? hiddenField.value : 'FIELD NOT FOUND');
+                        console.log('[AspectRatio Widget] Hidden field name:', hiddenField ? hiddenField.name : 'N/A');
+                    }});
+                }} else {{
+                    console.warn('[AspectRatio Widget] Form not found for submit listener');
+                }}
             }});
             </script>
         </div>
@@ -339,8 +360,16 @@ class AspectRatioConfigurationWidget(forms.Widget):
         Собирает данные из POST запроса
         Теперь данные приходят из скрытого поля с JSON
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Получаем JSON из скрытого поля
         json_value = data.get(name, '')
+        
+        logger.info(f"[AspectRatioWidget] value_from_datadict called for field: {name}")
+        logger.info(f"[AspectRatioWidget] Raw value from POST: {json_value[:500] if json_value else 'EMPTY'}")
+        logger.info(f"[AspectRatioWidget] All POST keys: {list(data.keys())}")
+        
         return json_value if json_value else ''
 
 
@@ -351,12 +380,18 @@ class AspectRatioConfigurationFormMixin:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[AspectRatioMixin] __init__ called, instance.pk: {self.instance.pk if hasattr(self, 'instance') else 'NO INSTANCE'}")
 
         # Определяем тип модели по Meta.model
         from .models_image import ImageModelConfiguration
         from .models_video import VideoModelConfiguration
 
         model_type = 'image' if self.Meta.model == ImageModelConfiguration else 'video'
+        
+        logger.info(f"[AspectRatioMixin] Model type: {model_type}")
 
         # Добавляем поле с кастомным виджетом
         self.fields['aspect_ratio_configurations'] = forms.CharField(
@@ -383,10 +418,27 @@ class AspectRatioConfigurationFormMixin:
                     'width': config.width,
                     'height': config.height,
                     'is_active': config.is_active
-                })
+         mport logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[AspectRatioMixin] save() called, commit={commit}")
+        logger.info(f"[AspectRatioMixin] cleaned_data keys: {list(self.cleaned_data.keys())}")
+        logger.info(f"[AspectRatioMixin] aspect_ratio_configurations value: {self.cleaned_data.get('aspect_ratio_configurations', 'NOT FOUND')[:200]}")
+        
+        instance = super().save(commit=commit)
+        
+        logger.info(f"[AspectRatioMixin] Instance saved, pk={instance.pk}")
 
-            if config_data:
-                self.fields['aspect_ratio_configurations'].initial = json.dumps(config_data)
+        if commit:
+            # Сохраняем конфигурации
+            logger.info(f"[AspectRatioMixin] Calling _save_aspect_ratio_configurations")
+            self._save_aspect_ratio_configurations(instance)
+        else:
+            logger.warning(f"[AspectRatioMixin] commit=False, skipping config save"initial = json.dumps(config_data)
+            else:
+                logger.info(f"[AspectRatioMixin] No existing configs found")
+        else:
+            logger.info(f"[AspectRatioMixin] New instance, no configs to load")
 
     def save(self, commit=True):
         instance = super().save(commit=commit)
