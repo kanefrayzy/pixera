@@ -19,8 +19,10 @@ from .models import (
     VideoPrompt,
 )
 from .models_reference import ReferenceImage
+from .models_image import ImageModelConfiguration
 from .models_video import VideoModelConfiguration
 from .models_aspect_ratio import AspectRatioQualityConfig, AspectRatioPreset
+from .forms_image_model import ImageModelConfigurationForm
 from .forms_video_model import VideoModelConfigurationForm
 
 # ── Вспомогательные экшены ──────────────────────────────────────
@@ -712,6 +714,75 @@ class VideoPromptAdmin(admin.ModelAdmin):
         return (p[:60] + "…") if len(p) > 60 else p
 
 
+# ── Конфигурация изображений моделей (расширенная) ────────────────
+@admin.register(ImageModelConfiguration)
+class ImageModelConfigurationAdmin(admin.ModelAdmin):
+    form = ImageModelConfigurationForm
+    list_display = (
+        "name", "model_id", "provider", "token_cost",
+        "resolutions_count", "is_active",
+        "is_beta", "is_premium", "order"
+    )
+    list_editable = ("is_active", "order", "token_cost")
+    list_filter = ("is_active", "is_beta", "is_premium", "provider")
+    search_fields = ("name", "model_id", "description", "slug")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("order", "name")
+    actions = (mark_active, mark_inactive)
+    readonly_fields = ("created_at", "updated_at")
+
+    fieldsets = (
+        ("Основная информация", {
+            "fields": (
+                "name", "model_id", "slug", "description",
+                "token_cost", "provider", "provider_version"
+            ),
+            "description": "Базовые параметры модели"
+        }),
+        ("Конфигурация соотношений сторон и качества", {
+            "fields": (
+                "aspect_ratio_configurations",
+            ),
+            "description": "Настройте доступные соотношения сторон и качество для каждого"
+        }),
+        ("Метаданные", {
+            "fields": (
+                ("is_active", "is_beta", "is_premium"),
+                "order",
+            ),
+            "description": "Статус и порядок отображения"
+        }),
+        ("Дополнительно", {
+            "fields": (
+                "admin_notes",
+                ("created_at", "updated_at"),
+            ),
+            "classes": ("collapse",),
+        }),
+    )
+
+    @admin.display(description="Разрешений")
+    def resolutions_count(self, obj):
+        if not obj.pk:
+            return "—"
+        from .models_aspect_ratio import AspectRatioQualityConfig
+        count = AspectRatioQualityConfig.objects.filter(
+            model_type='image',
+            model_id=obj.id,
+            is_active=True
+        ).count()
+        if count > 0:
+            return format_html('<span style="color:#10b981;font-weight:600">{}</span>', count)
+        return "0"
+
+    def save_model(self, request, obj, form, change):
+        """Auto-generate slug if not provided"""
+        if not obj.slug:
+            from django.utils.text import slugify
+            obj.slug = slugify(obj.name or "")[:120]
+        super().save_model(request, obj, form, change)
+
+
 # ── Конфигурация видео моделей (расширенная) ─────────────────────
 @admin.register(VideoModelConfiguration)
 class VideoModelConfigurationAdmin(admin.ModelAdmin):
@@ -736,6 +807,12 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
                 "category", "token_cost", "provider", "provider_version"
             ),
             "description": "Базовые параметры модели"
+        }),
+        ("Конфигурация соотношений сторон и качества", {
+            "fields": (
+                "aspect_ratio_configurations",
+            ),
+            "description": "Настройте доступные соотношения сторон и качество для каждого"
         }),
         ("Разрешения", {
             "fields": (
