@@ -89,25 +89,33 @@ class ImageModelConfiguration(models.Model):
     min_width = models.PositiveIntegerField(
         "Минимальная ширина",
         default=512,
-        help_text="Минимальная ширина изображения в пикселях"
+        null=True,
+        blank=True,
+        help_text="Минимальная ширина изображения в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
     )
 
     max_width = models.PositiveIntegerField(
         "Максимальная ширина",
         default=2048,
-        help_text="Максимальная ширина изображения в пикселях"
+        null=True,
+        blank=True,
+        help_text="Максимальная ширина изображения в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
     )
 
     min_height = models.PositiveIntegerField(
         "Минимальная высота",
         default=512,
-        help_text="Минимальная высота изображения в пикселях"
+        null=True,
+        blank=True,
+        help_text="Минимальная высота изображения в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
     )
 
     max_height = models.PositiveIntegerField(
         "Максимальная высота",
         default=2048,
-        help_text="Максимальная высота изображения в пикселях"
+        null=True,
+        blank=True,
+        help_text="Максимальная высота изображения в пикселях (устаревшее, используйте конфигурацию соотношений сторон)"
     )
 
     # ============ ASPECT RATIO SETTINGS ============
