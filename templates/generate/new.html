@@ -3921,6 +3921,8 @@ const init=()=>{
       s.src=src;s.defer=true;
       s.onload=()=>{
         if(src.includes('video-generation.js')&&!window.videoGeneration&&typeof VideoGeneration==='function'){
+          // Передаем видео модели из Django в JavaScript
+          window.__VIDEO_MODELS__ = {{ video_models|safe }} || [];
           window.videoGeneration=new VideoGeneration();
         }
         if(src.includes('video-prompts.js')){

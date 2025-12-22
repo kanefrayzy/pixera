@@ -60,6 +60,14 @@ class VideoGeneration {
    * Загрузка списка моделей видео
    */
   async loadModels() {
+    // Сначала попробуем загрузить из window.__VIDEO_MODELS__ (переданные из Django)
+    if (window.__VIDEO_MODELS__ && Array.isArray(window.__VIDEO_MODELS__) && window.__VIDEO_MODELS__.length > 0) {
+      this.models = window.__VIDEO_MODELS__;
+      console.log('Загружено моделей видео из Django:', this.models.length);
+      return;
+    }
+    
+    // Fallback: загрузка через API
     try {
       const response = await fetch('/generate/api/video/models/');
       const data = await response.json();

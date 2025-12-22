@@ -654,7 +654,7 @@ def new(request: HttpRequest) -> HttpResponse:
 
     # Получить активные модели изображений
     image_models = ImageModelConfiguration.objects.filter(is_active=True).order_by('order', 'name')
-    
+
     # Получить активные модели видео
     from .models_video import VideoModelConfiguration
     video_models = VideoModelConfiguration.objects.filter(is_active=True).order_by('order', 'name')
@@ -687,7 +687,7 @@ def new(request: HttpRequest) -> HttpResponse:
         "DEFAULT_IMAGE_MODEL": getattr(settings, "RUNWARE_DEFAULT_MODEL", "runware:101@1"),
         "user_key": user_key,
         "image_models": image_models,
-        "video_models": video_models,
+        "video_models": video_models_json,
     }
 
     resp = render(request, "generate/new.html", ctx)
