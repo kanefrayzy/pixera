@@ -52,8 +52,7 @@ class ImageFieldManager {
         // Parse aspect ratio (handle both : and _ separators)
         const parts = aspectRatioStr.replace('_', ':').split(':').map(p => parseFloat(p));
         if (parts.length !== 2 || parts[0] <= 0 || parts[1] <= 0) {
-            console.error('Invalid aspect ratio:', aspectRatioStr);
-            return;
+                        return;
         }
 
         const [ratioW, ratioH] = parts;
@@ -93,8 +92,7 @@ class ImageFieldManager {
         // Update UI
         this.updateDimensionsUI(width, height);
 
-        console.log(`Aspect ratio ${aspectRatioStr} → ${width}×${height} (${width * height} pixels)`);
-    }
+            }
 
     /**
      * Clamp value between min and max
@@ -148,23 +146,20 @@ class ImageFieldManager {
      */
     updateFieldsForModel(model) {
         if (!model) {
-            console.warn('ImageFieldManager: No model provided');
             return;
         }
 
         this.currentModel = model;
         const optionalFields = model.optional_fields || {};
 
-        console.log('ImageFieldManager: Updating fields for model', model.name);
-        console.log('Optional fields:', optionalFields);
+        const optionalFields = model.optional_fields || {};
 
         // Check if optional_fields is empty (no configuration set)
         const hasConfiguration = Object.keys(optionalFields).length > 0;
 
         if (!hasConfiguration) {
             // No configuration - hide all fields except always-visible UI elements
-            console.log('ImageFieldManager: No optional_fields configuration - hiding all fields');
-            this.hideParametersSection();
+                        this.hideParametersSection();
             Object.keys(this.fieldMap).forEach(fieldName => {
                 const element = this.fieldMap[fieldName]();
                 if (element) {
@@ -198,10 +193,8 @@ class ImageFieldManager {
                     container.style.display = isEnabled ? '' : 'none';
                 }
 
-                console.log(`Field "${fieldName}": ${isEnabled ? 'visible' : 'hidden'}`);
-            } else {
-                console.warn(`Field element not found for: ${fieldName}`);
-            }
+                            } else {
+                            }
         });
 
         // Always show certain UI elements regardless of configuration
@@ -218,8 +211,7 @@ class ImageFieldManager {
         const paramsSection = document.getElementById('image-params-section');
         if (paramsSection) {
             paramsSection.classList.remove('hidden');
-            console.log('ImageFieldManager: Parameters section shown');
-        }
+                    }
     }
 
     /**
@@ -229,8 +221,7 @@ class ImageFieldManager {
         const paramsSection = document.getElementById('image-params-section');
         if (paramsSection) {
             paramsSection.classList.add('hidden');
-            console.log('ImageFieldManager: Parameters section hidden');
-        }
+                    }
     }
 
     /**
@@ -245,8 +236,7 @@ class ImageFieldManager {
             if (container) {
                 container.style.display = '';
             }
-            console.log('ImageFieldManager: Showing always-visible: prompt_generator');
-        }
+                    }
     }
 
     /**
@@ -331,8 +321,7 @@ class ImageFieldManager {
             resolutionSelect.appendChild(option);
         });
 
-        console.log('Updated resolution options:', resolutions);
-    }
+            }
 
     /**
      * Update steps input limits
@@ -345,8 +334,7 @@ class ImageFieldManager {
         stepsInput.max = max || 50;
         stepsInput.value = defaultValue || 20;
 
-        console.log(`Updated steps limits: ${min}-${max}, default: ${defaultValue}`);
-    }
+            }
 
     /**
      * Update CFG scale input limits
@@ -360,8 +348,7 @@ class ImageFieldManager {
         cfgInput.value = defaultValue || 7.0;
         cfgInput.step = 0.1;
 
-        console.log(`Updated CFG scale limits: ${min}-${max}, default: ${defaultValue}`);
-    }
+            }
 
     /**
      * Update reference images support
@@ -369,17 +356,14 @@ class ImageFieldManager {
     updateReferenceImagesSupport(maxImages) {
         const refSection = document.querySelector('.reference-upload-compact[data-target="image"]');
         if (!refSection) {
-            console.warn('Reference upload component not found');
-            return;
+                        return;
         }
 
         // Update max images using the component's API
         if (typeof refSection.updateMaxRefs === 'function') {
             refSection.updateMaxRefs(maxImages || 0);
-            console.log(`Updated reference images max: ${maxImages}`);
-        } else {
-            console.warn('updateMaxRefs function not available on reference component');
-        }
+                    } else {
+                    }
     }
 
     /**
@@ -394,8 +378,7 @@ class ImageFieldManager {
             resultsInput.value = maxResults;
         }
 
-        console.log(`Updated number results limit: ${maxResults}`);
-    }
+            }
 
     /**
      * Reset all fields to default visibility
@@ -416,8 +399,7 @@ class ImageFieldManager {
         this.hideParametersSection();
 
         this.currentModel = null;
-        console.log('ImageFieldManager: Fields reset to default');
-    }
+            }
 
     /**
      * Get current model
@@ -436,3 +418,4 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
     window.ImageFieldManager = ImageFieldManager;
 }
+

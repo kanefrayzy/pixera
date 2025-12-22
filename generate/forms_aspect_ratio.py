@@ -406,9 +406,6 @@ class AspectRatioConfigurationWidget(forms.Widget):
         # Получаем JSON из скрытого поля
         json_value = data.get(name, '')
 
-        logger.info(f"[AspectRatioWidget] value_from_datadict called for field: {name}")
-        logger.info(f"[AspectRatioWidget] Raw value from POST: {json_value[:500] if json_value else 'EMPTY'}")
-        logger.info(f"[AspectRatioWidget] All POST keys: {list(data.keys())}")
 
         return json_value if json_value else ''
 
@@ -423,7 +420,6 @@ class AspectRatioConfigurationFormMixin:
 
         import logging
         logger = logging.getLogger(__name__)
-        logger.info(f"[AspectRatioMixin] __init__ called, instance.pk: {self.instance.pk if hasattr(self, 'instance') else 'NO INSTANCE'}")
 
         # Определяем тип модели по Meta.model
         from .models_image import ImageModelConfiguration
@@ -431,7 +427,6 @@ class AspectRatioConfigurationFormMixin:
 
         model_type = 'image' if self.Meta.model == ImageModelConfiguration else 'video'
 
-        logger.info(f"[AspectRatioMixin] Model type: {model_type}")
 
         # Добавляем поле с кастомным виджетом
         self.fields['aspect_ratio_configurations'] = forms.CharField(
@@ -461,28 +456,20 @@ class AspectRatioConfigurationFormMixin:
                 })
 
             if config_data:
-                logger.info(f"[AspectRatioMixin] Loading {len(config_data)} existing configs")
                 self.fields['aspect_ratio_configurations'].initial = json.dumps(config_data)
             else:
-                logger.info(f"[AspectRatioMixin] No existing configs found")
         else:
-            logger.info(f"[AspectRatioMixin] New instance, no configs to load")
 
     def save(self, commit=True):
         import logging
         logger = logging.getLogger(__name__)
 
-        logger.info(f"[AspectRatioMixin] save() called, commit={commit}")
-        logger.info(f"[AspectRatioMixin] cleaned_data keys: {list(self.cleaned_data.keys())}")
-        logger.info(f"[AspectRatioMixin] aspect_ratio_configurations value: {self.cleaned_data.get('aspect_ratio_configurations', 'NOT FOUND')[:200]}")
 
         instance = super().save(commit=commit)
 
-        logger.info(f"[AspectRatioMixin] Instance saved, pk={instance.pk}")
 
         # Сохраняем JSON в переменную экземпляра для использования в save_model админки
         self._pending_aspect_ratio_configs = self.cleaned_data.get('aspect_ratio_configurations', '')
-        logger.info(f"[AspectRatioMixin] Stored configs in _pending_aspect_ratio_configs")
 
         # ТАКЖЕ сохраняем в thread-local для сигнала post_save
         configs_json = self.cleaned_data.get('aspect_ratio_configurations', '')
@@ -496,15 +483,12 @@ class AspectRatioConfigurationFormMixin:
                 save_image_model_aspect_ratio_configs._thread_locals = _thread_locals
 
             _thread_locals.pending_configs = configs_json
-            logger.info(f"[AspectRatioMixin] Stored configs in thread-local for signal")
             print(f">>> [AspectRatioMixin] Stored configs in thread-local: {configs_json[:100]}")
 
         if commit:
             # Если commit=True, сохраняем сразу
-            logger.info(f"[AspectRatioMixin] commit=True, calling _save_aspect_ratio_configurations immediately")
             self._save_aspect_ratio_configurations(instance)
         else:
-            logger.warning(f"[AspectRatioMixin] commit=False, configs will be saved by signal")
 
         return instance
 
@@ -520,12 +504,9 @@ class AspectRatioConfigurationFormMixin:
 
         model_type = 'image' if isinstance(instance, ImageModelConfiguration) else 'video'
 
-        logger.info(f"[AspectRatioMixin] Saving aspect ratio configurations for {model_type} model ID: {instance.pk}")
 
         # Получаем JSON из переменной или из cleaned_data
         configs_json = getattr(self, '_pending_aspect_ratio_configs', None) or self.cleaned_data.get('aspect_ratio_configurations', '')
-        logger.info(f"[AspectRatioMixin] Configs JSON source: {'_pending_aspect_ratio_configs' if hasattr(self, '_pending_aspect_ratio_configs') else 'cleaned_data'}")
-        logger.info(f"[AspectRatioMixin] Configs JSON from form: {configs_json[:200] if configs_json else 'EMPTY'}")
 
         # Удаляем старые конфигурации
         deleted_count = AspectRatioQualityConfig.objects.filter(
@@ -533,12 +514,10 @@ class AspectRatioConfigurationFormMixin:
             model_id=instance.pk
         ).delete()
 
-        logger.info(f"[AspectRatioMixin] Deleted {deleted_count[0] if deleted_count else 0} old configurations")
 
         if configs_json:
             try:
                 configs = json.loads(configs_json)
-                logger.info(f"[AspectRatioMixin] Parsed {len(configs)} configurations")
 
                 for i, config in enumerate(configs):
                     created_config = AspectRatioQualityConfig.objects.create(
@@ -552,10 +531,7 @@ class AspectRatioConfigurationFormMixin:
                         is_default=i == 0,  # Первая конфигурация - по умолчанию
                         order=i
                     )
-                    logger.info(f"[AspectRatioMixin] Created config: {created_config.aspect_ratio} {created_config.quality} ({created_config.width}x{created_config.height})")
 
-                logger.info(f"[AspectRatioMixin] Successfully saved {len(configs)} configurations")
             except Exception as e:
-                logger.error(f"[AspectRatioMixin] Error saving aspect ratio configurations: {e}", exc_info=True)
         else:
-            logger.warning("[AspectRatioMixin] No configurations to save (empty JSON)")
+

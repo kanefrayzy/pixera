@@ -10,7 +10,6 @@
   const root = document.getElementById('gen-root') || document.body;
   if (!root) return;
   const USER_KEY = (root.dataset && root.dataset.userKey) ? root.dataset.userKey : 'anon';
-  try { console.log('[image-gen] loaded v1, userKey=', USER_KEY, 'ts=', Date.now()); } catch(_) {}
   // Gate heavy work to IMAGE mode only to avoid mixing and UI hangs
   const isImageMode =
     !document.documentElement.classList.contains('mode-video') &&
@@ -332,7 +331,7 @@
     } else {
       host.appendChild(card);
     }
-    try { console.log('[image-gen] queue UI created'); } catch(_) {}
+
     // Оптимизация производительности и фиксированный размер карточек
     if (!document.getElementById('image-queue-perf-style')) {
       const st = document.createElement('style');
@@ -445,7 +444,7 @@
     }
 
     card.querySelector('#clear-image-queue-btn')?.addEventListener('click', async () => {
-      try { console.log('[image-gen] clear clicked; queue size=', (queue||[]).length); } catch(_) {}
+
       // backend: permanently clear server-side queue for this owner
       try {
         await fetch('/generate/api/queue/clear', { method: 'POST', headers: { 'X-CSRFToken': getCSRF() }, credentials: 'same-origin' }).catch(()=>{});
@@ -594,7 +593,7 @@
         btn.setAttribute('aria-label', isAuth ? 'Сохранить в профиле' : 'Добавить в галерею');
       }
       // soft alert; do not break UI
-      try { console.warn('Persist failed', e); } catch(_) {}
+
     }
   }
 
@@ -847,7 +846,7 @@
         window.balanceUpdater.fetch();
       }
     } catch(e) {
-      console.log('[image-gen] Balance update skipped:', e.message);
+
     }
 
     tile.innerHTML = `
@@ -1028,7 +1027,7 @@
     try {
       const r = await fetch('/generate/api/completed-jobs?type=image', { headers: { 'X-Requested-With': 'fetch' } });
       let j = await r.json().catch(()=>null);
-      try { console.log('[image-gen] bootstrapCompletedJobs total=', (j && j.jobs && j.jobs.length) || 0); } catch(_) {}
+
       if (!j || !j.success || !j.jobs || !j.jobs.length) return;
 
       ensureQueueUI();
@@ -1106,15 +1105,11 @@
       const heightInput = document.getElementById('id_height');
       if (widthInput && widthInput.value) {
         fd.append('width', widthInput.value);
-        console.log('[image-gen] Added width:', widthInput.value);
       }
       if (heightInput && heightInput.value) {
         fd.append('height', heightInput.value);
-        console.log('[image-gen] Added height:', heightInput.value);
       }
-    } catch(e) {
-      console.error('[image-gen] Failed to add width/height:', e);
-    }
+    } catch(e) {}
 
     // Add reference images if any
     try {
@@ -1126,23 +1121,13 @@
         if (typeof refSection.getReferenceFiles === 'function') {
           const refFiles = refSection.getReferenceFiles();
           if (refFiles && refFiles.length > 0) {
-            console.log('[image-gen] Attaching', refFiles.length, 'reference images');
             refFiles.forEach((file, idx) => {
               fd.append('reference_images', file);
-              console.log('[image-gen] Added reference image:', file.name, file.size, 'bytes');
             });
-          } else {
-            console.log('[image-gen] No reference files to attach');
           }
-        } else {
-          console.warn('[image-gen] Reference component not initialized yet');
         }
-      } else {
-        console.log('[image-gen] No reference upload section found (tried .reference-upload-compact and .reference-upload-section)');
       }
-    } catch(e) {
-      console.error('[image-gen] Failed to attach reference images:', e);
-    }
+    } catch(e) {}
 
     // Face Retouch (photo -> photo) special fields
     if (selectedModel === 'runware:108@22') {
@@ -1184,14 +1169,7 @@
       credentials: 'same-origin'
     });
 
-    // Логируем статус ответа
-    console.log('[image-gen] Response status:', resp.status, resp.statusText);
-    console.log('[image-gen] Response headers:', Object.fromEntries(resp.headers.entries()));
-
     const j = await resp.json().catch(()=> ({}));
-
-    // Логируем полный ответ сервера
-    console.log('[image-gen] Server response:', JSON.stringify(j, null, 2));
 
     if (!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status));
     return j;

@@ -22,7 +22,6 @@ class AspectRatioSlider {
 
     async init() {
         if (!this.modelId || !this.container) {
-            console.warn('AspectRatioSlider: container or model ID not provided');
             return;
         }
 
@@ -48,10 +47,8 @@ class AspectRatioSlider {
             if (defaultRatio) {
                 this.currentIndex = this.ratios.indexOf(defaultRatio.ratio);
             }
-
-            console.log('Loaded aspect ratio configs:', this.configs);
         } catch (error) {
-            console.error('Failed to load aspect ratio configs:', error);
+            // Silently handle error
         }
     }
 
@@ -319,8 +316,6 @@ class AspectRatioSlider {
             dimensionsDisplay.textContent = `${width} × ${height}`;
             dimensionsInfo.style.display = '';
         }
-
-        console.log('Updated dimensions:', width, 'x', height);
     }
 
     getCurrentRatio() {
