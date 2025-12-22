@@ -4,11 +4,13 @@ Provides admin interface for managing image generation models
 """
 from django import forms
 from .models_image import ImageModelConfiguration
+from .forms_aspect_ratio import AspectRatioConfigurationFormMixin
 
 
-class ImageModelConfigurationForm(forms.ModelForm):
+class ImageModelConfigurationForm(AspectRatioConfigurationFormMixin, forms.ModelForm):
     """
     Form for image model configuration with organized fieldsets
+    Includes aspect ratio + quality configuration
     """
 
     class Meta:
@@ -50,7 +52,42 @@ class ImageModelConfigurationForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # ВАЖНО: сначала вызываем super().__init__ который вызовет миксин
         super().__init__(*args, **kwargs)
+
+        # Проверка что миксин добавил поле
+        if 'aspect_ratio_configurations' not in self.fields:
+            # Если миксин не сработал, добавляем поле вручную
+            from .forms_aspect_ratio import AspectRatioConfigurationWidget, AspectRatioQualityConfig
+            import json
+            
+            self.fields['aspect_ratio_configurations'] = forms.CharField(
+                required=False,
+                widget=AspectRatioConfigurationWidget(model_type='image'),
+                label='Конфигурация соотношений сторон и качества',
+                help_text='Выберите соотношения галочкой, затем укажите качества и размеры'
+            )
+            
+            # Загружаем существующие конфигурации
+            if self.instance.pk:
+                configs = AspectRatioQualityConfig.objects.filter(
+                    model_type='image',
+                    model_id=self.instance.pk,
+                    is_active=True
+                ).order_by('order')
+                
+                config_data = []
+                for config in configs:
+                    config_data.append({
+                        'aspect_ratio': config.aspect_ratio,
+                        'quality': config.quality,
+                        'width': config.width,
+                        'height': config.height,
+                        'is_active': config.is_active
+                    })
+                
+                if config_data:
+                    self.fields['aspect_ratio_configurations'].initial = json.dumps(config_data)
 
         # Add help text for key fields
         self.fields['model_id'].help_text = 'ID модели в формате Runware API (например: runware:101@1)'
