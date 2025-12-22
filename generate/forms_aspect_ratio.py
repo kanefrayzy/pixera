@@ -418,7 +418,18 @@ class AspectRatioConfigurationFormMixin:
                     'width': config.width,
                     'height': config.height,
                     'is_active': config.is_active
-         mport logging
+                })
+
+            if config_data:
+                logger.info(f"[AspectRatioMixin] Loading {len(config_data)} existing configs")
+                self.fields['aspect_ratio_configurations'].initial = json.dumps(config_data)
+            else:
+                logger.info(f"[AspectRatioMixin] No existing configs found")
+        else:
+            logger.info(f"[AspectRatioMixin] New instance, no configs to load")
+
+    def save(self, commit=True):
+        import logging
         logger = logging.getLogger(__name__)
         
         logger.info(f"[AspectRatioMixin] save() called, commit={commit}")
@@ -434,18 +445,7 @@ class AspectRatioConfigurationFormMixin:
             logger.info(f"[AspectRatioMixin] Calling _save_aspect_ratio_configurations")
             self._save_aspect_ratio_configurations(instance)
         else:
-            logger.warning(f"[AspectRatioMixin] commit=False, skipping config save"initial = json.dumps(config_data)
-            else:
-                logger.info(f"[AspectRatioMixin] No existing configs found")
-        else:
-            logger.info(f"[AspectRatioMixin] New instance, no configs to load")
-
-    def save(self, commit=True):
-        instance = super().save(commit=commit)
-
-        if commit:
-            # Сохраняем конфигурации
-            self._save_aspect_ratio_configurations(instance)
+            logger.warning(f"[AspectRatioMixin] commit=False, skipping config save")
 
         return instance
 
