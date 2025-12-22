@@ -35,10 +35,10 @@ def save_image_model_aspect_ratio_configs(sender, instance, created, **kwargs):
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     print(f">>> [SIGNAL] post_save for ImageModelConfiguration, pk={instance.pk}, created={created}")
     logger.info(f"[SIGNAL] post_save for ImageModelConfiguration, pk={instance.pk}, created={created}")
-    
+
     # Проверяем есть ли pending configs в текущем request
     # Django admin сохраняет форму с request, но signal не имеет доступа к request
     # Поэтому используем thread-local storage
@@ -47,26 +47,26 @@ def save_image_model_aspect_ratio_configs(sender, instance, created, **kwargs):
     if _thread_locals is None:
         _thread_locals = local()
         save_image_model_aspect_ratio_configs._thread_locals = _thread_locals
-    
+
     configs_json = getattr(_thread_locals, 'pending_configs', None)
-    
+
     if configs_json:
         print(f">>> [SIGNAL] Found pending configs: {configs_json[:200]}")
         logger.info(f"[SIGNAL] Found pending configs, saving...")
-        
+
         import json
         # Удаляем старые конфигурации
         deleted_count = AspectRatioQualityConfig.objects.filter(
             model_type='image',
             model_id=instance.pk
         ).delete()
-        
+
         logger.info(f"[SIGNAL] Deleted {deleted_count[0] if deleted_count else 0} old configurations")
-        
+
         try:
             configs = json.loads(configs_json)
             logger.info(f"[SIGNAL] Parsed {len(configs)} configurations")
-            
+
             for i, config in enumerate(configs):
                 created_config = AspectRatioQualityConfig.objects.create(
                     model_type='image',
@@ -80,12 +80,12 @@ def save_image_model_aspect_ratio_configs(sender, instance, created, **kwargs):
                     order=i
                 )
                 logger.info(f"[SIGNAL] Created config: {created_config.aspect_ratio} {created_config.quality} ({created_config.width}x{created_config.height})")
-                
+
             logger.info(f"[SIGNAL] Successfully saved {len(configs)} configurations")
-            
+
             # Очищаем pending configs
             _thread_locals.pending_configs = None
-            
+
         except Exception as e:
             logger.error(f"[SIGNAL] Error saving aspect ratio configurations: {e}", exc_info=True)
     else:

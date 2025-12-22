@@ -443,7 +443,7 @@ class AspectRatioConfigurationFormMixin:
         # Сохраняем JSON в переменную экземпляра для использования в save_model админки
         self._pending_aspect_ratio_configs = self.cleaned_data.get('aspect_ratio_configurations', '')
         logger.info(f"[AspectRatioMixin] Stored configs in _pending_aspect_ratio_configs")
-        
+
         # ТАКЖЕ сохраняем в thread-local для сигнала post_save
         configs_json = self.cleaned_data.get('aspect_ratio_configurations', '')
         if configs_json:
@@ -454,7 +454,7 @@ class AspectRatioConfigurationFormMixin:
             if _thread_locals is None:
                 _thread_locals = local()
                 save_image_model_aspect_ratio_configs._thread_locals = _thread_locals
-            
+
             _thread_locals.pending_configs = configs_json
             logger.info(f"[AspectRatioMixin] Stored configs in thread-local for signal")
             print(f">>> [AspectRatioMixin] Stored configs in thread-local: {configs_json[:100]}")
@@ -465,6 +465,21 @@ class AspectRatioConfigurationFormMixin:
             self._save_aspect_ratio_configurations(instance)
         else:
             logger.warning(f"[AspectRatioMixin] commit=False, configs will be saved by signal")
+
+        return instance
+
+    def _save_aspect_ratio_configurations(self, instance):
+        """Сохраняет конфигурации соотношений"""
+        import json
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        from .models_image import ImageModelConfiguration
+        from .models_video import VideoModelConfiguration
+
+        model_type = 'image' if isinstance(instance, ImageModelConfiguration) else 'video'
+        
         logger.info(f"[AspectRatioMixin] Saving aspect ratio configurations for {model_type} model ID: {instance.pk}")
 
         # Получаем JSON из переменной или из cleaned_data
