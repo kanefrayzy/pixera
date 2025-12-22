@@ -36,7 +36,7 @@ urlpatterns = [
     path("api/video-models/<int:pk>/config", views_video_models.video_model_api_config, name="video_model_api_config"),
 
     # ── API конфигураций соотношений сторон
-    path("api/aspect-ratio-configs/<str:model_type>/<int:model_id>", get_model_aspect_ratio_configs, name="api_aspect_ratio_configs"),
+    re_path(r"^api/aspect-ratio-configs/(?P<model_type>image|video)/(?P<model_id>.+)$", get_model_aspect_ratio_configs, name="api_aspect_ratio_configs"),
 
     # ── Страница категорий промптов
     path("prompts", views.prompts_page, name="prompts"),
