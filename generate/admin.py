@@ -780,6 +780,7 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
         import logging
         logger = logging.getLogger(__name__)
         
+        print(f">>> [ImageModelAdmin] save_model called, change={change}, obj.pk={obj.pk}")
         logger.info(f"[ImageModelAdmin] save_model called, change={change}, obj.pk={obj.pk}")
         logger.info(f"[ImageModelAdmin] Form class: {form.__class__.__name__}")
         logger.info(f"[ImageModelAdmin] Has _save_aspect_ratio_configurations: {hasattr(form, '_save_aspect_ratio_configurations')}")
@@ -791,13 +792,18 @@ class ImageModelConfigurationAdmin(admin.ModelAdmin):
         # Сохраняем объект
         super().save_model(request, obj, form, change)
         
+        print(f">>> [ImageModelAdmin] After super().save_model, obj.pk={obj.pk}")
         logger.info(f"[ImageModelAdmin] After super().save_model, obj.pk={obj.pk}")
         
         # Сохраняем конфигурации соотношений сторон
         if hasattr(form, '_save_aspect_ratio_configurations'):
+            print(f">>> [ImageModelAdmin] Has method, calling form._save_aspect_ratio_configurations")
             logger.info(f"[ImageModelAdmin] Calling form._save_aspect_ratio_configurations")
             form._save_aspect_ratio_configurations(obj)
+            print(f">>> [ImageModelAdmin] Completed _save_aspect_ratio_configurations")
         else:
+            print(f">>> [ImageModelAdmin] Form does NOT have _save_aspect_ratio_configurations method!")
+            logger.error(f"[ImageModelAdmin] Form does not have _save_aspect_ratio_configurations method!")
             logger.error(f"[ImageModelAdmin] Form does not have _save_aspect_ratio_configurations method!")
 
 
