@@ -4,6 +4,7 @@ from django.views.generic import RedirectView
 
 from . import views, views_api, views_prompts_api, views_video_api, views_video_models, views_image_models
 from . import views_queue_api
+from .api_aspect_ratio import get_model_aspect_ratio_configs
 
 app_name = "generate"
 
@@ -33,6 +34,9 @@ urlpatterns = [
     path("admin/video-models/<int:pk>/quick-edit", views_video_models.video_model_quick_edit, name="video_model_quick_edit"),
     path("admin/video-models/bulk-action", views_video_models.video_model_bulk_action, name="video_model_bulk_action"),
     path("api/video-models/<int:pk>/config", views_video_models.video_model_api_config, name="video_model_api_config"),
+
+    # ── API конфигураций соотношений сторон
+    path("api/aspect-ratio-configs/<str:model_type>/<int:model_id>", get_model_aspect_ratio_configs, name="api_aspect_ratio_configs"),
 
     # ── Страница категорий промптов
     path("prompts", views.prompts_page, name="prompts"),
