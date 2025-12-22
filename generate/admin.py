@@ -879,7 +879,7 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     ordering = ("category", "order", "name")
     actions = (mark_active, mark_inactive)
-    readonly_fields = ("created_at", "updated_at", "aspect_ratio_link")
+    readonly_fields = ("created_at", "updated_at")
 
     fieldsets = (
         ("Основная информация", {
@@ -891,9 +891,9 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
         }),
         ("Конфигурация соотношений сторон и качества", {
             "fields": (
-                "aspect_ratio_link",
+                "aspect_ratio_configurations",
             ),
-            "description": "Используйте кнопку выше для настройки доступных соотношений сторон и качества"
+            "description": "Доступные варианты соотношения сторон и качества для генерации"
         }),
         ("Длительность", {
             "fields": (
@@ -1025,13 +1025,13 @@ class VideoModelConfigurationAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         """Auto-generate slug if not provided and save aspect ratio configurations"""
         print(f">>> [VideoModelAdmin] save_model called, change={change}, obj.pk={obj.pk}")
-        
+
         if not obj.slug:
             from django.utils.text import slugify
             obj.slug = slugify(obj.name or "")[:120]
 
         super().save_model(request, obj, form, change)
-        
+
         print(f">>> [VideoModelAdmin] After super().save_model, obj.pk={obj.pk}")
 
         # Сохранить конфигурацию соотношения сторон
