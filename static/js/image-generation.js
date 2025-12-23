@@ -831,35 +831,6 @@
       document.head.appendChild(style);
     }
 
-    // Обработчик удаления для pending tile
-    try {
-      const removeBtn = tile.querySelector('.image-tile-remove');
-      if (removeBtn) {
-        removeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-
-          // Анимация удаления
-          tile.style.transition = 'all 0.3s ease';
-          tile.style.transform = 'scale(0.8)';
-          tile.style.opacity = '0';
-
-          setTimeout(() => {
-            try {
-              tile.remove();
-
-              // Проверяем, остались ли карточки
-              const grid = document.getElementById('image-results-grid');
-              if (grid && !grid.querySelector('.image-result-tile')) {
-                const card = document.getElementById('image-queue-card');
-                if (card) card.remove();
-              }
-            } catch(_) {}
-          }, 300);
-        });
-      }
-    } catch(_) {}
-
     return tile;
   }
 
@@ -973,44 +944,6 @@
         pbtn.disabled = true;
         pbtn.classList.add('opacity-70','pointer-events-none');
         pbtn.setAttribute('aria-label', isAuth ? 'Сохранено в профиле' : 'Сохранен в галерею');
-      }
-    } catch(_) {}
-
-    // Обработчик удаления карточки
-    try {
-      const removeBtn = tile.querySelector('.image-tile-remove');
-      if (removeBtn) {
-        removeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-
-          // Удаляем из очереди
-          if (jobId) {
-            try {
-              const id = String(jobId);
-              queue = queue.filter(e => String(e.job_id) !== id);
-              saveQueue(queue);
-            } catch(_) {}
-          }
-
-          // Анимация удаления
-          tile.style.transition = 'all 0.3s ease';
-          tile.style.transform = 'scale(0.8)';
-          tile.style.opacity = '0';
-
-          setTimeout(() => {
-            try {
-              tile.remove();
-
-              // Проверяем, остались ли карточки
-              const grid = document.getElementById('image-results-grid');
-              if (grid && !grid.querySelector('.image-result-tile')) {
-                const card = document.getElementById('image-queue-card');
-                if (card) card.remove();
-              }
-            } catch(_) {}
-          }, 300);
-        });
       }
     } catch(_) {}
   }
