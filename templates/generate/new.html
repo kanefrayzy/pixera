@@ -13,8 +13,6 @@
 <link rel="dns-prefetch" href="//images.unsplash.com">
 <link rel="preload" as="script" href="{% static 'js/generate-optimized.js' %}?v={{ STATIC_VERSION }}">
 <link rel="preload" as="script" href="{% static 'js/generate.js' %}?v={{ STATIC_VERSION }}">
-<link rel="preload" as="script" href="{% static 'js/image-generation.js' %}?v={{ STATIC_VERSION }}">
-<link rel="preload" as="script" href="{% static 'js/image-models.js' %}?v={{ STATIC_VERSION }}">
 {% with first=showcase_images.0 %}
 {% if first %}
   {% with imgs=first.get_all_images_with_thumbs %}
@@ -3125,12 +3123,27 @@ updateNavState();
 </script>
 <script src="{% static 'js/generate-optimized.js' %}?v={{ STATIC_VERSION }}" defer></script>
 <script src="{% static 'js/generate.js' %}?v={{ STATIC_VERSION }}" defer></script>
-<script src="{% static 'js/image-generation.js' %}?v={{ STATIC_VERSION }}" defer></script>
-<script src="{% static 'js/image-models.js' %}?v={{ STATIC_VERSION }}" defer></script>
-<script src="{% static 'js/image-field-manager.js' %}?v={{ STATIC_VERSION }}" defer></script>
-<script src="{% static 'js/image-price-calculator.js' %}?v={{ STATIC_VERSION }}" defer></script>
-<script src="{% static 'js/update-image-model-info.js' %}?v={{ STATIC_VERSION }}" defer></script>
-<script src="{% static 'js/balance-updater.js' %}?v={{ STATIC_VERSION }}" defer></script>
+<script>
+// Динамическая загрузка image скриптов для обхода кеша
+(function(){
+  const imageScripts=[
+    "{% static 'js/image-generation.js' %}?v={{ STATIC_VERSION }}&t=" + Date.now(),
+    "{% static 'js/image-models.js' %}?v={{ STATIC_VERSION }}",
+    "{% static 'js/image-field-manager.js' %}?v={{ STATIC_VERSION }}",
+    "{% static 'js/image-price-calculator.js' %}?v={{ STATIC_VERSION }}",
+    "{% static 'js/update-image-model-info.js' %}?v={{ STATIC_VERSION }}",
+    "{% static 'js/balance-updater.js' %}?v={{ STATIC_VERSION }}"
+  ];
+  const frag=document.createDocumentFragment();
+  imageScripts.forEach(src=>{
+    const s=document.createElement('script');
+    s.src=src;
+    s.defer=true;
+    frag.appendChild(s);
+  });
+  document.body.appendChild(frag);
+})();
+</script>
 <script>
 // Оптимизированные данные витрины с ленивой загрузкой
 window.showcaseGalleryData = [
