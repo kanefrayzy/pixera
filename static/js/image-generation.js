@@ -478,9 +478,12 @@
 
     // Delegated actions on tiles (persist/remove)
     card.addEventListener('click', (e) => {
+      console.log('[image-card-click] Event triggered, target:', e.target);
+      
       // Persist to "Мои генерации"
       const pbtn = e.target.closest('.img-save-btn');
       if (pbtn) {
+        console.log('[image-card-click] Save button clicked');
         const tile = pbtn.closest('.image-result-tile');
         const jid = tile && tile.dataset ? tile.dataset.jobId : null;
         if (jid) { persistJob(String(jid), pbtn); }
@@ -489,6 +492,7 @@
 
       // Remove tile from queue UI
       const btn = e.target.closest('.image-tile-remove');
+      console.log('[image-card-click] Remove button search result:', btn);
       if (!btn) return;
       const tile = btn.closest('.image-result-tile');
       if (!tile) return;
