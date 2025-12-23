@@ -276,9 +276,14 @@ if DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET:
     }
 
 # ── static & media ────────────────────────────────────────────────────────────
+import time
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Auto-generate version based on current timestamp for cache busting
+STATIC_VERSION = str(int(time.time()))
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
