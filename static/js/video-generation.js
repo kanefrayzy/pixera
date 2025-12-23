@@ -1130,16 +1130,23 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (!jobId) return;
     const id = String(jobId);
 
+    console.log('[removeFromQueue] START - Removing job:', id);
+    console.log('[removeFromQueue] clearedJobs BEFORE:', Array.from(this.clearedJobs || []));
+
     // 1. Помечаем задачу как удаленную навсегда
     if (!this.clearedJobs) this.clearedJobs = new Set();
     this.clearedJobs.add(id);
     this.saveClearedJobs();
+    console.log('[removeFromQueue] clearedJobs AFTER:', Array.from(this.clearedJobs));
 
     // 2. Удаляем из локальной очереди
     const idx = this.queue.findIndex(e => String(e.job_id) === id);
     if (idx >= 0) {
       this.queue.splice(idx, 1);
       this.saveQueue();
+      console.log('[removeFromQueue] Removed from queue array at index:', idx);
+    } else {
+      console.log('[removeFromQueue] Job not found in queue array');
     }
 
     // 3. Удаляем с сервера (асинхронно, без ожидания)
@@ -1152,10 +1159,14 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         },
         credentials: 'same-origin',
         body: 'job_id=' + encodeURIComponent(id)
-      }).catch(() => {}); // Игнорируем ошибки сети
+      }).then(() => {
+        console.log('[removeFromQueue] Server deletion successful for:', id);
+      }).catch((err) => {
+        console.error('[removeFromQueue] Server deletion failed:', err);
+      });
     } catch (_) { }
 
-    console.log('[removeFromQueue] Removed job:', id);
+    console.log('[removeFromQueue] DONE - Job marked as cleared forever:', id);
   }
 
   // Purge items older than 24h from UI queue and DOM (strict)
@@ -1357,14 +1368,19 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
   async clearQueue() {
     try {
+      console.log('[clearQueue] START - Clearing entire queue');
       const grid = document.getElementById('video-results-grid');
 
       // backend: permanently clear server-side queue for this owner
       try {
         await fetch('/generate/api/queue/clear', { method: 'POST', headers: { 'X-CSRFToken': this.getCSRFToken() }, credentials: 'same-origin' });
-      } catch (_) { }
+        console.log('[clearQueue] Server clear successful');
+      } catch (err) {
+        console.error('[clearQueue] Server clear failed:', err);
+      }
 
       // 1) Помечаем ВСЕ задачи (и pending, и done) как очищенные, чтобы их результаты не вернулись в грид
+      console.log('[clearQueue] Queue BEFORE clear:', this.queue.length, 'jobs');
       this.queue.forEach(e => {
         if (e.job_id) this.clearedJobs.add(String(e.job_id));
       });
@@ -1374,7 +1390,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       // 2) Глобально запоминаем момент очистки и сбрасываем возможные «залипшие» pending-флаги
       this.clearedAt = Date.now();
       this.saveClearedAt(this.clearedAt);
-      console.log('[clearQueue] Saved clearedAt:', this.clearedAt);
+      console.log('[clearQueue] Saved clearedAt:', this.clearedAt, 'Date:', new Date(this.clearedAt).toISOString());
       try {
         localStorage.removeItem('gen.video.pendingJob');
         localStorage.removeItem('gen.video.inflight');
