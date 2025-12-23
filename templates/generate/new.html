@@ -3126,13 +3126,14 @@ updateNavState();
 <script>
 // Динамическая загрузка image скриптов для обхода кеша
 (function(){
+  const timestamp = Date.now();
   const imageScripts=[
-    "{% static 'js/image-generation.js' %}?v={{ STATIC_VERSION }}&t=" + Date.now(),
-    "{% static 'js/image-models.js' %}?v={{ STATIC_VERSION }}",
-    "{% static 'js/image-field-manager.js' %}?v={{ STATIC_VERSION }}",
-    "{% static 'js/image-price-calculator.js' %}?v={{ STATIC_VERSION }}",
-    "{% static 'js/update-image-model-info.js' %}?v={{ STATIC_VERSION }}",
-    "{% static 'js/balance-updater.js' %}?v={{ STATIC_VERSION }}"
+    "/static/js/image-generation.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+    "/static/js/image-models.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+    "/static/js/image-field-manager.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+    "/static/js/image-price-calculator.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+    "/static/js/update-image-model-info.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+    "/static/js/balance-updater.js?v={{ STATIC_VERSION }}&t=" + timestamp
   ];
   const frag=document.createDocumentFragment();
   imageScripts.forEach(src=>{
