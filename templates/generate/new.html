@@ -7,12 +7,10 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/generate.css' %}">
 <link rel="stylesheet" href="{% static 'css/showcase.css' %}">
-    <link rel="stylesheet" href="{% static 'css/moon-slider.css' %}?v={{ STATIC_VERSION }}">
-<link rel="stylesheet" href="{% static 'css/video-generation-fix.css' %}?v={{ STATIC_VERSION }}">
+<link rel="stylesheet" href="{% static 'css/moon-slider.css' %}?v={{ STATIC_VERSION }}" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="{% static 'css/video-generation-fix.css' %}?v={{ STATIC_VERSION }}" media="print" onload="this.media='all'">
 <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="dns-prefetch" href="//images.unsplash.com">
-<link rel="preload" as="script" href="{% static 'js/generate-optimized.js' %}?v={{ STATIC_VERSION }}">
-<link rel="preload" as="script" href="{% static 'js/generate.js' %}?v={{ STATIC_VERSION }}">
 {% with first=showcase_images.0 %}
 {% if first %}
   {% with imgs=first.get_all_images_with_thumbs %}
@@ -40,6 +38,9 @@ img{image-rendering:crisp-edges;image-rendering:-webkit-optimize-contrast}
 body{-webkit-overflow-scrolling:touch}
 /* Отключаем transitions при первой загрузке для мгновенного рендеринга */
 .preload-transitions *{transition:none!important;animation:none!important}
+/* Скелетон для витрины во время загрузки */
+.showcase-skeleton{background:linear-gradient(90deg,var(--bg-card) 25%,var(--bg-2) 50%,var(--bg-card) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 </style>
 <script>
 // Убираем класс после загрузки для включения анимаций
@@ -47,6 +48,11 @@ document.documentElement.classList.add('preload-transitions');
 window.addEventListener('load',()=>{
 requestAnimationFrame(()=>document.documentElement.classList.remove('preload-transitions'));
 },{once:true,passive:true});
+
+// Критичная оптимизация: отключаем лишние запросы до полной загрузки
+if('IntersectionObserver' in window){
+  window.__LAZY_LOAD_ENABLED__=true;
+}
 </script>
 {% if false %}
 <!-- Prompt Categories Section -->
@@ -3124,48 +3130,76 @@ updateNavState();
 <script src="{% static 'js/generate-optimized.js' %}?v={{ STATIC_VERSION }}" defer></script>
 <script src="{% static 'js/generate.js' %}?v={{ STATIC_VERSION }}" defer></script>
 <script>
-// Динамическая загрузка image скриптов для обхода кеша
+// Отложенная загрузка image скриптов после полной отрисовки страницы
 (function(){
-  const timestamp = Date.now();
-  const imageScripts=[
-    "/static/js/image-generation.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-    "/static/js/image-models.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-    "/static/js/image-field-manager.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-    "/static/js/image-price-calculator.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-    "/static/js/update-image-model-info.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-    "/static/js/balance-updater.js?v={{ STATIC_VERSION }}&t=" + timestamp
-  ];
-  const frag=document.createDocumentFragment();
-  imageScripts.forEach(src=>{
-    const s=document.createElement('script');
-    s.src=src;
-    s.defer=true;
-    frag.appendChild(s);
-  });
-  document.body.appendChild(frag);
+  function loadImageScripts(){
+    const timestamp = Date.now();
+    const imageScripts=[
+      "/static/js/image-generation.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+      "/static/js/image-models.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+      "/static/js/image-field-manager.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+      "/static/js/image-price-calculator.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+      "/static/js/update-image-model-info.js?v={{ STATIC_VERSION }}&t=" + timestamp,
+      "/static/js/balance-updater.js?v={{ STATIC_VERSION }}&t=" + timestamp
+    ];
+    const frag=document.createDocumentFragment();
+    imageScripts.forEach(src=>{
+      const s=document.createElement('script');
+      s.src=src;
+      s.defer=true;
+      frag.appendChild(s);
+    });
+    document.body.appendChild(frag);
+  }
+  
+  // Загружаем скрипты после полной отрисовки страницы
+  if('requestIdleCallback' in window){
+    requestIdleCallback(loadImageScripts,{timeout:2000});
+  }else{
+    if(document.readyState==='complete'){
+      setTimeout(loadImageScripts,100);
+    }else{
+      window.addEventListener('load',()=>setTimeout(loadImageScripts,100));
+    }
+  }
 })();
 </script>
 <script>
-// Оптимизированные данные витрины с ленивой загрузкой
-window.showcaseGalleryData = [
-{% for item in showcase_images %}
-  {
-    id: {{ item.id|default:"0" }},
-    category: "{{ item.category.slug|default:'misc' }}",
-    title: "{{ item.title|escapejs }}",
-    prompt: "{{ item.prompt|escapejs }}",
-    images: [
-      {% with imgs=item.get_all_images_with_thumbs %}
-        {% for im in imgs %}
-          {"thumb":"{{ im.thumb|escapejs }}","full":"{{ im.full|escapejs }}"}{% if not forloop.last %},{% endif %}
-        {% endfor %}
-      {% endwith %}
-    ]
-  }{% if not forloop.last %},{% endif %}
-{% endfor %}
-];
+// Отложенная загрузка данных витрины после полной отрисовки
+(function(){
+  function loadShowcaseData(){
+    window.showcaseGalleryData = [
+    {% for item in showcase_images %}
+      {
+        id: {{ item.id|default:"0" }},
+        category: "{{ item.category.slug|default:'misc' }}",
+        title: "{{ item.title|escapejs }}",
+        prompt: "{{ item.prompt|escapejs }}",
+        images: [
+          {% with imgs=item.get_all_images_with_thumbs %}
+            {% for im in imgs %}
+              {"thumb":"{{ im.thumb|escapejs }}","full":"{{ im.full|escapejs }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          {% endwith %}
+        ]
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    ];
+    
+    // Загружаем showcase.js после данных
+    const s=document.createElement('script');
+    s.src="{% static 'js/showcase.js' %}?v={{ STATIC_VERSION }}";
+    s.defer=true;
+    document.body.appendChild(s);
+  }
+  
+  if('requestIdleCallback' in window){
+    requestIdleCallback(loadShowcaseData,{timeout:3000});
+  }else{
+    setTimeout(loadShowcaseData,200);
+  }
+})();
 </script>
-<script src="{% static 'js/showcase.js' %}?v={{ STATIC_VERSION }}" defer></script>
 <script>
 // Оптимизированная витрина с кэшированием и batch updates
 (function(){

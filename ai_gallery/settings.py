@@ -109,6 +109,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.middleware.gzip.GZipMiddleware",  # Сжатие ответов
 
     # Catch SessionInterrupted and gracefully recover on GET
     "ai_gallery.middleware.SessionRescueMiddleware",
