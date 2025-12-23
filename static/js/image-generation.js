@@ -444,26 +444,18 @@
     }
 
     card.querySelector('#clear-image-queue-btn')?.addEventListener('click', async () => {
-      console.log('[image-clearQueue] START - Clearing entire queue');
-
       // backend: permanently clear server-side queue for this owner
       try {
         await fetch('/generate/api/queue/clear', { method: 'POST', headers: { 'X-CSRFToken': getCSRF() }, credentials: 'same-origin' });
-        console.log('[image-clearQueue] Server clear successful');
-      } catch(err) {
-        console.error('[image-clearQueue] Server clear failed:', err);
-      }
+      } catch(err) {}
 
       // mark ALL jobs (pending and done) as cleared to suppress re-appearance/restores
-      console.log('[image-clearQueue] Queue BEFORE clear:', queue.length, 'jobs');
       queue.forEach(e => { if (e.job_id) clearedJobs.add(String(e.job_id)); });
       saveClearedJobs(clearedJobs);
-      console.log('[image-clearQueue] Saved clearedJobs:', Array.from(clearedJobs));
 
       // remember clear moment and persist it to suppress completed bootstrap restore
       clearedAt = Date.now();
       saveClearedAt(clearedAt);
-      console.log('[image-clearQueue] Saved clearedAt:', clearedAt, 'Date:', new Date(clearedAt).toISOString());
 
       // wipe DOM
       card.querySelectorAll('.image-result-tile').forEach(el => { try { el.remove(); } catch(_) {} });
@@ -472,18 +464,13 @@
       saveQueue(queue);
       // hide card until new generation
       try { card.remove(); } catch(_) {}
-
-      console.log('[image-clearQueue] DONE - Queue cleared');
     });
 
     // Delegated actions on tiles (persist/remove)
     card.addEventListener('click', (e) => {
-      console.log('[image-card-click] Event triggered, target:', e.target);
-      
       // Persist to "Мои генерации"
       const pbtn = e.target.closest('.img-save-btn');
       if (pbtn) {
-        console.log('[image-card-click] Save button clicked');
         const tile = pbtn.closest('.image-result-tile');
         const jid = tile && tile.dataset ? tile.dataset.jobId : null;
         if (jid) { persistJob(String(jid), pbtn); }
@@ -492,29 +479,22 @@
 
       // Remove tile from queue UI
       const btn = e.target.closest('.image-tile-remove');
-      console.log('[image-card-click] Remove button search result:', btn);
       if (!btn) return;
       const tile = btn.closest('.image-result-tile');
       if (!tile) return;
       const jid = tile.dataset.jobId;
       if (jid) {
         const id = String(jid);
-        console.log('[image-removeFromQueue] START - Removing job:', id);
-        console.log('[image-removeFromQueue] clearedJobs BEFORE:', Array.from(clearedJobs));
 
         // 1. Mark as cleared forever
         clearedJobs.add(id);
         saveClearedJobs(clearedJobs);
-        console.log('[image-removeFromQueue] clearedJobs AFTER:', Array.from(clearedJobs));
 
         // 2. Remove from queue array
         const idx = queue.findIndex(e => String(e.job_id) === id);
         if (idx >= 0) {
           queue.splice(idx, 1);
           saveQueue(queue);
-          console.log('[image-removeFromQueue] Removed from queue array at index:', idx);
-        } else {
-          console.log('[image-removeFromQueue] Job not found in queue array');
         }
 
         // 3. Delete from server
@@ -524,14 +504,8 @@
             headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
             credentials: 'same-origin',
             body: 'job_id=' + encodeURIComponent(id)
-          }).then(() => {
-            console.log('[image-removeFromQueue] Server deletion successful for:', id);
-          }).catch((err) => {
-            console.error('[image-removeFromQueue] Server deletion failed:', err);
-          });
+          }).catch(() => {});
         } catch(_) {}
-
-        console.log('[image-removeFromQueue] DONE - Job marked as cleared forever:', id);
       }
       try { tile.remove(); } catch(_) {}
     });

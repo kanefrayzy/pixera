@@ -3151,7 +3151,7 @@ updateNavState();
     });
     document.body.appendChild(frag);
   }
-  
+
   // Загружаем скрипты после полной отрисовки страницы
   if('requestIdleCallback' in window){
     requestIdleCallback(loadImageScripts,{timeout:2000});
@@ -3185,14 +3185,14 @@ updateNavState();
       }{% if not forloop.last %},{% endif %}
     {% endfor %}
     ];
-    
+
     // Загружаем showcase.js после данных
     const s=document.createElement('script');
     s.src="{% static 'js/showcase.js' %}?v={{ STATIC_VERSION }}";
     s.defer=true;
     document.body.appendChild(s);
   }
-  
+
   if('requestIdleCallback' in window){
     requestIdleCallback(loadShowcaseData,{timeout:3000});
   }else{
