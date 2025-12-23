@@ -22,6 +22,7 @@ def auth_flags(request):
         "DISCORD_ENABLED": discord,
         "ANY_SOCIAL_ENABLED": google or facebook or discord,
         "DEFAULT_THEME": getattr(settings, "DEFAULT_THEME", "dark"),
+        "STATIC_VERSION": getattr(settings, "STATIC_VERSION", str(int(time.time()))),
     }
 
 
