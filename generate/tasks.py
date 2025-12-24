@@ -325,10 +325,11 @@ def process_video_generation_async(
         webhook_token = getattr(settings, "RUNWARE_WEBHOOK_TOKEN", "")
         webhook_url = None
         if base_url:
+            # URL БЕЗ trailing slash - иначе Django делает 301 редирект
             if webhook_token:
-                webhook_url = f"{base_url}/generate/api/runware/webhook/?token={webhook_token}"
+                webhook_url = f"{base_url}/generate/api/runware/webhook?token={webhook_token}"
             else:
-                webhook_url = f"{base_url}/generate/api/runware/webhook/"
+                webhook_url = f"{base_url}/generate/api/runware/webhook"
             log.info(f"Video job {job_id}: webhook URL configured")
 
         log.info(
@@ -1100,7 +1101,8 @@ def run_generation_async(self, job_id: int) -> None:
     try:
         base = (getattr(settings, "PUBLIC_BASE_URL", "") or "").rstrip("/")
         token = getattr(settings, "RUNWARE_WEBHOOK_TOKEN", "")
-        webhook = f"{base}/generate/api/runware/webhook/?token={token}" if (
+        # URL БЕЗ trailing slash - иначе Django делает 301 редирект
+        webhook = f"{base}/generate/api/runware/webhook?token={token}" if (
             base and token) else None
 
         if rw is not None:
