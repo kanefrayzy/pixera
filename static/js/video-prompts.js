@@ -281,7 +281,6 @@
         container.innerHTML = '<p class="text-center text-muted">Категории не найдены</p>';
       }
     } catch (error) {
-      console.error('Error loading video categories:', error);
       container.innerHTML = '<p class="text-center text-red-500">Ошибка загрузки категорий</p>';
     }
   }
@@ -365,7 +364,6 @@
         container.innerHTML = '<p class="text-center text-muted col-span-full">Примеры не найдены</p>';
       }
     } catch (error) {
-      console.error('Error loading video showcase:', error);
       container.innerHTML = '<p class="text-center text-red-500 col-span-full">Ошибка загрузки примеров</p>';
     }
   }
@@ -856,7 +854,6 @@
         });
       }
     } catch (error) {
-      console.error('Error loading prompts:', error);
       modalContainer.innerHTML = '<div class="text-center text-red-500 py-8">Ошибка загрузки промптов</div>';
     }
   }
@@ -1024,7 +1021,6 @@
     const newMode = getCurrentVideoMode();
     if (newMode !== currentMode) {
       currentMode = newMode;
-      console.log('Video mode changed to:', currentMode);
       syncAdminModeSelect();
       loadVideoCategories(currentMode);
       loadVideoShowcase(currentMode);
@@ -1055,7 +1051,6 @@
   document.addEventListener('forceLoadVideoContent', function(e) {
     const mode = e.detail?.mode || getCurrentVideoMode();
     currentMode = mode;
-    console.log('Force load triggered for mode:', mode);
     loadVideoCategories(mode);
     loadVideoShowcase(mode);
   });
@@ -1066,7 +1061,6 @@
     videoModeTab.addEventListener('click', function() {
       setTimeout(function() {
         currentMode = getCurrentVideoMode();
-        console.log('Loading video content for mode:', currentMode);
         loadVideoCategories(currentMode);
         loadVideoShowcase(currentMode);
       }, 300);
@@ -1079,7 +1073,6 @@
     if (videoContainer && videoContainer.style.display !== 'none') {
       currentMode = getCurrentVideoMode();
       try { localStorage.setItem('gen.videoSource', currentMode || 't2v'); } catch(_) {}
-      console.log('Initial load for mode:', currentMode);
       syncAdminModeSelect();
       loadVideoCategories(currentMode);
       loadVideoShowcase(currentMode);
@@ -1094,7 +1087,6 @@
         const container = document.getElementById('videoCategoriesContainer');
         if (container && container.innerHTML.includes('Загрузка')) {
           currentMode = getCurrentVideoMode();
-          console.log('Force loading for mode:', currentMode);
           syncAdminModeSelect();
           loadVideoCategories(currentMode);
           loadVideoShowcase(currentMode);

@@ -1323,24 +1323,7 @@ document.addEventListener('DOMContentLoaded', function() {
               } catch (e) { alert(e.message || String(e)); }
               return;
             }
-          });
 
-          // Admin: create subcategory
-          modalContainer.querySelector('#scCreateBtn')?.addEventListener('click', async () => {
-            const name = (modalContainer.querySelector('#scName')?.value || '').trim();
-            const order = modalContainer.querySelector('#scOrder')?.value || '0';
-            const active = modalContainer.querySelector('#scActive')?.checked ? '1' : '0';
-            if (!name) { alert('Введите название подкатегории'); return; }
-            try {
-              await postJSON('/generate/api/subcategories/create', { category_id: categoryId, name, order, is_active: active });
-              // reload subcategories list + select
-              await loadSubcategories();
-              (modalContainer.querySelector('#scName') || {}).value = '';
-              (modalContainer.querySelector('#scOrder') || {}).value = '0';
-            } catch (e) { alert(e.message || String(e)); }
-            return;
-          });
->>>>>>> (keep following code unchanged)
             if (editBtn) {
               ev.preventDefault();
               const title = prompt('Заголовок', item.querySelector('p')?.textContent?.slice(0, 150) || '');
@@ -1360,6 +1343,21 @@ document.addEventListener('DOMContentLoaded', function() {
               } catch (e) { alert(e.message || String(e)); }
               return;
             }
+          });
+
+          // Admin: create subcategory
+          modalContainer.querySelector('#scCreateBtn')?.addEventListener('click', async () => {
+            const name = (modalContainer.querySelector('#scName')?.value || '').trim();
+            const order = modalContainer.querySelector('#scOrder')?.value || '0';
+            const active = modalContainer.querySelector('#scActive')?.checked ? '1' : '0';
+            if (!name) { alert('Введите название подкатегории'); return; }
+            try {
+              await postJSON('/generate/api/subcategories/create', { category_id: categoryId, name, order, is_active: active });
+              // reload subcategories list + select
+              await loadSubcategories();
+              (modalContainer.querySelector('#scName') || {}).value = '';
+              (modalContainer.querySelector('#scOrder') || {}).value = '0';
+            } catch (e) { alert(e.message || String(e)); }
           });
         }
       } catch (error) {
@@ -3130,21 +3128,27 @@ updateNavState();
 <script src="{% static 'js/generate-optimized.js' %}?v={{ STATIC_VERSION }}" defer></script>
 <script src="{% static 'js/generate.js' %}?v={{ STATIC_VERSION }}" defer></script>
 <script>
-// Отложенная загрузка image скриптов после полной отрисовки страницы
+// Условная загрузка image скриптов ТОЛЬКО в режиме изображений
 (function(){
+  // Проверяем режим — если video, не загружаем image скрипты
+  var isVideoMode = document.documentElement.classList.contains('mode-video') ||
+    window.location.pathname.includes('/generate/video') ||
+    (new URLSearchParams(window.location.search).get('type') === 'video');
+  
+  if (isVideoMode) return; // Не загружаем image скрипты в video режиме
+  
   function loadImageScripts(){
-    const timestamp = Date.now();
-    const imageScripts=[
-      "/static/js/image-generation.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-      "/static/js/image-models.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-      "/static/js/image-field-manager.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-      "/static/js/image-price-calculator.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-      "/static/js/update-image-model-info.js?v={{ STATIC_VERSION }}&t=" + timestamp,
-      "/static/js/balance-updater.js?v={{ STATIC_VERSION }}&t=" + timestamp
+    var imageScripts=[
+      "/static/js/image-generation.js?v={{ STATIC_VERSION }}",
+      "/static/js/image-models.js?v={{ STATIC_VERSION }}",
+      "/static/js/image-field-manager.js?v={{ STATIC_VERSION }}",
+      "/static/js/image-price-calculator.js?v={{ STATIC_VERSION }}",
+      "/static/js/update-image-model-info.js?v={{ STATIC_VERSION }}",
+      "/static/js/balance-updater.js?v={{ STATIC_VERSION }}"
     ];
-    const frag=document.createDocumentFragment();
-    imageScripts.forEach(src=>{
-      const s=document.createElement('script');
+    var frag=document.createDocumentFragment();
+    imageScripts.forEach(function(src){
+      var s=document.createElement('script');
       s.src=src;
       s.defer=true;
       frag.appendChild(s);
@@ -3167,6 +3171,12 @@ updateNavState();
 <script>
 // Отложенная загрузка данных витрины после полной отрисовки
 (function(){
+  // Не загружаем showcase в video режиме
+  var isVideoMode = document.documentElement.classList.contains('mode-video') ||
+    window.location.pathname.includes('/generate/video') ||
+    (new URLSearchParams(window.location.search).get('type') === 'video');
+  if (isVideoMode) return;
+  
   function loadShowcaseData(){
     window.showcaseGalleryData = [
     {% for item in showcase_images %}
@@ -3187,7 +3197,7 @@ updateNavState();
     ];
 
     // Загружаем showcase.js после данных
-    const s=document.createElement('script');
+    var s=document.createElement('script');
     s.src="{% static 'js/showcase.js' %}?v={{ STATIC_VERSION }}";
     s.defer=true;
     document.body.appendChild(s);
@@ -3204,12 +3214,17 @@ updateNavState();
 // Оптимизированная витрина с кэшированием и batch updates
 (function(){
 'use strict';
-const init=()=>{
-  const pills=document.querySelectorAll('.js-showcase-filter');
+var isVideoMode = document.documentElement.classList.contains('mode-video') ||
+  window.location.pathname.includes('/generate/video') ||
+  (new URLSearchParams(window.location.search).get('type') === 'video');
+if (isVideoMode) return;
+
+var init=function(){
+  var pills=document.querySelectorAll('.js-showcase-filter');
   if(!pills.length)return;
 
-  const pillsArr=Array.from(pills);
-  const anyActive=pillsArr.some(b=>b.classList.contains('bg-primary/15'));
+  var pillsArr=Array.from(pills);
+  var anyActive=pillsArr.some(function(b){return b.classList.contains('bg-primary/15')});
   if(anyActive)return;
 
   const scat=(new URLSearchParams(location.search).get('scat')||'all').trim();

@@ -244,7 +244,6 @@ class VideoOptimizer {
 
     // Обработка ошибок
     videoElement.addEventListener('error', (e) => {
-      console.error('Ошибка воспроизведения видео:', e);
       this.showVideoError(videoElement);
     });
 
@@ -404,8 +403,6 @@ VideoOptimizer.prototype.hydrateContainer = function(selector) {
 
 // Инициализация глобального экземпляра
 window.videoOptimizer = new VideoOptimizer();
-
-console.log('VideoOptimizer модуль загружен');
 
 // Автоматическое подключение ленивой подгрузки для витрин (публичной и админ)
 (function () {

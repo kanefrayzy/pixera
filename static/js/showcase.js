@@ -1047,7 +1047,6 @@ function initShowcaseGallery(djangoData) {
     // Prefer by more categories, then by length
     candidates.sort((a, b) => (b.cats - a.cats) || ((b.data?.length || 0) - (a.data?.length || 0)));
     const preferred = candidates[0]?.data || fallbackShowcaseData;
-    console.log('Dataset pick:', candidates[0]?.name, 'cats:', candidates[0]?.cats, 'len:', preferred.length);
 
     showcaseData = preferred;
 
@@ -1058,7 +1057,6 @@ function initShowcaseGallery(djangoData) {
       }
     } catch (_) { /* ignore quota/privacy */ }
   } catch (_) {
-    console.log('Dataset selection failed, using provided/fallback');
     showcaseData = (djangoData && Array.isArray(djangoData) && djangoData.length > 0) ? djangoData : fallbackShowcaseData;
   }
 

@@ -46,7 +46,6 @@ class VideoFieldManager {
    */
   updateFieldsForModel(model) {
     if (!model) {
-      console.warn('[VideoFieldManager] No model provided');
       return;
     }
 
@@ -54,9 +53,6 @@ class VideoFieldManager {
 
     // Get optional_fields configuration from model
     const optionalFields = model.optional_fields || {};
-
-    console.log('[VideoFieldManager] Model:', model.name);
-    console.log('[VideoFieldManager] Optional fields config:', optionalFields);
 
     // Fields that must always remain visible in UI (mode toggle, prompt, auto-translate)
     const alwaysVisible = ['generation_mode', 'prompt', 'auto_translate'];
@@ -66,7 +62,6 @@ class VideoFieldManager {
 
     if (!hasConfiguration) {
       // No configuration - hide only optional blocks, but keep core controls visible
-      console.log('[VideoFieldManager] No optional_fields configuration - hiding optional fields only');
       this.hideAllFields();
       this.showAlwaysVisibleFields();
       return;
@@ -81,7 +76,6 @@ class VideoFieldManager {
       // Core controls are always visible regardless of optional_fields
       if (alwaysVisible.includes(fieldName)) {
         element.style.display = '';
-        console.log(`[VideoFieldManager] Always-visible field: ${fieldName}`);
         return;
       }
 
@@ -89,10 +83,8 @@ class VideoFieldManager {
 
       if (isEnabled) {
         element.style.display = '';
-        console.log(`[VideoFieldManager] Showing field: ${fieldName}`);
       } else {
         element.style.display = 'none';
-        console.log(`[VideoFieldManager] Hiding field: ${fieldName}`);
       }
     });
 
@@ -119,10 +111,8 @@ class VideoFieldManager {
 
       if (hasAnyAdvancedParam) {
         advancedParamsSection.style.display = '';
-        console.log('[VideoFieldManager] Showing advanced params section');
       } else {
         advancedParamsSection.style.display = 'none';
-        console.log('[VideoFieldManager] Hiding advanced params section');
       }
     }
   }
@@ -160,7 +150,6 @@ class VideoFieldManager {
     const promptGenerator = document.getElementById('pg-video');
     if (promptGenerator) {
       promptGenerator.style.display = '';
-      console.log('[VideoFieldManager] Showing always-visible: prompt_generator');
     }
 
     // Video mode toggle ("Фото/Видео" / "Текст/Видео") must always be visible
@@ -168,7 +157,6 @@ class VideoFieldManager {
     const modeBlock = modeBlockGetter && modeBlockGetter();
     if (modeBlock) {
       modeBlock.style.display = '';
-      console.log('[VideoFieldManager] Showing always-visible: generation_mode');
     }
 
     // Video prompt label/field must always be visible
@@ -176,7 +164,6 @@ class VideoFieldManager {
     const promptBlock = promptGetter && promptGetter();
     if (promptBlock) {
       promptBlock.style.display = '';
-      console.log('[VideoFieldManager] Showing always-visible: prompt');
     }
 
     // Auto-translate toggle must always be visible
@@ -184,7 +171,6 @@ class VideoFieldManager {
     const autoBlock = autoGetter && autoGetter();
     if (autoBlock) {
       autoBlock.style.display = '';
-      console.log('[VideoFieldManager] Showing always-visible: auto_translate');
     }
   }
 

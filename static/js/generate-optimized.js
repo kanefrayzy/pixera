@@ -84,7 +84,7 @@
           await navigator.clipboard.writeText(text);
           return true;
         } catch (e) {
-          console.warn('Clipboard API failed, using fallback');
+          // Clipboard API failed, using fallback
         }
       }
       
@@ -297,8 +297,6 @@
         });
       });
     }
-
-    console.log('✓ Оптимизаторы страницы инициализированы');
   };
 
   // Запуск при загрузке DOM

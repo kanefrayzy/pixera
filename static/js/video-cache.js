@@ -21,13 +21,11 @@ class VideoCache {
       const request = indexedDB.open(this.dbName, this.version);
 
       request.onerror = () => {
-        console.error('Ошибка открытия IndexedDB:', request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('IndexedDB инициализирована');
         this.clearExpired(); // Очищаем устаревшие при старте
         resolve(this.db);
       };
@@ -40,7 +38,6 @@ class VideoCache {
           const objectStore = db.createObjectStore(this.storeName, { keyPath: 'jobId' });
           objectStore.createIndex('expiresAt', 'expiresAt', { unique: false });
           objectStore.createIndex('createdAt', 'createdAt', { unique: false });
-          console.log('Создано хранилище видео');
         }
       };
     });
@@ -72,12 +69,10 @@ class VideoCache {
       const request = objectStore.put(data);
 
       request.onsuccess = () => {
-        console.log(`Видео ${jobId} сохранено в кеш до ${expiryDate.toLocaleString()}`);
         resolve(data);
       };
 
       request.onerror = () => {
-        console.error('Ошибка сохранения видео:', request.error);
         reject(request.error);
       };
     });
@@ -106,18 +101,15 @@ class VideoCache {
 
         // Проверяем не истек ли срок
         if (data.expiresAt < Date.now()) {
-          console.log(`Видео ${jobId} устарело, удаляем`);
           this.clear(jobId);
           resolve(null);
           return;
         }
 
-        console.log(`Видео ${jobId} найдено в кеше`);
         resolve(data);
       };
 
       request.onerror = () => {
-        console.error('Ошибка чтения видео:', request.error);
         reject(request.error);
       };
     });
@@ -136,12 +128,10 @@ class VideoCache {
       const request = objectStore.delete(jobId);
 
       request.onsuccess = () => {
-        console.log(`Видео ${jobId} удалено из кеша`);
         resolve();
       };
 
       request.onerror = () => {
-        console.error('Ошибка удаления видео:', request.error);
         reject(request.error);
       };
     });
@@ -171,15 +161,11 @@ class VideoCache {
           deletedCount++;
           cursor.continue();
         } else {
-          if (deletedCount > 0) {
-            console.log(`Удалено устаревших видео: ${deletedCount}`);
-          }
           resolve(deletedCount);
         }
       };
 
       request.onerror = () => {
-        console.error('Ошибка очистки устаревших видео:', request.error);
         reject(request.error);
       };
     });
@@ -202,7 +188,6 @@ class VideoCache {
       };
 
       request.onerror = () => {
-        console.error('Ошибка получения всех видео:', request.error);
         reject(request.error);
       };
     });
@@ -228,12 +213,10 @@ class VideoCache {
       const request = objectStore.clear();
 
       request.onsuccess = () => {
-        console.log('Весь кеш видео очищен');
         resolve();
       };
 
       request.onerror = () => {
-        console.error('Ошибка очистки кеша:', request.error);
         reject(request.error);
       };
     });
@@ -272,5 +255,3 @@ window.addEventListener('beforeunload', () => {
     window.videoCache.clearExpired();
   }
 });
-
-console.log('VideoCache модуль загружен');

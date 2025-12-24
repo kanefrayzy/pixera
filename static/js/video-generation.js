@@ -1,7 +1,47 @@
 /**
  * Модуль генерации видео
  * Управляет формой генерации видео, отправкой запросов и отображением результатов
+ * 
+ * Оптимизированная версия:
+ * - Удалены все console.log/warn/error
+ * - Polling интервалы увеличены (webhook обрабатывает большинство случаев)
+ * - Добавлен throttle для scroll событий
+ * - Оптимизированы DOM-запросы
  */
+
+/**
+ * Throttle функция для оптимизации частых событий
+ */
+function throttle(fn, wait) {
+  let lastTime = 0;
+  let timeout = null;
+  return function(...args) {
+    const now = Date.now();
+    const remaining = wait - (now - lastTime);
+    if (remaining <= 0) {
+      if (timeout) { clearTimeout(timeout); timeout = null; }
+      lastTime = now;
+      fn.apply(this, args);
+    } else if (!timeout) {
+      timeout = setTimeout(() => {
+        lastTime = Date.now();
+        timeout = null;
+        fn.apply(this, args);
+      }, remaining);
+    }
+  };
+}
+
+/**
+ * Debounce функция для отложенного выполнения
+ */
+function debounce(fn, wait) {
+  let timeout = null;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
 
 class VideoGeneration {
   constructor() {
@@ -27,8 +67,28 @@ class VideoGeneration {
     // Persisted jobs (button clicked) per user/session
     this.persistedJobs = this.loadPersistedJobs ? this.loadPersistedJobs() : new Set();
     this.isGenerating = false;
+    
+    // Кешированные DOM элементы
+    this._domCache = {};
 
     this.init();
+  }
+  
+  /**
+   * Получить DOM элемент с кешированием
+   */
+  getElement(id) {
+    if (!this._domCache[id]) {
+      this._domCache[id] = document.getElementById(id);
+    }
+    return this._domCache[id];
+  }
+  
+  /**
+   * Очистить кеш DOM элементов
+   */
+  clearDomCache() {
+    this._domCache = {};
   }
 
   async init() {
@@ -76,11 +136,9 @@ class VideoGeneration {
       } else {
         // Ошибка на уровне ответа — снимаем inflight
         try { localStorage.removeItem('gen.video.inflight'); } catch (_) { }
-        console.error('Ошибка загрузки моделей:', data.error);
         this.showError('Не удалось загрузить модели видео');
       }
     } catch (error) {
-      console.error('Ошибка при загрузке моделей:', error);
       this.showError('Ошибка подключения к серверу');
     }
   }
@@ -171,11 +229,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             } catch (_) { }
           };
           enforceThreeInView();
-          cardsContainer.addEventListener('scroll', updateArrows, { passive: true });
-          window.addEventListener('resize', () => {
-            clearTimeout(__rzTimer);
-            __rzTimer = setTimeout(enforceThreeInView, 100);
-          }, { passive: true });
+          cardsContainer.addEventListener('scroll', throttle(updateArrows, 100), { passive: true });
+          window.addEventListener('resize', debounce(enforceThreeInView, 100), { passive: true });
         }
       }
     } catch (_) { }
@@ -1271,7 +1326,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         `;
         btn.setAttribute('aria-label', this.isAuthenticated ? 'Сохранить в профиле' : 'Добавить в галерею');
       }
-      try { console.warn('Persist failed', e); } catch (_) { }
+      try { /* Persist failed */ } catch (_) { }
     }
   }
 
@@ -2081,7 +2136,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       // Создаём экземпляр слайдера (если класс AspectRatioSlider доступен)
       if (typeof AspectRatioSlider === 'undefined') {
-        console.warn('AspectRatioSlider class not found');
         return;
       }
 
@@ -2117,7 +2171,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       });
 
     } catch (error) {
-      console.error('Ошибка инициализации ползунка соотношения сторон:', error);
+      // Ошибка инициализации ползунка
     }
   }
 
@@ -2323,7 +2377,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           try {
             this.removeFromQueue(String(jid));
           } catch (err) {
-            console.error('[setupEventListeners] removeFromQueue error:', err);
+            // removeFromQueue error
           }
         } else {
           // Для плиток без jobId просто помечаем в clearedTiles
@@ -2426,7 +2480,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         popover.style.top = `${buttonRect.bottom + window.scrollY + 8}px`;
         popover.style.left = `${buttonRect.left + window.scrollX}px`;
         popover.style.width = '280px';
-        console.log('Popover positioned at:', popover.style.top, popover.style.left);
       }
     };
 
@@ -2458,8 +2511,8 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       hidePopover();
     });
 
-    // Скрыть при скролле
-    window.addEventListener('scroll', hidePopover, { passive: true });
+    // Скрыть при скролле (с throttle для производительности)
+    window.addEventListener('scroll', throttle(hidePopover, 150), { passive: true });
   }
 
   /**
@@ -2775,7 +2828,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         }
       }
     } catch (error) {
-      console.error('Ошибка при отправке запроса:', error);
       try { localStorage.removeItem('gen.video.inflight'); } catch (_) { }
       if (tile) {
         this.renderTileError(tile, 'Ошибка при отправке запроса. Попробуйте позже.');
@@ -2812,8 +2864,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     const resolution = (width && height) ? `${width}x${height}` : '1920x1080';
     const camera = document.getElementById('video-camera')?.value || '';
     const seedInput = (document.getElementById('video-seed')?.value || '').trim();
-
-    console.log('[VideoGeneration] Submitting video with resolution:', { width, height, resolution });
 
     // Поля провайдера
     const providerFields = this.collectProviderFields();
@@ -2968,7 +3018,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         }
       }
     } catch (error) {
-      console.error('Ошибка при отправке запроса:', error);
       try { localStorage.removeItem('gen.video.inflight'); } catch (_) { }
       if (tile) {
         this.renderTileError(tile, 'Ошибка при отправке запроса. Попробуйте позже.');
@@ -2980,12 +3029,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
   /**
    * Polling статуса генерации (inline в плитке)
+   * Webhook обрабатывает большинство случаев — polling только как резервный механизм
    */
   async pollVideoStatusInline(jobId, tile, attempts = 0) {
-    const maxAttempts = 360; // ~3 минуты при 500ms интервале
-    // Быстрый polling: 500ms первые 60 попыток, затем 800ms
-    const baseDelay = attempts < 60 ? 500 : 800;
-    const delay = document.hidden ? baseDelay * 1.5 : baseDelay;
+    const maxAttempts = 60; // ~5 минут при 5-секундном интервале
+    // Оптимизированный polling: 3 секунды первые 20 попыток, затем 5 секунд
+    const baseDelay = attempts < 20 ? 3000 : 5000;
+    const delay = document.hidden ? baseDelay * 2 : baseDelay;
     // Персистим как pending
     if (jobId) { try { this.addOrUpdateQueueEntry(jobId, { status: 'pending' }); } catch (_) { } }
 
@@ -3052,24 +3102,25 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           ? Math.min(98, data.progress)
           : Math.min(98, (attempts / maxAttempts) * 100);
         if (tile) this.setTileProgress(tile, p, 'Генерация видео…');
-        setTimeout(() => this.pollVideoStatusInline(jobId, tile, attempts + 1), 10000);
+        setTimeout(() => this.pollVideoStatusInline(jobId, tile, attempts + 1), delay);
       }
     } catch (error) {
-      console.error('Ошибка при проверке статуса:', error);
-      setTimeout(() => this.pollVideoStatusInline(jobId, tile, attempts + 1), 10000);
+      setTimeout(() => this.pollVideoStatusInline(jobId, tile, attempts + 1), delay);
     }
   }
 
   /**
    * Polling статуса генерации
+   * Webhook обрабатывает большинство случаев — polling только как резервный механизм
    */
   async pollVideoStatus(jobId, attempts = 0) {
-    const maxAttempts = 120; // 2 минуты (каждую секунду)
+    const maxAttempts = 60; // ~5 минут при 5-секундном интервале
+    const delay = attempts < 20 ? 3000 : 5000;
 
     if (attempts >= maxAttempts) {
       // Продолжаем проверять еще дольше, но реже
       this.updateLoader('Почти готово...', 98);
-      setTimeout(() => this.pollVideoStatus(jobId, attempts + 1), 2000);
+      setTimeout(() => this.pollVideoStatus(jobId, attempts + 1), 10000);
       return;
     }
 
@@ -3097,13 +3148,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           : Math.min(98, (attempts / maxAttempts) * 100);
         this.updateLoader('Генерация видео...', p);
 
-        // Продолжаем polling каждые 10 секунд
-        setTimeout(() => this.pollVideoStatus(jobId, attempts + 1), 10000);
+        // Продолжаем polling с оптимизированным интервалом
+        setTimeout(() => this.pollVideoStatus(jobId, attempts + 1), delay);
       }
     } catch (error) {
-      console.error('Ошибка при проверке статуса:', error);
       // Продолжаем попытки при ошибке сети
-      setTimeout(() => this.pollVideoStatus(jobId, attempts + 1), 10000);
+      setTimeout(() => this.pollVideoStatus(jobId, attempts + 1), delay);
     }
   }
 
@@ -3147,18 +3197,15 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       j.jobs.forEach(job => {
         const jid = String(job.job_id);
         if (this.clearedJobs.has(jid)) {
-          console.log('[bootstrapCompletedJobs] SKIP - in clearedJobs:', jid);
           return;
         }
         if (this.queue.some(e => String(e.job_id) === jid)) {
-          console.log('[bootstrapCompletedJobs] SKIP - already in queue:', jid);
           return;
         }
 
         // respect last clear moment (skip items created before/at clear)
         const createdAtTs = job.created_at ? Date.parse(job.created_at) : 0;
         if (this.clearedAt && createdAtTs && createdAtTs <= this.clearedAt) {
-          console.log('[bootstrapCompletedJobs] SKIP - older than clearedAt:', jid, createdAtTs, this.clearedAt);
           return;
         }
 
@@ -3489,7 +3536,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         window.balanceUpdater.fetch();
       }
     } catch (e) {
-      console.log('[video-gen] Balance update skipped:', e.message);
+      // Balance update skipped
     }
 
     // Умное масштабирование: на мобилке выше, на ПК 16:9
@@ -3588,7 +3635,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         // Обработка ошибок загрузки
         videoEl.addEventListener('error', () => {
           try {
-            console.warn('[video-gen] Video load error:', videoUrl);
             const container = tile.querySelector('.video-tile-container');
             if (container) {
               container.style.background = '#1a1a2e';
@@ -3718,7 +3764,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
             try {
               this.removeFromQueue(String(jobId));
             } catch (err) {
-              console.error('[renderTileResult] removeFromQueue error:', err);
+              // removeFromQueue error
             }
           }
 
@@ -4271,11 +4317,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     const i2vSection = document.getElementById('i2v-upload-compact');
     const t2vSection = document.getElementById('t2v-references-section');
 
-    console.log('updateReferenceSection called:', {
-      mode: this.currentMode,
-      selectedModel: this.selectedModel?.model_id
-    });
-
     if (this.currentMode === 'i2v') {
       // I2V: показываем секцию исходного фото
       if (i2vSection) i2vSection.style.display = 'block';
@@ -4316,11 +4357,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     // Проверяем по supported_references если есть
     if (this.selectedModel.supported_references && Array.isArray(this.selectedModel.supported_references)) {
       const hasAudioInputs = this.selectedModel.supported_references.includes('audioInputs');
-      console.log('Audio support check:', {
-        model: this.selectedModel.model_id,
-        supported_references: this.selectedModel.supported_references,
-        hasAudioInputs: hasAudioInputs
-      });
       return hasAudioInputs;
     }
 
@@ -4331,9 +4367,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
                               modelId.includes('pixverse') ||
                               modelId.includes('runway') ||
                               modelId.includes('kling');
-      if (fallbackSupport) {
-        console.log('Audio support via fallback for:', this.selectedModel.model_id);
-      }
       return fallbackSupport;
     }
 
@@ -4379,7 +4412,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (initDone) return;
     window.videoGeneration = new VideoGeneration();
     initDone = true;
-    console.log('Модуль генерации видео инициализирован');
   }
 
   if (isVideoMode) {
