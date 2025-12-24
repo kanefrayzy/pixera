@@ -929,19 +929,50 @@ def _finalize_video_job_from_webhook(job: GenerationJob, video_url: str) -> None
 
     logger = logging.getLogger(__name__)
 
-    # Защита от повторной обработки
-    if job.status == GenerationJob.Status.DONE:
-        logger.info(f"Video job {job.pk} already DONE, skipping webhook finalization")
+    # =========================================================================
+    # КРИТИЧНО: Атомарная блокировка ПЕРЕД скачиванием видео
+    # Это предотвращает race condition когда несколько webhook'ов приходят
+    # одновременно (Runware делает retry при timeout)
+    # =========================================================================
+    try:
+        with transaction.atomic():
+            # Блокируем строку job для предотвращения параллельной обработки
+            locked_job = GenerationJob.objects.select_for_update(nowait=True).get(pk=job.pk)
+
+            # Проверяем статус под блокировкой
+            if locked_job.status == GenerationJob.Status.DONE:
+                logger.info(f"Webhook: job {job.pk} already DONE (locked check), skipping")
+                return
+
+            # Сразу помечаем как RUNNING чтобы другие webhook'и увидели
+            locked_job.status = GenerationJob.Status.RUNNING
+            locked_job.provider_status = "downloading"
+            locked_job.save(update_fields=["status", "provider_status"])
+
+    except GenerationJob.DoesNotExist:
+        logger.warning(f"Webhook: job {job.pk} not found during lock")
+        return
+    except Exception as lock_error:
+        # Если не удалось получить блокировку (nowait=True), значит другой процесс уже обрабатывает
+        logger.info(f"Webhook: job {job.pk} locked by another process, skipping: {lock_error}")
         return
 
     try:
-        # Скачиваем и сохраняем видео локально
+        # Скачиваем видео (теперь безопасно, т.к. мы пометили job как RUNNING)
         local_url = _download_and_save_video(job, video_url)
 
-        # Списываем токены
+        # Списываем токены и финализируем
         token_cost = job.video_model.token_cost if job.video_model else 20
 
         with transaction.atomic():
+            # Перечитываем job под блокировкой для финализации
+            job = GenerationJob.objects.select_for_update().get(pk=job.pk)
+
+            # Ещё раз проверяем - вдруг Celery polling уже финализировал
+            if job.status == GenerationJob.Status.DONE:
+                logger.info(f"Webhook: job {job.pk} finalized by polling during download, skipping")
+                return
+
             if job.user and not job.user.is_staff:
                 wallet = Wallet.objects.select_for_update().get(user=job.user)
                 wallet.balance -= token_cost
