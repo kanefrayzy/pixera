@@ -272,6 +272,7 @@ def generate_video_via_rest(
     resolution: str = "1920x1080",
     camera_movement: Optional[str] = None,
     seed: Optional[str] = None,
+    webhook_url: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
     """
@@ -287,6 +288,7 @@ def generate_video_via_rest(
         - resolution: Разрешение видео ('1920x1080', '1280x720')
         - camera_movement: Движение камеры (для PixVerse)
         - seed: Seed для воспроизводимости
+        - webhook_url: URL для получения результата через webhook (рекомендуется)
 
     Специфичные параметры провайдеров (через kwargs):
         ByteDance: camera_fixed
@@ -664,6 +666,11 @@ def generate_video_via_rest(
         payload[0]["deliveryMethod"] = "async"
         logger.info(
             "ByteDance: используется асинхронный режим (sync не поддерживается)")
+
+    # Добавляем webhookURL для получения результата через webhook (снижает нагрузку на polling)
+    if webhook_url:
+        payload[0]["webhookURL"] = webhook_url
+        logger.info(f"T2V: webhook URL добавлен: {webhook_url[:50]}...")
 
     try:
         send_debug_log("🚀 ОТПРАВКА T2V на Runware API", {
@@ -1101,6 +1108,7 @@ def generate_video_from_image(
     resolution: str = "1920x1080",
     camera_movement: Optional[str] = None,
     seed: Optional[str] = None,
+    webhook_url: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
     """
@@ -1117,6 +1125,7 @@ def generate_video_from_image(
 
     ОПЦИОНАЛЬНЫЕ параметры:
         - seed: Seed для воспроизводимости
+        - webhook_url: URL для получения результата через webhook (рекомендуется)
 
     Returns:
         Dict с taskUUID и другими данными ответа
@@ -1466,6 +1475,11 @@ def generate_video_from_image(
 
     # ВАЖНО: ByteDance требует async; Wan2.5‑Preview на 10 сек — тоже async (долгая генерация); остальные — sync
     payload[0]["deliveryMethod"] = "async" if (provider == 'bytedance' or (mid == "runware:201@1" and float(dur_value) >= 9.5)) else "sync"
+
+    # Добавляем webhookURL для получения результата через webhook (снижает нагрузку на polling)
+    if webhook_url:
+        payload[0]["webhookURL"] = webhook_url
+        logger.info(f"I2V: webhook URL добавлен: {webhook_url[:50]}...")
 
     logger.info(f"Отправка запроса на I2V: model={model_id}")
     logger.info(f"I2V Payload: {payload}")

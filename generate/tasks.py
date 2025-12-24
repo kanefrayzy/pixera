@@ -319,6 +319,18 @@ def process_video_generation_async(
 
         provider_fields = provider_fields or {}
 
+        # Формируем webhook URL для получения результата без polling
+        # RUNWARE_WEBHOOK_TOKEN — опциональный токен для защиты вашего endpoint (не API ключ Runware)
+        base_url = (getattr(settings, "PUBLIC_BASE_URL", "") or "").rstrip("/")
+        webhook_token = getattr(settings, "RUNWARE_WEBHOOK_TOKEN", "")
+        webhook_url = None
+        if base_url:
+            if webhook_token:
+                webhook_url = f"{base_url}/generate/api/runware/webhook/?token={webhook_token}"
+            else:
+                webhook_url = f"{base_url}/generate/api/runware/webhook/"
+            log.info(f"Video job {job_id}: webhook URL configured")
+
         log.info(
             f"Starting async video generation: job={job_id}, mode={generation_mode}, "
             f"model={model_id}, duration={duration}s"
@@ -340,6 +352,7 @@ def process_video_generation_async(
                 resolution=resolution,
                 camera_movement=camera_movement,
                 seed=seed,
+                webhook_url=webhook_url,
                 **provider_fields
             )
         else:
@@ -352,6 +365,7 @@ def process_video_generation_async(
                 resolution=resolution,
                 camera_movement=camera_movement,
                 seed=seed,
+                webhook_url=webhook_url,
                 **provider_fields
             )
 
@@ -513,28 +527,41 @@ def poll_video_result(self, job_id: int, attempt: int = 1) -> None:
         if str(status_val).lower() in {'completed', 'done', 'finished', 'success', 'succeeded'} and video_url:
             log.info(f"Video job {job_id} completed! URL: {video_url}")
 
+            # Проверяем, не обработан ли job уже webhook'ом (защита от дублирования)
+            job.refresh_from_db()
+            if job.status == GenerationJob.Status.DONE:
+                log.info(f"Video job {job_id} already finalized by webhook, skipping poll finalization")
+                return
+
             # Скачиваем и сохраняем видео локально
             _download_and_save_video(job, video_url)
 
-            # Списываем токены
-            from dashboard.models import Wallet
-            from .models import FreeGrant
-
+            # Списываем токены только если они ещё не были списаны
             token_cost = job.video_model.token_cost if job.video_model else 20
 
-            with transaction.atomic():
-                if job.user and not job.user.is_staff:
-                    wallet = Wallet.objects.select_for_update().get(user=job.user)
-                    wallet.balance -= token_cost
-                    wallet.save()
-                elif not job.user:
-                    # Гость
-                    grant = FreeGrant.objects.filter(
-                        Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
-                        user__isnull=True
-                    ).select_for_update().first()
-                    if grant:
-                        grant.spend(token_cost)
+            # Защита от двойного списания: проверяем tokens_spent
+            if job.tokens_spent == 0:
+                from dashboard.models import Wallet
+                from .models import FreeGrant
+
+                with transaction.atomic():
+                    if job.user and not job.user.is_staff:
+                        wallet = Wallet.objects.select_for_update().get(user=job.user)
+                        wallet.balance -= token_cost
+                        wallet.save()
+                    elif not job.user:
+                        # Гость
+                        grant = FreeGrant.objects.filter(
+                            Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
+                            user__isnull=True
+                        ).select_for_update().first()
+                        if grant:
+                            grant.spend(token_cost)
+
+                log.info(f"Video job {job_id}: charged {token_cost} tokens via polling")
+            else:
+                log.info(f"Video job {job_id}: tokens already charged ({job.tokens_spent}), skipping")
+                token_cost = job.tokens_spent  # Используем уже списанное значение
 
             # Обновляем job (если локальное сохранение прошло — используем его URL)
             job.result_video_url = job.result_video_url or video_url
@@ -561,8 +588,9 @@ def poll_video_result(self, job_id: int, attempt: int = 1) -> None:
         # Всё ещё обрабатывается
         log.info(f"Video job {job_id} still processing (attempt {attempt})")
 
-        # Проверяем таймаут (60 попыток * 10 сек = ~10 минут максимум)
-        if attempt >= 60:
+        # Проверяем таймаут (30 попыток * ~30 сек avg = ~15 минут максимум)
+        # Webhook должен обработать результат раньше, polling — fallback
+        if attempt >= 30:
             log.error(f"Video job {job_id} timed out after {attempt} attempts")
             job.status = GenerationJob.Status.FAILED
             job.error = "Video generation timed out"
@@ -570,27 +598,41 @@ def poll_video_result(self, job_id: int, attempt: int = 1) -> None:
             _refund_if_needed(job)
             return
 
-        # Перезапускаем через 10 секунд
+        # Exponential backoff: 15s, 20s, 25s, 30s... (max 60s)
+        # Это снижает нагрузку, т.к. webhook — основной механизм
+        base_delay = 15
+        delay = min(60, base_delay + (attempt * 5))
+
         poll_video_result.apply_async(
             args=[job_id, attempt + 1],
-            countdown=10,
+            countdown=delay,
             queue=RUNWARE_QUEUE
         )
 
     except Exception as e:
         log.error(f"Error polling video job {job_id}: {e}", exc_info=True)
 
+        # Проверяем, не обработан ли уже webhook'ом
+        try:
+            job.refresh_from_db()
+            if job.status in (GenerationJob.Status.DONE, GenerationJob.Status.FAILED):
+                log.info(f"Video job {job_id} already finalized, stopping poll retry")
+                return
+        except Exception:
+            pass
+
         # Таймаут или продолжаем?
-        if attempt >= 120:
+        if attempt >= 30:
             job.status = GenerationJob.Status.FAILED
             job.error = f"Polling failed: {str(e)}"
             job.save()
             _refund_if_needed(job)
         else:
-            # Retry через 2 секунды
+            # Retry с exponential backoff
+            delay = min(60, 10 + (attempt * 5))
             poll_video_result.apply_async(
                 args=[job_id, attempt + 1],
-                countdown=2,
+                countdown=delay,
                 queue=RUNWARE_QUEUE
             )
 

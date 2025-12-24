@@ -792,69 +792,187 @@ def job_persist(request: HttpRequest, pk: int) -> JsonResponse:
 
 
 # =============================================================================
-# Webhook от Runware (успех/ошибка провайдера)
+# Webhook от Runware (успех/ошибка провайдера) — изображения и видео
 # =============================================================================
 
 @csrf_exempt
 def runware_webhook(request: HttpRequest) -> HttpResponse:
     """
-    На успех — финализируем (tasks._finalize_job_with_url), без повторных списаний.
-    На провале — FAILED и рефанд токенов только авторизованному пользователю.
+    Универсальный webhook для получения результатов от Runware API.
+    Поддерживает как изображения (imageURL), так и видео (videoURL).
+
+    На успех — финализируем без повторных списаний.
+    На провале — FAILED и рефанд токенов.
     """
-    # Проверяем только POST метод
     if request.method != 'POST':
         return HttpResponse('Method not allowed', status=405)
+
     import logging
     logger = logging.getLogger(__name__)
 
+    # Опциональная проверка токена авторизации
+    # RUNWARE_WEBHOOK_TOKEN — это НЕ API ключ Runware, а ваш собственный секрет для защиты endpoint.
+    # Если не задан — webhook работает без проверки токена.
     token_expected = getattr(settings, "RUNWARE_WEBHOOK_TOKEN", "")
-    token_get = request.GET.get("token") or request.headers.get("X-Runware-Token") or ""
-    if token_expected and token_get != token_expected:
-        logger.warning(f"Invalid webhook token from {request.META.get('REMOTE_ADDR')}")
-        return HttpResponseForbidden("bad token")
+    if token_expected:
+        token_get = request.GET.get("token") or request.headers.get("X-Runware-Token") or ""
+        if token_get != token_expected:
+            logger.warning(f"Webhook: invalid token from {request.META.get('REMOTE_ADDR')}")
+            return HttpResponseForbidden("bad token")
 
+    # Парсинг JSON
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
-        logger.error(f"Webhook JSON decode error: {e}")
+        logger.error(f"Webhook: JSON decode error: {e}")
         return HttpResponseBadRequest("bad json")
 
     arr = (body or {}).get("data") or []
     if not arr:
-        logger.warning("Webhook received empty data array")
+        logger.warning("Webhook: received empty data array")
         return HttpResponse("no data")
 
     item = arr[0] or {}
     task_uuid = item.get("taskUUID")
-    image_url = item.get("imageURL") or item.get("url")
+    task_type = item.get("taskType", "").lower()
     status = (item.get("status") or "").lower()
+
     if not task_uuid:
+        logger.warning("Webhook: no taskUUID in payload")
         return HttpResponse("skip")
 
+    # Находим job по provider_task_uuid
     job = GenerationJob.objects.filter(provider_task_uuid=task_uuid).first()
     if not job:
+        logger.info(f"Webhook: job not found for taskUUID={task_uuid}")
         return HttpResponse("job not found yet")
 
-    from .tasks import _finalize_job_with_url as _finalize_success
+    # Защита от дубликатов: если job уже завершён, игнорируем
+    if job.status in (GenerationJob.Status.DONE, GenerationJob.Status.FAILED):
+        logger.info(f"Webhook: job {job.pk} already finalized (status={job.status}), skipping")
+        return HttpResponse("already processed")
 
-    # SUCCESS
-    if image_url and (status in ("success", "succeeded", "")):
-        if job.status != GenerationJob.Status.DONE:
-            _finalize_success(job, image_url)
-        return HttpResponse("ok")
+    logger.info(f"Webhook: processing job {job.pk}, taskType={task_type}, status={status}")
 
-    if job.status != GenerationJob.Status.FAILED:
+    # Определяем тип результата: видео или изображение
+    video_url = item.get("videoURL") or item.get("videoUrl")
+    image_url = item.get("imageURL") or item.get("url")
+
+    # Для видео также проверяем вложенные структуры
+    if not video_url:
+        # Пытаемся извлечь videoURL из вложенных объектов
+        output = item.get("output") or item.get("result") or {}
+        if isinstance(output, dict):
+            video_url = output.get("videoURL") or output.get("videoUrl")
+        # Проверяем массив videos/outputs
+        videos = item.get("videos") or item.get("outputs") or []
+        if isinstance(videos, list) and videos:
+            for v in videos:
+                if isinstance(v, dict):
+                    candidate = v.get("videoURL") or v.get("videoUrl") or v.get("url")
+                    if candidate and isinstance(candidate, str) and candidate.startswith("http"):
+                        video_url = candidate
+                        break
+
+    # Успешное завершение
+    success_statuses = ("success", "succeeded", "completed", "done", "finished", "")
+
+    if status in success_statuses:
+        if video_url:
+            # Видео генерация — финализируем через специальную функцию
+            logger.info(f"Webhook: video ready for job {job.pk}, URL: {video_url[:80]}...")
+            _finalize_video_job_from_webhook(job, video_url)
+            return HttpResponse("ok video")
+        elif image_url:
+            # Изображение — используем существующую логику
+            from .tasks import _finalize_job_with_url
+            logger.info(f"Webhook: image ready for job {job.pk}, URL: {image_url[:80]}...")
+            _finalize_job_with_url(job, image_url)
+            return HttpResponse("ok image")
+        else:
+            # Нет URL — это может быть промежуточный статус, логируем
+            logger.warning(f"Webhook: success status but no URL for job {job.pk}")
+            return HttpResponse("no url")
+
+    # Ошибка генерации
+    error_statuses = ("failed", "error", "cancelled", "timeout")
+    if status in error_statuses:
+        logger.error(f"Webhook: job {job.pk} failed with status={status}")
         job.status = GenerationJob.Status.FAILED
-        job.error = (item.get("error") or item.get("message") or "Generation failed")[:500]
-        job.provider_status = item.get("status") or "failed"
+        job.error = (item.get("error") or item.get("message") or f"Generation failed: {status}")[:500]
+        job.provider_status = status
         job.provider_payload = item
         job.save(update_fields=["status", "error", "provider_status", "provider_payload"])
 
-        # Используем рефанд
         from .tasks import _refund_if_needed
         _refund_if_needed(job)
+        return HttpResponse("ok failed")
 
-    return HttpResponse("ok")
+    # Неизвестный статус — логируем, но не меняем job
+    logger.warning(f"Webhook: unknown status '{status}' for job {job.pk}")
+    return HttpResponse("unknown status")
+
+
+def _finalize_video_job_from_webhook(job: GenerationJob, video_url: str) -> None:
+    """
+    Финализация видео-задачи из webhook.
+    Скачивает видео, списывает токены, обновляет статус.
+    """
+    import logging
+    from datetime import timedelta
+    from django.utils import timezone
+    from django.db import transaction
+    from django.db.models import Q
+    from dashboard.models import Wallet
+    from .models import FreeGrant
+    from .tasks import _download_and_save_video, _refund_if_needed
+
+    logger = logging.getLogger(__name__)
+
+    # Защита от повторной обработки
+    if job.status == GenerationJob.Status.DONE:
+        logger.info(f"Video job {job.pk} already DONE, skipping webhook finalization")
+        return
+
+    try:
+        # Скачиваем и сохраняем видео локально
+        local_url = _download_and_save_video(job, video_url)
+
+        # Списываем токены
+        token_cost = job.video_model.token_cost if job.video_model else 20
+
+        with transaction.atomic():
+            if job.user and not job.user.is_staff:
+                wallet = Wallet.objects.select_for_update().get(user=job.user)
+                wallet.balance -= token_cost
+                wallet.save()
+                logger.info(f"Webhook: charged {token_cost} tokens from user {job.user_id}")
+            elif not job.user:
+                # Гость
+                grant = FreeGrant.objects.filter(
+                    Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
+                    user__isnull=True
+                ).select_for_update().first()
+                if grant:
+                    grant.spend(token_cost)
+                    logger.info(f"Webhook: charged {token_cost} tokens from FreeGrant {grant.pk}")
+
+            # Обновляем job
+            job.result_video_url = local_url or video_url
+            job.status = GenerationJob.Status.DONE
+            job.tokens_spent = token_cost
+            job.provider_status = "success"
+            job.video_cached_until = timezone.now() + timedelta(hours=24)
+            job.save()
+
+        logger.info(f"Webhook: video job {job.pk} finalized successfully")
+
+    except Exception as e:
+        logger.error(f"Webhook: error finalizing video job {job.pk}: {e}", exc_info=True)
+        job.status = GenerationJob.Status.FAILED
+        job.error = f"Webhook processing error: {str(e)}"[:500]
+        job.save(update_fields=["status", "error"])
+        _refund_if_needed(job)
 
 
 # =============================================================================
