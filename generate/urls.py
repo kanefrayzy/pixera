@@ -137,7 +137,8 @@ urlpatterns = [
     path("new/", RedirectView.as_view(pattern_name="generate:new", permanent=True)),
     path("api/submit/", RedirectView.as_view(pattern_name="generate:api_submit", permanent=True)),
     path("api/status/<int:job_id>/", RedirectView.as_view(pattern_name="generate:api_status", permanent=True)),
-    path("api/runware/webhook/", RedirectView.as_view(pattern_name="generate:runware_webhook", permanent=True)),
+    # Webhook: оба URL обрабатываются напрямую (Runware не следует редиректам)
+    path("api/runware/webhook/", views_api.runware_webhook, name="runware_webhook_slash"),
     path("api/video/models/", RedirectView.as_view(pattern_name="generate:api_video_models", permanent=True)),
     path("api/video/submit/", RedirectView.as_view(pattern_name="generate:api_video_submit", permanent=True)),
     path("api/video/status/<int:job_id>/", RedirectView.as_view(pattern_name="generate:api_video_status", permanent=True)),
