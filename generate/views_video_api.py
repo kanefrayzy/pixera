@@ -797,69 +797,18 @@ def video_status(request, job_id):
         except Exception as e:
             logger.error(f"[video_status] Self-heal failed for job {job_id}: {e}", exc_info=True)
 
-        # Попробуем опросить Runware напрямую, если есть provider_task_uuid (на случай, если Celery не отработал)
-        try:
-            if getattr(job, "provider_task_uuid", None):
-                status_data = check_video_status(job.provider_task_uuid)
-                raw = status_data or {}
-                data_val = raw.get("data")
-                item = None
-                if isinstance(data_val, list) and data_val:
-                    item = data_val[0]
-                elif isinstance(data_val, dict):
-                    item = data_val
-                else:
-                    item = raw
-
-                status_val = (item or {}).get('status') or raw.get('status') or (item or {}).get('state')
-                # вытащим video_url тем же способом, что и в self-heal
-                video_url = _extract_video_url_from_payload(item or {}) or _extract_video_url_from_payload(raw or {})
-
-                if str(status_val).lower() in {'completed', 'done', 'finished', 'success', 'succeeded'} and video_url:
-                    logger.info(f"[video_status] Live poll: job {job.id} completed at provider, finalizing as DONE")
-                    token_cost = job.video_model.token_cost if job.video_model else 20
-                    with transaction.atomic():
-                        if int(job.tokens_spent or 0) <= 0:
-                            if job.user and not job.user.is_staff:
-                                wallet = Wallet.objects.select_for_update().get(user=job.user)
-                                wallet.balance -= token_cost
-                                wallet.save()
-                            elif not job.user:
-                                grant = FreeGrant.objects.filter(
-                                    Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
-                                    user__isnull=True
-                                ).select_for_update().first()
-                                if grant:
-                                    grant.spend(token_cost)
-                            job.tokens_spent = token_cost
-
-                        if not job.result_video_url:
-                            job.result_video_url = video_url
-                        job.status = GenerationJob.Status.DONE
-                        if not job.video_cached_until:
-                            job.video_cached_until = timezone.now() + timedelta(hours=24)
-                        job.save()
-
-                    return JsonResponse({
-                        'success': True,
-                        'status': 'done',
-                        'video_url': job.result_video_url,
-                        'job_id': job.id,
-                        'cached_until': job.video_cached_until.isoformat() if job.video_cached_until else None
-                    })
-
-                if str(status_val).lower() in {'failed', 'error'}:
-                    logger.warning(f"[video_status] Live poll: job {job.id} failed at provider with status={status_val}")
-                    job.status = GenerationJob.Status.FAILED
-                    job.error = raw.get('error') or (item or {}).get('error') or 'Video generation failed at provider'
-                    job.save()
-                    return JsonResponse({
-                        'success': False,
-                        'status': 'failed',
-                        'error': job.error
-                    })
-        except Exception as e:
-            logger.error(f"[video_status] Live poll failed for job {job_id}: {e}", exc_info=True)
+        # =====================================================================
+        # ОТКЛЮЧЕНО: Live poll к Runware из JS endpoint
+        # Теперь webhook обрабатывает результаты мгновенно, а Celery polling
+        # работает как fallback. JS endpoint только читает статус из БД.
+        # Это убирает лишнюю нагрузку на Runware API.
+        # =====================================================================
+        # try:
+        #     if getattr(job, "provider_task_uuid", None):
+        #         status_data = check_video_status(job.provider_task_uuid)
+        #         ... (live poll logic)
+        # except Exception as e:
+        #     logger.error(...)
 
         progress = None
         try:

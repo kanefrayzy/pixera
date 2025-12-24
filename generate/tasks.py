@@ -389,10 +389,12 @@ def process_video_generation_async(
 
                 if use_celery and not broker_url.startswith('memory'):
                     # Асинхронный режим — отправляем polling задачу в очередь
+                    # Webhook — основной механизм, polling — только backup
+                    # Начинаем через 30 сек, т.к. webhook обычно приходит быстрее
                     log.info(f"Video job {job_id}: scheduling async polling via Celery worker")
                     poll_video_result.apply_async(
                         args=[job_id, 1],
-                        countdown=10,
+                        countdown=30,  # Даём время webhook'у сработать первым
                         queue=RUNWARE_QUEUE
                     )
                 else:
