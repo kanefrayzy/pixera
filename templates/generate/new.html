@@ -3134,9 +3134,9 @@ updateNavState();
   var isVideoMode = document.documentElement.classList.contains('mode-video') ||
     window.location.pathname.includes('/generate/video') ||
     (new URLSearchParams(window.location.search).get('type') === 'video');
-  
+
   if (isVideoMode) return; // Не загружаем image скрипты в video режиме
-  
+
   function loadImageScripts(){
     var imageScripts=[
       "/static/js/image-generation.js?v={{ STATIC_VERSION }}",
@@ -3176,7 +3176,7 @@ updateNavState();
     window.location.pathname.includes('/generate/video') ||
     (new URLSearchParams(window.location.search).get('type') === 'video');
   if (isVideoMode) return;
-  
+
   function loadShowcaseData(){
     window.showcaseGalleryData = [
     {% for item in showcase_images %}

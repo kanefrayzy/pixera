@@ -9,7 +9,7 @@ class VideoCache {
     this.storeName = 'videos';
     this.version = 1;
     this.db = null;
-    
+
     this.init();
   }
 
@@ -32,7 +32,7 @@ class VideoCache {
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
-        
+
         // Создаем хранилище если его нет
         if (!db.objectStoreNames.contains(this.storeName)) {
           const objectStore = db.createObjectStore(this.storeName, { keyPath: 'jobId' });
@@ -93,7 +93,7 @@ class VideoCache {
 
       request.onsuccess = () => {
         const data = request.result;
-        
+
         if (!data) {
           resolve(null);
           return;
@@ -147,7 +147,7 @@ class VideoCache {
       const transaction = this.db.transaction([this.storeName], 'readwrite');
       const objectStore = transaction.objectStore(this.storeName);
       const index = objectStore.index('expiresAt');
-      
+
       const now = Date.now();
       const range = IDBKeyRange.upperBound(now);
       const request = index.openCursor(range);
@@ -228,7 +228,7 @@ class VideoCache {
   async getStats() {
     const videos = await this.getAll();
     const totalSize = await this.getCacheSize();
-    
+
     return {
       count: videos.length,
       totalSize: totalSize,

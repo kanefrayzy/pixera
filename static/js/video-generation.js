@@ -1,7 +1,7 @@
 /**
  * Модуль генерации видео
  * Управляет формой генерации видео, отправкой запросов и отображением результатов
- * 
+ *
  * Оптимизированная версия:
  * - Удалены все console.log/warn/error
  * - Polling интервалы увеличены (webhook обрабатывает большинство случаев)
@@ -67,13 +67,13 @@ class VideoGeneration {
     // Persisted jobs (button clicked) per user/session
     this.persistedJobs = this.loadPersistedJobs ? this.loadPersistedJobs() : new Set();
     this.isGenerating = false;
-    
+
     // Кешированные DOM элементы
     this._domCache = {};
 
     this.init();
   }
-  
+
   /**
    * Получить DOM элемент с кешированием
    */
@@ -83,7 +83,7 @@ class VideoGeneration {
     }
     return this._domCache[id];
   }
-  
+
   /**
    * Очистить кеш DOM элементов
    */

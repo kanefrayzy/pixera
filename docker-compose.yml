@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   db:
@@ -12,8 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # ports removed - only accessible within Docker network (security)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pixera_user}"]
       timeout: 10s
@@ -24,8 +21,7 @@ services:
     image: redis:7-alpine
     container_name: pixera_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # ports removed - only accessible within Docker network (security)
     volumes:
       - redis_data:/data
     healthcheck:

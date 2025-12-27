@@ -33,7 +33,7 @@
 
     // Кэш DOM элементов
     cache: new Map(),
-    
+
     getElement(selector, useCache = true) {
       if (useCache && this.cache.has(selector)) {
         return this.cache.get(selector);
@@ -87,7 +87,7 @@
           // Clipboard API failed, using fallback
         }
       }
-      
+
       // Fallback
       const ta = document.createElement('textarea');
       ta.value = text;
@@ -219,9 +219,9 @@
       const animate = (currentTime) => {
         const elapsed = currentTime - start;
         const progress = Math.min(elapsed / duration, 1);
-        
+
         callback(progress);
-        
+
         if (progress < 1) {
           const frameId = requestAnimationFrame(animate);
           this.animations.set(id, frameId);
@@ -251,7 +251,7 @@
     // Делегирование событий для динамического контента
     delegate(selector, eventType, handler, options = {}) {
       const key = `${selector}-${eventType}`;
-      
+
       if (!this.delegatedEvents.has(key)) {
         const delegatedHandler = (e) => {
           const target = e.target.closest(selector);
