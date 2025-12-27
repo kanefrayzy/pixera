@@ -2,6 +2,7 @@
 (function() {
   const IS_STAFF = (document.getElementById('gen-root')?.dataset.isStaff || 'false') === 'true';
   let currentMode = 't2v';
+  let categoriesLoaded = false;
 
   function syncAdminModeSelect() {
     const sel = document.getElementById('vpcMode');
@@ -202,11 +203,16 @@
     const container = document.getElementById('videoCategoriesContainer');
     if (!container) return;
 
+    // Skip if already loading or loaded for same mode
+    if (container.dataset.loading === 'true') return;
+    container.dataset.loading = 'true';
+
     container.innerHTML = '<p class="text-center text-muted">Загрузка категорий...</p>';
 
     try {
       const response = await fetch(`/generate/api/video/categories/?mode=${mode}`);
       const data = await response.json();
+      categoriesLoaded = true;
 
       if (data.categories && data.categories.length > 0) {
         const cats = data.categories;
@@ -274,14 +280,17 @@
         }
 
         container.innerHTML = html;
+        container.dataset.loading = 'false';
         attachCategoryHandlers();
         // Enforce "3 rows + Show more" UX for video categories
         setupShowMoreVideoCategories();
       } else {
         container.innerHTML = '<p class="text-center text-muted">Категории не найдены</p>';
+        container.dataset.loading = 'false';
       }
     } catch (error) {
       container.innerHTML = '<p class="text-center text-red-500">Ошибка загрузки категорий</p>';
+      container.dataset.loading = 'false';
     }
   }
 
@@ -1070,7 +1079,8 @@
   // Load on DOMContentLoaded if video form is visible
   document.addEventListener('DOMContentLoaded', function() {
     const videoContainer = document.getElementById('video-form-container');
-    if (videoContainer && videoContainer.style.display !== 'none') {
+    const isVideoVisible = videoContainer && getComputedStyle(videoContainer).display !== 'none';
+    if (isVideoVisible) {
       currentMode = getCurrentVideoMode();
       try { localStorage.setItem('gen.videoSource', currentMode || 't2v'); } catch(_) {}
       syncAdminModeSelect();
@@ -1078,6 +1088,21 @@
       loadVideoShowcase(currentMode);
     }
   });
+
+  // Immediate check - if already loaded and video visible, load content
+  (function immediateInit() {
+    if (document.readyState === 'loading') return; // Wait for DOMContentLoaded
+    const videoContainer = document.getElementById('video-form-container');
+    const container = document.getElementById('videoCategoriesContainer');
+    const isVideoVisible = videoContainer && getComputedStyle(videoContainer).display !== 'none';
+    const needsLoad = container && container.innerHTML.includes('Загрузка');
+    if (isVideoVisible && needsLoad) {
+      currentMode = getCurrentVideoMode();
+      syncAdminModeSelect();
+      loadVideoCategories(currentMode);
+      loadVideoShowcase(currentMode);
+    }
+  })();
 
   // Force load when switching to video tab
   document.addEventListener('click', function(e) {
@@ -1094,4 +1119,27 @@
       }, 500);
     }
   });
+
+  // Fallback: Check every 2 seconds if categories are still loading (max 5 attempts)
+  let fallbackAttempts = 0;
+  const fallbackInterval = setInterval(function() {
+    fallbackAttempts++;
+    if (fallbackAttempts > 5) {
+      clearInterval(fallbackInterval);
+      return;
+    }
+    const videoContainer = document.getElementById('video-form-container');
+    const container = document.getElementById('videoCategoriesContainer');
+    const isVideoVisible = videoContainer && getComputedStyle(videoContainer).display !== 'none';
+    const needsLoad = container && container.innerHTML.includes('Загрузка') && container.dataset.loading !== 'true';
+    if (isVideoVisible && needsLoad) {
+      currentMode = getCurrentVideoMode();
+      syncAdminModeSelect();
+      loadVideoCategories(currentMode);
+      loadVideoShowcase(currentMode);
+      clearInterval(fallbackInterval);
+    } else if (categoriesLoaded || (container && !container.innerHTML.includes('Загрузка'))) {
+      clearInterval(fallbackInterval);
+    }
+  }, 2000);
 })();
