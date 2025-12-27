@@ -107,11 +107,25 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      await audioCtx.resume();
+      // Не блокируем если требуется жест пользователя
+      if (audioCtx.state === 'suspended') {
+        // Пробуем resume, но не ждём бесконечно
+        const resumePromise = audioCtx.resume();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 500)
+        );
+        try {
+          await Promise.race([resumePromise, timeoutPromise]);
+        } catch(e) {
+          // Таймаут или ошибка - продолжаем без звука
+          console.log('🔇 Sound requires user gesture, will unlock on interaction');
+          return;
+        }
+      }
       notifSoundUnlocked = true;
       console.log('✅ Sound ready');
     }catch(err){
-      console.error('❌ Sound init failed:', err);
+      console.log('🔇 Sound init deferred:', err.message || err);
       notifSoundUnlocked = false;
     }
   }
@@ -431,12 +445,16 @@
   async function loadPage(cursor){
     if (loading) return;
     loading = true;
+    console.log('🔄 loadPage called, cursor:', cursor);
     try{
       const url = new URL(LIST_URL, location.origin);
       url.searchParams.set('limit', '20');
       if (cursor) url.searchParams.set('cursor', String(cursor));
+      console.log('📡 Fetching:', url.toString());
       const r = await fetch(url.toString(), { credentials: 'same-origin' });
+      console.log('📨 Response status:', r.status);
       const j = await r.json();
+      console.log('📬 Response data:', j);
       if (!j || j.ok !== true) throw new Error('bad response');
 
       const items = j.items || [];
@@ -488,8 +506,10 @@
         }
       }
       initialized = true;
+      console.log('📬 Notifications loaded:', items.length, 'items');
     }catch(e){
-      // noop
+      console.error('❌ Error loading notifications:', e);
+      console.log('📝 LIST_URL:', LIST_URL);
     }finally{
       loading = false;
     }
@@ -692,12 +712,8 @@
 
   // initial
   (async function init(){
-    console.log('🚀 Initializing notifications...');
-
     await unlockNotifSound();
     await requestWebNotifPermissionOnce();
-
-    // Load first 30 notifications only
     await loadPage(null);
 
     // Запускаем проверку новых уведомлений каждые 2 секунды (реальное время)
@@ -712,6 +728,18 @@
       console.warn('⚠️ Click anywhere on the page to enable notification sounds');
     }
   })();
+
+  // Handle bfcache (back-forward cache) - reload on pageshow from cache
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+      console.log('🔄 Page restored from bfcache, reloading notifications...');
+      initialized = false;
+      knownIds.clear();
+      listEl.innerHTML = '';
+      loading = false;
+      loadPage(null);
+    }
+  });
 })();
 </script>
 
