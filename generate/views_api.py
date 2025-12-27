@@ -252,9 +252,19 @@ def api_submit(request: HttpRequest) -> JsonResponse:
     except (ValueError, TypeError):
         number_results = 1
 
-    # Переменная стоимости: 15 TOK для FLUX/Seedream, иначе глобальный токен-кост
-    special_model = (model_id_in or "").strip().lower() in {"bfl:2@2", "bytedance:5@0"}
-    base_cost = 15 if special_model else _token_cost()
+    # Получаем стоимость из модели если она указана
+    base_cost = _token_cost()  # По умолчанию глобальный токен-кост
+    if model_id_in:
+        try:
+            from generate.models_image import ImageModelConfiguration
+            image_model = ImageModelConfiguration.objects.filter(
+                model_id__iexact=model_id_in.strip(),
+                is_active=True
+            ).first()
+            if image_model and image_model.token_cost:
+                base_cost = image_model.token_cost
+        except Exception:
+            pass  # Используем глобальный токен-кост при ошибке
 
     # Умножаем базовую цену на количество результатов
     cost = base_cost * number_results

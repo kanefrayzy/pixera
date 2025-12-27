@@ -2965,6 +2965,9 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     }
 
     this.isGenerating = false;
+    // Восстанавливаем блок режимов
+    const modeBlockEnd = document.getElementById('video-mode-block');
+    if (modeBlockEnd) modeBlockEnd.style.display = '';
   }
 
   /**
