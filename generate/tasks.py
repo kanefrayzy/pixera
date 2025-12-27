@@ -204,18 +204,23 @@ def _sync_poll_video_until_done(job_id: int, task_uuid: str, max_attempts: int =
 
                 token_cost = job.video_model.token_cost if job.video_model else 20
 
-                with transaction.atomic():
-                    if job.user and not job.user.is_staff:
-                        wallet = Wallet.objects.select_for_update().get(user=job.user)
-                        wallet.balance -= token_cost
-                        wallet.save()
-                    elif not job.user:
-                        grant = FreeGrant.objects.filter(
-                            Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
-                            user__isnull=True
-                        ).select_for_update().first()
-                        if grant:
-                            grant.spend(token_cost)
+                # Защита от двойного списания: проверяем tokens_spent
+                if int(job.tokens_spent or 0) <= 0:
+                    with transaction.atomic():
+                        if job.user and not job.user.is_staff:
+                            wallet = Wallet.objects.select_for_update().get(user=job.user)
+                            wallet.balance -= token_cost
+                            wallet.save()
+                        elif not job.user:
+                            grant = FreeGrant.objects.filter(
+                                Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
+                                user__isnull=True
+                            ).select_for_update().first()
+                            if grant:
+                                grant.spend(token_cost)
+                else:
+                    log.info(f"Video job {job_id}: tokens already charged ({job.tokens_spent}), skipping")
+                    token_cost = job.tokens_spent  # Используем уже списанное значение
 
                 job.result_video_url = job.result_video_url or video_url
                 job.status = GenerationJob.Status.DONE
@@ -418,28 +423,33 @@ def process_video_generation_async(
 
             token_cost = job.video_model.token_cost if job.video_model else 20
 
-            with transaction.atomic():
-                if job.user and not job.user.is_staff:
-                    wallet = Wallet.objects.select_for_update().get(user=job.user)
-                    wallet.balance -= token_cost
-                    wallet.save()
-                elif not job.user:
-                    # Гость
-                    grant = FreeGrant.objects.filter(
-                        Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
-                        user__isnull=True
-                    ).first()
-                    if grant:
-                        grant.spend(token_cost)
+            # Защита от двойного списания: проверяем tokens_spent
+            if int(job.tokens_spent or 0) <= 0:
+                with transaction.atomic():
+                    if job.user and not job.user.is_staff:
+                        wallet = Wallet.objects.select_for_update().get(user=job.user)
+                        wallet.balance -= token_cost
+                        wallet.save()
+                    elif not job.user:
+                        # Гость
+                        grant = FreeGrant.objects.filter(
+                            Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
+                            user__isnull=True
+                        ).select_for_update().first()
+                        if grant:
+                            grant.spend(token_cost)
+            else:
+                log.info(f"Video job {job_id}: tokens already charged ({job.tokens_spent}), skipping sync deduction")
+                token_cost = job.tokens_spent
 
-                # Обновляем job (если локальное сохранение прошло — используем его URL)
-                job.result_video_url = job.result_video_url or result
-                job.status = GenerationJob.Status.DONE
-                job.tokens_spent = token_cost
-                from datetime import timedelta
-                from django.utils import timezone
-                job.video_cached_until = timezone.now() + timedelta(hours=24)
-                job.save()
+            # Обновляем job (если локальное сохранение прошло — используем его URL)
+            job.result_video_url = job.result_video_url or result
+            job.status = GenerationJob.Status.DONE
+            job.tokens_spent = token_cost
+            from datetime import timedelta
+            from django.utils import timezone
+            job.video_cached_until = timezone.now() + timedelta(hours=24)
+            job.save()
         else:
             raise RunwareVideoError(
                 f"Unexpected result format: {type(result)}")

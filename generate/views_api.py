@@ -973,20 +973,25 @@ def _finalize_video_job_from_webhook(job: GenerationJob, video_url: str) -> None
                 logger.info(f"Webhook: job {job.pk} finalized by polling during download, skipping")
                 return
 
-            if job.user and not job.user.is_staff:
-                wallet = Wallet.objects.select_for_update().get(user=job.user)
-                wallet.balance -= token_cost
-                wallet.save()
-                logger.info(f"Webhook: charged {token_cost} tokens from user {job.user_id}")
-            elif not job.user:
-                # Гость
-                grant = FreeGrant.objects.filter(
-                    Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
-                    user__isnull=True
-                ).select_for_update().first()
-                if grant:
-                    grant.spend(token_cost)
-                    logger.info(f"Webhook: charged {token_cost} tokens from FreeGrant {grant.pk}")
+            # Защита от двойного списания: проверяем tokens_spent
+            if int(job.tokens_spent or 0) <= 0:
+                if job.user and not job.user.is_staff:
+                    wallet = Wallet.objects.select_for_update().get(user=job.user)
+                    wallet.balance -= token_cost
+                    wallet.save()
+                    logger.info(f"Webhook: charged {token_cost} tokens from user {job.user_id}")
+                elif not job.user:
+                    # Гость
+                    grant = FreeGrant.objects.filter(
+                        Q(gid=job.guest_gid) | Q(fp=job.guest_fp),
+                        user__isnull=True
+                    ).select_for_update().first()
+                    if grant:
+                        grant.spend(token_cost)
+                        logger.info(f"Webhook: charged {token_cost} tokens from FreeGrant {grant.pk}")
+            else:
+                logger.info(f"Webhook: job {job.pk} tokens already charged ({job.tokens_spent}), skipping deduction")
+                token_cost = job.tokens_spent
 
             # Обновляем job
             job.result_video_url = local_url or video_url

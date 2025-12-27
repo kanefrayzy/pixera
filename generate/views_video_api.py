@@ -443,7 +443,7 @@ def video_submit(request):
                     video_camera_movement=camera_movement or '',
                     video_seed=seed or '',
                     status=GenerationJob.Status.PENDING,
-                    tokens_spent=base_token_cost if i == 0 else 0,  # Токены списываем только с первой задачи
+                    tokens_spent=0,  # Токены списываются при завершении каждой задачи
                     guest_session_key=guest_session_key,
                     guest_gid=guest_gid,
                     guest_fp=guest_fp,

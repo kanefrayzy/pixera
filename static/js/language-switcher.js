@@ -125,8 +125,12 @@ const LanguageSwitcher = {
 
     return url.toString();
   },  getCSRFToken() {
-    const match = document.cookie.match(new RegExp('(^|;)\\\\s*csrftoken=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : '';
+    // Сначала пробуем cookie
+    const match = document.cookie.match(new RegExp('(^|;)\\s*csrftoken=([^;]+)'));
+    if (match) return decodeURIComponent(match[2]);
+    // Фолбэк: скрытый input
+    const input = document.querySelector('[name=csrfmiddlewaretoken]');
+    return input ? input.value : '';
   },
 
   async setLanguage(language, switcher, menu, flagId) {
@@ -137,6 +141,10 @@ const LanguageSwitcher = {
     switcher.removeAttribute('open');
 
     const nextUrl = this.buildLanguageUrl(language);
+
+    // Устанавливаем cookie напрямую как фолбэк
+    const cookieAge = 60 * 60 * 24 * 365 * 5; // 5 лет
+    document.cookie = `django_language=${language};path=/;max-age=${cookieAge};SameSite=Lax`;
 
     try {
       const formData = new URLSearchParams();
@@ -153,7 +161,7 @@ const LanguageSwitcher = {
         body: formData.toString()
       });
     } catch (error) {
-      console.warn('Language switch request failed:', error);
+      console.warn('Language switch request failed, using cookie fallback:', error);
     }
 
     location.assign(nextUrl);
