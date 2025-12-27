@@ -11,20 +11,10 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-# Функция для отправки подробных логов на alarmerbot
+# Функция для отправки подробных логов на alarmerbot (ОТКЛЮЧЕНА)
 def send_debug_log(message: str, data: dict = None):
-    """Отправка подробных логов на alarmerbot для отладки"""
-    try:
-        log_data = {
-            'msg': message,
-            'data': data or {}
-        }
-        log_str = json.dumps(log_data, ensure_ascii=False, indent=2)
-        url = f"https://alarmerbot.ru/?key=6e21b3-fd8fe6-90d484&message={quote(log_str)}"
-        requests.get(url, timeout=3)
-        logger.info(f"[ALARMER] {message}")
-    except Exception as e:
-        logger.error(f"Failed to send debug log: {e}")
+    """Отключено - ранее отправляло логи на alarmerbot"""
+    pass
 
 
 def _get_api_key() -> str:
@@ -572,12 +562,6 @@ def generate_video_via_rest(
         # Добавляем frameImages для T2V если переданы
         frame_images = kwargs.get('frameImages') or kwargs.get('frame_images')
         if frame_images:
-            send_debug_log("🎬 Обработка frameImages для T2V", {
-                'provider': provider,
-                'model_id': model_id,
-                'frame_images_input': frame_images,
-                'frame_images_count': len(frame_images) if isinstance(frame_images, list) else 1
-            })
 
             if isinstance(frame_images, list) and frame_images:
                 # Форматируем frameImages в зависимости от провайдера
@@ -585,10 +569,7 @@ def generate_video_via_rest(
                     # ByteDance ожидает массив объектов { inputImage: <uuid|url> }
                     formatted = [{"inputImage": v} for v in frame_images]
                     payload[0]["frameImages"] = formatted
-                    send_debug_log("✅ frameImages отформатированы (ByteDance)", {
-                        'format': 'array of objects',
-                        'result': formatted
-                    })
+
                     logger.info(f"Added {len(frame_images)} frameImages (ByteDance format) to T2V payload")
                 elif provider == 'klingai':
                     # KlingAI ожидает массив объектов { inputImage: <uuid|url> }
@@ -605,10 +586,7 @@ def generate_video_via_rest(
                                 val = v
                         converted.append({"inputImage": val})
                     payload[0]["frameImages"] = converted
-                    send_debug_log("✅ frameImages отформатированы (KlingAI)", {
-                        'format': 'array of objects with CDN URLs',
-                        'result': converted
-                    })
+
                     logger.info(f"Added {len(frame_images)} frameImages (KlingAI format) to T2V payload")
                 else:
                     # Для остальных провайдеров (Vidu, Sora и т.д.) - используем формат объектов с CDN URL
@@ -625,27 +603,17 @@ def generate_video_via_rest(
                                 val = v
                         converted.append({"inputImage": val})
                     payload[0]["frameImages"] = converted
-                    send_debug_log("✅ frameImages отформатированы (other provider)", {
-                        'format': 'array of objects with CDN URLs',
-                        'input': frame_images,
-                        'result': converted
-                    })
+
                     logger.info(f"Added {len(frame_images)} frameImages to T2V payload")
 
         # Добавляем referenceImages для T2V если переданы (для моделей, которые используют этот параметр)
         reference_images = kwargs.get('referenceImages') or kwargs.get('reference_images')
         if reference_images:
-            send_debug_log("📚 Обработка referenceImages для T2V", {
-                'reference_images': reference_images,
-                'count': len(reference_images) if isinstance(reference_images, list) else 1
-            })
+
             if isinstance(reference_images, list) and reference_images:
                 # Для referenceImages обычно используется простой массив (Wan2.5-Preview)
                 payload[0]["referenceImages"] = reference_images
-                send_debug_log("✅ referenceImages добавлены", {
-                    'format': 'simple array',
-                    'result': reference_images
-                })
+
                 logger.info(f"Added {len(reference_images)} referenceImages to T2V payload")
 
         # Добавляем providerSettings на основе модели
@@ -673,15 +641,6 @@ def generate_video_via_rest(
         logger.info(f"T2V: webhook URL добавлен: {webhook_url[:50]}...")
 
     try:
-        send_debug_log("🚀 ОТПРАВКА T2V на Runware API", {
-            'model_id': model_id,
-            'provider': provider,
-            'payload': payload,
-            'has_frameImages': 'frameImages' in payload[0],
-            'has_referenceImages': 'referenceImages' in payload[0],
-            'frameImages_value': payload[0].get('frameImages'),
-            'referenceImages_value': payload[0].get('referenceImages')
-        })
 
         logger.info(
             f"T2V payload → model={model_id}, provider={provider}: {payload}")
@@ -710,16 +669,10 @@ def generate_video_via_rest(
         try:
             data = r.json()
             logger.info(f"Ответ Runware API: {data}")
-            send_debug_log(f"📨 ОТВЕТ от Runware API (status {r.status_code})", {
-                'status_code': r.status_code,
-                'response': data
-            })
+
         except ValueError:
             logger.error(f"Не удалось распарсить JSON. Ответ: {r.text[:500]}")
-            send_debug_log("❌ Ошибка парсинга ответа от API", {
-                'status_code': r.status_code,
-                'response_text': r.text[:500]
-            })
+
             data = {}
 
         # Проверяем статус код
@@ -746,11 +699,7 @@ def generate_video_via_rest(
                 else:
                     error_msg = 'Неверные параметры запроса'
 
-            send_debug_log("❌ ОШИБКА 400 от Runware API", {
-                'error_message': error_msg,
-                'full_response': data,
-                'payload_sent': payload
-            })
+
             raise RunwareVideoError(f"Ошибка параметров: {error_msg}")
         elif r.status_code >= 500:
             # Fallback: try async delivery if provider sync endpoint is flaky
@@ -1327,11 +1276,6 @@ def generate_video_from_image(
     # Wan2.5-Preview (runware:201@1) требует referenceImages, а не frameImages
     mid = str(model_id).lower()
 
-    send_debug_log("🎬 Формирование frameImages для I2V", {
-        'model_id': model_id,
-        'provider': provider,
-        'images_list': images_list
-    })
 
     if mid == "runware:201@1":
         # Wan2.5: конвертируем UUID в CDN URL (массив строк, не объектов)
@@ -1347,11 +1291,7 @@ def generate_video_from_image(
             else:
                 converted_urls.append(v)
         payload[0]["referenceImages"] = converted_urls
-        send_debug_log("✅ I2V: Используется referenceImages (Wan2.5)", {
-            'parameter': 'referenceImages',
-            'format': 'simple array of CDN URLs',
-            'value': converted_urls
-        })
+
     elif provider == 'bytedance':
         # ByteDance: frameImages с объектами и CDN URLs
         import re
@@ -1366,11 +1306,7 @@ def generate_video_from_image(
                     val = v
             formatted.append({"inputImage": val})
         payload[0]["frameImages"] = formatted
-        send_debug_log("✅ I2V: Используется frameImages (ByteDance)", {
-            'parameter': 'frameImages',
-            'format': 'array of objects with CDN URLs',
-            'value': formatted
-        })
+
     elif provider == 'klingai':
         # KlingAI: frameImages с объектами и CDN URLs
         import re
@@ -1385,11 +1321,7 @@ def generate_video_from_image(
                     val = v
             formatted.append({"inputImage": val})
         payload[0]["frameImages"] = formatted
-        send_debug_log("✅ I2V: Используется frameImages (KlingAI)", {
-            'parameter': 'frameImages',
-            'format': 'array of objects with CDN URLs',
-            'value': formatted
-        })
+
     else:
         # Для всех остальных провайдеров (Vidu, Sora и т.д.) - объекты с CDN URLs
         import re
@@ -1404,11 +1336,6 @@ def generate_video_from_image(
                     val = v
             formatted.append({"inputImage": val})
         payload[0]["frameImages"] = formatted
-        send_debug_log("✅ I2V: Используется frameImages (default - objects with CDN URLs)", {
-            'parameter': 'frameImages',
-            'format': 'array of objects with CDN URLs',
-            'value': formatted
-        })
 
     # Аудио-входы (URL/UUID/Data URI) — прокидываем как есть, если указаны
     audio_inputs = kwargs.get("audioInputs") or kwargs.get("audio_inputs")
@@ -1484,15 +1411,6 @@ def generate_video_from_image(
     logger.info(f"Отправка запроса на I2V: model={model_id}")
     logger.info(f"I2V Payload: {payload}")
 
-    send_debug_log("🚀 ОТПРАВКА I2V на Runware API", {
-        'model_id': model_id,
-        'provider': provider,
-        'payload': payload,
-        'has_frameImages': 'frameImages' in payload[0],
-        'has_referenceImages': 'referenceImages' in payload[0],
-        'frameImages_value': payload[0].get('frameImages'),
-        'referenceImages_value': payload[0].get('referenceImages')
-    })
 
     try:
         logger.info(
@@ -1520,16 +1438,9 @@ def generate_video_from_image(
         try:
             data = r.json()
             logger.info(f"Ответ Runware API (I2V): {data}")
-            send_debug_log(f"📨 ОТВЕТ от Runware API I2V (status {r.status_code})", {
-                'status_code': r.status_code,
-                'response': data
-            })
+
         except ValueError:
             logger.error(f"Не удалось распарсить JSON. Ответ: {r.text[:500]}")
-            send_debug_log("❌ Ошибка парсинга ответа от API (I2V)", {
-                'status_code': r.status_code,
-                'response_text': r.text[:500]
-            })
             data = {}
 
         # Проверяем наличие errors в ответе
@@ -1538,10 +1449,6 @@ def generate_video_from_image(
             error_msg = error_details.get('message', 'Неизвестная ошибка')
             logger.error(f"API вернул ошибку: {error_msg}")
             logger.error(f"Детали ошибки: {error_details}")
-            send_debug_log("⚠️ API вернул errors в ответе", {
-                'error_message': error_msg,
-                'error_details': error_details
-            })
 
         # Проверяем статус код
         if r.status_code == 401:
@@ -1606,11 +1513,6 @@ def generate_video_from_image(
                     else:
                         error_msg = 'Неверные параметры запроса'
 
-                send_debug_log("❌ ОШИБКА 400 от Runware API (I2V)", {
-                    'error_message': error_msg,
-                    'full_response': data,
-                    'payload_sent': payload
-                })
                 raise RunwareVideoError(f"Ошибка параметров I2V: {error_msg}")
         elif r.status_code >= 500:
             # Fallback: try async delivery for I2V
