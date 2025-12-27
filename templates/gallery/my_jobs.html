@@ -992,8 +992,11 @@
                   {% if v.video_url %}<source src="{{ v.video_url }}" type="video/mp4">{% endif %}
                 </video>
 
+                <!-- Clickable overlay for video -->
+                <a href="{{ v.get_absolute_url }}" target="_blank" rel="noopener" class="absolute inset-0 z-[5]" aria-label="Открыть видео"></a>
+
                 <!-- Open button -->
-                <a class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20"
+                <a class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-black/60 text-white hover:bg-black/80 flex items-center justify-center transition pointer-events-auto ring-1 ring-white/20 z-10"
                    href="{{ v.get_absolute_url }}"
                    target="_blank"
                    rel="noopener"
@@ -1005,7 +1008,7 @@
                 </a>
 
                 <!-- Sound Toggle + Volume -->
-                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2">
+                <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2 pointer-events-auto">
                   <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
                     <svg class="icon-vol-on w-4 h-4 xs:w-5 xs:h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M3 10v4a1 1 0 001 1h3l4 3a1 1 0 001-1V7a1 1 0 00-1-1l-4 3H4a1 1 0 00-1 1z"></path>
@@ -1110,10 +1113,12 @@ data-count-target="video-save-count-{{ v.id }}"
             <div class="card overflow-hidden">
               <div class="relative">
                 {% if p.image %}
-                <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
-                     src="{{ p.image.url }}"
-                     alt="{{ p.title|default_if_none:'' }}"
-                     loading="lazy">
+                <a href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" class="block">
+                  <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
+                       src="{{ p.image.url }}"
+                       alt="{{ p.title|default_if_none:'' }}"
+                       loading="lazy">
+                </a>
                 <!-- Top-right overlays (model + views) -->
                 <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
                   {% with job=p.source_job %}

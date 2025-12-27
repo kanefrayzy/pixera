@@ -222,11 +222,13 @@
 
             <div class="p-4">
               <!-- Meta: model label + created time (matches gallery card style) -->
-              <h3 class="font-semibold mb-3 line-clamp-2" itemprop="name">
-                {% with t=p.title|default:"Без названия" %}
-                  {{ t|truncatewords:1 }}
-                {% endwith %}
-              </h3>
+              <a href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" class="block">
+                <h3 class="font-semibold mb-3 line-clamp-2 hover:text-primary transition" itemprop="name">
+                  {% with t=p.title|default:"Без названия" %}
+                    {{ t|truncatewords:1 }}
+                  {% endwith %}
+                </h3>
+              </a>
 
               <!-- Author (avatar + username) like in gallery -->
               <div class="flex items-center justify-between gap-2 mb-3">
