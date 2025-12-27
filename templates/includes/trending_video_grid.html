@@ -23,8 +23,6 @@
               <source src="{{ v.video_url }}" type="video/mp4">
             </video>
 
-            <div class="absolute inset-0 cursor-pointer pointer-events-none" data-open-media="1" aria-label="Открыть"></div>
-
             <!-- Sound control (bottom-left) -->
             <div class="absolute bottom-2 left-2 z-10 flex items-center gap-2 pointer-events-auto">
               <button type="button" class="vid-snd-btn inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-black/60 text-white border border-white/20 hover:bg-black/70 transition focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Включить звук">
@@ -65,7 +63,7 @@
 
           <div class="p-4">
             <!-- Title (clickable link to detail) -->
-            <a href="{{ v.get_absolute_url }}" class="block group/title">
+            <a href="{{ v.get_absolute_url }}" target="_blank" rel="noopener" class="block group/title">
               <h3 class="font-semibold mb-3 line-clamp-1 group-hover/title:text-primary transition" itemprop="name">
                 {{ v.title|default:"Без названия" }}
               </h3>

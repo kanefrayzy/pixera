@@ -66,7 +66,7 @@
             <article class="card overflow-hidden group">
               <div class="relative">
                 {% if p.image %}
-                  <a href="{{ p.get_absolute_url }}" class="absolute inset-0 z-10" aria-label="Открыть публикацию"></a>
+                  <a href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" class="absolute inset-0 z-10" aria-label="Открыть публикацию"></a>
                   <img src="{{ p.image.url }}" alt="{{ p.title|default:'Публикация' }}" class="w-full aspect-square object-cover transition duration-300 group-hover:scale-[1.02]">
                 {% else %}
                   <div class="w-full aspect-square bg-[var(--bord)] grid place-items-center text-[var(--muted)]">Нет изображения</div>
@@ -122,8 +122,8 @@
                     <span class="text-[var(--muted)]">•</span>
                     <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
                        href="{{ p.get_absolute_url }}#comments"
-                       data-open-comments="1"
-                       data-detail-url="{{ p.get_absolute_url }}"
+                       target="_blank"
+                       rel="noopener"
                        title="Комментарии">
                       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -139,7 +139,7 @@
                       </svg>
                       <span id="sv-photo-bookmark-{{ p.id }}">{{ photo_save_counts|get_item:p.id|default:0 }}</span>
                     </button>
-                    <a href="{{ p.get_absolute_url }}" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
+                    <a href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
                   </div>
                 </div>
               </div>
@@ -312,8 +312,8 @@
                     <span class="text-[var(--muted)]">•</span>
                     <a class="flex items-center gap-1 text-[var(--muted)] hover:text-blue-500 transition"
                        href="{{ v.get_absolute_url }}#comments"
-                       data-open-comments="1"
-                       data-detail-url="{{ v.get_absolute_url }}"
+                       target="_blank"
+                       rel="noopener"
                        title="Комментарии">
                       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -329,7 +329,7 @@
                       </svg>
                       <span id="sv-video-bookmark-{{ v.id }}">{{ video_save_counts|get_item:v.id|default:0 }}</span>
                     </button>
-                    <a href="{{ v.get_absolute_url }}" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
+                    <a href="{{ v.get_absolute_url }}" target="_blank" rel="noopener" class="text-[var(--muted)] hover:text-[var(--text)]">Открыть</a>
                   </div>
                 </div>
               </div>
@@ -697,143 +697,6 @@
 
   // Init on load
   initSoundButtons();
-})();
-</script>
-
-<!-- Saved page: Media Modal (comments) -->
-<div id="svMediaModal" class="fixed inset-0 z-[70] hidden">
-  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-sv-close="1"></div>
-  <div class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
-    <div class="grid md:grid-cols-2 gap-0">
-      <div id="svModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
-      <div class="flex flex-col">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
-          <div class="flex items-center gap-2">
-            <button id="svModalLikeBtn" type="button" class="btn btn-ghost px-3 py-1.5 like-toggle" data-url="" data-count-target="svModalLikeCount" aria-pressed="false">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-              </svg>
-              <span id="svModalLikeCount" class="text-sm font-medium">0</span>
-            </button>
-          </div>
-          <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-sv-close="1">✕</button>
-        </div>
-        <div id="svModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-(function(){
-  const modal = document.getElementById('svMediaModal');
-  const mediaEl = document.getElementById('svModalMedia');
-  const commentsEl = document.getElementById('svModalComments');
-  const likeBtn = document.getElementById('svModalLikeBtn');
-  const likeCountEl = document.getElementById('svModalLikeCount');
-  let currentDetailUrl = '';
-
-  function getCSRFCookie(){
-    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
-    if (m) return decodeURIComponent(m[1]);
-    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
-    return input && input.value ? input.value : '';
-  }
-  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; }
-  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); }
-
-  modal?.addEventListener('click', (e)=>{ if (e.target.dataset.svClose==='1') closeModal(); });
-  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
-
-  async function fetchDetail(url){
-    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
-    const html = await r.text();
-    return new DOMParser().parseFromString(html, 'text/html');
-  }
-
-  async function openVideo(detailUrl, videoUrl, poster){
-    currentDetailUrl = detailUrl || '';
-    openModal();
-    mediaEl.innerHTML = '<video class="max-w-full max-h-[75vh]" '+(poster?('poster="'+poster+'"'):'')+' controls playsinline><source src="'+(videoUrl||'')+'" type="video/mp4"></video>';
-    try{
-      const doc = await fetchDetail(detailUrl);
-      const c = doc.getElementById('comments') || doc.getElementById('commentList') || doc.querySelector('#comments, #commentList');
-      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
-      const like = doc.querySelector('.like-toggle[data-url]');
-      const cnt = doc.querySelector('#video-like-count, #photo-like-count, #job-like-count');
-      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
-      const liked = like && like.getAttribute('aria-pressed') === 'true';
-      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
-      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
-      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
-
-      // Bind AJAX comment forms (simple re-fetch strategy)
-      commentsEl.querySelectorAll('form[action]').forEach(form=>{
-        form.addEventListener('submit', async (e)=>{
-          e.preventDefault();
-          const fd=new FormData(form);
-          const r=await fetch(form.action,{method:'POST',headers:{'X-CSRFToken':getCSRFCookie(),'X-Requested-With':'XMLHttpRequest'},body:fd,credentials:'same-origin'});
-          const j=await r.json().catch(()=>null);
-          if (r.ok && j && j.ok){ const doc2 = await fetchDetail(detailUrl); const cc = doc2.getElementById('comments') || doc2.querySelector('#comments'); if (cc) commentsEl.innerHTML = cc.innerHTML; }
-        }, { once:true });
-      });
-    }catch(_){
-      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки комментариев</div>';
-    }
-  }
-
-  async function openPhoto(detailUrl, imageUrl){
-    currentDetailUrl = detailUrl || '';
-    openModal();
-    mediaEl.innerHTML = '<img class="max-w-full max-h-[75vh] object-contain" src="'+(imageUrl||'')+'" alt="">';
-    try{
-      const doc = await fetchDetail(detailUrl);
-      const c = doc.getElementById('comments') || doc.getElementById('commentList') || doc.querySelector('#comments, #commentList');
-      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
-      const like = doc.querySelector('.like-toggle[data-url]');
-      const cnt = doc.querySelector('#photo-like-count, #video-like-count, #job-like-count');
-      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
-      const liked = like && like.getAttribute('aria-pressed') === 'true';
-      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
-      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
-      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
-    }catch(_){
-      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки комментариев</div>';
-    }
-  }
-
-  likeBtn?.addEventListener('click', async ()=>{
-    const url = likeBtn.dataset.url;
-    if (!url) return;
-    try{
-      const res = await fetch(url, { method:'POST', headers:{'X-CSRFToken':getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin' });
-      const j = await res.json().catch(()=>null);
-      if (res.ok && j && j.ok){
-        likeBtn.setAttribute('aria-pressed', j.liked ? 'true':'false');
-        likeBtn.querySelector('svg').setAttribute('fill', j.liked ? 'currentColor':'none');
-        if (typeof j.count === 'number') likeCountEl.textContent = j.count;
-      }
-    }catch(_){}
-  });
-
-  // Delegation: open comments modal (handles video and photo)
-  document.addEventListener('click', (e)=>{
-    const el = e.target.closest('[data-open-comments]');
-    if (!el) return;
-    e.preventDefault(); e.stopPropagation();
-    const detail = el.getAttribute('data-detail-url') || el.getAttribute('href') || '';
-    const card = el.closest('article');
-    const v = card && card.querySelector('video');
-    if (v) {
-      const src = v.querySelector('source') ? v.querySelector('source').getAttribute('src') : '';
-      const poster = v.getAttribute('poster') || '';
-      openVideo(detail, src, poster);
-      return;
-    }
-    const img = card && card.querySelector('img');
-    const srcImg = img ? img.getAttribute('src') : '';
-    openPhoto(detail, srcImg);
-  });
 })();
 </script>
 {% endblock %}

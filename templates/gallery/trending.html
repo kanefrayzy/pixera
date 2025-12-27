@@ -129,10 +129,10 @@
         {% url 'gallery:photo_edit' p.pk as edit_url %}
         {% url 'gallery:photo_delete' p.pk as delete_url %}
 
-        <article class="group js-open-photo" itemscope itemtype="https://schema.org/ImageObject" data-detail-url="{{ p.get_absolute_url }}">
+        <article class="group" itemscope itemtype="https://schema.org/ImageObject" data-detail-url="{{ p.get_absolute_url }}">
           <div class="card overflow-hidden">
 
-            <a class="block relative" href="{{ p.get_absolute_url }}" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
+            <a class="block relative" href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
               {% if p.image %}
                 <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
                      loading="lazy"
@@ -148,7 +148,6 @@
                 </div>
               {% endif %}
 
-              <div class="absolute inset-0 cursor-zoom-in" data-open-media="1" aria-label="Открыть"></div>
               <!-- Top-right overlays (model + views) -->
               <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
                 {% with job=p.source_job %}
@@ -633,180 +632,6 @@
   .save-toggle .text-sm { font-size: 10px; }
 }
 </style>
-
-<!-- Gallery Media Modal (Instagram-like) -->
-<div id="pfMediaModal" class="fixed inset-0 z-[70] hidden">
-  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-pf-close="1"></div>
-  <div id="pfModalContent" class="relative mx-auto my-6 w-[95vw] max-w-6xl rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden transition-transform duration-300">
-    <button type="button" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all backdrop-blur-sm" aria-label="Закрыть" data-pf-close="1">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
-    <div class="grid md:grid-cols-2 gap-0">
-      <div id="pfModalMedia" class="bg-black/5 dark:bg-white/5 flex items-center justify-center min-h-[40vh] md:min-h-[60vh]"></div>
-      <div class="flex flex-col">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
-          <div class="flex items-center gap-2">
-            <button id="pfModalLikeBtn" type="button" class="btn btn-ghost px-3 py-1.5 like-toggle" data-url="" data-count-target="pfModalLikeCount" aria-pressed="false">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-              </svg>
-              <span id="pfModalLikeCount" class="text-sm font-medium">0</span>
-            </button>
-          </div>
-        </div>
-        <div id="pfModalComments" class="p-4 overflow-y-auto" style="max-height: 70vh;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-(function(){
-  const modal = document.getElementById('pfMediaModal');
-  const mediaEl = document.getElementById('pfModalMedia');
-  const commentsEl = document.getElementById('pfModalComments');
-  const likeBtn = document.getElementById('pfModalLikeBtn');
-  const likeCountEl = document.getElementById('pfModalLikeCount');
-  let currentDetailUrl = '';
-
-  function getCSRFCookie(){
-    const m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
-    return m ? decodeURIComponent(m[1]) : '';
-  }
-
-  let startY = 0, currentY = 0, isDragging = false;
-  const modalContent = document.getElementById('pfModalContent');
-  function handleTouchStart(e) { if (!modal || modal.classList.contains('hidden')) return; startY = e.touches[0].clientY; isDragging = true; if (modalContent) modalContent.style.transition = 'none'; }
-  function handleTouchMove(e) { if (!isDragging || !modalContent) return; currentY = e.touches[0].clientY; const diff = currentY - startY; if (diff > 0) { modalContent.style.transform = `translateY(${diff}px)`; modalContent.style.opacity = Math.max(0.5, 1 - diff / 400); } }
-  function handleTouchEnd() { if (!isDragging || !modalContent) return; isDragging = false; const diff = currentY - startY; if (modalContent) { modalContent.style.transition = 'transform 0.3s, opacity 0.3s'; if (diff > 150) { modalContent.style.transform = 'translateY(100%)'; modalContent.style.opacity = '0'; setTimeout(closeModal, 300); } else { modalContent.style.transform = 'translateY(0)'; modalContent.style.opacity = '1'; } } }
-  if (modalContent) { modalContent.addEventListener('touchstart', handleTouchStart, { passive: true }); modalContent.addEventListener('touchmove', handleTouchMove, { passive: true }); modalContent.addEventListener('touchend', handleTouchEnd, { passive: true }); }
-
-  function openModal(){ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; if (modalContent) { modalContent.style.transform = 'translateY(0)'; modalContent.style.opacity = '1'; } }
-  function closeModal(){ modal.classList.add('hidden'); document.body.style.overflow=''; commentsEl.innerHTML=''; mediaEl.innerHTML=''; likeBtn.dataset.url=''; likeCountEl.textContent='0'; likeBtn.setAttribute('aria-pressed','false'); likeBtn.querySelector('svg').setAttribute('fill','none'); if (modalContent) { modalContent.style.transform = 'translateY(0)'; modalContent.style.opacity = '1'; } }
-
-  modal.addEventListener('click', (e)=>{ if (e.target.dataset.pfClose==='1') closeModal(); });
-  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); });
-
-  async function fetchDetail(url){
-    const r = await fetch(url, { credentials:'same-origin', headers:{'X-Requested-With':'fetch'} });
-    const html = await r.text();
-    return new DOMParser().parseFromString(html, 'text/html');
-  }
-
-  async function openPhoto(detailUrl, mediaUrl, title){
-    currentDetailUrl = detailUrl || '';
-    openModal();
-    mediaEl.innerHTML = '<img class="max-w-full max-h-[75vh] object-contain" alt="'+(title||'')+'" src="'+mediaUrl+'"/>';
-    try{
-      const doc = await fetchDetail(detailUrl);
-      const c = doc.getElementById('comments');
-      commentsEl.innerHTML = c ? c.innerHTML : '<div class="text-sm text-[var(--muted)]">Комментарии недоступны</div>';
-      const like = doc.querySelector('.like-toggle[data-url]');
-      const cnt = doc.querySelector('#photo-like-count, #video-like-count');
-      if (like && like.dataset.url){ likeBtn.dataset.url = like.dataset.url; }
-      const liked = like && like.getAttribute('aria-pressed') === 'true';
-      likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
-      likeBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
-      likeCountEl.textContent = cnt ? (cnt.textContent || '0') : '0';
-      bindDynamicHandlers();
-    }catch(e){
-      commentsEl.innerHTML = '<div class="text-sm text-[var(--muted)]">Ошибка загрузки</div>';
-    }
-  }
-
-  likeBtn.addEventListener('click', async ()=>{
-    const url = likeBtn.dataset.url;
-    if (!url) return;
-    try{
-      const res = await fetch(url, {
-        method:'POST',
-        headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
-        credentials:'same-origin'
-      });
-      const j = await res.json();
-      if (j && j.ok){
-        likeBtn.setAttribute('aria-pressed', j.liked ? 'true':'false');
-        likeBtn.querySelector('svg').setAttribute('fill', j.liked ? 'currentColor':'none');
-        if (typeof j.count === 'number') likeCountEl.textContent = j.count;
-      }
-    }catch(_){}
-  });
-
-  function bindDynamicHandlers(){
-    // Like comment inside modal
-    commentsEl.addEventListener('click', async (e)=>{
-      const btn = e.target.closest('.js-like-comment');
-      if (!btn) return;
-      e.preventDefault();
-      try{
-        const res = await fetch(btn.dataset.url, {
-          method:'POST',
-          headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
-          credentials:'same-origin'
-        });
-        const j = await res.json();
-        if (j && j.ok){
-          const id = btn.dataset.countId;
-          const el = id && document.getElementById(id);
-          if (el && typeof j.count === 'number') el.textContent = j.count;
-          const heart = btn.querySelector('svg');
-          btn.setAttribute('aria-pressed', j.liked ? 'true':'false');
-          heart && heart.setAttribute('fill', j.liked ? 'currentColor':'none');
-          btn.classList.toggle('text-red-500', !!j.liked);
-          btn.classList.toggle('text-[var(--muted)]', !j.liked);
-        }
-      }catch(_){}
-    });
-
-    // Submit root/reply comment via AJAX
-    commentsEl.querySelectorAll('form[data-comment-form]').forEach(form=>{
-      form.addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const fd = new FormData(form);
-        try{
-          const res = await fetch(form.action, {
-            method:'POST',
-            headers:{'X-CSRFToken': getCSRFCookie(), 'X-Requested-With':'XMLHttpRequest'},
-            body: fd,
-            credentials:'same-origin'
-          });
-          const j = await res.json().catch(()=>null);
-          if (res.ok && j && j.ok){
-            // Re-fetch comments to reflect new state
-            const doc = await fetchDetail(currentDetailUrl);
-            const c = doc.getElementById('comments');
-            commentsEl.innerHTML = c ? c.innerHTML : commentsEl.innerHTML;
-            bindDynamicHandlers();
-          }
-        }catch(_){}
-      }, { once:true });
-    });
-  }
-
-  // Delegated click handling for trending photos
-  document.addEventListener('click', (e)=>{
-    // Prefer explicit opener overlay if present
-    const opener = e.target.closest('[data-open-media]');
-    // Do not open modal when clicking interactive controls unless explicit opener was clicked
-    if (!opener && e.target.closest('button, a[href], input, textarea, select, .like-toggle, .js-like-comment, [data-pf-close]')) {
-      return;
-    }
-
-    const photoArticle = (opener && opener.closest('.js-open-photo')) || e.target.closest('.js-open-photo');
-    if (photoArticle){
-      e.preventDefault();
-      const anchor = photoArticle.querySelector('a[href*="/gallery/photo/"]');
-      const img = photoArticle.querySelector('img');
-      const href = (anchor && anchor.getAttribute('href')) || photoArticle.dataset.detailUrl || photoArticle.getAttribute('data-detail-url') || '';
-      const src = img && img.getAttribute('src');
-      openPhoto(href, src || '', img && img.getAttribute('alt') || '');
-      return;
-    }
-  });
-})();
-</script>
 
 <!-- Likers Modal -->
 <div id="likersModal" class="fixed inset-0 z-[80] hidden">

@@ -6,10 +6,10 @@
       {% url 'gallery:photo_edit' p.pk as edit_url %}
       {% url 'gallery:photo_delete' p.pk as delete_url %}
 
-      <article class="group js-open-photo" itemscope itemtype="https://schema.org/ImageObject" data-detail-url="{{ p.get_absolute_url }}">
+      <article class="group" itemscope itemtype="https://schema.org/ImageObject" data-detail-url="{{ p.get_absolute_url }}">
         <div class="card overflow-hidden">
 
-          <a class="block relative" href="{{ p.get_absolute_url }}" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
+          <a class="block relative" href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" title="{{ p.title|default:'Фото' }}" itemprop="contentUrl">
             {% if p.image %}
               <img class="w-full aspect-[4/5] object-cover transition duration-300 group-hover:scale-[1.02]"
                    loading="lazy"
@@ -24,8 +24,6 @@
                 </svg>
               </div>
             {% endif %}
-
-            <div class="absolute inset-0 cursor-zoom-in" data-open-media="1" aria-label="Открыть"></div>
 
             <!-- Top-right overlays (model + views) -->
             <div class="absolute top-3 right-3 flex flex-col items-end gap-1 pointer-events-none">
