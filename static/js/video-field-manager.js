@@ -54,8 +54,8 @@ class VideoFieldManager {
     // Get optional_fields configuration from model
     const optionalFields = model.optional_fields || {};
 
-    // Fields that must always remain visible in UI (mode toggle, prompt, auto-translate)
-    const alwaysVisible = ['generation_mode', 'prompt', 'auto_translate'];
+    // Fields that must always remain visible in UI (mode toggle, prompt, auto-translate, quantity)
+    const alwaysVisible = ['generation_mode', 'prompt', 'auto_translate', 'number_videos'];
 
     // Check if optional_fields is empty (no configuration set)
     const hasConfiguration = Object.keys(optionalFields).length > 0;
@@ -122,7 +122,7 @@ class VideoFieldManager {
    */
   hideAllFields() {
     // Core controls that must not be force-hidden
-    const alwaysVisible = ['generation_mode', 'prompt', 'auto_translate'];
+    const alwaysVisible = ['generation_mode', 'prompt', 'auto_translate', 'number_videos'];
 
     Object.keys(this.fieldMap).forEach(fieldName => {
       if (alwaysVisible.includes(fieldName)) {
