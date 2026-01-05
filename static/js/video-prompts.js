@@ -395,18 +395,22 @@
       }
     });
 
-    // Category clicks
-    document.querySelectorAll('.category-card-compact:not(.category-show-all)').forEach(card => {
-      card.addEventListener('click', async function(e) {
-        if (e.target.closest('.pc-card-actions')) return;
+    // Category clicks (ТОЛЬКО для видео категорий в #videoPromptCats)
+    const videoPromptSection = document.getElementById('videoPromptCats');
+    if (videoPromptSection) {
+      const videoCards = videoPromptSection.querySelectorAll('.category-card-compact:not(.category-show-all)');
+      videoCards.forEach(card => {
+        card.addEventListener('click', async function(e) {
+          if (e.target.closest('.pc-card-actions')) return;
 
-        const categoryId = this.dataset.categoryId;
-        if (!categoryId) return;
+          const categoryId = this.dataset.categoryId;
+          if (!categoryId) return;
 
-        const categoryName = this.querySelector('.category-name-compact').textContent;
-        openVideoPromptModal(categoryId, categoryName);
+          const categoryName = this.querySelector('.category-name-compact').textContent;
+          openVideoPromptModal(categoryId, categoryName);
+        });
       });
-    });
+    }
 
     // Admin buttons
     if (IS_STAFF) {

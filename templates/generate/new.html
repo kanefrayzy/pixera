@@ -1055,13 +1055,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Авторазворачивание отключено: на странице генерации всегда стартуем в свернутом состоянии
 
-  // Обработка кликов по категориям - открытие модального окна с промптами
-  const categoryCards = document.querySelectorAll('.category-card-compact:not(.category-show-all)');
+  // Обработка кликов по категориям - открытие модального окна с промптами (ТОЛЬКО для image категорий)
+  const imagePromptSection = document.getElementById('promptCats');
+  if (imagePromptSection) {
+    const categoryCards = imagePromptSection.querySelectorAll('.category-card-compact:not(.category-show-all)');
 
-  categoryCards.forEach(card => {
-    card.addEventListener('click', async function(e) {
-      // игнор кликов по админ-кнопкам
-      if (e.target.closest('.pc-card-actions')) return;
+    categoryCards.forEach(card => {
+      card.addEventListener('click', async function(e) {
+        // игнор кликов по админ-кнопкам
+        if (e.target.closest('.pc-card-actions')) return;
 
       const categoryId = this.dataset.categoryId;
       if (!categoryId) return;
@@ -1366,6 +1368,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+  }
 
   function closePromptModal() {
     const modal = document.getElementById('promptCategoryModal');
