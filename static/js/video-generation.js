@@ -1150,6 +1150,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (this.clearedJobs && this.clearedJobs.has(id)) {
       return;
     }
+    
+    // НЕ добавляем задачи, которые были сохранены в профиль
+    if (this.persistedJobs && this.persistedJobs.has(id)) {
+      console.log('⏭️ Задача', id, 'уже сохранена в профиль, пропускаем');
+      return;
+    }
 
     const idx = this.queue.findIndex(e => String(e.job_id) === id);
     if (idx >= 0) {

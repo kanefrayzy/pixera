@@ -576,6 +576,13 @@
   function addOrUpdateEntry(jobId, patch) {
     if (!jobId) return;
     const id = String(jobId);
+    
+    // НЕ добавляем задачи, которые были сохранены в профиль
+    if (persistedJobs && persistedJobs.has(id)) {
+      console.log('⏭️ Задача', id, 'уже сохранена в профиль, пропускаем');
+      return;
+    }
+    
     const idx = queue.findIndex(e => String(e.job_id) === id);
     if (idx >= 0) queue[idx] = { ...queue[idx], ...patch, job_id: id };
     else queue.push({ job_id: id, createdAt: Date.now(), ...patch });
