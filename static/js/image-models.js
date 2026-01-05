@@ -111,16 +111,23 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Horizontal scroller: arrow controls
+    console.log('🔍 IMAGE-MODELS.JS LOADED! Searching for navigation buttons...');
+    
     const section = document.getElementById('image-model-section');
+    console.log('Section found:', section);
+    
     if (section) {
       const leftBtn = section.querySelector('.image-model-nav-btn.left');
       const rightBtn = section.querySelector('.image-model-nav-btn.right');
 
-      console.log('Image nav setup:', { section, leftBtn, rightBtn });
+      console.log('Buttons found:', { leftBtn, rightBtn });
+      console.log('All buttons in section:', section.querySelectorAll('.image-model-nav-btn'));
 
       if (leftBtn && rightBtn) {
+        console.log('✅ Both buttons found, attaching listeners...');
+        
         leftBtn.addEventListener('click', function(e) {
-          console.log('Left button clicked');
+          console.log('⬅️ LEFT BUTTON CLICKED!');
           e.preventDefault();
           e.stopPropagation();
           const gap = 12;
@@ -130,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, { passive: false });
 
         rightBtn.addEventListener('click', function(e) {
-          console.log('Right button clicked');
+          console.log('➡️ RIGHT BUTTON CLICKED!');
           e.preventDefault();
           e.stopPropagation();
           const gap = 12;
@@ -138,8 +145,10 @@ document.addEventListener('DOMContentLoaded', function () {
           const delta = Math.max(160, cardWidth + gap);
           container.scrollBy({ left: delta, behavior: 'smooth' });
         }, { passive: false });
+        
+        console.log('✅ Listeners attached successfully!');
       } else {
-        console.warn('Image nav buttons not found:', { leftBtn, rightBtn });
+        console.warn('❌ Image nav buttons not found!', { leftBtn, rightBtn });
       }
 
       // Update arrows disabled state (start/end)
@@ -149,9 +158,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (leftBtn) { leftBtn.classList.toggle('disabled', atStart); leftBtn.setAttribute('aria-disabled', atStart ? 'true' : 'false'); }
         if (rightBtn) { rightBtn.classList.toggle('disabled', atEnd); rightBtn.setAttribute('aria-disabled', atEnd ? 'true' : 'false'); }
       };
-      updateArrows();
-      container.addEventListener('scroll', updateArrows, { passive: true });
-      window.addEventListener('resize', updateArrows);
+      if (leftBtn && rightBtn) {
+        updateArrows();
+        container.addEventListener('scroll', updateArrows, { passive: true });
+        window.addEventListener('resize', updateArrows);
+      }
+    } else {
+      console.warn('❌ Section #image-model-section not found!');
     }
 
   } catch (_) {}
