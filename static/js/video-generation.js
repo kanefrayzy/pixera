@@ -1275,20 +1275,32 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
-      
+
       // Сразу удаляем из локальной очереди и помечаем как сохраненную
       try {
+        console.log('🔹 Сохраняем задачу', jobId, 'в профиль');
+        console.log('🔹 Queue до удаления:', this.queue.length, 'элементов');
+        
         if (!this.persistedJobs) this.persistedJobs = new Set();
         this.persistedJobs.add(String(jobId));
         this.savePersistedJobs && this.savePersistedJobs();
-        
+        console.log('✅ Добавлено в persistedJobs');
+
         // Удаляем из queue чтобы не появилась снова при перезагрузке
         const idx = this.queue.findIndex(e => String(e.job_id) === String(jobId));
+        console.log('🔹 Индекс в очереди:', idx);
         if (idx >= 0) {
           this.queue.splice(idx, 1);
+          console.log('✅ Удалено из queue. Осталось:', this.queue.length, 'элементов');
           this.saveQueue();
+          console.log('✅ Queue сохранена в localStorage');
+          console.log('🔹 persistedJobs:', Array.from(this.persistedJobs));
+        } else {
+          console.warn('⚠️ Задача не найдена в очереди!');
         }
-      } catch (_) { }
+      } catch (err) { 
+        console.error('❌ Ошибка при удалении из очереди:', err);
+      }
 
       // No auto-download here — по требованию: добавляем в «Мои генерации» без скачивания
 
