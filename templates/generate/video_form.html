@@ -827,28 +827,28 @@
       gap: 0.75rem;
     }
 
-    /* ===== VIDEO MODEL CARDS - В СТИЛЕ САЙТА ===== */
+    /* ===== VIDEO MODEL CARDS - ГОРИЗОНТАЛЬНАЯ ЛЕНТА ===== */
 
-    /* Grid System - Equal Height Cards */
+    /* Horizontal Scroller - One Row */
     #model-cards {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
-      align-items: stretch;
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 12px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 4px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
-    @media (min-width: 480px) {
-      #model-cards {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-      }
+    #model-cards::-webkit-scrollbar {
+      display: none;
     }
 
-    @media (min-width: 1024px) {
-      #model-cards {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-      }
+    #model-cards .model-card-wrap {
+      flex: 0 0 calc(33.333% - 8px);
+      scroll-snap-align: start;
+      min-width: 220px;
     }
 
     /* Model Card Wrapper */
@@ -908,11 +908,16 @@
         gap: 0.5rem;
       }
 
+      #model-cards .model-card-wrap {
+        flex: 0 0 calc(50% - 4px);
+        min-width: 160px;
+      }
+
       .model-card {
         border-radius: 0.625rem;
       }
 
-      .model-card .grid-cols-3 {
+      .model-card .grid-cols-2 {
         gap: 0.375rem;
       }
     }

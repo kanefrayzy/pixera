@@ -369,7 +369,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
             <!-- Compact info row under image: small, neat chips with equal heights and theme-aware colors -->
             <div class="p-2.5 sm:p-3">
-              <div class="grid grid-cols-3 gap-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
                 <!-- Cost -->
                 <div class="flex items-center justify-center gap-2 h-9 rounded-lg bg-[var(--bord)]/50">
                   <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
@@ -378,20 +378,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
                   <div class="flex items-baseline gap-1">
                     <span class="text-xs sm:text-sm font-bold tabular-nums text-[var(--text)]">${cost}</span>
                     <span class="text-[10px] text-[var(--muted)] uppercase">TOK</span>
-                  </div>
-                </div>
-
-                <!-- Duration -->
-                <div class="flex items-center justify-center gap-2 h-9 rounded-lg bg-[var(--bord)]/50">
-                  <span class="w-4 h-4 rounded-full bg-[var(--fg)]/10 flex items-center justify-center">
-                    <svg class="w-2.5 h-2.5 text-[var(--fg)]/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                  </span>
-                  <div class="flex items-baseline gap-1">
-                    <span class="text-xs sm:text-sm font-bold tabular-nums text-[var(--text)]">${duration}</span>
-                    <span class="text-[10px] text-[var(--muted)]">с</span>
                   </div>
                 </div>
 
