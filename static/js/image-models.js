@@ -109,33 +109,32 @@ document.addEventListener('DOMContentLoaded', function () {
         applySelection(card);
       }
     });
-  // Horizontal scroller: 3 in a row with arrow controls (compact cards)
-  try {
-    // Attach arrow button handlers to existing buttons in HTML
-    const parent = container.parentElement;
-    if (parent) {
-      const leftBtn = parent.querySelector('.image-model-nav-btn.left');
-      const rightBtn = parent.querySelector('.image-model-nav-btn.right');
+
+    // Horizontal scroller: arrow controls
+    const section = document.getElementById('image-model-section');
+    if (section) {
+      const leftBtn = section.querySelector('.image-model-nav-btn.left');
+      const rightBtn = section.querySelector('.image-model-nav-btn.right');
 
       if (leftBtn) {
-        leftBtn.addEventListener('click', () => {
-          try {
-            const gap = 12;
-            const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
-            const delta = Math.max(160, cardWidth + gap);
-            container.scrollBy({ left: -delta, behavior: 'smooth' });
-          } catch(_) {}
+        leftBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const gap = 12;
+          const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
+          const delta = Math.max(160, cardWidth + gap);
+          container.scrollBy({ left: -delta, behavior: 'smooth' });
         });
       }
 
       if (rightBtn) {
-        rightBtn.addEventListener('click', () => {
-          try {
-            const gap = 12;
-            const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
-            const delta = Math.max(160, cardWidth + gap);
-            container.scrollBy({ left: delta, behavior: 'smooth' });
-          } catch(_) {}
+        rightBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const gap = 12;
+          const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
+          const delta = Math.max(160, cardWidth + gap);
+          container.scrollBy({ left: delta, behavior: 'smooth' });
         });
       }
 
@@ -150,7 +149,6 @@ document.addEventListener('DOMContentLoaded', function () {
       container.addEventListener('scroll', updateArrows, { passive: true });
       window.addEventListener('resize', updateArrows);
     }
-  } catch (_) {}
 
   } catch (_) {}
 });

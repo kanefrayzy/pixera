@@ -3478,6 +3478,23 @@ else init();
   </div>
 </div>
 
+<!-- Video Prompt Categories Modal (same level as image prompts modal for proper fixed positioning) -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="videoPromptCategoryModal">
+  <div class="bg-[var(--bg-card)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-[var(--bord)] shadow-2xl animate-modal-in">
+    <div class="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--bord)] p-4 sm:p-6 flex items-center justify-between z-10">
+      <h3 class="text-lg sm:text-xl font-bold" id="videoModalCategoryTitle">Промпты видео</h3>
+      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" id="closeVideoPromptModal" aria-label="Закрыть">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-88px)] custom-scrollbar" id="videoModalPromptsContainer">
+      <div class="text-center text-[var(--muted)] py-8">Загрузка...</div>
+    </div>
+  </div>
+</div>
+
 <style>
 /* ===== Категории промптов ===== */
 .prompt-category-card {
@@ -3505,11 +3522,13 @@ html[data-theme="light"] .prompt-category-card:hover {
 }
 
 /* ===== Модальное окно ===== */
-#promptCategoryModal {
+#promptCategoryModal,
+#videoPromptCategoryModal {
   backdrop-filter: blur(12px) saturate(120%);
 }
 
-#promptCategoryModal.active {
+#promptCategoryModal.active,
+#videoPromptCategoryModal.active {
   display: flex !important;
 }
 
