@@ -729,13 +729,17 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const raw = localStorage.getItem(`gen.video.queue::${this.userKey}`);
       const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
+      const result = Array.isArray(arr) ? arr : [];
+      console.log('📂 Загружаем queue из localStorage:', result.length, 'элементов', result.map(e => e.job_id));
+      return result;
     } catch (_) { return []; }
   }
 
   saveQueue() {
     try {
-      localStorage.setItem(`gen.video.queue::${this.userKey}`, JSON.stringify(this.queue.slice(-24)));
+      const toSave = this.queue.slice(-24);
+      console.log('💾 Сохраняем queue в localStorage:', toSave.length, 'элементов', toSave.map(e => e.job_id));
+      localStorage.setItem(`gen.video.queue::${this.userKey}`, JSON.stringify(toSave));
     } catch (_) { }
   }
 
@@ -1150,7 +1154,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     if (this.clearedJobs && this.clearedJobs.has(id)) {
       return;
     }
-    
+
     // НЕ добавляем задачи, которые были сохранены в профиль
     if (this.persistedJobs && this.persistedJobs.has(id)) {
       console.log('⏭️ Задача', id, 'уже сохранена в профиль, пропускаем');
@@ -1286,7 +1290,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       try {
         console.log('🔹 Сохраняем задачу', jobId, 'в профиль');
         console.log('🔹 Queue до удаления:', this.queue.length, 'элементов');
-        
+
         if (!this.persistedJobs) this.persistedJobs = new Set();
         this.persistedJobs.add(String(jobId));
         this.savePersistedJobs && this.savePersistedJobs();
@@ -1304,7 +1308,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         } else {
           console.warn('⚠️ Задача не найдена в очереди!');
         }
-      } catch (err) { 
+      } catch (err) {
         console.error('❌ Ошибка при удалении из очереди:', err);
       }
 

@@ -124,10 +124,20 @@
 
   // LocalStorage helpers
   function loadQueue() {
-    try { const raw = localStorage.getItem(`gen.image.queue::${USER_KEY}`); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; } catch(_) { return []; }
+    try { 
+      const raw = localStorage.getItem(`gen.image.queue::${USER_KEY}`);
+      const arr = raw ? JSON.parse(raw) : [];
+      const result = Array.isArray(arr) ? arr : [];
+      console.log('📂 Загружаем queue из localStorage:', result.length, 'элементов', result.map(e => e.job_id));
+      return result;
+    } catch(_) { return []; }
   }
   function saveQueue(arr) {
-    try { localStorage.setItem(`gen.image.queue::${USER_KEY}`, JSON.stringify((arr || []).slice(-24))); } catch(_) {}
+    try { 
+      const toSave = (arr || []).slice(-24);
+      console.log('💾 Сохраняем queue в localStorage:', toSave.length, 'элементов', toSave.map(e => e.job_id));
+      localStorage.setItem(`gen.image.queue::${USER_KEY}`, JSON.stringify(toSave)); 
+    } catch(_) {}
   }
   function loadClearedJobs() {
     try { const raw = localStorage.getItem(`gen.image.clearedJobs::${USER_KEY}`); const arr = raw ? JSON.parse(raw) : []; return new Set(Array.isArray(arr) ? arr.map(String) : []); } catch(_) { return new Set(); }
@@ -576,13 +586,13 @@
   function addOrUpdateEntry(jobId, patch) {
     if (!jobId) return;
     const id = String(jobId);
-    
+
     // НЕ добавляем задачи, которые были сохранены в профиль
     if (persistedJobs && persistedJobs.has(id)) {
       console.log('⏭️ Задача', id, 'уже сохранена в профиль, пропускаем');
       return;
     }
-    
+
     const idx = queue.findIndex(e => String(e.job_id) === id);
     if (idx >= 0) queue[idx] = { ...queue[idx], ...patch, job_id: id };
     else queue.push({ job_id: id, createdAt: Date.now(), ...patch });
@@ -617,7 +627,7 @@
       try {
         console.log('🔹 Сохраняем задачу', jobId, 'в профиль');
         console.log('🔹 Queue до удаления:', queue.length, 'элементов');
-        
+
         persistedJobs.add(String(jobId));
         savePersistedJobs(persistedJobs);
         console.log('✅ Добавлено в persistedJobs');
