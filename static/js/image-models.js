@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const leftBtn = section.querySelector('.image-model-nav-btn.left');
       const rightBtn = section.querySelector('.image-model-nav-btn.right');
 
-      if (leftBtn) {
+      if (leftBtn && rightBtn) {
         leftBtn.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
@@ -124,10 +124,8 @@ document.addEventListener('DOMContentLoaded', function () {
           const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
           const delta = Math.max(160, cardWidth + gap);
           container.scrollBy({ left: -delta, behavior: 'smooth' });
-        });
-      }
+        }, { passive: false });
 
-      if (rightBtn) {
         rightBtn.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
@@ -135,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
           const delta = Math.max(160, cardWidth + gap);
           container.scrollBy({ left: delta, behavior: 'smooth' });
-        });
+        }, { passive: false });
       }
 
       // Update arrows disabled state (start/end)

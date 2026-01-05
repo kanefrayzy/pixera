@@ -1180,7 +1180,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       this.saveQueue();
     }
 
-    // 3. Удаляем с сервера (асинхронно, без ожидания)
+    // 3. Удаляем только из очереди на сервере (НЕ удаляет сохранённые задачи из профиля)
     try {
       fetch('/generate/api/queue/remove', {
         method: 'POST',
@@ -1189,7 +1189,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           'X-CSRFToken': this.getCSRFToken()
         },
         credentials: 'same-origin',
-        body: 'job_id=' + encodeURIComponent(id)
+        body: 'job_id=' + encodeURIComponent(id) + '&keep_saved=true'
       }).catch(() => {});
     } catch (_) { }
   }
@@ -1300,6 +1300,37 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         // brief success pulse anim
         try { setTimeout(() => { if(btn.style) btn.style.animation = ''; }, 600); } catch (_) { }
       }
+
+      // После успешного сохранения - удаляем элемент из очереди UI
+      try {
+        const tile = btn ? btn.closest('.video-result-tile') : null;
+        if (tile) {
+          tile.style.transition = 'all 0.3s ease';
+          tile.style.transform = 'scale(0.8)';
+          tile.style.opacity = '0';
+          setTimeout(() => {
+            try {
+              if (tile.isConnected) tile.remove();
+
+              // Проверяем, остались ли карточки
+              const grid = document.getElementById('video-results-grid');
+              if (grid && !grid.querySelector('.video-result-tile')) {
+                const card = document.getElementById('video-queue-card');
+                if (card) card.remove();
+              }
+            } catch (_) { }
+          }, 300);
+        }
+      } catch (_) { }
+
+      // Удаляем из локальной очереди (но НЕ из clearedJobs, чтобы не удалить с сервера)
+      try {
+        const idx = this.queue.findIndex(e => String(e.job_id) === String(jobId));
+        if (idx >= 0) {
+          this.queue.splice(idx, 1);
+          this.saveQueue();
+        }
+      } catch (_) { }
     } catch (e) {
       if (btn) {
         btn.disabled = false;

@@ -497,13 +497,13 @@
           saveQueue(queue);
         }
 
-        // 3. Delete from server
+        // 3. Delete from server queue only (keep saved jobs)
         try {
           fetch('/generate/api/queue/remove', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
             credentials: 'same-origin',
-            body: 'job_id=' + encodeURIComponent(id)
+            body: 'job_id=' + encodeURIComponent(id) + '&keep_saved=true'
           }).catch(() => {});
         } catch(_) {}
       }
@@ -622,6 +622,37 @@
         // brief success pulse
         try { setTimeout(()=> { if(btn.style) btn.style.animation = ''; }, 600); } catch(_) {}
       }
+
+      // После успешного сохранения - удаляем элемент из очереди UI
+      try {
+        const tile = btn ? btn.closest('.image-result-tile') : null;
+        if (tile) {
+          tile.style.transition = 'all 0.3s ease';
+          tile.style.transform = 'scale(0.8)';
+          tile.style.opacity = '0';
+          setTimeout(() => {
+            try {
+              if (tile.isConnected) tile.remove();
+
+              // Проверяем, остались ли карточки
+              const grid = document.getElementById('image-results-grid');
+              if (grid && !grid.querySelector('.image-result-tile')) {
+                const card = document.getElementById('image-queue-card');
+                if (card) card.remove();
+              }
+            } catch (_) { }
+          }, 300);
+        }
+      } catch (_) { }
+
+      // Удаляем из локальной очереди (но НЕ из clearedJobs)
+      try {
+        const idx = queue.findIndex(e => String(e.job_id) === String(jobId));
+        if (idx >= 0) {
+          queue.splice(idx, 1);
+          saveQueue(queue);
+        }
+      } catch (_) { }
     } catch (e) {
       if (btn) {
         btn.disabled = false;
