@@ -116,9 +116,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const st = document.createElement('style');
       st.id = 'image-models-horizontal-style';
       st.textContent = `
-#image-model-cards{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px;-ms-overflow-style:none;scrollbar-width:none}
+#image-model-cards{display:flex!important;flex-wrap:nowrap!important;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px;-ms-overflow-style:none;scrollbar-width:none}
 #image-model-cards::-webkit-scrollbar{display:none}
-.image-model-card-wrap{flex:0 0 calc(33.333% - 8px);scroll-snap-align:start}
+.image-model-card-wrap{flex:0 0 calc(33.333% - 8px);scroll-snap-align:start;min-width:220px}
 /* make cards a bit more compact */
 #image-model-cards .card-hero{min-height:150px!important}
 .model-nav-btn{position:absolute;top:50%;transform:translateY(-50%);z-index:10;width:34px;height:34px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 2px 8px rgba(0,0,0,.25)}

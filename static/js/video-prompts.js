@@ -577,7 +577,7 @@
 
     modalTitle.textContent = categoryName;
     modalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Загрузка...</div>';
-    
+
     // Показываем модальное окно
     modal.style.display = 'flex';
     modal.classList.add('active');

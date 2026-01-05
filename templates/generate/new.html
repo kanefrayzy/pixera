@@ -1948,7 +1948,7 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
 
       <!-- Image Models Selection -->
-      <div class="space-y-2">
+      <div class="space-y-2 relative" id="image-model-section">
         <label class="block text-xs sm:text-sm font-medium mb-1.5">
           <span class="flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5 flex-shrink-0 text-primary dark:text-primary/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1962,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <input type="hidden" id="image-model-id" value="runware:101@1">
 
         <!-- Cards container used by static/js/generate.js -->
-        <div id="image-model-cards" class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+        <div id="image-model-cards" class="flex flex-nowrap gap-3 overflow-x-auto" style="display:flex!important;flex-wrap:nowrap!important;">
           {% for model in image_models %}
           <div class="image-model-card-wrap flex flex-col">
             {% if model.is_beta %}
