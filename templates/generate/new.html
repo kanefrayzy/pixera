@@ -2120,6 +2120,79 @@ document.addEventListener('DOMContentLoaded', function() {
         </button>
       </div>
 
+      <!-- Inline script for navigation arrows (loaded immediately, not deferred) -->
+      <script>
+      (function() {
+        console.log('🚀 INLINE IMAGE NAV SCRIPT EXECUTING');
+        
+        function initImageNav() {
+          const container = document.getElementById('image-model-cards');
+          const section = document.getElementById('image-model-section');
+          
+          console.log('Init image nav:', { container, section });
+          
+          if (!container || !section) {
+            console.warn('Container or section not found');
+            return;
+          }
+          
+          const leftBtn = section.querySelector('.image-model-nav-btn.left');
+          const rightBtn = section.querySelector('.image-model-nav-btn.right');
+          
+          console.log('Buttons:', { leftBtn, rightBtn });
+          
+          if (!leftBtn || !rightBtn) {
+            console.warn('Navigation buttons not found');
+            return;
+          }
+          
+          console.log('✅ Attaching click handlers...');
+          
+          leftBtn.addEventListener('click', function(e) {
+            console.log('⬅️ LEFT CLICKED!');
+            e.preventDefault();
+            e.stopPropagation();
+            const gap = 12;
+            const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
+            const delta = Math.max(160, cardWidth + gap);
+            container.scrollBy({ left: -delta, behavior: 'smooth' });
+          });
+          
+          rightBtn.addEventListener('click', function(e) {
+            console.log('➡️ RIGHT CLICKED!');
+            e.preventDefault();
+            e.stopPropagation();
+            const gap = 12;
+            const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
+            const delta = Math.max(160, cardWidth + gap);
+            container.scrollBy({ left: delta, behavior: 'smooth' });
+          });
+          
+          // Update arrow states
+          function updateArrows() {
+            const atStart = (container.scrollLeft || 0) <= 1;
+            const atEnd = (container.scrollLeft + container.clientWidth) >= (container.scrollWidth - 1);
+            leftBtn.classList.toggle('disabled', atStart);
+            leftBtn.setAttribute('aria-disabled', atStart ? 'true' : 'false');
+            rightBtn.classList.toggle('disabled', atEnd);
+            rightBtn.setAttribute('aria-disabled', atEnd ? 'true' : 'false');
+          }
+          
+          updateArrows();
+          container.addEventListener('scroll', updateArrows);
+          window.addEventListener('resize', updateArrows);
+          
+          console.log('✅ Image navigation initialized!');
+        }
+        
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initImageNav);
+        } else {
+          initImageNav();
+        }
+      })();
+      </script>
+
       <!-- Информация о выбранной модели (скрыта по умолчанию) -->
       <div id="image-model-info-section" class="hidden rounded-xl border border-[var(--bord)] bg-[var(--bg-card)] p-3 sm:p-4 space-y-3 mt-3">
         <!-- Заголовок с иконкой -->
