@@ -112,10 +112,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Horizontal scroller: arrow controls
     console.log('🔍 IMAGE-MODELS.JS LOADED! Searching for navigation buttons...');
-    
+
     const section = document.getElementById('image-model-section');
     console.log('Section found:', section);
-    
+
     if (section) {
       const leftBtn = section.querySelector('.image-model-nav-btn.left');
       const rightBtn = section.querySelector('.image-model-nav-btn.right');
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (leftBtn && rightBtn) {
         console.log('✅ Both buttons found, attaching listeners...');
-        
+
         leftBtn.addEventListener('click', function(e) {
           console.log('⬅️ LEFT BUTTON CLICKED!');
           e.preventDefault();
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const delta = Math.max(160, cardWidth + gap);
           container.scrollBy({ left: delta, behavior: 'smooth' });
         }, { passive: false });
-        
+
         console.log('✅ Listeners attached successfully!');
       } else {
         console.warn('❌ Image nav buttons not found!', { leftBtn, rightBtn });
