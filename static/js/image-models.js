@@ -116,8 +116,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const leftBtn = section.querySelector('.image-model-nav-btn.left');
       const rightBtn = section.querySelector('.image-model-nav-btn.right');
 
+      console.log('Image nav setup:', { section, leftBtn, rightBtn });
+
       if (leftBtn && rightBtn) {
         leftBtn.addEventListener('click', function(e) {
+          console.log('Left button clicked');
           e.preventDefault();
           e.stopPropagation();
           const gap = 12;
@@ -127,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, { passive: false });
 
         rightBtn.addEventListener('click', function(e) {
+          console.log('Right button clicked');
           e.preventDefault();
           e.stopPropagation();
           const gap = 12;
@@ -134,6 +138,8 @@ document.addEventListener('DOMContentLoaded', function () {
           const delta = Math.max(160, cardWidth + gap);
           container.scrollBy({ left: delta, behavior: 'smooth' });
         }, { passive: false });
+      } else {
+        console.warn('Image nav buttons not found:', { leftBtn, rightBtn });
       }
 
       // Update arrows disabled state (start/end)
