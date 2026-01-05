@@ -1275,11 +1275,19 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
-      // mark persisted in local storage
+      
+      // Сразу удаляем из локальной очереди и помечаем как сохраненную
       try {
         if (!this.persistedJobs) this.persistedJobs = new Set();
         this.persistedJobs.add(String(jobId));
         this.savePersistedJobs && this.savePersistedJobs();
+        
+        // Удаляем из queue чтобы не появилась снова при перезагрузке
+        const idx = this.queue.findIndex(e => String(e.job_id) === String(jobId));
+        if (idx >= 0) {
+          this.queue.splice(idx, 1);
+          this.saveQueue();
+        }
       } catch (_) { }
 
       // No auto-download here — по требованию: добавляем в «Мои генерации» без скачивания
@@ -1320,15 +1328,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
               }
             } catch (_) { }
           }, 300);
-        }
-      } catch (_) { }
-
-      // Удаляем из локальной очереди (но НЕ из clearedJobs, чтобы не удалить с сервера)
-      try {
-        const idx = this.queue.findIndex(e => String(e.job_id) === String(jobId));
-        if (idx >= 0) {
-          this.queue.splice(idx, 1);
-          this.saveQueue();
         }
       } catch (_) { }
     } catch (e) {

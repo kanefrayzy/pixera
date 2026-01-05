@@ -605,10 +605,18 @@
       });
       const j = await r.json().catch(()=>({}));
       if (!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
-      // mark persisted in local storage
+      
+      // Сразу удаляем из локальной очереди и помечаем как сохраненную
       try {
         persistedJobs.add(String(jobId));
         savePersistedJobs(persistedJobs);
+        
+        // Удаляем из queue чтобы не появилась снова при перезагрузке
+        const idx = queue.findIndex(e => String(e.job_id) === String(jobId));
+        if (idx >= 0) {
+          queue.splice(idx, 1);
+          saveQueue(queue);
+        }
       } catch(_) {}
 
       // Без автоскачивания — по требованию: добавляем в «Мои генерации» без загрузки файла
@@ -649,15 +657,6 @@
               }
             } catch (_) { }
           }, 300);
-        }
-      } catch (_) { }
-
-      // Удаляем из локальной очереди (но НЕ из clearedJobs)
-      try {
-        const idx = queue.findIndex(e => String(e.job_id) === String(jobId));
-        if (idx >= 0) {
-          queue.splice(idx, 1);
-          saveQueue(queue);
         }
       } catch (_) { }
     } catch (e) {
