@@ -680,8 +680,6 @@
         `;
         btn.setAttribute('aria-label', isAuth ? 'Сохранить в профиле' : 'Добавить в галерею');
       }
-      // soft alert; do not break UI
-
     }
   }
 

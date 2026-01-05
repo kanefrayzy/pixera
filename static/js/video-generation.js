@@ -1276,7 +1276,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
         if (!this.persistedJobs) this.persistedJobs = new Set();
         this.persistedJobs.add(String(jobId));
         this.savePersistedJobs && this.savePersistedJobs();
-        
+
         // Удаляем из queue чтобы не появилась снова при перезагрузке
         const idx = this.queue.findIndex(e => String(e.job_id) === String(jobId));
         if (idx >= 0) {
