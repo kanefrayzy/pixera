@@ -2106,6 +2106,18 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
           {% endfor %}
         </div>
+
+        <!-- Navigation arrows for image models -->
+        <button type="button" class="image-model-nav-btn left" aria-label="Назад">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <button type="button" class="image-model-nav-btn right" aria-label="Вперёд">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Информация о выбранной модели (скрыта по умолчанию) -->
@@ -2373,6 +2385,44 @@ document.addEventListener('DOMContentLoaded', function() {
             flex: 0 0 calc(50% - 4px);
             min-width: 160px;
           }
+        }
+
+        /* Navigation arrows for image models */
+        .image-model-nav-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 10;
+          width: 34px;
+          height: 34px;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0,0,0,.55);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,.25);
+          box-shadow: 0 2px 8px rgba(0,0,0,.25);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .image-model-nav-btn:hover {
+          background: rgba(0,0,0,.75);
+        }
+        .image-model-nav-btn.left {
+          left: 4px;
+        }
+        .image-model-nav-btn.right {
+          right: 4px;
+        }
+        .image-model-nav-btn.disabled {
+          opacity: 0.4;
+          pointer-events: none;
+          filter: grayscale(0.4);
+        }
+        html[data-theme="light"] .image-model-nav-btn {
+          background: rgba(0,0,0,.5);
+          border-color: rgba(0,0,0,.15);
         }
       </style>
       <style>
@@ -3460,7 +3510,7 @@ html[data-theme="light"] .prompt-category-card:hover {
 }
 
 #promptCategoryModal.active {
-  display: flex;
+  display: flex !important;
 }
 
 @keyframes modal-in {

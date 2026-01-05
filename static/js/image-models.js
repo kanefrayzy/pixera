@@ -111,62 +111,44 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   // Horizontal scroller: 3 in a row with arrow controls (compact cards)
   try {
-    // Inject styles once
-    if (!document.getElementById('image-models-horizontal-style')) {
-      const st = document.createElement('style');
-      st.id = 'image-models-horizontal-style';
-      st.textContent = `
-#image-model-cards{display:flex!important;flex-wrap:nowrap!important;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px;-ms-overflow-style:none;scrollbar-width:none}
-#image-model-cards::-webkit-scrollbar{display:none}
-.image-model-card-wrap{flex:0 0 calc(33.333% - 8px);scroll-snap-align:start;min-width:220px}
-/* make cards a bit more compact */
-#image-model-cards .card-hero{min-height:150px!important}
-.model-nav-btn{position:absolute;top:50%;transform:translateY(-50%);z-index:10;width:34px;height:34px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.model-nav-btn.disabled{opacity:.4;pointer-events:none;filter:grayscale(.4)}
-html[data-theme="light"] .model-nav-btn{background:rgba(0,0,0,.5);border-color:rgba(0,0,0,.15)}
-.model-nav-btn:hover{background:rgba(0,0,0,.75)}
-.model-nav-btn.left{left:4px}
-.model-nav-btn.right{right:4px}
-      `;
-      document.head.appendChild(st);
-    }
-    // Attach arrow buttons near the models row
+    // Attach arrow button handlers to existing buttons in HTML
     const parent = container.parentElement;
     if (parent) {
-      if (getComputedStyle(parent).position === 'static') { parent.style.position = 'relative'; }
-      if (!parent.querySelector('.model-nav-btn.left')) {
-        const mk = (dir) => {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'model-nav-btn ' + (dir<0?'left':'right');
-          b.setAttribute('aria-label', dir<0?'Назад':'Вперёд');
-          b.innerHTML = dir<0
-            ? '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>'
-            : '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>';
-          b.addEventListener('click', () => {
-            try {
-              const gap = 12;
-              const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
-              const delta = Math.max(160, cardWidth + gap);
-              container.scrollBy({ left: dir * delta, behavior: 'smooth' });
-            } catch(_) {}
-          });
-          parent.appendChild(b);
-        };
-        mk(-1); mk(1);
-        // Update arrows disabled state (start/end)
-        const updateArrows = () => {
-          const leftB = parent.querySelector('.model-nav-btn.left');
-          const rightB = parent.querySelector('.model-nav-btn.right');
-          const atStart = (container.scrollLeft || 0) <= 1;
-          const atEnd = (container.scrollLeft + container.clientWidth) >= (container.scrollWidth - 1);
-          if (leftB) { leftB.classList.toggle('disabled', atStart); leftB.setAttribute('aria-disabled', atStart ? 'true' : 'false'); }
-          if (rightB) { rightB.classList.toggle('disabled', atEnd); rightB.setAttribute('aria-disabled', atEnd ? 'true' : 'false'); }
-        };
-        updateArrows();
-        container.addEventListener('scroll', updateArrows, { passive: true });
-        window.addEventListener('resize', updateArrows);
+      const leftBtn = parent.querySelector('.image-model-nav-btn.left');
+      const rightBtn = parent.querySelector('.image-model-nav-btn.right');
+
+      if (leftBtn) {
+        leftBtn.addEventListener('click', () => {
+          try {
+            const gap = 12;
+            const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
+            const delta = Math.max(160, cardWidth + gap);
+            container.scrollBy({ left: -delta, behavior: 'smooth' });
+          } catch(_) {}
+        });
       }
+
+      if (rightBtn) {
+        rightBtn.addEventListener('click', () => {
+          try {
+            const gap = 12;
+            const cardWidth = Math.round((container.clientWidth - gap * 2) / 3);
+            const delta = Math.max(160, cardWidth + gap);
+            container.scrollBy({ left: delta, behavior: 'smooth' });
+          } catch(_) {}
+        });
+      }
+
+      // Update arrows disabled state (start/end)
+      const updateArrows = () => {
+        const atStart = (container.scrollLeft || 0) <= 1;
+        const atEnd = (container.scrollLeft + container.clientWidth) >= (container.scrollWidth - 1);
+        if (leftBtn) { leftBtn.classList.toggle('disabled', atStart); leftBtn.setAttribute('aria-disabled', atStart ? 'true' : 'false'); }
+        if (rightBtn) { rightBtn.classList.toggle('disabled', atEnd); rightBtn.setAttribute('aria-disabled', atEnd ? 'true' : 'false'); }
+      };
+      updateArrows();
+      container.addEventListener('scroll', updateArrows, { passive: true });
+      window.addEventListener('resize', updateArrows);
     }
   } catch (_) {}
 

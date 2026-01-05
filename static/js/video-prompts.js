@@ -881,6 +881,14 @@
     if (e.target.id === 'videoPromptCategoryModal') closeVideoPromptModal();
   });
 
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('videoPromptCategoryModal');
+    if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
+      closeVideoPromptModal();
+    }
+  });
+
   function openEditModal(card) {
     const modal = document.getElementById('vpcEditModal');
     if (!modal) return;
