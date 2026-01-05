@@ -578,8 +578,7 @@
     modalTitle.textContent = categoryName;
     modalContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-8">Загрузка...</div>';
 
-    // Показываем модальное окно
-    modal.style.display = 'flex';
+    // Показываем модальное окно (как для image prompts)
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
@@ -873,7 +872,6 @@
     const modal = document.getElementById('videoPromptCategoryModal');
     if (modal) {
       modal.classList.remove('active');
-      modal.style.display = 'none';
       document.body.style.overflow = '';
     }
   }

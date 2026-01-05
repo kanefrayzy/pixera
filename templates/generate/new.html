@@ -2247,8 +2247,36 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 
       <style>
-        /* Image model cards — идентично video model cards */
-        .image-model-card { 
+        /* ===== IMAGE MODEL CARDS - ГОРИЗОНТАЛЬНАЯ ЛЕНТА (как video) ===== */
+
+        /* Horizontal Scroller - One Row */
+        #image-model-cards {
+          display: flex !important;
+          flex-wrap: nowrap !important;
+          gap: 12px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          padding: 4px;
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        #image-model-cards::-webkit-scrollbar {
+          display: none;
+        }
+
+        /* Card Wrapper - 3 в ряд */
+        .image-model-card-wrap {
+          flex: 0 0 calc(33.333% - 8px);
+          scroll-snap-align: start;
+          min-width: 220px;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* Model Card - Full Height */
+        .image-model-card {
           display: flex;
           flex-direction: column;
           height: 100%;
@@ -2262,7 +2290,7 @@ document.addEventListener('DOMContentLoaded', function() {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         .image-model-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-        
+
         /* Selected state - blue border (идентично video) */
         .image-model-card[data-selected="1"],
         .image-model-card.selected,
@@ -2274,7 +2302,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .image-model-card[aria-selected="false"] {
           border-color: var(--bord) !important;
         }
-        
+
         [data-theme="dark"] .image-model-card {
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
@@ -2325,6 +2353,26 @@ document.addEventListener('DOMContentLoaded', function() {
           .card-hero { min-height: 140px; }
           .image-model-card h3 { font-size: 0.85rem; }
           .image-model-card p { font-size: 0.72rem; }
+        }
+
+        /* Responsive для image-model-cards */
+        @media (max-width: 640px) {
+          #image-model-cards {
+            gap: 0.75rem;
+          }
+          .image-model-card-wrap {
+            flex: 0 0 calc(50% - 6px);
+            min-width: 180px;
+          }
+        }
+        @media (max-width: 374px) {
+          #image-model-cards {
+            gap: 0.5rem;
+          }
+          .image-model-card-wrap {
+            flex: 0 0 calc(50% - 4px);
+            min-width: 160px;
+          }
         }
       </style>
       <style>
