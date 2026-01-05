@@ -3244,7 +3244,12 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
       // Show only completed VIDEO jobs for current user; ignore images and cleared-at or older
       j.jobs.forEach(job => {
         const jid = String(job.job_id);
+        // Пропускаем задачи, которые были удалены, сохранены в профиль, или уже в очереди
         if (this.clearedJobs.has(jid)) {
+          return;
+        }
+        if (this.persistedJobs && this.persistedJobs.has(jid)) {
+          console.log('⏭️ Пропускаем задачу', jid, '(сохранена в профиль)');
           return;
         }
         if (this.queue.some(e => String(e.job_id) === jid)) {

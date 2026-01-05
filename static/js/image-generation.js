@@ -124,7 +124,7 @@
 
   // LocalStorage helpers
   function loadQueue() {
-    try { 
+    try {
       const raw = localStorage.getItem(`gen.image.queue::${USER_KEY}`);
       const arr = raw ? JSON.parse(raw) : [];
       const result = Array.isArray(arr) ? arr : [];
@@ -133,10 +133,10 @@
     } catch(_) { return []; }
   }
   function saveQueue(arr) {
-    try { 
+    try {
       const toSave = (arr || []).slice(-24);
       console.log('💾 Сохраняем queue в localStorage:', toSave.length, 'элементов', toSave.map(e => e.job_id));
-      localStorage.setItem(`gen.image.queue::${USER_KEY}`, JSON.stringify(toSave)); 
+      localStorage.setItem(`gen.image.queue::${USER_KEY}`, JSON.stringify(toSave));
     } catch(_) {}
   }
   function loadClearedJobs() {
@@ -1082,7 +1082,11 @@
       grid._moreJobs = grid._moreJobs || [];
       j.jobs.forEach(job => {
         const jid = String(job.job_id);
-        if (clearedJobs.has(jid) || queue.some(e => String(e.job_id) === jid)) return;
+        // Пропускаем задачи, которые были удалены, уже в очереди, или сохранены в профиль
+        if (clearedJobs.has(jid) || persistedJobs.has(jid) || queue.some(e => String(e.job_id) === jid)) {
+          console.log('⏭️ Пропускаем задачу', jid, '(удалена, сохранена или уже в очереди)');
+          return;
+        }
         const createdAtTs = job.created_at ? Date.parse(job.created_at) : 0;
         if ((clearedAt && createdAtTs && createdAtTs <= clearedAt) || (job.generation_type === 'video')) return;
 
