@@ -589,7 +589,12 @@
 
     // НЕ добавляем задачи, которые были сохранены в профиль
     if (persistedJobs && persistedJobs.has(id)) {
+      return;
+    }
 
+    const idx = queue.findIndex(e => String(e.job_id) === id);
+    if (idx >= 0) queue[idx] = { ...queue[idx], ...patch, job_id: id };
+    else queue.push({ job_id: id, createdAt: Date.now(), ...patch });
     saveQueue(queue);
   }
 
