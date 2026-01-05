@@ -729,17 +729,13 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
     try {
       const raw = localStorage.getItem(`gen.video.queue::${this.userKey}`);
       const arr = raw ? JSON.parse(raw) : [];
-      const result = Array.isArray(arr) ? arr : [];
-      console.log('📂 Загружаем queue из localStorage:', result.length, 'элементов', result.map(e => e.job_id));
-      return result;
+      return Array.isArray(arr) ? arr : [];
     } catch (_) { return []; }
   }
 
   saveQueue() {
     try {
-      const toSave = this.queue.slice(-24);
-      console.log('💾 Сохраняем queue в localStorage:', toSave.length, 'элементов', toSave.map(e => e.job_id));
-      localStorage.setItem(`gen.video.queue::${this.userKey}`, JSON.stringify(toSave));
+      localStorage.setItem(`gen.video.queue::${this.userKey}`, JSON.stringify(this.queue.slice(-24)));
     } catch (_) { }
   }
 
@@ -1157,18 +1153,7 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // НЕ добавляем задачи, которые были сохранены в профиль
     if (this.persistedJobs && this.persistedJobs.has(id)) {
-      console.log('⏭️ Задача', id, 'уже сохранена в профиль, пропускаем');
-      return;
-    }
 
-    const idx = this.queue.findIndex(e => String(e.job_id) === id);
-    if (idx >= 0) {
-      this.queue[idx] = { ...this.queue[idx], ...patch, job_id: id };
-    } else {
-      this.queue.push({ job_id: id, createdAt: Date.now(), ...patch });
-    }
-    this.saveQueue();
-  }
 
   /**
    * Удалить задачу из очереди (UI + localStorage + backend)
@@ -1288,31 +1273,17 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
       // Сразу удаляем из локальной очереди и помечаем как сохраненную
       try {
-        console.log('🔹 Сохраняем задачу', jobId, 'в профиль');
-        console.log('🔹 Queue до удаления:', this.queue.length, 'элементов');
-
         if (!this.persistedJobs) this.persistedJobs = new Set();
         this.persistedJobs.add(String(jobId));
         this.savePersistedJobs && this.savePersistedJobs();
-        console.log('✅ Добавлено в persistedJobs');
-
+        
         // Удаляем из queue чтобы не появилась снова при перезагрузке
         const idx = this.queue.findIndex(e => String(e.job_id) === String(jobId));
-        console.log('🔹 Индекс в очереди:', idx);
         if (idx >= 0) {
           this.queue.splice(idx, 1);
-          console.log('✅ Удалено из queue. Осталось:', this.queue.length, 'элементов');
           this.saveQueue();
-          console.log('✅ Queue сохранена в localStorage');
-          console.log('🔹 persistedJobs:', Array.from(this.persistedJobs));
-        } else {
-          console.warn('⚠️ Задача не найдена в очереди!');
         }
-      } catch (err) {
-        console.error('❌ Ошибка при удалении из очереди:', err);
-      }
-
-      // No auto-download here — по требованию: добавляем в «Мои генерации» без скачивания
+      } catch (err) { }
 
       if (btn) {
         // Show success checkmark with text
@@ -3249,7 +3220,6 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
           return;
         }
         if (this.persistedJobs && this.persistedJobs.has(jid)) {
-          console.log('⏭️ Пропускаем задачу', jid, '(сохранена в профиль)');
           return;
         }
         if (this.queue.some(e => String(e.job_id) === jid)) {

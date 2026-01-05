@@ -589,13 +589,7 @@
 
     // НЕ добавляем задачи, которые были сохранены в профиль
     if (persistedJobs && persistedJobs.has(id)) {
-      console.log('⏭️ Задача', id, 'уже сохранена в профиль, пропускаем');
-      return;
-    }
 
-    const idx = queue.findIndex(e => String(e.job_id) === id);
-    if (idx >= 0) queue[idx] = { ...queue[idx], ...patch, job_id: id };
-    else queue.push({ job_id: id, createdAt: Date.now(), ...patch });
     saveQueue(queue);
   }
 
@@ -625,30 +619,16 @@
 
       // Сразу удаляем из локальной очереди и помечаем как сохраненную
       try {
-        console.log('🔹 Сохраняем задачу', jobId, 'в профиль');
-        console.log('🔹 Queue до удаления:', queue.length, 'элементов');
-
         persistedJobs.add(String(jobId));
         savePersistedJobs(persistedJobs);
-        console.log('✅ Добавлено в persistedJobs');
 
         // Удаляем из queue чтобы не появилась снова при перезагрузке
         const idx = queue.findIndex(e => String(e.job_id) === String(jobId));
-        console.log('🔹 Индекс в очереди:', idx);
         if (idx >= 0) {
           queue.splice(idx, 1);
-          console.log('✅ Удалено из queue. Осталось:', queue.length, 'элементов');
           saveQueue(queue);
-          console.log('✅ Queue сохранена в localStorage');
-          console.log('🔹 persistedJobs:', Array.from(persistedJobs));
-        } else {
-          console.warn('⚠️ Задача не найдена в очереди!');
         }
-      } catch(err) {
-        console.error('❌ Ошибка при удалении из очереди:', err);
-      }
-
-      // Без автоскачивания — по требованию: добавляем в «Мои генерации» без загрузки файла
+      } catch(err) {}
 
       if (btn) {
         // Show success checkmark with text
@@ -1084,7 +1064,6 @@
         const jid = String(job.job_id);
         // Пропускаем задачи, которые были удалены, уже в очереди, или сохранены в профиль
         if (clearedJobs.has(jid) || persistedJobs.has(jid) || queue.some(e => String(e.job_id) === jid)) {
-          console.log('⏭️ Пропускаем задачу', jid, '(удалена, сохранена или уже в очереди)');
           return;
         }
         const createdAtTs = job.created_at ? Date.parse(job.created_at) : 0;
