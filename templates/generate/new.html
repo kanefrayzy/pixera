@@ -3998,6 +3998,7 @@ const init=()=>{
               category_display: "{% if model.supports_image_to_video %}Image-to-Video{% else %}Text-to-Video{% endif %}",
               description: "{{ model.description|default:''|escapejs }}",
               token_cost: {{ model.token_cost|default:10 }},
+              max_duration: {{ model.max_duration|default:8 }},
               image_url: {% if model.image %}"{{ model.image.url }}"{% else %}null{% endif %},
               available_aspect_ratios: {{ model.get_available_aspect_ratios|safe }},
               available_resolutions: {{ model.get_available_resolutions|safe }},

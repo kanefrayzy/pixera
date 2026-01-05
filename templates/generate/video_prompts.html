@@ -227,18 +227,20 @@
 </div>
 
 <!-- Modal for Video Prompts -->
-<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" id="videoPromptCategoryModal">
-  <div class="bg-[var(--bg-card)] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-[var(--bord)] shadow-2xl animate-modal-in">
-    <div class="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--bord)] p-4 sm:p-6 flex items-center justify-between z-10">
-      <h3 class="text-lg sm:text-xl font-bold" id="videoModalCategoryTitle">Промпты видео</h3>
-      <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" id="closeVideoPromptModal" aria-label="Закрыть">
-        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-    <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-88px)] custom-scrollbar" id="videoModalPromptsContainer">
-      <div class="text-center text-[var(--muted)] py-8">Загрузка...</div>
+<div id="videoPromptCategoryModal" class="video-prompt-modal-overlay">
+  <div class="video-prompt-modal-container">
+    <div class="video-prompt-modal-content">
+      <div class="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--bord)] p-4 sm:p-6 flex items-center justify-between z-10">
+        <h3 class="text-lg sm:text-xl font-bold" id="videoModalCategoryTitle">Промпты видео</h3>
+        <button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bord)] transition-colors" id="closeVideoPromptModal" aria-label="Закрыть">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-88px)] custom-scrollbar" id="videoModalPromptsContainer">
+        <div class="text-center text-[var(--muted)] py-8">Загрузка...</div>
+      </div>
     </div>
   </div>
 </div>
@@ -577,8 +579,70 @@ html[data-theme="light"] .category-show-all .category-image-wrapper-compact::bef
 }
 
 /* Modal стили */
-#videoPromptCategoryModal.active {
+.video-prompt-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+}
+
+.video-prompt-modal-overlay.active {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-prompt-modal-container {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+}
+
+.video-prompt-modal-content {
+  background: var(--bg-card, #1e293b);
+  border-radius: 1rem;
+  max-width: 48rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  border: 1px solid var(--bord, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: videoModalIn 0.3s ease-out;
+}
+
+@keyframes videoModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+#videoPromptCategoryModal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+#videoPromptCategoryModal.active {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
 .custom-scrollbar {
