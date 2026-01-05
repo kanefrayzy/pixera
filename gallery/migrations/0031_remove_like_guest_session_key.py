@@ -11,20 +11,20 @@ def drop_guest_session_key_column(apps, schema_editor):
     with connection.cursor() as cursor:
         # Check if column exists
         cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
+            SELECT column_name
+            FROM information_schema.columns
             WHERE table_name = 'gallery_like' AND column_name = 'guest_session_key'
         """)
         if cursor.fetchone():
             # Drop related constraints first
             cursor.execute("""
-                DO $$ 
-                DECLARE 
+                DO $$
+                DECLARE
                     r RECORD;
                 BEGIN
                     FOR r IN (
-                        SELECT constraint_name 
-                        FROM information_schema.constraint_column_usage 
+                        SELECT constraint_name
+                        FROM information_schema.constraint_column_usage
                         WHERE table_name = 'gallery_like' AND column_name = 'guest_session_key'
                     ) LOOP
                         EXECUTE 'ALTER TABLE gallery_like DROP CONSTRAINT IF EXISTS ' || quote_ident(r.constraint_name) || ' CASCADE';
@@ -33,13 +33,13 @@ def drop_guest_session_key_column(apps, schema_editor):
             """)
             # Drop related indexes
             cursor.execute("""
-                DO $$ 
-                DECLARE 
+                DO $$
+                DECLARE
                     r RECORD;
                 BEGIN
                     FOR r IN (
-                        SELECT indexname 
-                        FROM pg_indexes 
+                        SELECT indexname
+                        FROM pg_indexes
                         WHERE tablename = 'gallery_like' AND indexdef LIKE '%guest_session_key%'
                     ) LOOP
                         EXECUTE 'DROP INDEX IF EXISTS ' || quote_ident(r.indexname);
