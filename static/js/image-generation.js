@@ -525,7 +525,14 @@
       // 1. Проверяем что задача не удалена
       if (clearedJobs.has(String(item.job_id))) return;
 
-      // 2. СТРОГАЯ ПРОВЕРКА: если задача создана ДО момента очистки
+      // 2. Проверяем что задача не была сохранена в профиль
+      if (persistedJobs && persistedJobs.has(String(item.job_id))) {
+        // Удаляем из очереди, т.к. она уже в профиле
+        toRemove.push(item.job_id);
+        return;
+      }
+
+      // 3. СТРОГАЯ ПРОВЕРКА: если задача создана ДО момента очистки
       const createdAt = item.createdAt || 0;
       if (clearedAt && createdAt && createdAt <= clearedAt) {
         toRemove.push(item.job_id);
@@ -533,14 +540,14 @@
         return;
       }
 
-      // 3. Автоудаление задач старше 24 часов
+      // 4. Автоудаление задач старше 24 часов
       if (createdAt && (now - createdAt > TTL_24H)) {
         toRemove.push(item.job_id);
         if (item.job_id) clearedJobs.add(String(item.job_id));
         return;
       }
 
-      // 4. Skip legacy mixed-in video entries
+      // 5. Skip legacy mixed-in video entries
       if (item && !item.image_url && item.video_url) {
         try { clearedJobs.add(String(item.job_id)); saveClearedJobs(clearedJobs); } catch(_) {}
         return;
