@@ -1964,50 +1964,60 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Cards container used by static/js/generate.js -->
         <div id="image-model-cards" class="flex flex-nowrap gap-3 overflow-x-auto" style="display:flex!important;flex-wrap:nowrap!important;">
           {% for model in image_models %}
-          <div class="image-model-card-wrap flex flex-col">
-            {% if model.is_beta %}
+          <div class="image-model-card-wrap">
+            <!-- Badge над карточкой -->
             <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
+              {% if model.is_beta %}
               <svg class="w-3.5 h-3.5 text-purple-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
               </svg>
               <span class="text-[11px] sm:text-xs font-medium text-purple-600 dark:text-purple-400">Бета</span>
-            </div>
-            {% elif model.is_premium %}
-            <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
+              {% elif model.is_premium %}
               <svg class="w-3.5 h-3.5 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
               </svg>
               <span class="text-[11px] sm:text-xs font-medium text-amber-600 dark:text-amber-400">Премиум</span>
-            </div>
-            {% elif forloop.first %}
-            <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
+              {% elif forloop.first %}
               <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
               </svg>
               <span class="text-[11px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400">Рекомендуем</span>
+              {% endif %}
             </div>
-            {% else %}
-            <div class="h-5 sm:h-6 mb-1"></div>
-            {% endif %}
-            <button type="button" class="image-model-card h-full w-full block group relative rounded-xl overflow-hidden border-2 border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary transition-all focus:outline-none"
-                    data-model="{{ model.model_id }}"
-                    data-selected="{% if forloop.first %}1{% else %}0{% endif %}"
-                    data-config='{{ model.to_json|safe }}'
-                    aria-label="Выбрать модель {{ model.name }}">
-              <div class="card-hero relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900" style="aspect-ratio:16/9; min-height:180px;">
+
+            <!-- Карточка модели (идентично видео) -->
+            <div class="image-model-card relative rounded-xl border-2 border-[var(--bord)] bg-[var(--bg-card)] cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-lg"
+                 data-model="{{ model.model_id }}"
+                 data-selected="{% if forloop.first %}1{% else %}0{% endif %}"
+                 data-config='{{ model.to_json|safe }}'
+                 role="button"
+                 tabindex="0"
+                 aria-label="Выбрать модель {{ model.name }}"
+                 aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+
+              <!-- Image with Name & Description INSIDE -->
+              <div class="card-hero relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900" style="min-height:150px;">
                 {% if model.image %}
                 <img src="{{ model.image.url }}" alt="{{ model.name }}" class="absolute inset-0 w-full h-full object-cover" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" decoding="{% if forloop.first %}sync{% else %}async{% endif %}" {% if not forloop.first %}fetchpriority="low"{% endif %}>
                 {% else %}
-                <img src="/static/img/category/Пейзаж.jpg" alt="{{ model.name }}" class="absolute inset-0 w-full h-full object-cover" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" decoding="{% if forloop.first %}sync{% else %}async{% endif %}">
+                <img src="/static/img/category/Пейзаж.jpg" alt="{{ model.name }}" class="absolute inset-0 w-full h-full object-cover" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
                 {% endif %}
-                <div class="card-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 pointer-events-none"></div>
-                <div class="absolute top-2 right-2 z-10">
-                  <span class="px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/90 text-white shadow">
-                    {{ model.token_cost }} TOK
-                  </span>
+
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20"></div>
+
+                <!-- Selected dot -->
+                <div class="absolute top-2 left-2 w-2 h-2 rounded-full bg-primary animate-pulse {% if not forloop.first %}hidden{% endif %}" data-role="selected-dot"></div>
+
+                <!-- Top badge - Provider -->
+                <div class="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 backdrop-blur-sm text-white text-[10px] sm:text-xs font-semibold uppercase">
+                  {{ model.provider|default:"FLUX" }}
                 </div>
-                <div class="absolute inset-0 card-content flex flex-col items-center justify-center px-2 sm:px-4 text-center gap-1.5 sm:gap-2">
-                  <h3 class="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">{{ model.name }}</h3>
+
+                <!-- Name & Description CENTERED -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+                  <h3 class="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg whitespace-normal break-words">
+                    {{ model.name }}
+                  </h3>
                   {% if model.description %}
                   <p class="text-white/90 text-xs sm:text-sm leading-snug drop-shadow-md line-clamp-2">
                     {{ model.description }}
@@ -2015,35 +2025,84 @@ document.addEventListener('DOMContentLoaded', function() {
                   {% endif %}
                 </div>
               </div>
-            </button>
+
+              <!-- Compact info row under image: cost & provider (идентично видео) -->
+              <div class="p-2.5 sm:p-3">
+                <div class="grid grid-cols-2 gap-1.5">
+                  <!-- Cost -->
+                  <div class="flex items-center justify-center gap-2 h-9 rounded-lg bg-[var(--bord)]/50">
+                    <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span class="w-2 h-2 rounded-full bg-primary"></span>
+                    </span>
+                    <div class="flex items-baseline gap-1">
+                      <span class="text-xs sm:text-sm font-bold tabular-nums text-[var(--text)]">{{ model.token_cost }}</span>
+                      <span class="text-[10px] text-[var(--muted)] uppercase">TOK</span>
+                    </div>
+                  </div>
+
+                  <!-- Provider -->
+                  <div class="flex items-center justify-center gap-2 h-9 rounded-lg bg-[var(--bord)]/50">
+                    <span class="w-4 h-4 rounded-full bg-[var(--fg)]/10 flex items-center justify-center">
+                      <svg class="w-2.5 h-2.5 text-[var(--fg)]/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                      </svg>
+                    </span>
+                    <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-[var(--text)]">{{ model.provider|default:"FLUX" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           {% empty %}
-          <!-- Fallback: если нет моделей в БД, показываем стандартную -->
-          <div class="image-model-card-wrap flex flex-col">
+          <!-- Fallback: если нет моделей в БД -->
+          <div class="image-model-card-wrap">
             <div class="h-5 sm:h-6 mb-1 flex items-center gap-1">
               <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
               </svg>
               <span class="text-[11px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400">Рекомендуем</span>
             </div>
-            <button type="button" class="image-model-card h-full w-full block group relative rounded-xl overflow-hidden border-2 border-[var(--bord)] bg-[var(--bg-card)] hover:border-primary transition-all focus:outline-none"
-                    data-model="runware:101@1" data-selected="1" aria-label="Выбрать стандартную модель">
-              <div class="card-hero relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900" style="aspect-ratio:16/9; min-height:180px;">
-                <img src="/static/img/category/Пейзаж.jpg" alt="Стандартная модель" class="absolute inset-0 w-full h-full object-cover" loading="eager" decoding="sync">
-                <div class="card-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 pointer-events-none"></div>
-                <div class="absolute top-2 right-2 z-10">
-                  <span class="px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/90 text-white shadow">
-                    {% with c=price|default:TOKENS_PRICE_PER_GEN|default:10 %}{{ c }} TOK{% endwith %}
-                  </span>
-                </div>
-                <div class="absolute inset-0 card-content flex flex-col items-center justify-center px-2 sm:px-4 text-center gap-1.5 sm:gap-2">
+            <div class="image-model-card relative rounded-xl border-2 border-[var(--bord)] bg-[var(--bg-card)] cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-lg"
+                 data-model="runware:101@1"
+                 data-selected="1"
+                 role="button"
+                 tabindex="0"
+                 aria-label="Выбрать стандартную модель"
+                 aria-selected="true">
+              <div class="card-hero relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900" style="min-height:150px;">
+                <img src="/static/img/category/Пейзаж.jpg" alt="Стандартная модель" class="absolute inset-0 w-full h-full object-cover" loading="eager">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20"></div>
+                <div class="absolute top-2 left-2 w-2 h-2 rounded-full bg-primary animate-pulse" data-role="selected-dot"></div>
+                <div class="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 backdrop-blur-sm text-white text-[10px] sm:text-xs font-semibold uppercase">FLUX</div>
+                <div class="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
                   <h3 class="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">Стандартная</h3>
-                  <p class="text-white/90 text-xs sm:text-sm leading-snug drop-shadow-md line-clamp-2">
-                    Универсальная модель: стабильное качество и быстрый отклик.
-                  </p>
+                  <p class="text-white/90 text-xs sm:text-sm leading-snug drop-shadow-md line-clamp-2">Универсальная модель: стабильное качество и быстрый отклик.</p>
                 </div>
               </div>
-            </button>
+              <div class="p-2.5 sm:p-3">
+                <div class="grid grid-cols-2 gap-1.5">
+                  <div class="flex items-center justify-center gap-2 h-9 rounded-lg bg-[var(--bord)]/50">
+                    <span class="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span class="w-2 h-2 rounded-full bg-primary"></span>
+                    </span>
+                    <div class="flex items-baseline gap-1">
+                      <span class="text-xs sm:text-sm font-bold tabular-nums text-[var(--text)]">10</span>
+                      <span class="text-[10px] text-[var(--muted)] uppercase">TOK</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-center gap-2 h-9 rounded-lg bg-[var(--bord)]/50">
+                    <span class="w-4 h-4 rounded-full bg-[var(--fg)]/10 flex items-center justify-center">
+                      <svg class="w-2.5 h-2.5 text-[var(--fg)]/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                      </svg>
+                    </span>
+                    <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-[var(--text)]">FLUX</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           {% endfor %}
         </div>
@@ -2188,16 +2247,42 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 
       <style>
-        /* Image model cards — responsive, dark/light, 320px-ready */
-        .image-model-card { display:block; width:100%; position:relative; border-radius: 0.75rem; }
+        /* Image model cards — идентично video model cards */
+        .image-model-card { 
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          width: 100%;
+          position: relative;
+          border-radius: 0.75rem;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .image-model-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
         .image-model-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-        .image-model-card[data-selected="1"] {
-          outline: 2px solid var(--primary);
-          outline-offset: -2px;
-          box-shadow: 0 0 0 4px rgba(99,102,241,.12);
+        
+        /* Selected state - blue border (идентично video) */
+        .image-model-card[data-selected="1"],
+        .image-model-card.selected,
+        .image-model-card[aria-selected="true"] {
+          border-color: var(--primary) !important;
+          box-shadow: 0 0 0 2px rgba(99,102,241,0.35) inset, 0 6px 16px rgba(99,102,241,0.15);
+        }
+        .image-model-card[data-selected="0"],
+        .image-model-card[aria-selected="false"] {
+          border-color: var(--bord) !important;
+        }
+        
+        [data-theme="dark"] .image-model-card {
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        [data-theme="dark"] .image-model-card:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
-        .card-hero { aspect-ratio: 16/9; min-height: clamp(140px, 28vw, 220px); }
+        .card-hero { aspect-ratio: 16/9; min-height: 150px !important; }
 
         /* Fallback for older browsers without aspect-ratio */
         @supports not (aspect-ratio: 1 / 1) {

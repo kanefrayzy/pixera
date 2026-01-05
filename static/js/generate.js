@@ -192,6 +192,9 @@
         c.classList.add('border-[var(--bord)]');
         c.setAttribute('aria-pressed', 'false');
         c.setAttribute('aria-selected', 'false');
+        // Hide selected dot
+        const dot = c.querySelector('[data-role="selected-dot"]');
+        if (dot) dot.classList.add('hidden');
       });
 
       if (card) {
@@ -202,6 +205,9 @@
         card.classList.remove('border-[var(--bord)]');
         card.setAttribute('aria-pressed', 'true');
         card.setAttribute('aria-selected', 'true');
+        // Show selected dot
+        const dot = card.querySelector('[data-role="selected-dot"]');
+        if (dot) dot.classList.remove('hidden');
 
         // Update cost display via price calculator
         try {
