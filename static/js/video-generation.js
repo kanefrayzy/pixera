@@ -1153,7 +1153,17 @@ html[data-theme="light"] .vmodel-nav-btn{background:rgba(0,0,0,.5);border-color:
 
     // НЕ добавляем задачи, которые были сохранены в профиль
     if (this.persistedJobs && this.persistedJobs.has(id)) {
+      return;
+    }
 
+    const idx = this.queue.findIndex(e => String(e.job_id) === id);
+    if (idx >= 0) {
+      this.queue[idx] = { ...this.queue[idx], ...patch, job_id: id };
+    } else {
+      this.queue.push({ job_id: id, createdAt: Date.now(), ...patch });
+    }
+    this.saveQueue();
+  }
 
   /**
    * Удалить задачу из очереди (UI + localStorage + backend)
