@@ -1,62 +1,17 @@
 [
   {
     "id": 0,
-    "title": "Кинематографическая сцена",
-    "prompt": "атоаотоаоа",
-    "video": "/media/slider_video_examples/2025/10/%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80_2bvEriV.mp4",
+    "title": "Портрет",
+    "prompt": "Portrait",
+    "video": "/media/slider_video_examples/2025/12/%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80.mp4",
     "thumbnail": "",
-    "description": "ьалальалал",
+    "description": "fnjjrj",
     "settings": {
       "steps": 28,
-      "cfg": 1.4,
+      "cfg": 1.1,
       "ratio": "3:2",
       "seed": "auto"
     },
     "order": 0
-  },
-  {
-    "id": 1,
-    "title": "Оживление фото",
-    "prompt": "втовошкшоаклак",
-    "video": "/media/slider_video_examples/2025/10/%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80_156i0a9.mp4",
-    "thumbnail": "",
-    "description": "амь ь амлььлам",
-    "settings": {
-      "steps": 28,
-      "cfg": 1.2,
-      "ratio": "3:2",
-      "seed": "auto"
-    },
-    "order": 1
-  },
-  {
-    "id": 2,
-    "title": "Cyberpank",
-    "prompt": "Cyberpank",
-    "video": "/media/slider_video_examples/2025/10/video_example.mp4",
-    "thumbnail": "",
-    "description": "Cyberpank",
-    "settings": {
-      "steps": 28,
-      "cfg": 1.9,
-      "ratio": "3:2",
-      "seed": "auto"
-    },
-    "order": 1
-  },
-  {
-    "id": 3,
-    "title": "Epic Fantasy Cliff Scene",
-    "prompt": "At sunset, a lone mage stands on the edge of a rocky cliff overlooking a stormy ocean. Thunder rolls in the distance, wind howls, and waves crash against the rock below. He raises a glowing staff, causing swirling magical particles to rise around him with a soft shimmering sound. The camera performs a slow circular tracking shot, revealing dramatic clouds lit by lightning. Highly cinematic grading, epic fantasy atmosphere, detailed sound design.",
-    "video": "/media/slider_video_examples/2025/11/video_587_1.mp4",
-    "thumbnail": "",
-    "description": "Эпическая фэнтезийная атмосфера, детальный звуковой дизайн.",
-    "settings": {
-      "steps": 28,
-      "cfg": 5.0,
-      "ratio": "3:2",
-      "seed": "auto"
-    },
-    "order": 1
   }
 ]

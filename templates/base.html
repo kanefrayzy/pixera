@@ -12,16 +12,9 @@
   <title>{% block meta_title %}{% block title %}{% trans "Pixera — ИИ-галерея и генерация" %}{% endblock %}{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}{% trans "Pixera — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды." %}{% endblock %}">
   <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
-
-  <!-- БЛОКИРОВКА ИНДЕКСАЦИИ -->
-  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
-  <meta name="googlebot" content="noindex, nofollow">
-  <meta name="bingbot" content="noindex, nofollow">
-  <meta name="yandex" content="noindex, nofollow">
-
+  
   <meta id="themeColor" name="theme-color" content="#0B0E14">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Pixera">

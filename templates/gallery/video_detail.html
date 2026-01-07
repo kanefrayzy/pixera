@@ -117,14 +117,14 @@
       <!-- Video Info -->
       {% if video.caption %}
         <div class="card p-6">
-          <h3 class="font-semibold mb-3">Описание</h3>
+          <div class="h3 font-semibold mb-3">Описание</div>
           <p class="text-[var(--muted)] leading-relaxed">{{ video.caption }}</p>
         </div>
       {% endif %}
 
       <!-- Technical Details -->
       <div class="card p-6">
-        <h3 class="font-semibold mb-4">Детали</h3>
+        <div class="h3 font-semibold mb-4">Детали</div>
         <div class="space-y-3 text-sm">
 
           <div class="flex justify-between">
@@ -141,7 +141,7 @@
 
       <!-- Related Videos -->
       <div class="card p-6">
-        <h3 class="font-semibold mb-4">Похожие видео</h3>
+        <div class="h3 font-semibold mb-4">Похожие видео</div>
         {% if related_videos %}
           <div class="grid grid-cols-2 gap-2 sm:gap-3">
             {% for rv in related_videos|slice:":4" %}
@@ -410,7 +410,7 @@
           <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
           </svg>
-          <h3 class="font-medium mb-2">Пока нет комментариев</h3>
+          <div class="h3 font-medium mb-2">Пока нет комментариев</div>
           <p class="text-[var(--muted)] mb-4">Станьте первым, кто оставит комментарий к этому видео</p>
           {% if request.user.is_authenticated %}
             <button class="btn btn-primary" onclick="document.querySelector('textarea[name=text]')?.focus()">
@@ -659,7 +659,7 @@
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
   <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
     <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
-      <h3 class="font-semibold">Оценили</h3>
+      <div class="h3 font-semibold">Оценили</div>
       <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
     </div>
     <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">

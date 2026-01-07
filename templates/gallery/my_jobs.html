@@ -168,7 +168,7 @@
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-modal-close="chgEmailModal"></div>
     <div class="relative mx-auto my-6 w-[92vw] max-w-md rounded-2xl border border-[var(--bord)] bg-[var(--bg-card)] shadow-2xl">
       <div class="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--bord)]">
-        <h3 class="text-base sm:text-lg font-semibold">Сменить email</h3>
+        <div class="h3 text-base sm:text-lg font-semibold">Сменить email</div>
         <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-modal-close="chgEmailModal">✕</button>
       </div>
       <form id="chgEmailForm" class="p-4 sm:p-5 space-y-3" action="{% url 'dashboard:api:account_change_email' %}">
@@ -190,7 +190,7 @@
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-modal-close="chgUsernameModal"></div>
     <div class="relative mx-auto my-6 w-[92vw] max-w-md rounded-2xl border border-[var(--bord)] bg-[var(--bg-card)] shadow-2xl">
       <div class="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--bord)]">
-        <h3 class="text-base sm:text-lg font-semibold">Сменить имя пользователя</h3>
+        <div class="h3 text-base sm:text-lg font-semibold">Сменить имя пользователя</div>
         <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-modal-close="chgUsernameModal">✕</button>
       </div>
       <form id="chgUsernameForm" class="p-4 sm:p-5 space-y-3" action="{% url 'dashboard:api:account_change_username' %}">
@@ -301,7 +301,7 @@
     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-avatar-close="1"></div>
     <div class="relative mx-auto my-6 w-[95vw] max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-2xl overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
-        <h3 class="font-semibold">Обрезка аватара</h3>
+        <div class="h3 font-semibold">Обрезка аватара</div>
         <button type="button" class="btn btn-ghost px-3 py-1.5" aria-label="Закрыть" data-avatar-close="1">✕</button>
       </div>
       <div class="p-4">
@@ -639,7 +639,7 @@
     <div class="modal-backdrop absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm" onclick="Modal.close('pfFollowModal')"></div>
     <div class="relative pf-follow-modal-panel w-full max-w-[min(95vw,480px)] rounded-2xl bg-[var(--bg)] border-2 border-[var(--bord)] shadow-2xl overflow-hidden max-h-[min(90vh,680px)] flex flex-col">
       <div class="flex items-center justify-between p-4 sm:p-5 border-b-2 border-[var(--bord)] flex-shrink-0 bg-gradient-to-b from-black/[.02] dark:from-white/[.02] to-transparent">
-        <h3 id="pfFollowModalTitle" class="text-base sm:text-lg md:text-xl font-bold text-[var(--text)]"></h3>
+        <div id="pfFollowModalTitle" class="h3 text-base sm:text-lg md:text-xl font-bold text-[var(--text)]"></div>
         <button type="button" class="btn btn-ghost p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all flex-shrink-0 active:scale-95" onclick="Modal.close('pfFollowModal')" aria-label="Close">✕</button>
       </div>
       <nav class="flex justify-center p-3 sm:p-4 border-b border-[var(--bord)] flex-shrink-0">
@@ -919,9 +919,9 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
       </svg>
       <div class="flex-1">
-        <h3 class="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-1">
+        <div class="h3 text-sm font-semibold text-orange-600 dark:text-orange-400 mb-1">
           Внимание! Автоматическое удаление неопубликованных работ
-        </h3>
+        </div>
         <p class="text-xs text-gray-700 dark:text-gray-300">
           Неопубликованные работы (фото и видео, которые не добавлены в галерею) автоматически удаляются с нашего сервера через <strong>30 дней</strong> после создания. Опубликованные в галерее работы хранятся постоянно.
         </p>
@@ -1048,7 +1048,7 @@
 
               <div class="p-4">
                 <a href="{{ v.get_absolute_url }}" target="_blank" rel="noopener" class="block pointer-events-auto">
-                  <h3 class="font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">{{ v.title|default_if_none:'' }}</h3>
+                  <div class="h3 font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">{{ v.title|default_if_none:'' }}</div>
                 </a>
 
                 <div class="flex items-center gap-2 mb-3">
@@ -1148,7 +1148,7 @@ data-count-target="video-save-count-{{ v.id }}"
 
               <div class="p-4">
                 <a href="{{ p.get_absolute_url }}" target="_blank" rel="noopener" class="block pointer-events-auto">
-                  <h3 class="font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">{{ p.title|default_if_none:'' }}</h3>
+                  <div class="h3 font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">{{ p.title|default_if_none:'' }}</div>
                 </a>
 
                 <div class="flex items-center gap-2 mb-3">
@@ -1351,11 +1351,11 @@ data-count-target="save-count-{{ p.id }}"
               <!-- Title -->
               {% if c.pub %}
               <a href="{{ pub_detail_url|default:open_href }}" class="block hover:text-primary transition">
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</h3>
+                <div class="h3 font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</div>
               </a>
               {% else %}
               <a href="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ pub_detail_url|default:open_href }}{% endif %}" class="block hover:text-primary transition">
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</h3>
+                <div class="h3 font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</div>
               </a>
               {% endif %}
 
@@ -1720,11 +1720,11 @@ data-count-target="save-count-{{ p.id }}"
                 <!-- Title -->
                 {% if c.pub %}
                 <a href="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ pub_video_url }}{% endif %}" class="block hover:text-primary transition">
-                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</h3>
+                  <div class="h3 font-semibold mb-3 line-clamp-1" itemprop="name">{{ c.pub.title|default:"Без названия" }}</div>
                 </a>
                 {% else %}
                 <a href="{% if profile_header %}{% url 'generate:job_detail_no_slug' j.pk %}{% else %}{{ job_detail_noslug }}{% endif %}" class="block hover:text-primary transition">
-                  <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</h3>
+                  <div class="h3 font-semibold mb-3 line-clamp-1" itemprop="name">{{ j.prompt|default:"Без названия" }}</div>
                 </a>
                 {% endif %}
 
@@ -2299,9 +2299,9 @@ video:not([controls]):hover + .video-play-overlay {
 
               <div class="p-4">
                 <a href="${durl}" target="_blank" rel="noopener" class="block pointer-events-auto">
-                  <h3 class="font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">
+                  <div class="h3 font-semibold mb-3 line-clamp-1 hover:text-primary transition" itemprop="name">
                     ${title || ""}
-                  </h3>
+                  </div>
                 </a>
 
                 <div class="flex items-center gap-2 mb-3">
@@ -2400,9 +2400,9 @@ data-count-target="${type === 'video' ? 'video-like-count-' + id : 'like-count-'
               <div class="p-4">
 
 
-                <h3 class="font-semibold mb-3 line-clamp-1" itemprop="name">
+                <div class="h3 font-semibold mb-3 line-clamp-1" itemprop="name">
                   <a href="${durl}" target="_blank" rel="noopener" class="hover:text-primary transition">${title || ""}</a>
-                </h3>
+                </div>
 
                 <div class="flex items-center gap-2 mb-3">
                   ${pageOwnerAvatar ? `<img src="${pageOwnerAvatar}" alt="${pageOwnerUsername}" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-[var(--bord)]">` : `<span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary to-blue-600 grid place-items-center text-white text-[10px] font-bold">${(pageOwnerUsername||'U').slice(0,1).toUpperCase()}</span>`}
@@ -3159,7 +3159,7 @@ function setBtnIcon(btn, hidden){
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
   <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
     <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
-      <h3 class="font-semibold">Оценили</h3>
+      <div class="h3 font-semibold">Оценили</div>
       <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
     </div>
     <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">
@@ -3391,7 +3391,7 @@ function setBtnIcon(btn, hidden){
   <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-video-actions-close="1"></div>
   <div class="relative mx-auto my-8 w-[95vw] max-w-md rounded-2xl bg-[var(--bg-card)] border border-[var(--bord)] shadow-2xl">
     <div class="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-[var(--bord)]">
-      <h3 class="text-base sm:text-lg font-semibold">Действия с видео</h3>
+      <div class="h3 text-base sm:text-lg font-semibold">Действия с видео</div>
       <button class="btn btn-ghost px-3 py-1.5" data-video-actions-close="1" aria-label="Закрыть">✕</button>
     </div>
     <div class="p-4 sm:p-5 space-y-3">

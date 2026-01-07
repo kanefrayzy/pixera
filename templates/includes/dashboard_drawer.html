@@ -460,9 +460,9 @@
     class="relative mx-auto my-6 w-[92vw] max-w-md rounded-2xl border border-[var(--bord)] bg-[var(--bg-card)] shadow-2xl"
   >
     <div class="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--bord)]">
-      <h3 id="adminTopupTitle" class="text-base sm:text-lg font-semibold">
+      <div id="adminTopupTitle" class="h3 text-base sm:text-lg font-semibold">
         {% trans "Пополнить токены пользователю" %}
-      </h3>
+      </div>
       <button id="adminTopupClose" type="button" class="w-9 h-9 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -551,7 +551,7 @@
   <div class="relative w-full max-w-[min(95vw,420px)] rounded-2xl bg-[var(--bg)] border-2 border-[var(--bord)] shadow-2xl overflow-hidden max-h-[min(90vh,650px)] flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between p-4 border-b-2 border-[var(--bord)] flex-shrink-0 bg-gradient-to-b from-black/[.02] dark:from-white/[.02] to-transparent">
-      <h3 id="drFollowModalTitle" class="text-base sm:text-lg font-bold text-[var(--text)]"></h3>
+      <div id="drFollowModalTitle" class="h3 text-base sm:text-lg font-bold text-[var(--text)]"></div>
       <button type="button" class="btn btn-ghost p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl transition-all flex-shrink-0 active:scale-95" onclick="Modal.close('drFollowModal')" aria-label="Close">
         <svg class="w-5 h-5 text-[var(--muted)] hover:text-[var(--text)] transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>

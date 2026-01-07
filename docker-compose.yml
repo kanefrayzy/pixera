@@ -105,6 +105,7 @@ services:
       - static_volume:/app/staticfiles:ro
       - ./media:/app/media:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /srv/AIBOT/public/db:/root/apps/personal/public/db:ro
     depends_on:
       - web
 

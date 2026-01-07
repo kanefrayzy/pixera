@@ -2,7 +2,8 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Генерация изображений — Pixera{% endblock %}
+{% block title %}Генерация изображений{% endblock %}
+
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/generate.css' %}">
@@ -43,13 +44,11 @@ body{-webkit-overflow-scrolling:touch}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 </style>
 <script>
-// Убираем класс после загрузки для включения анимаций
 document.documentElement.classList.add('preload-transitions');
 window.addEventListener('load',()=>{
 requestAnimationFrame(()=>document.documentElement.classList.remove('preload-transitions'));
 },{once:true,passive:true});
 
-// Критичная оптимизация: отключаем лишние запросы до полной загрузки
 if('IntersectionObserver' in window){
   window.__LAZY_LOAD_ENABLED__=true;
 }
@@ -4776,8 +4775,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-
-<!-- Подключение скриптов для работы с соотношениями сторон -->
 <script src="{% static 'js/aspect-ratio-slider.js' %}"></script>
 <script src="{% static 'js/aspect-ratio-selector.js' %}"></script>
 

@@ -182,9 +182,9 @@
               <div class="p-4">
               <!-- Title (clickable link to detail) -->
               <a href="{{ v.get_absolute_url }}" class="block group/title">
-                <h3 class="font-semibold mb-3 line-clamp-1 group-hover/title:text-primary transition" itemprop="name">
+                <div class="h3 font-semibold mb-3 line-clamp-1 group-hover/title:text-primary transition" itemprop="name">
                   {{ v.title|default:"Без названия" }}
-                </h3>
+                </div>
               </a>
 
               <!-- Author (avatar + username) like in gallery -->
@@ -437,7 +437,7 @@
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-likers-close="1"></div>
   <div class="relative mx-auto my-8 w-[95vw] max-w-md sm:max-w-lg rounded-2xl bg-[var(--bg)] border border-[var(--bord)] shadow-xl">
     <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--bord)]">
-      <h3 class="font-semibold">Оценили</h3>
+      <div class="h3 font-semibold">Оценили</div>
       <button class="btn btn-ghost px-3 py-1.5" data-likers-close="1" aria-label="Закрыть">✕</button>
     </div>
     <div id="likersBody" class="max-h-[70vh] overflow-y-auto divide-y divide-[var(--bord)]">

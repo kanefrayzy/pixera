@@ -3,9 +3,9 @@
 {% load i18n %}
 {% load blog_tags %}
 
-{% block title %}Pixera — генерация изображений, галерея и блог{% endblock %}
-{% block meta_description %}Онлайн-платформа для генерации ИИ-изображений: мгновенная генерация, аккуратная галерея, редактор промптов, фильтры, тренды и блог с гайдами. Оптимизировано под SEO, работает в тёмной и светлой темах.{% endblock %}
-{% block og_title %}Pixera — генерация и поиск вдохновляющих изображений{% endblock %}
+{% block title %}Генерация изображений и видео с помощью ИИ для бизнеса и контента | Pixera{% endblock %}
+{% block meta_description %}Онлайн-генерация изображений и видео с помощью ИИ. Любые стили, анимация, оживление фото, быстрый результат и удобный интерфейс.{% endblock %}
+{% block og_title %}Pixera — генерация и поиск вдохновляющих изображений и видео{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
@@ -17,613 +17,617 @@
 <meta property="og:site_name" content="Pixera">
 <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Pixera — генерация и поиск изображений">
-<meta name="twitter:description" content="Генерируйте идеи и находите вдохновение. Красивый интерфейс, стабильная очередь, SEO из коробки.">
+<meta name="twitter:title" content="Pixera — генерация изображений и видео с помощью ИИ">
+<meta name="twitter:description" content="Генерация изображений и видео, оживление фотографий с помощью ИИ онлайн: фото, иллюстрации и видео из текста за секунды.">
 {% endblock %}
 
 {% block hero %}
 <section class="hero-section">
-  <div class="container">
-    <div class="grid items-center gap-12 lg:grid-cols-2">
-      <div class="max-w-2xl">
-        <div class="hero-badge">
-          <div class="hero-badge-dot bg-primary shadow dark:bg-white"></div>
-          <span class="text-black dark:text-white font-semibold">Новая платформа</span>
-        </div>
+<div class="container">
+<div class="grid items-center gap-12 lg:grid-cols-2">
+<div class="max-w-2xl">
+<div class="hero-badge">
+<div class="hero-badge-dot bg-primary shadow dark:bg-white"></div>
+<span class="text-black dark:text-white font-semibold">Новая платформа</span>
+</div>
 
-        <h1 class="hero-title">
-          Создавайте
-          <span class="gradient-text">вдохновляющие</span>
-          изображения
-        </h1>
+<h1 class="hero-title">
+Генерация <span class="gradient-text">вдохновляющих</span> изображений и видео с помощью ИИ
+</h1>
 
-        <p class="hero-description">
-          Мгновенная генерация, аккуратная лента и умные фильтры — всё в одном месте.
-          Профессиональные результаты за секунды.
-        </p>
+<p class="hero-description">
+Мгновенная генерация, аккуратная лента и умные фильтры — всё в одном месте.
+Профессиональные результаты за секунды.
+</p>
 
-        <div class="hero-buttons">
-          <a class="btn btn-primary text-sm sm:text-base lg:text-sm px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:px-5" href="{% url 'generate:photo' %}" data-generate-url="{% url 'generate:photo' %}">
-            <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            Начать генерацию
-          </a>
-          <a class="btn btn-ghost text-sm sm:text-base lg:text-base px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:py-5" href="{% url 'gallery:index' %}">
-            <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"/>
-            </svg>
-            Открыть галерею
-          </a>
-        </div>
+<div class="hero-buttons">
+<a class="btn btn-primary text-sm sm:text-base lg:text-sm px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:px-5" href="{% url 'generate:photo' %}" data-generate-url="{% url 'generate:photo' %}">
+<svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+</svg>
+Начать генерацию
+</a>
+<a class="btn btn-ghost text-sm sm:text-base lg:text-base px-6 sm:px-8 py-3 sm:py-4 lg:px-10 lg:py-5" href="{% url 'gallery:index' %}">
+<svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"/>
+</svg>
+Открыть галерею
+</a>
+</div>
 
-        <div class="hero-features">
-          <div class="hero-feature">
-            <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-            </svg>
-            <span>10M+ генераций</span>
-          </div>
-          <div class="hero-feature">
-            <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-            </svg>
-            <span>API для разработчиков</span>
-          </div>
-          <div class="hero-feature">
-            <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-            </svg>
-            <span>Без кредитной карты</span>
-          </div>
-        </div>
-      </div>
+<div class="hero-features">
+<div class="hero-feature">
+<svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+</svg>
+<span>10M+ генераций</span>
+</div>
+<div class="hero-feature">
+<svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+</svg>
+<span>API для разработчиков</span>
+</div>
+<div class="hero-feature">
+<svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+</svg>
+<span>Без кредитной карты</span>
+</div>
+</div>
+</div>
 
-        <div class="hero-image-container">
-          <div class="card p-4 glassframe" data-hero>
-            <div class="hero-frame">
-              <picture>
-                <source srcset="{% static 'img/bg.webp' %}" type="image/webp">
-                <img class="hero-image" data-hero-image
-                     src="{% static 'img/bg.png' %}"
-                     alt="Пример сгенерированного изображения"
-                     loading="eager" fetchpriority="high"
-                     onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 600%22><rect width=%22800%22 height=%22600%22 fill=%22%23e5e7eb%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2224%22>AI Generation Preview</text></svg>';" />
-              </picture>
-            </div>
+<div class="hero-image-container">
+<div class="card p-4 glassframe" data-hero>
+<div class="hero-frame">
+<picture>
+<source srcset="{% static 'img/bg.webp' %}" type="image/webp">
+<img class="hero-image" data-hero-image
+src="{% static 'img/bg.png' %}"
+alt="Пример сгенерированного изображения"
+loading="eager" fetchpriority="high"
+onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 600%22><rect width=%22800%22 height=%22600%22 fill=%22%23e5e7eb%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-family=%22Inter%22 font-size=%2224%22>AI Generation Preview</text></svg>';" />
+</picture>
+</div>
 
-            <div class="hero-floating-controls">
-              <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]" data-hero-action="realtime">Realtime</button>
-              <button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]" data-hero-action="canvas">Canvas</button>
-              <button class="btn btn-primary text-xs px-3 py-2 bg-gradient-to-r from-primary to-blue-400 text-white rounded-xl shadow-md hover:opacity-90 transition" data-hero-action="upscale">Upscale ×4</button>
-            </div>
-          </div>
+<div class="hero-floating-controls">
+<button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]" data-hero-action="realtime">Realtime</button>
+<button class="btn btn-ghost text-xs px-3 py-2 border border-primary bg-white/30 text-primary rounded-xl shadow-sm hover:bg-primary/10 transition dark:bg-black/40 dark:text-white dark:border-[var(--bord)]" data-hero-action="canvas">Canvas</button>
+<button class="btn btn-primary text-xs px-3 py-2 bg-gradient-to-r from-primary to-blue-400 text-white rounded-xl shadow-md hover:opacity-90 transition" data-hero-action="upscale">Upscale ×4</button>
+</div>
+</div>
 
-        <div class="floating-element-left">
-          <div class="card bg-transparent p-3 rotate-[-6deg]">
-            <img class="h-28 w-40 rounded-xl object-cover"
-                 src="{% static 'img/small-bg.png' %}"
-                 alt="Стиль"
-                 onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 240%22&gt;&lt;rect width=%22320%22 height=%22240%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';" />
-          </div>
-        </div>
+<div class="floating-element-left">
+<div class="card bg-transparent p-3 rotate-[-6deg]">
+<img class="h-28 w-40 rounded-xl object-cover"
+src="{% static 'img/small-bg.png' %}"
+alt="Стиль"
+onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 240%22&gt;&lt;rect width=%22320%22 height=%22240%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';" />
+</div>
+</div>
 
-        <div class="floating-element-right">
-          <div class="card p-4 bg-transparent rotate-[3deg]">
-            <div class="flex items-center gap-2 text-sm">
-              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span class="font-medium">26 сек</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="floating-element-right">
+<div class="card p-4 bg-transparent rotate-[3deg]">
+<div class="flex items-center gap-2 text-sm">
+<div class="w-2 h-2 bg-green-500 rounded-full"></div>
+<span class="font-medium">26 сек</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </section>
 {% endblock %}
 
 {% block content %}
 
 <section class="py-4 border-b border-[var(--bord)]">
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-      <div>
-        <div class="text-2xl sm:text-3xl font-bold text-primary mb-2">25–30 сек</div>
-        <div class="text-sm text-[var(--muted)]">среднее время генерации</div>
-      </div>
-      <div>
-        <div class="text-2xl sm:text-3xl font-bold text-primary mb-2">99.9%</div>
-        <div class="text-sm text-[var(--muted)]">время доступности</div>
-      </div>
-      <div>
-        <div class="text-2xl sm:text-3xl font-bold text-primary mb-2">SEO+</div>
-        <div class="text-sm text-[var(--muted)]">OG, JSON-LD, карта сайта</div>
-      </div>
-      <div>
-        <div class="text-2xl sm:text-3xl font-bold text-primary mb-2">SFW</div>
-        <div class="text-sm text-[var(--muted)]">безопасные фильтры</div>
-      </div>
-    </div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+<div>
+<div class="text-2xl sm:text-3xl font-bold text-primary mb-2">25–30 сек</div>
+<div class="text-sm text-[var(--muted)]">среднее время генерации</div>
+</div>
+<div>
+<div class="text-2xl sm:text-3xl font-bold text-primary mb-2">99.9%</div>
+<div class="text-sm text-[var(--muted)]">время доступности</div>
+</div>
+<div>
+<div class="text-2xl sm:text-3xl font-bold text-primary mb-2">SEO+</div>
+<div class="text-sm text-[var(--muted)]">OG, JSON-LD, карта сайта</div>
+</div>
+<div>
+<div class="text-2xl sm:text-3xl font-bold text-primary mb-2">SFW</div>
+<div class="text-sm text-[var(--muted)]">безопасные фильтры</div>
+</div>
+</div>
 </section>
 
 <section class="py-8 sm:py-12 lg:py-16 xl:py-20 rounded-xl sm:rounded-2xl">
-    <div class="text-center max-w-3xl mx-auto mb-8 sm:mb-12 lg:mb-16">
-      <div class="h2 text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Демонстрация генерации</div>
-      <p class="text-base sm:text-lg lg:text-xl text-[var(--muted)]">Реалистичное освещение, чистое кадрирование и сочные цвета — прямо из коробки.</p>
-    </div>
+<div class="text-center max-w-3xl mx-auto mb-8 sm:mb-12 lg:mb-16">
+<div class="h2 text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Демонстрация генерации</div>
+<p class="text-base sm:text-lg lg:text-xl text-[var(--muted)]">Реалистичное освещение, чистое кадрирование и сочные цвета — прямо из коробки.</p>
+</div>
 
-    <div class="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
-      <div class="order-2 lg:order-1">
-        <div class="card p-4 sm:p-6">
+<div class="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
+<div class="order-2 lg:order-1">
+<div class="card p-4 sm:p-6">
 
-          <div class="flex border-b border-[var(--bord)] mb-4 sm:mb-6 overflow-x-auto" role="tablist">
-            <button class="tab-btn active px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-primary text-primary whitespace-nowrap" data-tab="prompt" role="tab">
-              Промпт
-            </button>
-            <button class="tab-btn px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--text)] whitespace-nowrap" data-tab="settings" role="tab">
-              Параметры
-            </button>
-            <button class="tab-btn px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--text)] whitespace-nowrap" data-tab="result" role="tab">
-              Результат
-            </button>
-          </div>
-
-
-          <div class="tab-content">
-            <div class="tab-panel active" id="prompt" role="tabpanel">
-              <div class="relative">
-                <div class="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-black/80 text-white font-mono text-xs sm:text-sm">
-                  <pre class="whitespace-pre-wrap break-words" id="promptText"></pre>
-                </div>
-                <button class="copy-prompt-btn absolute top-2 right-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                        id="copyPromptBtn"
-                        aria-label="{% trans 'Копировать промпт' %}"
-                        title="{% trans 'Копировать промпт' %}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div class="tab-panel hidden" id="settings" role="tabpanel">
-              <div class="space-y-3">
-                <div class="flex justify-between">
-                  <span class="text-[var(--muted)]">{% trans "Шаги" %}</span>
-                  <span class="font-medium" id="settingsSteps">28</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-[var(--muted)]">CFG</span>
-                  <span class="font-medium" id="settingsCfg">6.5</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-[var(--muted)]">{% trans "Соотношение" %}</span>
-                  <span class="font-medium" id="settingsRatio">3:2</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-[var(--muted)]">Seed</span>
-                  <span class="font-medium" id="settingsSeed">auto</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="tab-panel hidden" id="result" role="tabpanel">
-              <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-                <img id="resultImage"
-                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
-                     alt="{% trans 'Миниатюра результата' %}"
-                     class="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl object-cover"
-                     onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22&gt;&lt;rect width=%2264%22 height=%2264%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';">
-                <div class="flex-1 w-full">
-                  <div class="font-semibold mb-1 text-sm sm:text-base">{% trans "Готово за" %} <span id="generationTime">26</span> {% trans "секунд" %}</div>
-                  <div class="text-xs sm:text-sm text-[var(--muted)] mb-3">{% trans "Сохранено в галерее и доступно в «Моих обработках»" %}</div>
-                  <div class="flex flex-col sm:flex-row gap-2">
-                    <a class="btn btn-primary text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'generate:photo' %}">{% trans "Попробовать" %}</a>
-                    <a class="btn btn-ghost text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'gallery:index' %}">{% trans "Смотреть похожие" %}</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+<div class="flex border-b border-[var(--bord)] mb-4 sm:mb-6 overflow-x-auto" role="tablist">
+<button class="tab-btn active px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-primary text-primary whitespace-nowrap" data-tab="prompt" role="tab">
+Промпт
+</button>
+<button class="tab-btn px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--text)] whitespace-nowrap" data-tab="settings" role="tab">
+Параметры
+</button>
+<button class="tab-btn px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--text)] whitespace-nowrap" data-tab="result" role="tab">
+Результат
+</button>
+</div>
 
 
-          <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-[var(--bord)]">
-            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <input class="field flex-1 text-sm"
-                     placeholder="Опишите изображение: стиль, свет, объектив, детали"
-                     id="quick-prompt">
-              <button class="btn btn-primary text-sm py-2 sm:py-auto w-full sm:w-auto" id="try-prompt">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-                Создать
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+<div class="tab-content">
+<div class="tab-panel active" id="prompt" role="tabpanel">
+<div class="relative">
+<div class="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-black/80 text-white font-mono text-xs sm:text-sm">
+<pre class="whitespace-pre-wrap break-words" id="promptText"></pre>
+</div>
+<button class="copy-prompt-btn absolute top-2 right-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+id="copyPromptBtn"
+aria-label="{% trans 'Копировать промпт' %}"
+title="{% trans 'Копировать промпт' %}">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+</svg>
+</button>
+</div>
+</div>
 
-      <div class="order-1 lg:order-2">
-        <div class="relative w-full max-w-sm mx-auto lg:max-w-none">
-          <!-- Media tabs for demo slider -->
-          <div class="flex gap-2 mb-3 border-b border-[var(--bord)]">
-            <button type="button"
-                    class="demo-tab active px-4 py-2 -mb-px border-b-2 border-primary text-primary text-xs sm:text-sm font-medium"
-                    data-demo-tab="images">
-              Фото
-            </button>
-            <button type="button"
-                    class="demo-tab px-4 py-2 -mb-px border-b-2 border-transparent text-xs sm:text-sm font-medium"
-                    data-demo-tab="videos">
-              Видео
-            </button>
-          </div>
+<div class="tab-panel hidden" id="settings" role="tabpanel">
+<div class="space-y-3">
+<div class="flex justify-between">
+<span class="text-[var(--muted)]">{% trans "Шаги" %}</span>
+<span class="font-medium" id="settingsSteps">28</span>
+</div>
+<div class="flex justify-between">
+<span class="text-[var(--muted)]">CFG</span>
+<span class="font-medium" id="settingsCfg">6.5</span>
+</div>
+<div class="flex justify-between">
+<span class="text-[var(--muted)]">{% trans "Соотношение" %}</span>
+<span class="font-medium" id="settingsRatio">3:2</span>
+</div>
+<div class="flex justify-between">
+<span class="text-[var(--muted)]">Seed</span>
+<span class="font-medium" id="settingsSeed">auto</span>
+</div>
+</div>
+</div>
 
-          <!-- Preload demo data (server → client) for instant render -->
-          <script>
-          window.sliderExamplesPreloaded = {{ image_slider_examples_json|default:"[]"|safe }};
-          window.videoSliderExamplesPreloaded = {{ video_slider_examples_json|default:"[]"|safe }};
-          // Установить стартовый промпт мгновенно из preloaded данных (по умолчанию активна вкладка «Фото»)
-          (function(){
-            try{
-              var promptEl = document.getElementById('promptText');
-              var activeTab = 'images';
-              var imagesTab = document.querySelector('.demo-tab.active[data-demo-tab="images"]');
-              if (!imagesTab) {
-                var saved = localStorage.getItem('home_demo_tab');
-                activeTab = saved || 'images';
-              }
-              if (promptEl){
-                if (activeTab === 'images' && Array.isArray(window.sliderExamplesPreloaded) && window.sliderExamplesPreloaded.length){
-                  promptEl.textContent = window.sliderExamplesPreloaded[0].prompt || '';
-                } else if (Array.isArray(window.videoSliderExamplesPreloaded) && window.videoSliderExamplesPreloaded.length){
-                  promptEl.textContent = window.videoSliderExamplesPreloaded[0].prompt || '';
-                } else {
-                  promptEl.textContent = '';
-                }
-              }
-            }catch(_){}
-          })();
-          </script>
+<div class="tab-panel hidden" id="result" role="tabpanel">
+<div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+<img id="resultImage"
+src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+alt="{% trans 'Миниатюра результата' %}"
+class="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl object-cover"
+onerror="this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22&gt;&lt;rect width=%2264%22 height=%2264%22 fill=%22%23e5e7eb%22/&gt;&lt;/svg&gt;';">
+<div class="flex-1 w-full">
+<div class="font-semibold mb-1 text-sm sm:text-base">{% trans "Готово за" %} <span id="generationTime">26</span> {% trans "секунд" %}</div>
+<div class="text-xs sm:text-sm text-[var(--muted)] mb-3">{% trans "Сохранено в галерее и доступно в «Моих обработках»" %}</div>
+<div class="flex flex-col sm:flex-row gap-2">
+<a class="btn btn-primary text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'generate:photo' %}">{% trans "Попробовать" %}</a>
+<a class="btn btn-ghost text-xs sm:text-sm py-1.5 w-full sm:w-auto text-center" href="{% url 'gallery:index' %}">{% trans "Смотреть похожие" %}</a>
+</div>
+</div>
+</div>
+</div>
+</div>
 
-          <!-- Image slider -->
-          <div id="demo-images" class="demo-content hidden">
-            {% include "includes/generation_slider.html" %}
-          </div>
 
-          <!-- Video slider -->
-          <div id="demo-videos" class="demo-content">
-            {% include "includes/generation_video_slider.html" %}
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-[var(--bord)]">
+<div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+<input class="field flex-1 text-sm"
+placeholder="Опишите изображение: стиль, свет, объектив, детали"
+id="quick-prompt">
+<button class="btn btn-primary text-sm py-2 sm:py-auto w-full sm:w-auto" id="try-prompt">
+<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+</svg>
+Создать
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="order-1 lg:order-2">
+<div class="relative w-full max-w-sm mx-auto lg:max-w-none">
+<!-- Media tabs for demo slider -->
+<div class="flex gap-2 mb-3 border-b border-[var(--bord)]">
+<button type="button"
+class="demo-tab active px-4 py-2 -mb-px border-b-2 border-primary text-primary text-xs sm:text-sm font-medium"
+data-demo-tab="images">
+Фото
+</button>
+<button type="button"
+class="demo-tab px-4 py-2 -mb-px border-b-2 border-transparent text-xs sm:text-sm font-medium"
+data-demo-tab="videos">
+Видео
+</button>
+</div>
+<script>
+window.sliderExamplesPreloaded = {{ image_slider_examples_json|default:"[]"|safe }};
+window.videoSliderExamplesPreloaded = {{ video_slider_examples_json|default:"[]"|safe }};
+(function(){
+try{
+var promptEl = document.getElementById('promptText');
+var activeTab = 'images';
+var imagesTab = document.querySelector('.demo-tab.active[data-demo-tab="images"]');
+if (!imagesTab) {
+var saved = localStorage.getItem('home_demo_tab');
+activeTab = saved || 'images';
+}
+if (promptEl){
+if (activeTab === 'images' && Array.isArray(window.sliderExamplesPreloaded) && window.sliderExamplesPreloaded.length){
+promptEl.textContent = window.sliderExamplesPreloaded[0].prompt || '';
+} else if (Array.isArray(window.videoSliderExamplesPreloaded) && window.videoSliderExamplesPreloaded.length){
+promptEl.textContent = window.videoSliderExamplesPreloaded[0].prompt || '';
+} else {
+promptEl.textContent = '';
+}
+}
+}catch(_){}
+})();
+</script>
+<div id="demo-images" class="demo-content hidden">
+{% include "includes/generation_slider.html" %}
+</div>
+<div id="demo-videos" class="demo-content">
+{% include "includes/generation_video_slider.html" %}
+</div>
+</div>
+</div>
+</div>
 </section>
 
 <section class="features-section">
-    <div class="features-header">
-      <div class="h2 text-3xl sm:text-4xl font-bold mb-4">Почему именно мы</div>
-      <p class="text-xl text-[var(--muted)]">Скорость, стабильность, продуманный UX и SEO-готовность по умолчанию.</p>
-    </div>
+<div class="features-header">
+<div class="h2 text-3xl sm:text-4xl font-bold mb-4">Почему именно мы</div>
+<p class="text-xl text-[var(--muted)]">Скорость, стабильность, продуманный UX и SEO-готовность по умолчанию.</p>
+</div>
 
-    <div class="features-grid">
-      <div class="feature-card card group">
-        <div class="feature-icon primary">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-        </div>
-        <h3 class="feature-title">Скорость</h3>
-        <p class="feature-description">Асинхронная очередь, кэширование статики и оптимизированные шаблоны дают предсказуемое время отклика.</p>
-        <div class="feature-badge" style="background: rgba(1, 209, 251, 0.1); color: rgb(1, 209, 251);">
-          профилирование 26–30с
-        </div>
-      </div>
+<div class="features-grid">
+<div class="feature-card card group">
+<div class="feature-icon primary">
+<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+</svg>
+</div>
+<div class="h3 feature-title">Скорость</div>
+<p class="feature-description">Асинхронная очередь, кэширование статики и оптимизированные шаблоны дают предсказуемое время отклика.</p>
+<div class="feature-badge" style="background: rgba(1, 209, 251, 0.1); color: rgb(1, 209, 251);">
+профилирование 26–30с
+</div>
+</div>
 
-      <div class="feature-card card group">
-        <div class="feature-icon purple">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"/>
-          </svg>
-        </div>
-        <h3 class="feature-title">Чистый дизайн</h3>
-        <p class="feature-description">Современная база с акцентными цветами, мягкие тени и адаптив от 320 px до 4K.</p>
-        <div class="feature-badge" style="background: rgba(168, 85, 247, 0.1); color: rgb(147, 51, 234);">
-          пиксель-перфект
-        </div>
-      </div>
+<div class="feature-card card group">
+<div class="feature-icon purple">
+<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"/>
+</svg>
+</div>
+<div class="h3 feature-title">Чистый дизайн</div>
+<p class="feature-description">Современная база с акцентными цветами, мягкие тени и адаптив от 320 px до 4K.</p>
+<div class="feature-badge" style="background: rgba(168, 85, 247, 0.1); color: rgb(147, 51, 234);">
+пиксель-перфект
+</div>
+</div>
 
-      <div class="feature-card card group">
-        <div class="feature-icon green">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9-9c0 5.523-4.477 10-10 10s-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10z"/>
-          </svg>
-        </div>
-        <h3 class="feature-title">SEO-подготовка</h3>
-        <p class="feature-description">OG/Twitter метки, JSON-LD схемы, каноникал, валидная семантика и высокая скорость загрузки.</p>
-        <div class="feature-badge" style="background: rgba(34, 197, 94, 0.1); color: rgb(22, 163, 74);">
-          валидаторы ✓
-        </div>
-      </div>
+<div class="feature-card card group">
+<div class="feature-icon green">
+<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9-9c0 5.523-4.477 10-10 10s-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10z"/>
+</svg>
+</div>
+<div class="h3 feature-title">SEO-подготовка</div>
+<p class="feature-description">OG/Twitter метки, JSON-LD схемы, каноникал, валидная семантика и высокая скорость загрузки.</p>
+<div class="feature-badge" style="background: rgba(34, 197, 94, 0.1); color: rgb(22, 163, 74);">
+валидаторы ✓
+</div>
+</div>
 
-      <div class="feature-card card group">
-        <div class="feature-icon amber">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
-        </div>
-        <h3 class="feature-title">Безопасность</h3>
-        <p class="feature-description">SFW-фильтры, жалобы, приватность публикаций и бережное хранение медиа.</p>
-        <div class="feature-badge" style="background: rgba(245, 158, 11, 0.1); color: rgb(217, 119, 6);">
-          модерация
-        </div>
-      </div>
-    </div>
+<div class="feature-card card group">
+<div class="feature-icon amber">
+<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+</svg>
+</div>
+<div class="h3 feature-title">Безопасность</div>
+<p class="feature-description">SFW-фильтры, жалобы, приватность публикаций и бережное хранение медиа.</p>
+<div class="feature-badge" style="background: rgba(245, 158, 11, 0.1); color: rgb(217, 119, 6);">
+модерация
+</div>
+</div>
+</div>
 </section>
 
 <section class="how-it-works-section">
-    <div class="features-header">
-      <div class="h2 text-3xl sm:text-4xl font-bold mb-4">Как это работает</div>
-      <p class="text-xl text-[var(--muted)]">Три шага — но мы покажем их как единый поток.</p>
-    </div>
+<div class="features-header">
+<div class="h2 text-3xl sm:text-4xl font-bold mb-4">Как это работает</div>
+<p class="text-xl text-[var(--muted)]">Три шага — но мы покажем их как единый поток.</p>
+</div>
 
-    <div class="how-it-works-grid">
-      <div class="step-card card">
-        <div class="step-number">1</div>
-        <h3 class="step-title">Опишите кадр</h3>
-        <p class="text-[var(--muted)]">Сцена, свет, оптика, настроение и ключевые детали — чем конкретнее, тем лучше.</p>
-      </div>
+<div class="how-it-works-grid">
+<div class="step-card card">
+<div class="step-number">1</div>
+<div class="h3 step-title">Опишите кадр</div>
+<p class="text-[var(--muted)]">Сцена, свет, оптика, настроение и ключевые детали — чем конкретнее, тем лучше.</p>
+</div>
 
-      <div class="step-card card">
-        <div class="step-number">2</div>
-        <h3 class="step-title">Мы обработаем</h3>
-        <p class="text-[var(--muted)]">Задача попадёт в очередь. Оптимизированные модели обеспечат стабильный результат.</p>
-      </div>
+<div class="step-card card">
+<div class="step-number">2</div>
+<div class="h3 step-title">Мы обработаем</div>
+<p class="text-[var(--muted)]">Задача попадёт в очередь. Оптимизированные модели обеспечат стабильный результат.</p>
+</div>
 
-      <div class="step-card card">
-        <div class="step-number">3</div>
-        <h3 class="step-title">Получите результат</h3>
-        <p class="text-[var(--muted)]">Изображение появится в вашей ленте и в «Моих обработках». Можно делиться и улучшать.</p>
-      </div>
-    </div>
+<div class="step-card card">
+<div class="step-number">3</div>
+<div class="h3 step-title">Получите результат</div>
+<p class="text-[var(--muted)]">Изображение появится в вашей ленте и в «Моих обработках». Можно делиться и улучшать.</p>
+</div>
+</div>
 </section>
 
 <section class="use-cases-section">
-    <div class="features-header">
-      <div class="h2 text-3xl sm:text-4xl font-bold mb-4">Готовые сценарии</div>
-      <p class="text-xl text-[var(--muted)]">Подходит и для креативных задач, и для продуктовых команд.</p>
-    </div>
+<div class="features-header">
+<div class="h2 text-3xl sm:text-4xl font-bold mb-4">Готовые сценарии</div>
+<p class="text-xl text-[var(--muted)]">Подходит и для креативных задач, и для продуктовых команд.</p>
+</div>
 
-    <div class="use-cases-grid">
-      <div class="use-case-card card">
-        <h3 class="use-case-title">Обложки и афиши</h3>
-        <p class="use-case-description">Быстрые обложки для подкастов и статей, подборка цветов и шрифтов.</p>
-      </div>
+<div class="use-cases-grid">
+<div class="use-case-card card">
+<div class="h3 use-case-title">Обложки и афиши</div>
+<p class="use-case-description">Быстрые обложки для подкастов и статей, подборка цветов и шрифтов.</p>
+</div>
 
-      <div class="use-case-card card">
-        <h3 class="use-case-title">Маркетинговые макеты</h3>
-        <p class="use-case-description">Баннеры, hero-картинки, иллюстрации к лендингам с единым стилем.</p>
-      </div>
+<div class="use-case-card card">
+<div class="h3 use-case-title">Маркетинговые макеты</div>
+<p class="use-case-description">Баннеры, hero-картинки, иллюстрации к лендингам с единым стилем.</p>
+</div>
 
-      <div class="use-case-card card">
-        <h3 class="use-case-title">Концепт-арт</h3>
-        <p class="use-case-description">Мир, персонажи и объекты для питчей и прототипов.</p>
-      </div>
+<div class="use-case-card card">
+<div class="h3 use-case-title">Концепт-арт</div>
+<p class="use-case-description">Мир, персонажи и объекты для питчей и прототипов.</p>
+</div>
 
-      <div class="use-case-card card">
-        <h3 class="use-case-title">Referencer</h3>
-        <p class="use-case-description">Быстрые референсы света, поз и окружения для фото- и видеосъёмок.</p>
-      </div>
+<div class="use-case-card card">
+<div class="h3 use-case-title">Referencer</div>
+<p class="use-case-description">Быстрые референсы света, поз и окружения для фото- и видеосъёмок.</p>
+</div>
 
-      <div class="use-case-card card">
-        <h3 class="use-case-title">E-commerce</h3>
-        <p class="use-case-description">Фоны, композиции и подсветка товаров в едином направлении.</p>
-      </div>
+<div class="use-case-card card">
+<div class="h3 use-case-title">E-commerce</div>
+<p class="use-case-description">Фоны, композиции и подсветка товаров в едином направлении.</p>
+</div>
 
-      <div class="use-case-card card">
-        <h3 class="use-case-title">Соцсети</h3>
-        <p class="use-case-description">Серии постов в единой палитре и сетке с высокой читаемостью.</p>
-      </div>
-    </div>
+<div class="use-case-card card">
+<div class="h3 use-case-title">Соцсети</div>
+<p class="use-case-description">Серии постов в единой палитре и сетке с высокой читаемостью.</p>
+</div>
+</div>
 </section>
 
 <section class="comparison-section">
-    <div class="features-header">
-      <div class="h2 text-3xl sm:text-4xl font-bold mb-4">Что отличает нас</div>
-      <p class="text-xl text-[var(--muted)]">Функции, которые реально экономят время.</p>
-    </div>
+<div class="features-header">
+<div class="h2 text-3xl sm:text-4xl font-bold mb-4">Что отличает нас</div>
+<p class="text-xl text-[var(--muted)]">Функции, которые реально экономят время.</p>
+</div>
 
-    <div class="comparison-table card">
-      <div class="overflow-x-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Возможность</th>
-              <th class="text-primary">Pixera</th>
-              <th>Обычные сервисы</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Генерация и галерея в одном интерфейсе</td>
-              <td>
-                <svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-              </td>
-              <td class="text-[var(--muted)]">Не всегда</td>
-            </tr>
-            <tr>
-              <td>SEO-разметка и каноникал</td>
-              <td>
-                <svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-              </td>
-              <td class="text-[var(--muted)]">Редко</td>
-            </tr>
-            <tr>
-              <td>Умные фильтры и тренды</td>
-              <td>
-                <svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-              </td>
-              <td class="text-[var(--muted)]">Ограниченно</td>
-            </tr>
-            <tr>
-              <td>Тёмная/светлая темы</td>
-              <td>
-                <svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-              </td>
-              <td class="text-[var(--muted)]">Иногда</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+<div class="comparison-table card">
+<div class="overflow-x-auto">
+<table>
+<thead>
+<tr>
+<th>Возможность</th>
+<th class="text-primary">Pixera</th>
+<th>Обычные сервисы</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Генерация и галерея в одном интерфейсе</td>
+<td>
+<svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+</svg>
+</td>
+<td class="text-[var(--muted)]">Не всегда</td>
+</tr>
+<tr>
+<td>SEO-разметка и каноникал</td>
+<td>
+<svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+</svg>
+</td>
+<td class="text-[var(--muted)]">Редко</td>
+</tr>
+<tr>
+<td>Умные фильтры и тренды</td>
+<td>
+<svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+</svg>
+</td>
+<td class="text-[var(--muted)]">Ограниченно</td>
+</tr>
+<tr>
+<td>Тёмная/светлая темы</td>
+<td>
+<svg class="w-5 h-5 text-green-500 mx-auto" viewBox="0 0 24 24" fill="currentColor">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+</svg>
+</td>
+<td class="text-[var(--muted)]">Иногда</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </section>
 
 <section class="">
-  {% include "includes/trending_gallery.html" %}
+{% include "includes/trending_gallery.html" %}
 </section>
 
 <section class="py-16 sm:py-20">
-  {% blog_home_section 4 %}
-  {% if request.user.is_authenticated and request.user.is_staff %}
-    <div class="mt-8 text-center">
-      <a class="btn btn-ghost" href="{% url 'blog:create' %}">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-        </svg>
-        Написать статью
-      </a>
-    </div>
-  {% endif %}
+{% blog_home_section 4 %}
+{% if request.user.is_authenticated and request.user.is_staff %}
+<div class="mt-8 text-center">
+<a class="btn btn-ghost" href="{% url 'blog:create' %}">
+<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+</svg>
+Написать статью
+</a>
+</div>
+{% endif %}
 </section>
 
 <section class="faq-section">
-  <div class="">
-    <div class="features-header">
-      <div class="h2 text-3xl sm:text-4xl font-bold mb-4">Частые вопросы</div>
-      <p class="text-xl text-[var(--muted)]">Короткие ответы о генерации, темах и ограничениях.</p>
-    </div>
+<div class="">
+<div class="features-header">
+<div class="h2 text-3xl sm:text-4xl font-bold mb-4">Частые вопросы</div>
+<p class="text-xl text-[var(--muted)]">Короткие ответы о генерации, темах и ограничениях.</p>
+</div>
 
-    <div class="faq-container">
-      <div class="faq-list">
-        <details class="faq-item card" open>
-          <summary class="faq-summary">
-            <span>Сколько занимает генерация?</span>
-            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-content">В среднем 25–30 секунд при стандартной нагрузке. Задачи обрабатываются асинхронно.</div>
-        </details>
+<div class="faq-container">
+<div class="faq-list">
+<details class="faq-item card" open>
+<summary class="faq-summary">
+<span>Сколько занимает генерация?</span>
+<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+</svg>
+</summary>
+<div class="faq-content">В среднем 25–30 секунд при стандартной нагрузке. Задачи обрабатываются асинхронно.</div>
+</details>
 
-        <details class="faq-item card">
-          <summary class="faq-summary">
-            <span>Поддерживаются тёмная и светлая темы?</span>
-            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-content">Да, темы можно переключать в хедере. Выбор сохраняется на устройстве.</div>
-        </details>
+<details class="faq-item card">
+<summary class="faq-summary">
+<span>Поддерживаются тёмная и светлая темы?</span>
+<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+</svg>
+</summary>
+<div class="faq-content">Да, темы можно переключать в хедере. Выбор сохраняется на устройстве.</div>
+</details>
 
-        <details class="faq-item card">
-          <summary class="faq-summary">
-            <span>Есть ли ограничения по контенту?</span>
-            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-content">Мы используем SFW-фильтры и модерируем публичную ленту.</div>
-        </details>
+<details class="faq-item card">
+<summary class="faq-summary">
+<span>Есть ли ограничения по контенту?</span>
+<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+</svg>
+</summary>
+<div class="faq-content">Мы используем SFW-фильтры и модерируем публичную ленту.</div>
+</details>
 
-        <details class="faq-item card">
-          <summary class="faq-summary">
-            <span>Можно ли улучшать готовую картинку?</span>
-            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-content">Да, доступен повторный прогон с изменённым промптом и параметрами.</div>
-        </details>
-      </div>
-    </div>
-  </div>
+<details class="faq-item card">
+<summary class="faq-summary">
+<span>Можно ли улучшать готовую картинку?</span>
+<svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+</svg>
+</summary>
+<div class="faq-content">Да, доступен повторный прогон с изменённым промптом и параметрами.</div>
+</details>
+</div>
+</div>
+</div>
 </section>
 
 <section class="cta-section">
-    <div class="cta-card card">
-      <div class="h2 cta-title">Готовы начать?</div>
-      <p class="cta-description">
-        Создавайте, делитесь и находите лучшее — в пару кликов.
-        Присоединяйтесь к тысячам творцов уже сегодня.
-      </p>
+<div class="cta-card card">
+<div class="h2 cta-title">Готовы начать?</div>
+<p class="cta-description">
+Создавайте, делитесь и находите лучшее — в пару кликов.
+Присоединяйтесь к тысячам творцов уже сегодня.
+</p>
 
-      <div class="cta-buttons">
-        <a class="btn btn-primary text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-10 py-2 sm:py-3 lg:py-5" href="{% url 'generate:photo' %}">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-          Создать изображение
-        </a>
-        <a class="btn btn-ghost text-base sm:text-lg px-4 sm:px-8 py-2 sm:py-4" href="{% url 'gallery:index' %}">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-          </svg>
-          Открыть галерею
-        </a>
-      </div>
-    </div>
+<div class="cta-buttons">
+<a class="btn btn-primary text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-10 py-2 sm:py-3 lg:py-5" href="{% url 'generate:photo' %}">
+<svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+</svg>
+Создать изображение
+</a>
+<a class="btn btn-ghost text-base sm:text-lg px-4 sm:px-8 py-2 sm:py-4" href="{% url 'gallery:index' %}">
+<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+</svg>
+Открыть галерею
+</a>
+</div>
+</div>
 </section>
 
-<!-- SEO текстовый блок -->
 <section class="py-12 px-4 bg-[var(--bg-secondary)]">
-  <div class="max-w-5xl mx-auto">
-    <div class="card p-6">
-      <div id="seo-text-container" class="relative overflow-hidden" style="max-height: 200px;">
-        <div class="prose prose-sm sm:prose max-w-none text-[var(--text)]">
-          <p class="mb-4">
-            Pixera — это современная платформа для создания изображений и видео с помощью искусственного интеллекта.
-            Наш сервис предоставляет профессиональные инструменты для генерации контента, которые помогут воплотить
-            ваши творческие идеи в жизнь. Независимо от того, являетесь ли вы профессиональным дизайнером,
-            контент-мейкером или просто энтузиастом, Pixera предлагает интуитивно понятный интерфейс и мощные
-            возможности для создания уникального визуального контента.
-          </p>
-          <p class="mb-4">
-            С Pixera вы получаете доступ к передовым AI-моделям, которые способны генерировать изображения высокого
-            качества по текстовому описанию. Наша платформа поддерживает различные стили, от реалистичных фотографий
-            до художественных иллюстраций. Вы можете создавать контент для социальных сетей, рекламных кампаний,
-            персональных проектов и многого другого.
-          </p>
-          <p class="mb-4">
-            Одним из главных преимуществ Pixera является возможность создания видеоконтента с помощью ИИ.
-            Генерация видео открывает новые горизонты для творчества, позволяя создавать динамические визуальные
-            истории, анимации и презентации без необходимости в сложном видеооборудовании или профессиональных
-            навыках монтажа.
-          </p>
-          <p class="mb-4">
-            Наша галерея регулярно пополняется работами пользователей со всего мира. Здесь вы можете находить
-            вдохновение, делиться своими творениями с сообществом и получать обратную связь. Pixera создает
-            пространство для творческого обмена и развития навыков работы с AI-инструментами.
-          </p>
-        </div>
-        <div id="seo-text-gradient" class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[var(--card)] to-transparent pointer-events-none"></div>
-      </div>
-      <div class="text-center mt-4">
-        <button id="seo-text-toggle" class="btn btn-ghost text-sm" onclick="toggleSeoText()">
-          <span id="toggle-text">Развернуть</span>
-          <svg id="toggle-icon" class="w-4 h-4 ml-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
+<div class="max-w-5xl mx-auto">
+<div class="card p-6">
+<div id="seo-text-container" class="relative overflow-hidden" style="max-height: 200px;">
+<div class="prose prose-sm sm:prose max-w-none text-[var(--text)]">
+<h2 class="mb-4">Создавайте изображения и видео с помощью Pixera – быстро, просто, креативно</h2>
+<p class="mb-4">Pixera – современная платформа для генерации изображений и видео с помощью искусственного интеллекта. Наш сервис сочетает инновационные AI-технологии и интуитивно понятный интерфейс, позволяя создавать визуальный контент быстро, удобно и без специальных навыков.</p>
+<p class="mb-4">С Pixera генерация изображений и видео в любых стилях становится простой и доступной. От реалистичных фотографий и художественных иллюстраций до яркого концепт-арта и динамичных видеороликов – достаточно описать идею, и наша нейросеть для генерации изображений превратит её в уникальный визуальный результат за считанные секунды.</p>
+<h2 class="mb-4">Генерация изображений в Pixera – это:</h2>
+<ul class="mb-4">
+<li>Реалистичное освещение и сочные цвета прямо «из коробки»;</li>
+<li>Чистое кадрирование и продуманная композиция;</li>
+<li>Поддержка любых стилей: от гиперреализма до аниме и цифровой живописи;</li>
+<li>Возможность доработки – улучшайте результат повторным прогоном с изменённым промптом.</li>
+</ul>
+<p class="mb-4">Среднее время ожидания – всего 25–30 секунд. Никаких очередей и долгих загрузок – асинхронная обработка и мощное кэширование гарантируют стабильный результат даже при высокой нагрузке. Для новых пользователей доступна генерация изображений бесплатно, чтобы вы могли попробовать сервис и создать первые работы. Далее доступны различные тарифы для тех, кто создаёт контент ежедневно.</p>
+<h2 class="mb-4">Генерация видео с помощью ИИ – новый уровень творчества</h2>
+<p class="mb-4">Pixera позволяет не только создавать статичные изображения, но и оживлять их! Генерация видео нейросетью даёт возможность:</p>
+<ul class="mb-4">
+<li>Превращать текстовые описания в короткие динамичные ролики;</li>
+<li>Анимировать созданные изображения;</li>
+<li>Получать плавные переходы, естественное движение и кинематографичное качество.</li>
+</ul>
+<p class="mb-4">Идеально для соцсетей, презентаций, рекламы, сторис и концепт-видео.</p>
+<h3 class="mb-4">Почему тысячи авторов выбирают Pixera для генерации изображений и видео:</h3>
+<ul class="mb-4">
+<li><strong>Скорость</strong> – 25–30 секунд на генерацию, 99.9% uptime;</li>
+<li><strong>Качество</strong> – оптимизированные модели, реалистичное освещение, чистый результат;</li>
+<li><strong>SEO+</strong> – каждая работа сразу с OG-метками, JSON-LD, каноническими ссылками и картой сайта;</li>
+<li><strong>Безопасность</strong> – строгие SFW-фильтры, модерация публичной ленты, приватные публикации;</li>
+<li><strong>Удобство</strong> – всё в одном месте: генератор + личная галерея + сообщество;</li>
+<li><strong>Темы</strong> – комфортная работа в тёмной и светлой версии;</li>
+<li><strong>Адаптивность</strong> – идеально смотрится от 320 px до Full HD.</li>
+</ul>
+<h3 class="mb-4">Для кого Pixera – идеальный инструмент:</h3>
+<ul class="mb-4">
+<li>SMM-специалисты и блогеры;</li>
+<li>Дизайнеры и маркетологи;</li>
+<li>Контент-команды и e-commerce;</li>
+<li>Иллюстраторы и концепт-художники;</li>
+<li>Все, кто хочет быстро получать красивые визуалы без специальных навыков и сложных программ.</li>
+</ul>
+<p>Готовы творить? С Pixera генерация изображений и видео становится максимально лёгкой и доступной. Присоединяйтесь к сообществу прямо сейчас – создавайте, вдохновляйтесь, делитесь и получайте обратную связь от других авторов. Начните создавать шедевры уже сегодня!</p>
+</div>
+<div id="seo-text-gradient" class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[var(--card)] to-transparent pointer-events-none"></div>
+</div>
+<div class="text-center mt-4">
+<button id="seo-text-toggle" class="btn btn-ghost text-sm" onclick="toggleSeoText()">
+<span id="toggle-text">Развернуть</span>
+<svg id="toggle-icon" class="w-4 h-4 ml-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+</svg>
+</button>
+</div>
+</div>
+</div>
 </section>
 {% endblock %}
 
@@ -631,52 +635,48 @@
 <script src="{% static 'js/home.js' %}"></script>
 <script src="{% static 'js/hero-interactions.js' %}"></script>
 <script>
-// Demo slider tabs (Фото/Видео) — keep state and ensure accessibility
 (function(){
-  const tabs = document.querySelectorAll('.demo-tab');
-  const images = document.getElementById('demo-images');
-  const videos = document.getElementById('demo-videos');
-  if (!tabs.length || !images || !videos) return;
+const tabs = document.querySelectorAll('.demo-tab');
+const images = document.getElementById('demo-images');
+const videos = document.getElementById('demo-videos');
+if (!tabs.length || !images || !videos) return;
 
-  function setActive(which){
-    tabs.forEach(t => {
-      const isActive = t.dataset.demoTab === which;
-      t.classList.toggle('active', isActive);
-      t.style.color = isActive ? 'var(--primary)' : 'var(--muted)';
-      t.style.borderBottomColor = isActive ? 'var(--primary)' : 'transparent';
-      t.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    });
-    images.classList.toggle('hidden', which !== 'images');
-    videos.classList.toggle('hidden', which !== 'videos');
-    try { localStorage.setItem('home_demo_tab', which); } catch(_) {}
-    // Notify inner sliders to (re)initialize their first slide immediately
-    try { document.dispatchEvent(new CustomEvent('demoMediaTabChanged', { detail: { tab: which } })); } catch(_) {}
-  }
+function setActive(which){
+tabs.forEach(t => {
+const isActive = t.dataset.demoTab === which;
+t.classList.toggle('active', isActive);
+t.style.color = isActive ? 'var(--primary)' : 'var(--muted)';
+t.style.borderBottomColor = isActive ? 'var(--primary)' : 'transparent';
+t.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+});
+images.classList.toggle('hidden', which !== 'images');
+videos.classList.toggle('hidden', which !== 'videos');
+try { localStorage.setItem('home_demo_tab', which); } catch(_) {}
+try { document.dispatchEvent(new CustomEvent('demoMediaTabChanged', { detail: { tab: which } })); } catch(_) {}
+}
 
-  tabs.forEach(t => t.addEventListener('click', () => setActive(t.dataset.demoTab)));
-  // restore: всегда по умолчанию показываем «Фото»
-  try { localStorage.setItem('home_demo_tab', 'images'); } catch(_) {}
-  setActive('images');
+tabs.forEach(t => t.addEventListener('click', () => setActive(t.dataset.demoTab)));
+try { localStorage.setItem('home_demo_tab', 'images'); } catch(_) {}
+setActive('images');
 })();
 
-// SEO text toggle
 function toggleSeoText() {
-  const container = document.getElementById('seo-text-container');
-  const gradient = document.getElementById('seo-text-gradient');
-  const toggleText = document.getElementById('toggle-text');
-  const toggleIcon = document.getElementById('toggle-icon');
+const container = document.getElementById('seo-text-container');
+const gradient = document.getElementById('seo-text-gradient');
+const toggleText = document.getElementById('toggle-text');
+const toggleIcon = document.getElementById('toggle-icon');
 
-  if (container.style.maxHeight === '200px') {
-    container.style.maxHeight = 'none';
-    gradient.style.display = 'none';
-    toggleText.textContent = 'Свернуть';
-    toggleIcon.style.transform = 'rotate(180deg)';
-  } else {
-    container.style.maxHeight = '200px';
-    gradient.style.display = 'block';
-    toggleText.textContent = 'Развернуть';
-    toggleIcon.style.transform = 'rotate(0deg)';
-  }
+if (container.style.maxHeight === '200px') {
+container.style.maxHeight = 'none';
+gradient.style.display = 'none';
+toggleText.textContent = 'Свернуть';
+toggleIcon.style.transform = 'rotate(180deg)';
+} else {
+container.style.maxHeight = '200px';
+gradient.style.display = 'block';
+toggleText.textContent = 'Развернуть';
+toggleIcon.style.transform = 'rotate(0deg)';
+}
 }
 </script>
 {% endblock %}
