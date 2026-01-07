@@ -1360,3 +1360,24 @@ def api_completed_jobs(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"success": True, "jobs": results})
     except Exception as e:
         return JsonResponse({"success": False, "error": "internal"}, status=500)
+
+
+@require_GET
+def api_get_metadata(request: HttpRequest, page_type: str) -> JsonResponse:
+    """API endpoint для получения метаданных страницы (title, description, canonical)."""
+    if page_type == 'photo':
+        return JsonResponse({
+            "success": True,
+            "title": "Генерация изображений с ИИ — Pixera",
+            "description": "Создавайте уникальные изображения с помощью искусственного интеллекта. Быстрая генерация, множество моделей и стилей.",
+            "canonical": f"{request.scheme}://{request.get_host()}/generate/photo"
+        })
+    elif page_type == 'video':
+        return JsonResponse({
+            "success": True,
+            "title": "Генерация видео с ИИ — Pixera",
+            "description": "Создавайте уникальные видео с помощью искусственного интеллекта. Преобразуйте изображения в видео, генерируйте из текста.",
+            "canonical": f"{request.scheme}://{request.get_host()}/generate/video"
+        })
+    else:
+        return JsonResponse({"success": False, "error": "Invalid page type"}, status=400)

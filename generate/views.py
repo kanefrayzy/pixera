@@ -511,28 +511,10 @@ def _merge_grant_to_wallet_once(request: HttpRequest, wallet: Wallet) -> None:
 
 
 # =======================
-#        views
+#  Генерация контекста
 # =======================
-@require_http_methods(["GET"])
-def new_photo(request: HttpRequest) -> HttpResponse:
-    """Страница генерации изображений (photo mode)."""
-    response = new(request)
-    # Добавляем параметр type=image для автоматического переключения
-    if hasattr(response, 'context_data'):
-        response.context_data['initial_mode'] = 'image'
-    return response
-
-
-def new_video(request: HttpRequest) -> HttpResponse:
-    """Страница генерации видео (video mode)."""
-    response = new(request)
-    # Добавляем параметр type=video для автоматического переключения
-    if hasattr(response, 'context_data'):
-        response.context_data['initial_mode'] = 'video'
-    return response
-
-
-def new(request: HttpRequest) -> HttpResponse:
+def _get_generation_context(request: HttpRequest) -> dict:
+    """Общая логика для формирования контекста страницы генерации."""
     is_staff = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
     price = 0 if (FREE_FOR_STAFF and is_staff) else TOKEN_COST
 
@@ -688,12 +670,49 @@ def new(request: HttpRequest) -> HttpResponse:
         "user_key": user_key,
         "image_models": image_models,
         "video_models": video_models,
+        "set_cookie_gid": set_cookie_gid,
     }
+    return ctx
 
+
+# =======================
+#        views
+# =======================
+@require_http_methods(["GET"])
+def new_photo(request: HttpRequest) -> HttpResponse:
+    """Страница генерации изображений (photo mode)."""
+    ctx = _get_generation_context(request)
+    ctx['initial_mode'] = 'image'
+    ctx['page_title'] = 'Генерация изображений с ИИ — Pixera'
+    ctx['page_description'] = 'Создавайте уникальные изображения с помощью искусственного интеллекта. Быстрая генерация, множество моделей и стилей.'
+    ctx['canonical_url'] = f"{request.scheme}://{request.get_host()}/generate/photo"
+    
     resp = render(request, "generate/new.html", ctx)
-    if set_cookie_gid:
-        # ставим gid только если грант найден/создан — без фанатизма
-        resp.set_cookie("gid", set_cookie_gid, max_age=60 * 60 * 24 * 730, httponly=False, samesite="Lax")
+    if ctx.get('set_cookie_gid'):
+        resp.set_cookie("gid", ctx['set_cookie_gid'], max_age=60 * 60 * 24 * 730, httponly=False, samesite="Lax")
+    return resp
+
+
+def new_video(request: HttpRequest) -> HttpResponse:
+    """Страница генерации видео (video mode)."""
+    ctx = _get_generation_context(request)
+    ctx['initial_mode'] = 'video'
+    ctx['page_title'] = 'Генерация видео с ИИ — Pixera'
+    ctx['page_description'] = 'Создавайте уникальные видео с помощью искусственного интеллекта. Преобразуйте изображения в видео, генерируйте из текста.'
+    ctx['canonical_url'] = f"{request.scheme}://{request.get_host()}/generate/video"
+    
+    resp = render(request, "generate/new.html", ctx)
+    if ctx.get('set_cookie_gid'):
+        resp.set_cookie("gid", ctx['set_cookie_gid'], max_age=60 * 60 * 24 * 730, httponly=False, samesite="Lax")
+    return resp
+
+
+def new(request: HttpRequest) -> HttpResponse:
+    """Универсальная страница генерации (для обратной совместимости)."""
+    ctx = _get_generation_context(request)
+    resp = render(request, "generate/new.html", ctx)
+    if ctx.get('set_cookie_gid'):
+        resp.set_cookie("gid", ctx['set_cookie_gid'], max_age=60 * 60 * 24 * 730, httponly=False, samesite="Lax")
     return resp
 
 

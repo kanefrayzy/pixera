@@ -47,6 +47,8 @@ urlpatterns = [
     path("api/job/<int:pk>/persist", views_api.job_persist, name="api_job_persist"),
     path("api/last-pending", views_api.api_last_pending, name="api_last_pending"),
     path("api/completed-jobs", views_api.api_completed_jobs, name="api_completed_jobs"),
+    # Метаданные для динамической смены title/description
+    path("api/metadata/<str:page_type>", views_api.api_get_metadata, name="api_get_metadata"),
     # Очередь: удаление одного элемента и полной очереди (перманентно)
     path("api/queue/remove", views_queue_api.queue_remove, name="api_queue_remove"),
     path("api/queue/clear", views_queue_api.queue_clear, name="api_queue_clear"),

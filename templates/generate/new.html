@@ -2,7 +2,11 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Генерация изображений{% endblock %}
+{% block title %}{{ page_title|default:"Генерация изображений" }}{% endblock %}
+
+{% block meta_description %}{{ page_description|default:"Pixera — современная галерея и генерация изображений ИИ. Тёмная/светлая тема, быстрый поиск, теги и тренды." }}{% endblock %}
+
+{% block canonical %}{{ canonical_url|default:request.build_absolute_uri }}{% endblock %}
 
 
 {% block extra_css %}
@@ -4287,6 +4291,61 @@ const init=()=>{
 
   if(!imageModeTab||!videoModeTab||!imageForm||!videoFormContainer)return;
 
+  // Функция для обновления метаданных через API
+  const updateMetadata = async (pageType) => {
+    try {
+      const response = await fetch(`/generate/api/metadata/${pageType}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Обновляем title
+        document.title = data.title;
+        
+        // Обновляем meta description
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+          metaDesc.setAttribute('content', data.description);
+        } else {
+          metaDesc = document.createElement('meta');
+          metaDesc.setAttribute('name', 'description');
+          metaDesc.setAttribute('content', data.description);
+          document.head.appendChild(metaDesc);
+        }
+        
+        // Обновляем canonical URL
+        let linkCanonical = document.querySelector('link[rel="canonical"]');
+        if (linkCanonical) {
+          linkCanonical.setAttribute('href', data.canonical);
+        } else {
+          linkCanonical = document.createElement('link');
+          linkCanonical.setAttribute('rel', 'canonical');
+          linkCanonical.setAttribute('href', data.canonical);
+          document.head.appendChild(linkCanonical);
+        }
+        
+        // Обновляем og:title
+        let ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) {
+          ogTitle.setAttribute('content', data.title);
+        }
+        
+        // Обновляем og:description
+        let ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) {
+          ogDesc.setAttribute('content', data.description);
+        }
+        
+        // Обновляем og:url
+        let ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) {
+          ogUrl.setAttribute('content', data.canonical);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update metadata:', error);
+    }
+  };
+
   const switchMode=mode=>{
     requestAnimationFrame(()=>{
       document.documentElement.classList.toggle('mode-video',mode==='video');
@@ -4329,6 +4388,10 @@ const init=()=>{
         const newUrl = newPath + window.location.search;
         window.history.pushState({mode: mode}, '', newUrl);
       }
+
+      // Обновляем метаданные страницы
+      const pageType = isImage ? 'photo' : 'video';
+      updateMetadata(pageType);
 
       if(!isImage){
         loadVideoAssets();
