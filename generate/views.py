@@ -686,7 +686,7 @@ def new_photo(request: HttpRequest) -> HttpResponse:
     ctx['page_title'] = 'Генерация изображений с ИИ — Pixera'
     ctx['page_description'] = 'Создавайте уникальные изображения с помощью искусственного интеллекта. Быстрая генерация, множество моделей и стилей.'
     ctx['canonical_url'] = f"{request.scheme}://{request.get_host()}/generate/photo"
-    
+
     resp = render(request, "generate/new.html", ctx)
     if ctx.get('set_cookie_gid'):
         resp.set_cookie("gid", ctx['set_cookie_gid'], max_age=60 * 60 * 24 * 730, httponly=False, samesite="Lax")
@@ -700,7 +700,7 @@ def new_video(request: HttpRequest) -> HttpResponse:
     ctx['page_title'] = 'Генерация видео с ИИ — Pixera'
     ctx['page_description'] = 'Создавайте уникальные видео с помощью искусственного интеллекта. Преобразуйте изображения в видео, генерируйте из текста.'
     ctx['canonical_url'] = f"{request.scheme}://{request.get_host()}/generate/video"
-    
+
     resp = render(request, "generate/new.html", ctx)
     if ctx.get('set_cookie_gid'):
         resp.set_cookie("gid", ctx['set_cookie_gid'], max_age=60 * 60 * 24 * 730, httponly=False, samesite="Lax")

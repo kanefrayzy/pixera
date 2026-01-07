@@ -1,5 +1,8 @@
 ﻿from django.urls import path
 from django.views.generic import RedirectView
+from django.views.static import serve
+from django.conf import settings
+import os
 from . import views
 
 app_name = "pages"
@@ -10,7 +13,8 @@ urlpatterns = [
     path("contact", views.contact, name="contact"),
     path("privacy", views.privacy, name="privacy"),
     path("age/accept", views.age_accept, name="age_accept"),
-    path("robots.txt", views.RobotsView.as_view(), name="robots"),
+    # robots.txt
+    path("robots.txt", lambda r: serve(r, 'robots.txt', document_root=settings.BASE_DIR), name="robots"),
 
     # Legacy redirects
     path("about/", RedirectView.as_view(pattern_name="pages:about", permanent=True)),

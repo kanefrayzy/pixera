@@ -4296,11 +4296,11 @@ const init=()=>{
     try {
       const response = await fetch(`/generate/api/metadata/${pageType}`);
       const data = await response.json();
-      
+
       if (data.success) {
         // Обновляем title
         document.title = data.title;
-        
+
         // Обновляем meta description
         let metaDesc = document.querySelector('meta[name="description"]');
         if (metaDesc) {
@@ -4311,7 +4311,7 @@ const init=()=>{
           metaDesc.setAttribute('content', data.description);
           document.head.appendChild(metaDesc);
         }
-        
+
         // Обновляем canonical URL
         let linkCanonical = document.querySelector('link[rel="canonical"]');
         if (linkCanonical) {
@@ -4322,19 +4322,19 @@ const init=()=>{
           linkCanonical.setAttribute('href', data.canonical);
           document.head.appendChild(linkCanonical);
         }
-        
+
         // Обновляем og:title
         let ogTitle = document.querySelector('meta[property="og:title"]');
         if (ogTitle) {
           ogTitle.setAttribute('content', data.title);
         }
-        
+
         // Обновляем og:description
         let ogDesc = document.querySelector('meta[property="og:description"]');
         if (ogDesc) {
           ogDesc.setAttribute('content', data.description);
         }
-        
+
         // Обновляем og:url
         let ogUrl = document.querySelector('meta[property="og:url"]');
         if (ogUrl) {

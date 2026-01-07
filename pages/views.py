@@ -265,28 +265,28 @@ def get_trending_videos(request):
         return []
 
 
-class RobotsView(TemplateView):
-    """
-    Dynamic robots.txt view
-    """
-    template_name = "pages/robots.txt"
-    content_type = "text/plain"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        request = self.request
-        base_url = f"{request.scheme}://{request.get_host()}"
-
-        # domain
-        # base_url = "https://test.com"
-
-        context.update({
-            'base_url': base_url,
-            'sitemap_url': f"{base_url}/sitemap.xml",
-        })
-
-        return context
+# class RobotsView(TemplateView):
+#     """
+#     Dynamic robots.txt view (DEPRECATED: используется статический robots.txt в корне)
+#     """
+#     template_name = "pages/robots.txt"
+#     content_type = "text/plain"
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#
+#         request = self.request
+#         base_url = f"{request.scheme}://{request.get_host()}"
+#
+#         # domain
+#         # base_url = "https://test.com"
+#
+#         context.update({
+#             'base_url': base_url,
+#             'sitemap_url': f"{base_url}/sitemap.xml",
+#         })
+#
+#         return context
 
 
 def about(request):
