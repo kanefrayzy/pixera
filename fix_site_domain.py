@@ -18,16 +18,16 @@ def fix_site_domain():
     print(f"Существующие Sites в базе данных:")
     for s in all_sites:
         print(f"  ID: {s.id}, Domain: {s.domain}, Name: {s.name}")
-    
+
     # Ищем Site с доменом pixera.net
     try:
         site_by_domain = Site.objects.get(domain='pixera.net')
         print(f"\n✓ Найден Site с доменом pixera.net (ID: {site_by_domain.id})")
-        
+
         # Если это не ID=1, обновляем его ID через raw SQL
         if site_by_domain.id != 1:
             old_id = site_by_domain.id
-            
+
             # Сначала удаляем Site с ID=1, если он существует
             try:
                 old_site = Site.objects.get(id=1)
@@ -35,7 +35,7 @@ def fix_site_domain():
                 print(f"✓ Удален старый Site с ID=1 (домен: {old_site.domain})")
             except Site.DoesNotExist:
                 pass
-            
+
             # Используем raw SQL для обновления ID
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -43,7 +43,7 @@ def fix_site_domain():
                     [old_id]
                 )
                 print(f"✓ Обновлен ID Site с {old_id} на 1 через raw SQL")
-        
+
     except Site.DoesNotExist:
         # Создаем новый Site
         # Сначала удаляем Site с ID=1, если он существует
@@ -53,14 +53,14 @@ def fix_site_domain():
             print(f"✓ Удален старый Site с ID=1 (домен: {old_site.domain})")
         except Site.DoesNotExist:
             pass
-        
+
         Site.objects.create(
             id=1,
             domain='pixera.net',
             name='Pixera'
         )
         print(f"✓ Создан новый Site объект с доменом pixera.net (ID: 1)")
-    
+
     # Проверяем результат
     current_site = Site.objects.get(id=1)
     print(f"\n✓ Итоговые настройки Site:")
