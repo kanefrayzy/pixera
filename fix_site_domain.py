@@ -9,6 +9,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ai_gallery.settings")
 django.setup()
 
 from django.contrib.sites.models import Site
+from django.db import connection
 
 def fix_site_domain():
     """Создать или обновить Site объект с доменом pixera.net"""
@@ -23,8 +24,10 @@ def fix_site_domain():
         site_by_domain = Site.objects.get(domain='pixera.net')
         print(f"\n✓ Найден Site с доменом pixera.net (ID: {site_by_domain.id})")
         
-        # Если это не ID=1, обновляем его ID
+        # Если это не ID=1, обновляем его ID через raw SQL
         if site_by_domain.id != 1:
+            old_id = site_by_domain.id
+            
             # Сначала удаляем Site с ID=1, если он существует
             try:
                 old_site = Site.objects.get(id=1)
@@ -33,12 +36,14 @@ def fix_site_domain():
             except Site.DoesNotExist:
                 pass
             
-            # Обновляем ID на 1
-            site_by_domain.id = 1
-            site_by_domain.save()
-            print(f"✓ Обновлен ID Site на 1")
+            # Используем raw SQL для обновления ID
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE django_site SET id = 1 WHERE id = %s",
+                    [old_id]
+                )
+                print(f"✓ Обновлен ID Site с {old_id} на 1 через raw SQL")
         
-        site = site_by_domain
     except Site.DoesNotExist:
         # Создаем новый Site
         # Сначала удаляем Site с ID=1, если он существует
@@ -49,12 +54,12 @@ def fix_site_domain():
         except Site.DoesNotExist:
             pass
         
-        site = Site.objects.create(
+        Site.objects.create(
             id=1,
             domain='pixera.net',
             name='Pixera'
         )
-        print(f"✓ Создан новый Site объект: {site.domain} (ID: {site.id})")
+        print(f"✓ Создан новый Site объект с доменом pixera.net (ID: 1)")
     
     # Проверяем результат
     current_site = Site.objects.get(id=1)
